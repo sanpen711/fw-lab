@@ -46,6 +46,33 @@
     };
   }
 
+  async function sendEmailOtp({ email, nickname }){
+    if(!enabled) throw new Error('还没有配置 Supabase。');
+    email = String(email || '').trim();
+    nickname = String(nickname || '').trim();
+    const res = await client.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        data: { nickname: nickname || '临时研究员' },
+        emailRedirectTo: getRedirectUrl()
+      }
+    });
+    if(res.error) throw new Error(res.error.message);
+    return { ok:true };
+  }
+
+  async function verifyEmailOtp({ email, token, nickname }){
+    if(!enabled) throw new Error('还没有配置 Supabase。');
+    email = String(email || '').trim();
+    token = String(token || '').trim().replace(/\s/g, '');
+    nickname = String(nickname || '').trim();
+    const res = await client.auth.verifyOtp({ email, token, type:'email' });
+    if(res.error) throw new Error(res.error.message);
+    if(nickname){ await updateProfile({ nickname }); }
+    return { user: await getCurrentUser(), needsConfirmation:false };
+  }
+
   async function signInOrSignUp({email, password, nickname}){
     if(!enabled) throw new Error('还没有配置 Supabase。');
     email = String(email || '').trim();
@@ -144,5 +171,5 @@
   async function setUserBanned(userId, banned){ return fail(await client.rpc('admin_set_user_banned', { target_user_id:userId, banned }), '账号状态修改失败'); }
   function onAuthChange(callback){ return enabled ? client.auth.onAuthStateChange(() => callback && callback()) : null; }
 
-  window.fwDb = { enabled, client, getCurrentUser, signInOrSignUp, signOut, updateProfile, loadPosts, createPost, createComment, react, listUsers, deletePost, deleteComment, setUserBanned, onAuthChange };
+  window.fwDb = { enabled, client, getCurrentUser, sendEmailOtp, verifyEmailOtp, signInOrSignUp, signOut, updateProfile, loadPosts, createPost, createComment, react, listUsers, deletePost, deleteComment, setUserBanned, onAuthChange };
 })();
