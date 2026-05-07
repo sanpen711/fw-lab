@@ -1,74 +1,639 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>F.w 研究所｜收纳半躺牲畜</title>
-<meta name="description" content="F.w 研究所：自愿上班，合法精神凌迟。一个用于收纳无效努力、职场幻觉、半躺哲学与精神废纸的非正式研究机构。">
-<style>
-:root{--bg:#b8b4aa;--paper:#eee9df;--paper2:#e4ded2;--ink:#14130f;--muted:#57534b;--line:rgba(20,19,15,.18);--soft:rgba(20,19,15,.06);--shadow:0 32px 90px rgba(45,42,36,.34);--serif:Georgia,"Times New Roman","Noto Serif SC","Songti SC",serif;--sans:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);font-family:var(--sans);background:radial-gradient(circle at 20% 10%,rgba(255,255,255,.32),transparent 30%),linear-gradient(120deg,#aaa69b,#d1cdc3 48%,#979389);min-height:100vh}
-.page{width:min(1280px,calc(100% - 72px));margin:44px auto 38px;background:var(--paper);border:1px solid rgba(255,255,255,.42);border-radius:8px;box-shadow:var(--shadow);overflow:hidden;position:relative}
-.page:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.32;background-image:linear-gradient(rgba(20,19,15,.032) 1px,transparent 1px),linear-gradient(90deg,rgba(20,19,15,.024) 1px,transparent 1px);background-size:42px 42px}
-.top{height:92px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 58px;position:relative;z-index:2}
-.brand{font-family:var(--serif);font-size:34px;letter-spacing:-.04em;display:flex;align-items:baseline;gap:8px;text-decoration:none;color:var(--ink)}.brand b{font-size:42px;font-weight:500}.brand span{font-size:18px;letter-spacing:.08em}
-.nav{display:flex;align-items:center;gap:44px;font-size:14px}.nav a{color:var(--ink);text-decoration:none}.round{width:34px;height:34px;border:0;border-radius:50%;background:#111;color:#fff;font-size:18px}.menu{display:none;border:0;background:none;font-size:30px}
-.hero{min-height:610px;display:grid;grid-template-columns:40% 43% 17%;padding:52px 58px 0;position:relative;z-index:1}.collage{position:relative;min-height:430px}
-.tape{position:absolute;height:26px;background:#afa795;opacity:.8;transform:rotate(-6deg);box-shadow:0 2px 5px rgba(0,0,0,.08)}.tape.one{width:118px;left:52px;top:0}.tape.two{width:130px;right:28px;top:88px;transform:rotate(1deg)}
-.photo{position:absolute;background:#d1cabd;filter:grayscale(1);box-shadow:0 10px 24px rgba(52,48,42,.18);overflow:hidden}.photo.big{left:0;top:38px;width:315px;height:260px;transform:rotate(-5deg);border:18px solid #dcd6ca}.photo.small{right:16px;top:105px;width:185px;height:134px;border:12px solid #d9d2c5;transform:rotate(2deg)}
-.photo:before{content:"";position:absolute;inset:0;background:linear-gradient(160deg,rgba(255,255,255,.18),transparent 45%),radial-gradient(circle at 42% 62%,#312f2b 0 22px,transparent 23px),linear-gradient(to top,#332f29 0 38%,transparent 39%),linear-gradient(135deg,#b6aea1,#e2dcca)}
-.photo.big:after{content:"";position:absolute;width:54px;height:58px;background:#c8c1b5;left:122px;top:64px;box-shadow:10px 62px 0 28px #25231f;border-radius:4px 4px 0 0;opacity:.95}
-.scribble{position:absolute;color:rgba(20,19,15,.36);font-family:var(--serif);font-size:120px;line-height:.7;transform:rotate(-12deg);left:230px;top:70px;white-space:pre}
-.lab-card{position:absolute;left:16px;top:280px;background:#e7e1d6;width:195px;height:118px;padding:18px;border:1px solid rgba(20,19,15,.14);transform:rotate(-1deg);font-family:var(--serif)}.lab-card strong{font-size:26px;font-weight:500}.lab-card em{display:block;margin-top:8px;font-size:11px;letter-spacing:.14em;font-style:normal}.barcode{height:26px;margin-top:8px;background:repeating-linear-gradient(90deg,#111 0 2px,transparent 2px 5px,#111 5px 6px,transparent 6px 10px)}
-.caption{position:absolute;left:32px;top:425px;font-family:var(--serif);font-size:12px;line-height:1.6;letter-spacing:.08em}
-.hero-copy{padding-top:44px}.hero-copy h1{font-family:var(--serif);font-size:88px;font-weight:500;line-height:1.05;letter-spacing:-.06em;margin:0 0 34px}.hero-copy .sub{font-family:var(--serif);font-size:30px;line-height:1.55;letter-spacing:.08em;margin-bottom:24px}.hero-copy .dash{display:inline-block;width:72px;border-top:1px solid var(--ink);transform:translateY(-8px);margin-right:10px}
-.intro{max-width:420px;color:var(--muted);font-size:15px;line-height:2;margin-bottom:32px}.actions{display:flex;gap:24px;align-items:center}.btn{display:inline-flex;align-items:center;justify-content:center;gap:24px;min-width:170px;height:52px;padding:0 28px;text-decoration:none;border:0;background:#111;color:#fff;font-size:14px}.text-btn{border:0;background:none;font-size:14px;color:#111;text-decoration:none;cursor:pointer}.side-note{padding-top:74px;position:relative}
-.status{background:#dcd6c9;padding:18px 22px;width:180px;font-family:var(--serif);line-height:1.7;box-shadow:0 1px 0 rgba(0,0,0,.06);position:relative}.status:before{content:"";position:absolute;width:84px;height:24px;background:#aaa18e;top:-12px;left:42px;opacity:.7}.mountain{position:absolute;right:0;bottom:0;width:190px;height:130px;background:linear-gradient(135deg,transparent 0 45%,#383530 46% 100%);filter:grayscale(1);opacity:.9}.seal{position:absolute;right:122px;bottom:36px;width:54px;height:54px;border:1px dashed rgba(20,19,15,.55);border-radius:50%;display:grid;place-items:center;font-size:11px;color:rgba(20,19,15,.65);transform:rotate(-16deg)}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:24px 52px 24px;border-top:1px solid var(--line);background:rgba(255,255,255,.14)}.card{background:rgba(238,233,223,.7);border:1px solid rgba(20,19,15,.08);padding:26px;min-height:250px;position:relative;transition:.25s}.card:hover{transform:translateY(-5px);box-shadow:0 18px 40px rgba(70,64,55,.16)}.card .no{font-family:var(--serif);font-size:18px;margin-bottom:10px}.card h3{font-family:var(--serif);font-size:24px;font-weight:500;line-height:1.25;margin:0}.card small{display:block;margin:8px 0 16px;font-family:var(--serif);letter-spacing:.08em}.thumb{height:72px;background:#b8b1a4;margin:16px 0;filter:grayscale(1);overflow:hidden;position:relative}.thumb:after{content:"";position:absolute;inset:0;background:linear-gradient(160deg,rgba(255,255,255,.25),transparent 42%),radial-gradient(circle at 55% 48%,#34312c 0 18px,transparent 20px),linear-gradient(to top,#3e3932 0 36%,transparent 37%)}.card p{color:var(--muted);font-size:14px;line-height:1.8;min-height:50px}.enter{font-size:14px;margin-top:12px}
-.quote-bar{margin:0 52px 40px;padding:28px 32px;border:1px solid rgba(20,19,15,.08);background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:space-between;font-family:var(--serif);font-size:18px}.quote-mark{font-size:42px}
-.section{padding:70px 58px;border-top:1px solid var(--line);display:grid;grid-template-columns:260px 1fr;gap:40px}.section-title{font-family:var(--serif);font-size:36px;line-height:1.2;font-weight:500}.section-title small{display:block;margin-top:12px;font-family:var(--sans);font-size:12px;letter-spacing:.14em;color:var(--muted)}.nonsense-list{display:grid;gap:14px}.nonsense{border-bottom:1px solid rgba(20,19,15,.12);padding:0 0 18px;display:grid;grid-template-columns:1fr auto;gap:16px}.nonsense b{font-family:var(--serif);font-size:22px;font-weight:500}.nonsense p{margin:8px 0 0;color:var(--muted);line-height:1.7}
-.submit-box{background:rgba(255,255,255,.18);border:1px solid rgba(20,19,15,.1);padding:28px}.field{width:100%;border:0;border-bottom:1px solid rgba(20,19,15,.25);background:transparent;padding:16px 0;color:var(--ink);outline:0}.field::placeholder{color:#8a857a}textarea.field{min-height:120px;resize:vertical}.admin{margin-top:24px;padding-top:24px;border-top:1px solid rgba(20,19,15,.12)}.admin-panel{display:none;margin-top:18px}.admin.open .admin-panel{display:block}.footer{padding:32px 58px;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:var(--muted);font-family:var(--serif)}
-@media(max-width:900px){body{background:#aaa69b}.page{width:min(430px,calc(100% - 24px));margin:20px auto;border-radius:6px}.top{height:66px;padding:0 24px}.brand b{font-size:32px}.brand span{font-size:15px}.nav,.round{display:none}.menu{display:block}.hero{display:block;min-height:auto;padding:36px 28px 0}.collage{position:absolute;right:16px;top:92px;width:170px;min-height:170px;opacity:.9}.photo.big{display:none}.photo.small{right:0;top:40px;width:150px;height:118px}.tape.one{display:none}.tape.two{right:54px;top:30px}.scribble{font-size:72px;left:16px;top:12px}.lab-card,.caption,.mountain,.seal,.status{display:none}.hero-copy{padding-top:0}.hero-copy h1{font-size:64px;margin-top:28px;margin-bottom:30px}.hero-copy .sub{font-size:23px;line-height:1.65}.intro{font-size:14px;max-width:270px}.actions{display:block}.btn{width:100%;justify-content:space-between;margin-bottom:18px}.text-btn{display:flex;justify-content:space-between;width:100%;padding:10px 0}.side-note{display:none}.cards{display:block;padding:26px}.card{display:grid;grid-template-columns:1fr 120px;gap:18px;min-height:180px;margin-bottom:22px}.card .thumb{grid-column:2;grid-row:1/6;height:124px;margin:20px 0 0}.card p{font-size:13px}.quote-bar{margin:0 26px 28px;display:block;font-size:16px}.section{display:block;padding:48px 28px}.section-title{font-size:32px;margin-bottom:24px}.nonsense{grid-template-columns:1fr}.footer{padding:28px;display:block;line-height:1.8}}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>F.w 研究所｜精神放牧与无效努力档案</title>
+  <meta name="description" content="F.w 研究所：把无效努力、办公室废话、精神离岗，收纳成一座可以公开参观的研究所。" />
+  <style>
+    :root{
+      --ink:#1f1f1d;
+      --white:#f7f7f1;
+      --paper:#f1f2e7;
+      --card:#f7f8ed;
+      --lime:#eef3c8;
+      --moss:#26351f;
+      --deep:#0b1208;
+      --olive:#6e7b47;
+      --muted:#5e6453;
+      --line:rgba(31,31,29,.8);
+      --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--paper);
+      color:var(--ink);
+      font-family:var(--sans);
+      overflow-x:hidden;
+    }
+    a{color:inherit;text-decoration:none}
+    button,input,textarea{font:inherit}
+    button{cursor:pointer;border:0}
+    .grass{
+      position:absolute;
+      inset:0;
+      overflow:hidden;
+      background:#a3a76b;
+    }
+    .grass::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(circle at 20% 20%,rgba(255,255,255,.28),transparent 25%),
+        radial-gradient(circle at 85% 20%,rgba(230,225,160,.34),transparent 28%),
+        linear-gradient(180deg,#d6d8c0,#a3a76b 52%,#8b9258);
+    }
+    .grass::after{
+      content:"";
+      position:absolute;
+      inset:-8%;
+      opacity:.82;
+      background-image:
+        linear-gradient(105deg,transparent 0 42%,rgba(255,255,255,.18) 42.2% 42.8%,transparent 43%),
+        linear-gradient(75deg,transparent 0 54%,rgba(40,55,24,.22) 54.2% 55%,transparent 55.2%);
+      background-size:22px 160px,18px 130px;
+      transform:skewX(-8deg) scale(1.08);
+    }
+    .grass.dark{
+      background:#10180c;
+    }
+    .grass.dark::before{
+      background:
+        radial-gradient(circle at 20% 20%,rgba(210,210,120,.18),transparent 22%),
+        radial-gradient(circle at 80% 12%,rgba(160,180,90,.16),transparent 24%),
+        linear-gradient(180deg,#0b1208,#243415);
+    }
+    .grass.dark::after{
+      opacity:.44;
+    }
+    .grain{
+      position:absolute;
+      inset:0;
+      opacity:.16;
+      mix-blend-mode:multiply;
+      background-image:radial-gradient(circle at 1px 1px,#000 1px,transparent 0);
+      background-size:5px 5px;
+      pointer-events:none;
+    }
+    .hero{
+      position:relative;
+      min-height:820px;
+      overflow:hidden;
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,.08);
+      pointer-events:none;
+    }
+    .header{
+      position:absolute;
+      z-index:10;
+      left:0;
+      right:0;
+      top:0;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:28px 64px;
+      color:var(--white);
+    }
+    .logo{
+      font-size:24px;
+      font-weight:900;
+      letter-spacing:-.03em;
+    }
+    .nav{
+      display:flex;
+      gap:36px;
+      font-size:15px;
+      font-weight:800;
+    }
+    .nav a{transition:.25s}
+    .nav a:hover{opacity:.65}
+    .menu{display:none}
+    .hero-inner{
+      position:relative;
+      z-index:2;
+      min-height:820px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      padding:118px 64px 56px;
+    }
+    .hero-title{
+      margin:0;
+      color:var(--white);
+      font-size:clamp(82px,10.8vw,210px);
+      line-height:.85;
+      letter-spacing:-.11em;
+      font-weight:950;
+    }
+    .hero-bottom{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:36px;
+    }
+    .hero-copy{
+      max-width:620px;
+      margin:0;
+      color:var(--white);
+      font-size:22px;
+      line-height:1.7;
+      font-weight:900;
+    }
+    .pill{
+      min-width:190px;
+      height:56px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:14px;
+      border:1px solid rgba(247,247,241,.84);
+      border-radius:999px;
+      background:transparent;
+      color:var(--white);
+      font-size:15px;
+      font-weight:900;
+      transition:.25s;
+    }
+    .pill:hover{transform:translateX(5px)}
+    .pill.dark{
+      border-color:var(--ink);
+      color:var(--ink);
+    }
+    .section{
+      padding:92px 64px;
+    }
+    .eyebrow{
+      margin:0 0 18px;
+      color:var(--olive);
+      font-size:14px;
+      font-weight:950;
+      letter-spacing:.18em;
+    }
+    .title{
+      margin:0;
+      max-width:1100px;
+      font-size:clamp(54px,7vw,118px);
+      line-height:.98;
+      letter-spacing:-.08em;
+      font-weight:950;
+    }
+    .desc{
+      max-width:680px;
+      margin:28px 0 0;
+      color:var(--muted);
+      font-size:21px;
+      line-height:1.75;
+    }
+    .cards{
+      margin-top:58px;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:34px;
+    }
+    .card{
+      min-height:360px;
+      border:1px solid var(--line);
+      background:var(--card);
+      padding:32px;
+      transition:.28s;
+    }
+    .card:hover{
+      transform:translateY(-5px);
+      background:var(--lime);
+    }
+    .card-no{
+      margin:0;
+      color:var(--olive);
+      font-size:22px;
+      font-weight:950;
+    }
+    .card h3{
+      margin:42px 0 0;
+      font-size:36px;
+      line-height:1.05;
+      letter-spacing:-.05em;
+      font-weight:950;
+    }
+    .card p{
+      margin:34px 0 0;
+      font-size:19px;
+      line-height:1.75;
+      font-weight:800;
+    }
+    .card small{
+      display:block;
+      margin-top:58px;
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.6;
+    }
+    .archive{
+      display:grid;
+      grid-template-columns:38% 1fr;
+      border-top:1px solid var(--line);
+      border-bottom:1px solid var(--line);
+    }
+    .archive-left{
+      background:var(--lime);
+      border-right:1px solid var(--line);
+      padding:74px 64px;
+    }
+    .archive-left h2{
+      margin:24px 0 0;
+      font-size:clamp(54px,6vw,92px);
+      line-height:.95;
+      letter-spacing:-.08em;
+      font-weight:950;
+    }
+    .archive-left p{
+      margin:34px 0 0;
+      color:var(--muted);
+      font-size:20px;
+      line-height:1.75;
+    }
+    .post{
+      min-height:142px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:28px;
+      padding:34px 48px;
+      background:var(--card);
+      border-bottom:1px solid var(--line);
+      transition:.25s;
+    }
+    .post:hover{background:var(--paper)}
+    .post:last-child{border-bottom:0}
+    .post small{
+      color:var(--olive);
+      font-size:14px;
+      font-weight:950;
+    }
+    .post h3{
+      margin:12px 0 0;
+      font-size:36px;
+      line-height:1.15;
+      letter-spacing:-.04em;
+      font-weight:950;
+    }
+    .dark-cta{
+      position:relative;
+      min-height:680px;
+      overflow:hidden;
+      padding:94px 64px 70px;
+      color:var(--white);
+    }
+    .dark-cta::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,.36);
+    }
+    .dark-inner{
+      position:relative;
+      z-index:2;
+      min-height:500px;
+      display:grid;
+      grid-template-columns:1fr 390px;
+      gap:48px;
+      align-items:center;
+    }
+    .dark-title{
+      margin:0;
+      max-width:920px;
+      font-size:clamp(58px,7vw,116px);
+      line-height:.98;
+      letter-spacing:-.08em;
+      font-weight:950;
+    }
+    .dark-note{
+      position:relative;
+      z-index:2;
+      margin-top:76px;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:40px;
+      font-size:15px;
+      line-height:1.65;
+      font-weight:900;
+    }
+    .info{
+      display:grid;
+      grid-template-columns:70px 1fr;
+      gap:14px;
+    }
+    .rules{
+      display:grid;
+      grid-template-columns:40% 1fr;
+      gap:70px;
+    }
+    .rules h2{
+      margin:0;
+      font-size:clamp(54px,6vw,92px);
+      line-height:.95;
+      letter-spacing:-.08em;
+      font-weight:950;
+    }
+    .rule-list{
+      border-top:1px solid var(--line);
+      border-bottom:1px solid var(--line);
+    }
+    .rule{
+      display:grid;
+      grid-template-columns:80px 1fr;
+      gap:24px;
+      padding:34px 0;
+      border-bottom:1px solid var(--line);
+    }
+    .rule:last-child{border-bottom:0}
+    .rule b{
+      color:var(--olive);
+      font-size:22px;
+    }
+    .rule p{
+      margin:0;
+      font-size:34px;
+      line-height:1.22;
+      letter-spacing:-.04em;
+      font-weight:950;
+    }
+    .submit{
+      display:grid;
+      grid-template-columns:1fr 520px;
+      gap:60px;
+      align-items:start;
+      border-top:1px solid var(--line);
+      background:var(--lime);
+    }
+    .submit h2{
+      margin:0;
+      max-width:900px;
+      font-size:clamp(54px,6vw,108px);
+      line-height:.96;
+      letter-spacing:-.08em;
+      font-weight:950;
+    }
+    .submit p{
+      max-width:680px;
+      margin:32px 0 0;
+      color:var(--muted);
+      font-size:20px;
+      line-height:1.75;
+    }
+    .form{
+      border:1px solid var(--line);
+      background:var(--card);
+      padding:32px;
+    }
+    label{
+      display:block;
+      margin:0 0 12px;
+      color:var(--olive);
+      font-size:14px;
+      font-weight:950;
+    }
+    input,textarea{
+      width:100%;
+      border:1px solid var(--line);
+      background:transparent;
+      outline:0;
+      color:var(--ink);
+      font-size:18px;
+      padding:16px;
+      margin-bottom:22px;
+    }
+    input{height:56px}
+    textarea{
+      height:180px;
+      resize:none;
+    }
+    .submit-btn{
+      width:100%;
+      height:56px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-radius:999px;
+      background:var(--ink);
+      color:var(--white);
+      padding:0 28px;
+      font-size:15px;
+      font-weight:950;
+      transition:.25s;
+    }
+    .submit-btn:hover{transform:translateX(5px)}
+    .form-tip{
+      margin:20px 0 0!important;
+      font-size:14px!important;
+      line-height:1.6!important;
+    }
+    footer{
+      padding:42px 64px;
+      background:var(--paper);
+    }
+    .footer-inner{
+      border-top:1px solid var(--line);
+      padding-top:32px;
+      display:flex;
+      justify-content:space-between;
+      gap:28px;
+    }
+    footer h3{
+      margin:0;
+      font-size:28px;
+      letter-spacing:-.04em;
+    }
+    footer p{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size:15px;
+    }
+    .coffee{
+      color:var(--olive);
+      font-weight:950;
+      align-self:center;
+    }
+    @media(max-width:980px){
+      .header{padding:24px}
+      .nav{display:none}
+      .menu{display:block;font-size:24px;font-weight:950}
+      .hero,.hero-inner{min-height:620px}
+      .hero-inner{padding:86px 24px 28px}
+      .hero-title{font-size:72px}
+      .hero-bottom{display:block}
+      .hero-copy{font-size:16px}
+      .pill{margin-top:22px;width:100%}
+      .section{padding:62px 24px}
+      .title{font-size:56px}
+      .desc{font-size:17px}
+      .cards{grid-template-columns:1fr;gap:22px}
+      .card{min-height:0;padding:24px}
+      .card h3{margin-top:24px;font-size:28px}
+      .card p{margin-top:22px;font-size:16px}
+      .card small{margin-top:28px}
+      .archive{grid-template-columns:1fr}
+      .archive-left{border-right:0;border-bottom:1px solid var(--line);padding:56px 24px}
+      .post{padding:28px 24px}
+      .post h3{font-size:26px}
+      .dark-cta{min-height:560px;padding:62px 24px}
+      .dark-inner{display:block;min-height:auto}
+      .dark-title{font-size:48px}
+      .dark-note{grid-template-columns:1fr;margin-top:72px}
+      .rules{grid-template-columns:1fr;gap:34px}
+      .rules h2{font-size:56px}
+      .rule{grid-template-columns:52px 1fr}
+      .rule p{font-size:25px}
+      .submit{grid-template-columns:1fr;padding:62px 24px}
+      .submit h2{font-size:52px}
+      .submit p{font-size:17px}
+      .form{padding:22px}
+      footer{padding:36px 24px}
+      .footer-inner{display:block}
+      .coffee{margin-top:24px}
+    }
+  </style>
 </head>
 <body>
-<div class="page" id="home">
-  <header class="top">
-    <a class="brand" href="#home"><b>F.w</b><span>研究所</span></a>
-    <nav class="nav"><a href="#lab">研究所</a><a href="#archive">档案馆</a><a href="#nonsense">废话区</a><a href="#submit">投稿</a><a href="#about">关于我们</a></nav>
-    <button class="round" onclick="document.querySelector('#archive').scrollIntoView({behavior:'smooth'})">→</button>
-    <button class="menu">☰</button>
-  </header>
-  <main>
-    <section class="hero" id="lab">
-      <div class="collage">
-        <i class="tape one"></i><i class="tape two"></i><div class="photo big"></div><div class="photo small"></div><div class="scribble">〰
-〰</div><div class="lab-card"><strong>F.w</strong><em>LABORATORY<br>OF NONSENSE</em><div class="barcode"></div></div><div class="caption">NOT PRODUCTIVE,<br>JUST EXISTING.</div>
+  <section class="hero">
+    <div class="grass"></div>
+    <div class="grain"></div>
+    <header class="header">
+      <a class="logo" href="#">F.w 研究所</a>
+      <nav class="nav">
+        <a href="#why">为什么来这里</a>
+        <a href="#archive">废话档案</a>
+        <a href="#rules">研究所规则</a>
+        <a href="#submit">投递</a>
+      </nav>
+      <div class="menu">☰</div>
+    </header>
+    <div class="hero-inner">
+      <h1 class="hero-title">F.w Research<br>Office Pasture</h1>
+      <div class="hero-bottom">
+        <p class="hero-copy">把无效努力、办公室废话、精神离岗，收纳成一座可以公开参观的研究所。</p>
+        <a class="pill" href="#why">进入研究所 →</a>
       </div>
-      <div class="hero-copy"><h1>F.w<br>研究所</h1><div class="sub">自愿上班，合法精神凌迟。<br><span class="dash"></span>收纳半躺“牲畜”</div><p class="intro">一个用于收纳无效努力、职场幻觉、半躺哲学与精神废纸的非正式研究机构。</p><div class="actions"><a class="btn" href="#archive">进入研究所 <span>→</span></a><a class="text-btn" href="#submit">提交一条废话 <span>→</span></a></div></div>
-      <aside class="side-note"><div class="status">今日状态：<br>已躺平 / 未起身</div><div class="seal">F.W<br>LAB</div><div class="mountain"></div></aside>
-    </section>
-    <section class="cards" id="archive">
-      <article class="card"><div class="no">01</div><h3>无效努力档案</h3><small>ARCHIVE</small><div class="thumb"></div><p>记录那些看起来很忙，其实毫无进展的瞬间。</p><div class="enter">进入 →</div></article>
-      <article class="card"><div class="no">02</div><h3>半躺哲学</h3><small>PHILOSOPHY</small><div class="thumb"></div><p>介于努力和放弃之间的高级生存方式。</p><div class="enter">进入 →</div></article>
-      <article class="card"><div class="no">03</div><h3>今日废话</h3><small>NONSENSE</small><div class="thumb"></div><p>看似有道理，但没有任何用处。</p><div class="enter">进入 →</div></article>
-      <article class="card"><div class="no">04</div><h3>职场牲畜观察</h3><small>OBSERVATION</small><div class="thumb"></div><p>对办公区生物进行非严肃研究。</p><div class="enter">进入 →</div></article>
-    </section>
-    <div class="quote-bar"><span class="quote-mark">”</span><span>本研究所不追求效率，只追求体面地浪费时间。</span><span>—— F.w 研究所 · 所训</span></div>
-    <section class="section" id="nonsense"><div class="section-title">废话区<small>NONSENSE COLLECTION</small></div><div class="nonsense-list" id="nonsenseList"><div class="nonsense"><div><b>你已经完成了尚未开始的任务。</b><p>因此可以合理疲惫，并向自己提交一份精神报销单。</p></div><span>01</span></div><div class="nonsense"><div><b>我们先保持开放心态。</b><p>意思是：先不做决定，也暂时不承担任何责任。</p></div><span>02</span></div><div class="nonsense"><div><b>今天也在稳定运行。</b><p>虽然没有明显产出，但系统尚未彻底崩溃。</p></div><span>03</span></div></div></section>
-    <section class="section" id="submit"><div class="section-title">投稿<small>SUBMIT NONSENSE</small></div><div class="submit-box"><input class="field" id="titleInput" placeholder="废话标题，例如：这个事情后续再看"><textarea class="field" id="bodyInput" placeholder="补充说明，可写可不写。"></textarea><button class="btn" id="addBtn">提交到废话区 <span>→</span></button><div class="admin" id="admin"><input class="field" id="adminPass" type="password" placeholder="站长入口：输入口令"><button class="text-btn" id="adminBtn">进入管理 →</button><div class="admin-panel"><p>站长管理已开启：当前版本用于管理展示内容。正式多人投稿、审核和删除功能，后续接数据库后开放。</p><button class="text-btn" id="clearBtn">清空本地新增内容 →</button></div></div></div></section>
-    <section class="section" id="about"><div class="section-title">关于我们<small>ABOUT F.W LAB</small></div><div><p class="intro">F.w 研究所不是公司，不是组织，也不是解决方案。它只是一个给上班人短暂离线、体面发呆、收纳荒诞的地方。</p></div></section>
-  </main>
-  <footer class="footer"><span>F.w 研究所 · EST.2024</span><span>NOT PRODUCTIVE, JUST EXISTING.</span></footer>
-</div>
-<script>
-const KEY='fw_lab_paper_posts';const list=document.getElementById('nonsenseList');
-function get(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}function set(v){localStorage.setItem(KEY,JSON.stringify(v))}
-function render(){const arr=get();arr.forEach((item,i)=>{if(document.querySelector('[data-id="'+item.id+'"]'))return;const el=document.createElement('div');el.className='nonsense';el.dataset.id=item.id;el.innerHTML='<div><b>'+item.title+'</b><p>'+item.body+'</p></div><span>'+String(4+i).padStart(2,'0')+'</span>';list.appendChild(el)})}
-document.getElementById('addBtn').onclick=()=>{const title=document.getElementById('titleInput').value.trim();const body=document.getElementById('bodyInput').value.trim()||'已收纳为一条暂无解释的精神废纸。';if(!title){alert('先写一句废话标题');return}const arr=get();arr.push({id:Date.now(),title,body});set(arr);document.getElementById('titleInput').value='';document.getElementById('bodyInput').value='';render();document.getElementById('nonsense').scrollIntoView({behavior:'smooth'})};
-document.getElementById('adminBtn').onclick=()=>{if(document.getElementById('adminPass').value==='fw2026'){document.getElementById('admin').classList.add('open')}else alert('口令不对')};
-document.getElementById('clearBtn').onclick=()=>{localStorage.removeItem(KEY);location.reload()};
-render();
-</script>
+    </div>
+  </section>
+
+  <section class="section" id="why">
+    <p class="eyebrow">WHY F.W LAB</p>
+    <h2 class="title">为什么来这里</h2>
+    <p class="desc">不是为了提高效率，是为了把低效率过得更有版式感。</p>
+    <div class="cards">
+      <article class="card">
+        <p class="card-no">01</p>
+        <h3>无效努力档案</h3>
+        <p>收纳那些开了会、写了表、发了消息，但事情仍然停在原地的瞬间。</p>
+        <small>适合：会议后遗症 / 工作流迷路</small>
+      </article>
+      <article class="card">
+        <p class="card-no">02</p>
+        <h3>半躺精神牧场</h3>
+        <p>允许人类在清醒与疲惫之间，保持一种体面的低功耗存在。</p>
+        <small>适合：摸鱼 / 放空 / 心理离线</small>
+      </article>
+      <article class="card">
+        <p class="card-no">03</p>
+        <h3>废话展览入口</h3>
+        <p>把看似很有道理、其实毫无帮助的话，做成可以反复浏览的展品。</p>
+        <small>适合：办公室文学 / 荒诞语录</small>
+      </article>
+    </div>
+  </section>
+
+  <section class="archive" id="archive">
+    <div class="archive-left">
+      <div style="font-size:38px;">☷</div>
+      <h2>今日废话档案</h2>
+      <p>每一句都像有用，但不会真正改变你的工作流。它们只负责陪你把今天过完。</p>
+    </div>
+    <div>
+      <article class="post">
+        <div><small>ARCHIVE 001</small><h3>你已经完成了尚未开始的任务。</h3></div>
+        <span>→</span>
+      </article>
+      <article class="post">
+        <div><small>ARCHIVE 002</small><h3>工作不是没有进展，只是进展到了看不见的地方。</h3></div>
+        <span>→</span>
+      </article>
+      <article class="post">
+        <div><small>ARCHIVE 003</small><h3>会议的意义，是让问题拥有更正式的名字。</h3></div>
+        <span>→</span>
+      </article>
+      <article class="post">
+        <div><small>ARCHIVE 004</small><h3>今天也没有什么用，但存在得很有版式感。</h3></div>
+        <span>→</span>
+      </article>
+    </div>
+  </section>
+
+  <section class="dark-cta">
+    <div class="grass dark"></div>
+    <div class="grain"></div>
+    <div class="dark-inner">
+      <div>
+        <p class="eyebrow" style="color:rgba(247,247,241,.72);">LOW POWER MODE</p>
+        <h2 class="dark-title">今日起，把你的<br>精神离岗<br>正式归档</h2>
+      </div>
+      <div>
+        <a class="pill" href="#submit">投递一条废话 →</a>
+      </div>
+    </div>
+    <div class="dark-note">
+      <div class="info"><b>地址</b><span>工位、会议室、茶水间<br>以及所有精神出走现场</span></div>
+      <div class="info"><b>SNS</b><span>Moyugram<br>Fakebook<br>TikTalk</span></div>
+      <div class="info"><b>邮件</b><span>hello@fw-lab.local</span></div>
+    </div>
+  </section>
+
+  <section class="section" id="rules">
+    <div class="rules">
+      <div>
+        <div style="font-size:42px;color:var(--olive);">☘</div>
+        <h2>研究所规则</h2>
+      </div>
+      <div class="rule-list">
+        <div class="rule"><b>01</b><p>可以认真发疯，但页面保持体面。</p></div>
+        <div class="rule"><b>02</b><p>可以摸鱼，但请把鱼放回精神池塘。</p></div>
+        <div class="rule"><b>03</b><p>这里不解决问题，只负责把问题摆得更有仪式感。</p></div>
+        <div class="rule"><b>04</b><p>禁止把低功耗状态误判为失败。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section submit" id="submit">
+    <div>
+      <div style="font-size:42px;color:var(--olive);">✉</div>
+      <h2>把今天的无效瞬间，投递给研究所。</h2>
+      <p>第一版可以先做轻量投稿，不做复杂登录。你写一句废话、一段摸鱼记录，或者一份精神离岗申请，都可以成为临时展品。</p>
+    </div>
+    <div class="form">
+      <label>你的今日状态</label>
+      <input placeholder="例如：已疲惫，未报废" />
+      <label>投递内容</label>
+      <textarea placeholder="写下你今天遇到的无效努力、办公室废话或精神离岗申请。"></textarea>
+      <button class="submit-btn">临时投递 <span>↴</span></button>
+      <p class="form-tip">当前为视觉页面示意，正式上线后可接入真实投稿数据库。</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div>
+        <h3>F.w 研究所</h3>
+        <p>一个给上班族临时放下自己的地方。</p>
+      </div>
+      <div class="coffee">☕ 保持低功耗，也保持体面。</div>
+    </div>
+  </footer>
 </body>
 </html>
