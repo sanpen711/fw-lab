@@ -3,637 +3,89 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>F.w 研究所｜精神放牧与无效努力档案</title>
-  <meta name="description" content="F.w 研究所：把无效努力、办公室废话、精神离岗，收纳成一座可以公开参观的研究所。" />
-  <style>
-    :root{
-      --ink:#1f1f1d;
-      --white:#f7f7f1;
-      --paper:#f1f2e7;
-      --card:#f7f8ed;
-      --lime:#eef3c8;
-      --moss:#26351f;
-      --deep:#0b1208;
-      --olive:#6e7b47;
-      --muted:#5e6453;
-      --line:rgba(31,31,29,.8);
-      --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-    }
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{
-      margin:0;
-      background:var(--paper);
-      color:var(--ink);
-      font-family:var(--sans);
-      overflow-x:hidden;
-    }
-    a{color:inherit;text-decoration:none}
-    button,input,textarea{font:inherit}
-    button{cursor:pointer;border:0}
-    .grass{
-      position:absolute;
-      inset:0;
-      overflow:hidden;
-      background:#a3a76b;
-    }
-    .grass::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:
-        radial-gradient(circle at 20% 20%,rgba(255,255,255,.28),transparent 25%),
-        radial-gradient(circle at 85% 20%,rgba(230,225,160,.34),transparent 28%),
-        linear-gradient(180deg,#d6d8c0,#a3a76b 52%,#8b9258);
-    }
-    .grass::after{
-      content:"";
-      position:absolute;
-      inset:-8%;
-      opacity:.82;
-      background-image:
-        linear-gradient(105deg,transparent 0 42%,rgba(255,255,255,.18) 42.2% 42.8%,transparent 43%),
-        linear-gradient(75deg,transparent 0 54%,rgba(40,55,24,.22) 54.2% 55%,transparent 55.2%);
-      background-size:22px 160px,18px 130px;
-      transform:skewX(-8deg) scale(1.08);
-    }
-    .grass.dark{
-      background:#10180c;
-    }
-    .grass.dark::before{
-      background:
-        radial-gradient(circle at 20% 20%,rgba(210,210,120,.18),transparent 22%),
-        radial-gradient(circle at 80% 12%,rgba(160,180,90,.16),transparent 24%),
-        linear-gradient(180deg,#0b1208,#243415);
-    }
-    .grass.dark::after{
-      opacity:.44;
-    }
-    .grain{
-      position:absolute;
-      inset:0;
-      opacity:.16;
-      mix-blend-mode:multiply;
-      background-image:radial-gradient(circle at 1px 1px,#000 1px,transparent 0);
-      background-size:5px 5px;
-      pointer-events:none;
-    }
-    .hero{
-      position:relative;
-      min-height:820px;
-      overflow:hidden;
-    }
-    .hero::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:rgba(0,0,0,.08);
-      pointer-events:none;
-    }
-    .header{
-      position:absolute;
-      z-index:10;
-      left:0;
-      right:0;
-      top:0;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:28px 64px;
-      color:var(--white);
-    }
-    .logo{
-      font-size:24px;
-      font-weight:900;
-      letter-spacing:-.03em;
-    }
-    .nav{
-      display:flex;
-      gap:36px;
-      font-size:15px;
-      font-weight:800;
-    }
-    .nav a{transition:.25s}
-    .nav a:hover{opacity:.65}
-    .menu{display:none}
-    .hero-inner{
-      position:relative;
-      z-index:2;
-      min-height:820px;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      padding:118px 64px 56px;
-    }
-    .hero-title{
-      margin:0;
-      color:var(--white);
-      font-size:clamp(82px,10.8vw,210px);
-      line-height:.85;
-      letter-spacing:-.11em;
-      font-weight:950;
-    }
-    .hero-bottom{
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
-      gap:36px;
-    }
-    .hero-copy{
-      max-width:620px;
-      margin:0;
-      color:var(--white);
-      font-size:22px;
-      line-height:1.7;
-      font-weight:900;
-    }
-    .pill{
-      min-width:190px;
-      height:56px;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:14px;
-      border:1px solid rgba(247,247,241,.84);
-      border-radius:999px;
-      background:transparent;
-      color:var(--white);
-      font-size:15px;
-      font-weight:900;
-      transition:.25s;
-    }
-    .pill:hover{transform:translateX(5px)}
-    .pill.dark{
-      border-color:var(--ink);
-      color:var(--ink);
-    }
-    .section{
-      padding:92px 64px;
-    }
-    .eyebrow{
-      margin:0 0 18px;
-      color:var(--olive);
-      font-size:14px;
-      font-weight:950;
-      letter-spacing:.18em;
-    }
-    .title{
-      margin:0;
-      max-width:1100px;
-      font-size:clamp(54px,7vw,118px);
-      line-height:.98;
-      letter-spacing:-.08em;
-      font-weight:950;
-    }
-    .desc{
-      max-width:680px;
-      margin:28px 0 0;
-      color:var(--muted);
-      font-size:21px;
-      line-height:1.75;
-    }
-    .cards{
-      margin-top:58px;
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:34px;
-    }
-    .card{
-      min-height:360px;
-      border:1px solid var(--line);
-      background:var(--card);
-      padding:32px;
-      transition:.28s;
-    }
-    .card:hover{
-      transform:translateY(-5px);
-      background:var(--lime);
-    }
-    .card-no{
-      margin:0;
-      color:var(--olive);
-      font-size:22px;
-      font-weight:950;
-    }
-    .card h3{
-      margin:42px 0 0;
-      font-size:36px;
-      line-height:1.05;
-      letter-spacing:-.05em;
-      font-weight:950;
-    }
-    .card p{
-      margin:34px 0 0;
-      font-size:19px;
-      line-height:1.75;
-      font-weight:800;
-    }
-    .card small{
-      display:block;
-      margin-top:58px;
-      color:var(--muted);
-      font-size:15px;
-      line-height:1.6;
-    }
-    .archive{
-      display:grid;
-      grid-template-columns:38% 1fr;
-      border-top:1px solid var(--line);
-      border-bottom:1px solid var(--line);
-    }
-    .archive-left{
-      background:var(--lime);
-      border-right:1px solid var(--line);
-      padding:74px 64px;
-    }
-    .archive-left h2{
-      margin:24px 0 0;
-      font-size:clamp(54px,6vw,92px);
-      line-height:.95;
-      letter-spacing:-.08em;
-      font-weight:950;
-    }
-    .archive-left p{
-      margin:34px 0 0;
-      color:var(--muted);
-      font-size:20px;
-      line-height:1.75;
-    }
-    .post{
-      min-height:142px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:28px;
-      padding:34px 48px;
-      background:var(--card);
-      border-bottom:1px solid var(--line);
-      transition:.25s;
-    }
-    .post:hover{background:var(--paper)}
-    .post:last-child{border-bottom:0}
-    .post small{
-      color:var(--olive);
-      font-size:14px;
-      font-weight:950;
-    }
-    .post h3{
-      margin:12px 0 0;
-      font-size:36px;
-      line-height:1.15;
-      letter-spacing:-.04em;
-      font-weight:950;
-    }
-    .dark-cta{
-      position:relative;
-      min-height:680px;
-      overflow:hidden;
-      padding:94px 64px 70px;
-      color:var(--white);
-    }
-    .dark-cta::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:rgba(0,0,0,.36);
-    }
-    .dark-inner{
-      position:relative;
-      z-index:2;
-      min-height:500px;
-      display:grid;
-      grid-template-columns:1fr 390px;
-      gap:48px;
-      align-items:center;
-    }
-    .dark-title{
-      margin:0;
-      max-width:920px;
-      font-size:clamp(58px,7vw,116px);
-      line-height:.98;
-      letter-spacing:-.08em;
-      font-weight:950;
-    }
-    .dark-note{
-      position:relative;
-      z-index:2;
-      margin-top:76px;
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:40px;
-      font-size:15px;
-      line-height:1.65;
-      font-weight:900;
-    }
-    .info{
-      display:grid;
-      grid-template-columns:70px 1fr;
-      gap:14px;
-    }
-    .rules{
-      display:grid;
-      grid-template-columns:40% 1fr;
-      gap:70px;
-    }
-    .rules h2{
-      margin:0;
-      font-size:clamp(54px,6vw,92px);
-      line-height:.95;
-      letter-spacing:-.08em;
-      font-weight:950;
-    }
-    .rule-list{
-      border-top:1px solid var(--line);
-      border-bottom:1px solid var(--line);
-    }
-    .rule{
-      display:grid;
-      grid-template-columns:80px 1fr;
-      gap:24px;
-      padding:34px 0;
-      border-bottom:1px solid var(--line);
-    }
-    .rule:last-child{border-bottom:0}
-    .rule b{
-      color:var(--olive);
-      font-size:22px;
-    }
-    .rule p{
-      margin:0;
-      font-size:34px;
-      line-height:1.22;
-      letter-spacing:-.04em;
-      font-weight:950;
-    }
-    .submit{
-      display:grid;
-      grid-template-columns:1fr 520px;
-      gap:60px;
-      align-items:start;
-      border-top:1px solid var(--line);
-      background:var(--lime);
-    }
-    .submit h2{
-      margin:0;
-      max-width:900px;
-      font-size:clamp(54px,6vw,108px);
-      line-height:.96;
-      letter-spacing:-.08em;
-      font-weight:950;
-    }
-    .submit p{
-      max-width:680px;
-      margin:32px 0 0;
-      color:var(--muted);
-      font-size:20px;
-      line-height:1.75;
-    }
-    .form{
-      border:1px solid var(--line);
-      background:var(--card);
-      padding:32px;
-    }
-    label{
-      display:block;
-      margin:0 0 12px;
-      color:var(--olive);
-      font-size:14px;
-      font-weight:950;
-    }
-    input,textarea{
-      width:100%;
-      border:1px solid var(--line);
-      background:transparent;
-      outline:0;
-      color:var(--ink);
-      font-size:18px;
-      padding:16px;
-      margin-bottom:22px;
-    }
-    input{height:56px}
-    textarea{
-      height:180px;
-      resize:none;
-    }
-    .submit-btn{
-      width:100%;
-      height:56px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      border-radius:999px;
-      background:var(--ink);
-      color:var(--white);
-      padding:0 28px;
-      font-size:15px;
-      font-weight:950;
-      transition:.25s;
-    }
-    .submit-btn:hover{transform:translateX(5px)}
-    .form-tip{
-      margin:20px 0 0!important;
-      font-size:14px!important;
-      line-height:1.6!important;
-    }
-    footer{
-      padding:42px 64px;
-      background:var(--paper);
-    }
-    .footer-inner{
-      border-top:1px solid var(--line);
-      padding-top:32px;
-      display:flex;
-      justify-content:space-between;
-      gap:28px;
-    }
-    footer h3{
-      margin:0;
-      font-size:28px;
-      letter-spacing:-.04em;
-    }
-    footer p{
-      margin:8px 0 0;
-      color:var(--muted);
-      font-size:15px;
-    }
-    .coffee{
-      color:var(--olive);
-      font-weight:950;
-      align-self:center;
-    }
-    @media(max-width:980px){
-      .header{padding:24px}
-      .nav{display:none}
-      .menu{display:block;font-size:24px;font-weight:950}
-      .hero,.hero-inner{min-height:620px}
-      .hero-inner{padding:86px 24px 28px}
-      .hero-title{font-size:72px}
-      .hero-bottom{display:block}
-      .hero-copy{font-size:16px}
-      .pill{margin-top:22px;width:100%}
-      .section{padding:62px 24px}
-      .title{font-size:56px}
-      .desc{font-size:17px}
-      .cards{grid-template-columns:1fr;gap:22px}
-      .card{min-height:0;padding:24px}
-      .card h3{margin-top:24px;font-size:28px}
-      .card p{margin-top:22px;font-size:16px}
-      .card small{margin-top:28px}
-      .archive{grid-template-columns:1fr}
-      .archive-left{border-right:0;border-bottom:1px solid var(--line);padding:56px 24px}
-      .post{padding:28px 24px}
-      .post h3{font-size:26px}
-      .dark-cta{min-height:560px;padding:62px 24px}
-      .dark-inner{display:block;min-height:auto}
-      .dark-title{font-size:48px}
-      .dark-note{grid-template-columns:1fr;margin-top:72px}
-      .rules{grid-template-columns:1fr;gap:34px}
-      .rules h2{font-size:56px}
-      .rule{grid-template-columns:52px 1fr}
-      .rule p{font-size:25px}
-      .submit{grid-template-columns:1fr;padding:62px 24px}
-      .submit h2{font-size:52px}
-      .submit p{font-size:17px}
-      .form{padding:22px}
-      footer{padding:36px 24px}
-      .footer-inner{display:block}
-      .coffee{margin-top:24px}
-    }
-  </style>
+  <title>F.w 研究所｜先发一句牢骚</title>
+  <meta name="description" content="F.w 研究所：上班族匿名精神休息室。" />
+  <link rel="stylesheet" href="assets/styles.css" />
 </head>
 <body>
-  <section class="hero">
-    <div class="grass"></div>
-    <div class="grain"></div>
-    <header class="header">
-      <a class="logo" href="#">F.w 研究所</a>
-      <nav class="nav">
-        <a href="#why">为什么来这里</a>
-        <a href="#archive">废话档案</a>
-        <a href="#rules">研究所规则</a>
-        <a href="#submit">投递</a>
-      </nav>
-      <div class="menu">☰</div>
-    </header>
+
+<main class="page">
+  <section class="hero bg-night">
+    
+<header class="header dark">
+  <a class="logo" href="index.html">F.w 研究所</a>
+  <nav class="nav">
+    <a class="active" href="index.html">首页</a>
+    <a class="" href="square.html">精神广场</a>
+    <a class="" href="rooms.html">摸鱼房间</a>
+    <a class="" href="archive.html">废话档案</a>
+    <a class="" href="rules.html">入馆须知</a>
+  </nav>
+  <button class="menu-btn" aria-label="菜单">☰</button>
+</header>
+<nav class="mobile-nav">
+  <a href="index.html">首页</a>
+  <a href="square.html">精神广场</a>
+  <a href="rooms.html">摸鱼房间</a>
+  <a href="archive.html">废话档案</a>
+  <a href="rules.html">入馆须知</a>
+</nav>
+
     <div class="hero-inner">
-      <h1 class="hero-title">F.w Research<br>Office Pasture</h1>
-      <div class="hero-bottom">
-        <p class="hero-copy">把无效努力、办公室废话、精神离岗，收纳成一座可以公开参观的研究所。</p>
-        <a class="pill" href="#why">进入研究所 →</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="why">
-    <p class="eyebrow">WHY F.W LAB</p>
-    <h2 class="title">为什么来这里</h2>
-    <p class="desc">不是为了提高效率，是为了把低效率过得更有版式感。</p>
-    <div class="cards">
-      <article class="card">
-        <p class="card-no">01</p>
-        <h3>无效努力档案</h3>
-        <p>收纳那些开了会、写了表、发了消息，但事情仍然停在原地的瞬间。</p>
-        <small>适合：会议后遗症 / 工作流迷路</small>
-      </article>
-      <article class="card">
-        <p class="card-no">02</p>
-        <h3>半躺精神牧场</h3>
-        <p>允许人类在清醒与疲惫之间，保持一种体面的低功耗存在。</p>
-        <small>适合：摸鱼 / 放空 / 心理离线</small>
-      </article>
-      <article class="card">
-        <p class="card-no">03</p>
-        <h3>废话展览入口</h3>
-        <p>把看似很有道理、其实毫无帮助的话，做成可以反复浏览的展品。</p>
-        <small>适合：办公室文学 / 荒诞语录</small>
-      </article>
-    </div>
-  </section>
-
-  <section class="archive" id="archive">
-    <div class="archive-left">
-      <div style="font-size:38px;">☷</div>
-      <h2>今日废话档案</h2>
-      <p>每一句都像有用，但不会真正改变你的工作流。它们只负责陪你把今天过完。</p>
-    </div>
-    <div>
-      <article class="post">
-        <div><small>ARCHIVE 001</small><h3>你已经完成了尚未开始的任务。</h3></div>
-        <span>→</span>
-      </article>
-      <article class="post">
-        <div><small>ARCHIVE 002</small><h3>工作不是没有进展，只是进展到了看不见的地方。</h3></div>
-        <span>→</span>
-      </article>
-      <article class="post">
-        <div><small>ARCHIVE 003</small><h3>会议的意义，是让问题拥有更正式的名字。</h3></div>
-        <span>→</span>
-      </article>
-      <article class="post">
-        <div><small>ARCHIVE 004</small><h3>今天也没有什么用，但存在得很有版式感。</h3></div>
-        <span>→</span>
-      </article>
-    </div>
-  </section>
-
-  <section class="dark-cta">
-    <div class="grass dark"></div>
-    <div class="grain"></div>
-    <div class="dark-inner">
       <div>
-        <p class="eyebrow" style="color:rgba(247,247,241,.72);">LOW POWER MODE</p>
-        <h2 class="dark-title">今日起，把你的<br>精神离岗<br>正式归档</h2>
+        <p class="kicker">上班族匿名精神休息室</p>
+        <h1 class="hero-title">先发一句牢骚。</h1>
+        <p class="hero-copy">不用想清楚，也不用说得有道理。把今天那点无效、疲惫、想骂但不能骂的话，先放这里。</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#post">匿名发布 →</a>
+          <a class="btn light" href="#live">随便看看 →</a>
+        </div>
       </div>
-      <div>
-        <a class="pill" href="#submit">投递一条废话 →</a>
-      </div>
-    </div>
-    <div class="dark-note">
-      <div class="info"><b>地址</b><span>工位、会议室、茶水间<br>以及所有精神出走现场</span></div>
-      <div class="info"><b>SNS</b><span>Moyugram<br>Fakebook<br>TikTalk</span></div>
-      <div class="info"><b>邮件</b><span>hello@fw-lab.local</span></div>
+      <div id="post">
+<form class="quick-form" data-post-form>
+  <h2 class="form-title">先发一句牢骚</h2>
+  <label class="form-label">今天的精神状态</label>
+  <div class="chips">
+    <button type="button" class="chip active" data-status="已疲惫">已疲惫</button>
+    <button type="button" class="chip" data-status="正在摸鱼">正在摸鱼</button>
+    <button type="button" class="chip" data-status="精神离岗">精神离岗</button>
+    <button type="button" class="chip" data-status="今日无效">今日无效</button>
+    <button type="button" class="chip" data-status="想发疯">想发疯</button>
+  </div>
+  <label class="form-label">今天想说点什么？</label>
+  <textarea placeholder="例如：今天开了三个会，最后决定下次再讨论。"></textarea>
+  <button class="btn dark full" type="submit" style="margin-top:18px">匿名发布 →</button>
+  <p class="form-tip" data-notice></p>
+  <p class="form-tip">静态版会先保存在当前浏览器里。后续接入数据库后，才会变成真正多人实时共享。</p>
+</form>
+</div>
     </div>
   </section>
 
-  <section class="section" id="rules">
-    <div class="rules">
-      <div>
-        <div style="font-size:42px;color:var(--olive);">☘</div>
-        <h2>研究所规则</h2>
-      </div>
-      <div class="rule-list">
-        <div class="rule"><b>01</b><p>可以认真发疯，但页面保持体面。</p></div>
-        <div class="rule"><b>02</b><p>可以摸鱼，但请把鱼放回精神池塘。</p></div>
-        <div class="rule"><b>03</b><p>这里不解决问题，只负责把问题摆得更有仪式感。</p></div>
-        <div class="rule"><b>04</b><p>禁止把低功耗状态误判为失败。</p></div>
-      </div>
+  <section class="section bg-night">
+    <h2 class="section-title">其他入口</h2>
+    <div class="entry-grid">
+      <a class="entry-card" href="square.html"><h3>看别人崩溃</h3><p>精神广场 →</p></a>
+      <a class="entry-card" href="rooms.html"><h3>进入摸鱼房</h3><p>摸鱼房间 →</p></a>
+      <a class="entry-card" href="archive.html"><h3>翻废话档案</h3><p>废话档案 →</p></a>
+      <a class="entry-card" href="rules.html"><h3>看看规矩</h3><p>入馆须知 →</p></a>
     </div>
   </section>
 
-  <section class="section submit" id="submit">
-    <div>
-      <div style="font-size:42px;color:var(--olive);">✉</div>
-      <h2>把今天的无效瞬间，投递给研究所。</h2>
-      <p>第一版可以先做轻量投稿，不做复杂登录。你写一句废话、一段摸鱼记录，或者一份精神离岗申请，都可以成为临时展品。</p>
+  <section class="section bg-night" id="live">
+    <div class="live-head">
+      <h2 class="section-title">刚刚有人说</h2>
+      <small>实时牢骚流 / 最新发布</small>
     </div>
-    <div class="form">
-      <label>你的今日状态</label>
-      <input placeholder="例如：已疲惫，未报废" />
-      <label>投递内容</label>
-      <textarea placeholder="写下你今天遇到的无效努力、办公室废话或精神离岗申请。"></textarea>
-      <button class="submit-btn">临时投递 <span>↴</span></button>
-      <p class="form-tip">当前为视觉页面示意，正式上线后可接入真实投稿数据库。</p>
-    </div>
+    <div class="feed-grid" data-feed data-limit="4"></div>
   </section>
 
-  <footer>
-    <div class="footer-inner">
-      <div>
-        <h3>F.w 研究所</h3>
-        <p>一个给上班族临时放下自己的地方。</p>
-      </div>
-      <div class="coffee">☕ 保持低功耗，也保持体面。</div>
-    </div>
+  <footer class="footer">
+    <span>F.w 研究所</span>
+    <span>来这里，不一定要变好，只要先放一下。</span>
   </footer>
+</main>
+
+<script src="assets/app.js"></script>
 </body>
 </html>
