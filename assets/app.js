@@ -1,4 +1,4 @@
-
+window.FW_USE_SUPABASE_AUTH = true;
 const STORE_KEY = "fw_lab_posts_v1";
 
 const defaultPosts = [
@@ -8,6 +8,7 @@ const defaultPosts = [
   {id:4,status:"想发牢骚",content:"每次说同步一下，我都感觉我们只是把混乱换了个更正式的名字。",time:"43分钟前",resonance:77,same:35,tissue:16,comments:[]}
 ];
 
+function usingSupabase(){ return Boolean(window.fwDb && window.fwDb.enabled); }
 function getPosts(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
@@ -20,19 +21,17 @@ function getPosts(){
     return [...defaultPosts];
   }
 }
-function savePosts(posts){
-  localStorage.setItem(STORE_KEY, JSON.stringify(posts));
-}
+function savePosts(posts){ localStorage.setItem(STORE_KEY, JSON.stringify(posts)); }
 function nowText(){ return "刚刚"; }
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+}
 
 function renderPost(post){
   const comments = (post.comments || []).map(c=>`<li>${escapeHtml(c)}</li>`).join("");
   return `
     <article class="post-card" data-id="${post.id}" data-status="${escapeHtml(post.status)}">
-      <div class="post-top">
-        <span class="status">${escapeHtml(post.status)}</span>
-        <span class="time">${escapeHtml(post.time || "刚刚")}</span>
-      </div>
+      <div class="post-top"><span class="status">${escapeHtml(post.status)}</span><span class="time">${escapeHtml(post.time || "刚刚")}</span></div>
       <p class="post-content">${escapeHtml(post.content)}</p>
       <div class="interactions">
         <button data-action="resonance">共鸣 ${post.resonance || 0}</button>
@@ -45,14 +44,9 @@ function renderPost(post){
         <input placeholder="留一句回声，不必很有道理" />
         <button class="btn dark full" data-action="comment-submit" style="margin-top:10px">发送回声</button>
       </div>
-    </article>
-  `;
+    </article>`;
 }
-function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, s => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[s]));
-}
+
 function renderFeeds(){
   const containers = document.querySelectorAll("[data-feed]");
   if(!containers.length) return;
@@ -64,13 +58,12 @@ function renderFeeds(){
     if(container.dataset.filterable === "true" && active !== "全部"){
       list = list.filter(p => p.status === active || p.content.includes(active));
     }
-    if(!list.length){
-      container.innerHTML = `<div class="empty">暂时没有这个状态的牢骚。可以先投递一条。</div>`;
-    }else{
-      container.innerHTML = list.slice(0, limit).map(renderPost).join("");
-    }
+    container.innerHTML = !list.length
+      ? `<div class="empty">暂时没有这个状态的牢骚。可以先投递一条。</div>`
+      : list.slice(0, limit).map(renderPost).join("");
   });
 }
+
 function initPostForm(){
   const forms = document.querySelectorAll("[data-post-form]");
   forms.forEach(form=>{
@@ -84,37 +77,25 @@ function initPostForm(){
       });
     });
     form.addEventListener("submit", e=>{
+      if(usingSupabase()) return;
       e.preventDefault();
       const textarea = form.querySelector("textarea");
       const content = textarea.value.trim();
-      if(!content){
-        textarea.focus();
-        return;
-      }
+      if(!content){ textarea.focus(); return; }
       const posts = getPosts();
-      posts.unshift({
-        id:Date.now(),
-        status:selected,
-        content,
-        time:nowText(),
-        resonance:0,
-        same:0,
-        tissue:0,
-        comments:[]
-      });
+      posts.unshift({ id:Date.now(), status:selected, content, time:nowText(), resonance:0, same:0, tissue:0, comments:[] });
       savePosts(posts);
       textarea.value = "";
       renderFeeds();
       const notice = form.querySelector("[data-notice]");
-      if(notice){
-        notice.textContent = "已匿名投递。它现在被研究所收纳了。";
-        setTimeout(()=>notice.textContent="",2600);
-      }
+      if(notice){ notice.textContent = "已匿名投递。它现在被研究所收纳了。"; setTimeout(()=>notice.textContent="",2600); }
     });
   });
 }
+
 function initInteractions(){
   document.body.addEventListener("click", e=>{
+    if(usingSupabase()) return;
     const btn = e.target.closest("button[data-action]");
     if(!btn) return;
     const card = btn.closest(".post-card");
@@ -134,21 +115,16 @@ function initInteractions(){
     if(action === "comment-submit"){
       const input = card.querySelector(".comment-box input");
       const val = input.value.trim();
-      if(val){
-        post.comments = post.comments || [];
-        post.comments.push(val);
-        input.value = "";
-      }
+      if(val){ post.comments = post.comments || []; post.comments.push(val); input.value = ""; }
     }
     savePosts(posts);
     renderFeeds();
   });
 }
 function initFilters(){
-  const filters = document.querySelectorAll(".chip.filter");
-  filters.forEach(ch=>{
+  document.querySelectorAll(".chip.filter").forEach(ch=>{
     ch.addEventListener("click", ()=>{
-      filters.forEach(x=>x.classList.remove("active"));
+      document.querySelectorAll(".chip.filter").forEach(x=>x.classList.remove("active"));
       ch.classList.add("active");
       renderFeeds();
     });
@@ -157,9 +133,7 @@ function initFilters(){
 function initMenu(){
   const btn = document.querySelector(".menu-btn");
   const nav = document.querySelector(".mobile-nav");
-  if(btn && nav){
-    btn.addEventListener("click", ()=>nav.classList.toggle("show"));
-  }
+  if(btn && nav) btn.addEventListener("click", ()=>nav.classList.toggle("show"));
 }
 document.addEventListener("DOMContentLoaded", ()=>{
   initMenu();
@@ -170,12 +144,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
 });
 
 (function loadSupabaseBridge(){
-  const scripts = [
-    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
-    "assets/supabase-config.js",
-    "assets/supabase-db.js",
-    "assets/supabase-live.js"
-  ];
+  const scripts = ["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", "assets/supabase-config.js", "assets/supabase-db.js", "assets/supabase-live.js"];
   function loadNext(i){
     if(i >= scripts.length) return;
     const s = document.createElement("script");
