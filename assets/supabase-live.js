@@ -47,7 +47,7 @@
     const modal = document.createElement('div');
     modal.className = 'fw-auth sb-auth';
     modal.dataset.sbAuth = '1';
-    modal.innerHTML = `<div class="fw-auth-panel"><button class="fw-close" data-sb-close type="button">×</button><p class="fw-kicker">SUPABASE ACCOUNT</p><h2>研究员账号</h2><p class="fw-muted">一个邮箱对应一个账号；登录后可以设置昵称和头像。</p><form data-sb-login class="fw-form show"><label>邮箱</label><input name="email" type="email" placeholder="your@email.com" /><label>密码</label><input name="password" type="password" placeholder="至少 6 位" /><label>昵称 / 注册时使用</label><input name="nickname" maxlength="24" placeholder="例如：低功耗研究员" /><button class="btn dark full" type="submit">注册 / 登录</button><p class="form-tip">如果开启邮箱确认，第一次注册后需要先去邮箱点击确认链接。</p></form><form data-sb-profile class="fw-form show" style="margin-top:20px;border-top:1px solid var(--line-soft);padding-top:18px"><div class="fw-profile-preview" data-sb-preview></div><label>昵称</label><input name="nickname" maxlength="24" placeholder="给自己起个不用解释的名字" /><label>头像</label><input name="avatar" type="file" accept="image/*" /><button class="btn dark full" type="submit">保存昵称 / 头像</button><button class="btn full" data-sb-logout type="button" style="margin-top:10px">退出登录</button></form></div>`;
+    modal.innerHTML = `<div class="fw-auth-panel"><button class="fw-close" data-sb-close type="button">×</button><p class="fw-kicker">EMAIL OTP ACCESS</p><h2>研究员账号</h2><p class="fw-muted">一个邮箱对应一个账号。先获取验证码，再填入验证码登录/注册。</p><form data-sb-send-otp class="fw-form show"><label>邮箱</label><input name="email" type="email" placeholder="your@email.com" /><label>昵称 / 首次注册时使用</label><input name="nickname" maxlength="24" placeholder="例如：低功耗研究员" /><button class="btn dark full" type="submit">发送邮箱验证码</button><p class="form-tip">验证码通常 6 位。发送后如需重发，请等待约 60 秒，避免触发频率限制。</p></form><form data-sb-verify-otp class="fw-form show" style="margin-top:20px;border-top:1px solid var(--line-soft);padding-top:18px"><label>邮箱</label><input name="email" type="email" placeholder="和上面一致" /><label>验证码</label><input name="token" inputmode="numeric" autocomplete="one-time-code" placeholder="填写邮件里的 6 位验证码" /><label>昵称 / 可选</label><input name="nickname" maxlength="24" placeholder="登录后也可以修改" /><button class="btn dark full" type="submit">验证并进入研究所</button></form><form data-sb-profile class="fw-form show" style="margin-top:20px;border-top:1px solid var(--line-soft);padding-top:18px"><div class="fw-profile-preview" data-sb-preview></div><label>昵称</label><input name="nickname" maxlength="24" placeholder="给自己起个不用解释的名字" /><label>头像</label><input name="avatar" type="file" accept="image/*" /><button class="btn dark full" type="submit">保存昵称 / 头像</button><button class="btn full" data-sb-logout type="button" style="margin-top:10px">退出登录</button></form></div>`;
     document.body.appendChild(modal);
   }
 
@@ -55,27 +55,47 @@
     ensureModal();
     const box = $('[data-sb-preview]');
     const nick = $('[data-sb-profile] input[name="nickname"]');
-    if(box) box.innerHTML = me ? `${avatar(me.nickname, me.avatar_url)}<div><b>${esc(me.nickname)}</b><span>数据库账号</span></div>` : '<p class="fw-muted">请先注册或登录账号。</p>';
+    if(box) box.innerHTML = me ? `${avatar(me.nickname, me.avatar_url)}<div><b>${esc(me.nickname)}</b><span>数据库账号</span></div>` : '<p class="fw-muted">登录后可以在这里修改昵称和头像。</p>';
     if(nick) nick.value = me?.nickname || '';
+    const email = $('[data-sb-send-otp] input[name="email"]')?.value || '';
+    const verifyEmail = $('[data-sb-verify-otp] input[name="email"]');
+    if(email && verifyEmail && !verifyEmail.value) verifyEmail.value = email;
   }
   function openModal(){ fillModal(); $('[data-sb-auth]')?.classList.add('show'); }
   function closeModal(){ $('[data-sb-auth]')?.classList.remove('show'); }
   function requireLogin(){ if(me && !me.disabled) return true; openModal(); toast('先登录研究员账号。'); return false; }
 
-  async function handleLogin(form){
+  async function handleSendOtp(form){
     const data = new FormData(form);
     const email = String(data.get('email') || '').trim();
-    const password = String(data.get('password') || '').trim();
     const nickname = String(data.get('nickname') || '').trim();
     if(!email.includes('@')) return toast('请填写邮箱。');
-    if(password.length < 6) return toast('密码至少 6 位。');
     try{
-      const res = await db().signInOrSignUp({ email, password, nickname });
+      await db().sendEmailOtp({ email, nickname });
+      const verifyEmail = $('[data-sb-verify-otp] input[name="email"]');
+      const verifyNick = $('[data-sb-verify-otp] input[name="nickname"]');
+      if(verifyEmail) verifyEmail.value = email;
+      if(verifyNick && nickname) verifyNick.value = nickname;
+      toast('验证码已发送，请查看邮箱。');
+    }catch(err){
+      const msg = String(err.message || '验证码发送失败。');
+      toast(msg.includes('rate') || msg.includes('Too Many') ? '发送太频繁，请等一会儿再试。' : msg);
+    }
+  }
+
+  async function handleVerifyOtp(form){
+    const data = new FormData(form);
+    const email = String(data.get('email') || '').trim();
+    const token = String(data.get('token') || '').trim();
+    const nickname = String(data.get('nickname') || '').trim();
+    if(!email.includes('@')) return toast('请填写邮箱。');
+    if(token.length < 6) return toast('请填写邮件里的 6 位验证码。');
+    try{
+      const res = await db().verifyEmailOtp({ email, token, nickname });
       me = res.user || await db().getCurrentUser().catch(() => null);
-      await refreshUser(); await refreshPosts(); fillModal();
-      if(res.needsConfirmation) toast('注册邮件已发送，请先去邮箱确认。');
-      else { closeModal(); toast('欢迎，' + (me?.nickname || '研究员')); }
-    }catch(err){ toast(err.message || '登录失败。'); }
+      await refreshUser(); await refreshPosts(); fillModal(); closeModal();
+      toast('欢迎，' + (me?.nickname || '研究员'));
+    }catch(err){ toast(err.message || '验证码验证失败。'); }
   }
 
   async function handleProfile(form){
@@ -120,7 +140,7 @@
   async function renderAdmin(){
     const panel = $('[data-admin-panel]');
     if(!panel || !on()) return;
-    if(!me?.isAdmin){ panel.innerHTML = `<article class="fw-admin-card"><p class="fw-kicker">ADMIN ACCESS</p><h2>站长管理入口</h2><p>请先用管理员邮箱登录。登录后可删除帖子、删除评论、停用或恢复用户。</p><button class="btn dark" data-sb-open type="button">登录管理员账号 →</button></article>`; return; }
+    if(!me?.isAdmin){ panel.innerHTML = `<article class="fw-admin-card"><p class="fw-kicker">ADMIN ACCESS</p><h2>站长管理入口</h2><p>请先用管理员邮箱验证码登录。登录后可删除帖子、删除评论、停用或恢复用户。</p><button class="btn dark" data-sb-open type="button">登录管理员账号 →</button></article>`; return; }
     try{
       const users = await db().listUsers();
       const posts = typeof getPosts === 'function' ? getPosts() : [];
@@ -144,9 +164,10 @@
   document.addEventListener('submit', function(e){
     if(!on()) return;
     const postForm = e.target.closest('[data-post-form]');
-    const loginForm = e.target.closest('[data-sb-login]');
+    const sendOtpForm = e.target.closest('[data-sb-send-otp]');
+    const verifyOtpForm = e.target.closest('[data-sb-verify-otp]');
     const profileForm = e.target.closest('[data-sb-profile]');
-    if(postForm || loginForm || profileForm){ e.preventDefault(); e.stopImmediatePropagation(); if(postForm) handlePost(postForm); if(loginForm) handleLogin(loginForm); if(profileForm) handleProfile(profileForm); }
+    if(postForm || sendOtpForm || verifyOtpForm || profileForm){ e.preventDefault(); e.stopImmediatePropagation(); if(postForm) handlePost(postForm); if(sendOtpForm) handleSendOtp(sendOtpForm); if(verifyOtpForm) handleVerifyOtp(verifyOtpForm); if(profileForm) handleProfile(profileForm); }
   }, true);
 
   document.addEventListener('click', function(e){
