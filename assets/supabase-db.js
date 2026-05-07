@@ -6,6 +6,10 @@
   }) : null;
 
   const enabled = Boolean(client);
+  const getRedirectUrl = () => {
+    const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+    return base || 'https://sanpen711.github.io/fw-lab/';
+  };
   const fail = (res, label) => {
     if(res && res.error) throw new Error((label || '操作失败') + '：' + res.error.message);
     return res ? res.data : null;
@@ -52,7 +56,14 @@
       if(nickname) await updateProfile({ nickname });
       return { user: await getCurrentUser(), needsConfirmation: false };
     }
-    const signup = await client.auth.signUp({ email, password, options: { data: { nickname: nickname || '临时研究员' } } });
+    const signup = await client.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { nickname: nickname || '临时研究员' },
+        emailRedirectTo: getRedirectUrl()
+      }
+    });
     if(signup.error) throw new Error(signup.error.message);
     const current = await getCurrentUser().catch(() => null);
     return { user: current, needsConfirmation: !current };
