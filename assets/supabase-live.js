@@ -2,6 +2,7 @@
   const db = () => window.fwDb;
   const on = () => Boolean(db()?.enabled);
   let me = null;
+  let booted = false;
 
   const $ = s => document.querySelector(s);
   const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -166,9 +167,11 @@
   }, true);
 
   async function boot(){
-    if(!on()) return;
+    if(booted || !on()) return;
+    booted = true;
     ensureModal();
     setTimeout(async () => { await refreshUser(); overrideRender(); await refreshPosts(); await renderAdmin(); db().onAuthChange(async () => { await refreshUser(); overrideRender(); await refreshPosts(); await renderAdmin(); }); }, 0);
   }
-  document.addEventListener('DOMContentLoaded', boot);
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
