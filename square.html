@@ -6,6 +6,7 @@
   <title>精神广场｜F.w 研究所</title>
   <meta name="description" content="F.w 研究所：上班族匿名精神休息室。" />
   <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/auth.css" />
 </head>
 <body>
 
@@ -29,17 +30,18 @@
   <a href="rooms.html">摸鱼房间</a>
   <a href="archive.html">废话档案</a>
   <a href="rules.html">入馆须知</a>
+  <a href="admin.html">管理入口</a>
 </nav>
 
     <div class="hero-inner" style="display:block;min-height:auto;padding-top:36px">
       <h1 class="hero-title">精神广场</h1>
-      <p class="hero-copy">这里不是严肃论坛，只是大家把今天放下来的地方。可以看最新，也可以看最热。</p>
+      <p class="hero-copy">这里不是严肃论坛，只是大家把今天放下来的地方。登录后可以点赞、评论、俺也一样、递纸巾。</p>
     </div>
   </section>
   <section class="filter-bar">
     <div class="chips">
       <button class="chip filter active" data-filter="全部">全部</button>
-      <button class="chip filter" data-filter="无效努力">无效努力</button>
+      <button class="chip filter" data-filter="今日无效">无效努力</button>
       <button class="chip filter" data-filter="办公室废话">办公室废话</button>
       <button class="chip filter" data-filter="精神离岗">精神离岗</button>
       <button class="chip filter" data-filter="摸鱼现场">摸鱼现场</button>
@@ -53,16 +55,16 @@
       <div class="side-card">
         <h3>今日热门状态</h3>
         <ul>
-          <li>已疲惫 38%</li>
-          <li>精神离岗 24%</li>
-          <li>今日无效 18%</li>
-          <li>正在摸鱼 12%</li>
-          <li>想发疯 8%</li>
+          <li>已疲惫：适合只想躺平的人</li>
+          <li>精神离岗：身体在场，意识请假</li>
+          <li>今日无效：努力了，但先别问结果</li>
+          <li>摸鱼现场：低风险精神散热</li>
+          <li>今日崩溃：轻微折叠，仍可复原</li>
         </ul>
       </div>
       <div class="side-card light">
-        <h3>广场提示</h3>
-        <p>主页只显示最新几条。这里可以做完整信息流，支持筛选、排序、搜索和评论。</p>
+        <h3>互动规则</h3>
+        <p>每个登录账号对同一条内容只能点赞一次、“俺也一样”一次、“递纸巾”一次。评论不限量，但站长可以删除不合适评论。</p>
       </div>
     </aside>
   </section>
@@ -70,5 +72,6 @@
 </main>
 
 <script src="assets/app.js"></script>
+<script src="assets/auth.js"></script>
 </body>
 </html>
