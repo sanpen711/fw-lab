@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>站长管理｜F.w 研究所</title>
+  <meta name="description" content="F.w 研究所站长管理入口。" />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/auth.css" />
+</head>
+<body>
+
+<main class="page bg-gradient-clean">
+  <section class="page-hero bg-night">
+    <header class="header dark">
+      <a class="logo" href="index.html">F.w 研究所</a>
+      <nav class="nav">
+        <a class="" href="index.html">首页</a>
+        <a class="" href="square.html">精神广场</a>
+        <a class="" href="rooms.html">摸鱼房间</a>
+        <a class="" href="archive.html">废话档案</a>
+        <a class="" href="rules.html">入馆须知</a>
+      </nav>
+      <button class="menu-btn" aria-label="菜单">☰</button>
+    </header>
+    <nav class="mobile-nav">
+      <a href="index.html">首页</a>
+      <a href="square.html">精神广场</a>
+      <a href="rooms.html">摸鱼房间</a>
+      <a href="archive.html">废话档案</a>
+      <a href="rules.html">入馆须知</a>
+      <a href="admin.html">管理入口</a>
+    </nav>
+
+    <div class="hero-inner" style="display:block;min-height:auto;padding-top:36px">
+      <p class="kicker">ADMIN / ARCHIVE CONTROL</p>
+      <h1 class="hero-title">站长管理</h1>
+      <p class="hero-copy">这里用来整理帖子、删除不合适评论、停用演示账号。当前是静态站演示版，数据只保存在当前浏览器。</p>
+    </div>
+  </section>
+
+  <section class="fw-admin-shell" data-admin-panel></section>
+
+  <section class="manifesto">
+    <small>上线说明</small>
+    <h2>当前版本适合先体验流程；真实多人版需要后端。</h2>
+    <p class="section-desc">手机号短信验证码、微信授权登录、全站唯一点赞、账号注销和全站内容审核，都需要接入数据库、登录鉴权和管理后台。现在这个页面先把流程和界面做出来，方便确认方向。</p>
+  </section>
+
+  <footer class="footer">
+    <span>F.w 研究所</span>
+    <span>站长管理 / Admin Room</span>
+  </footer>
+</main>
+
+<script src="assets/app.js"></script>
+<script src="assets/auth.js"></script>
+</body>
+</html>
