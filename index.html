@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>F.w 研究所｜先发一句牢骚</title>
-  <meta name="description" content="F.w 研究所：上班族匿名精神休息室。" />
+  <title>F.w 研究所｜上班族匿名精神休息室</title>
+  <meta name="description" content="F.w 研究所：一个允许你低功耗运行的匿名精神休息室。" />
   <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/auth.css" />
 </head>
 <body>
 
@@ -29,15 +30,17 @@
   <a href="rooms.html">摸鱼房间</a>
   <a href="archive.html">废话档案</a>
   <a href="rules.html">入馆须知</a>
+  <a href="admin.html">管理入口</a>
 </nav>
 
     <div class="hero-inner">
       <div>
-        <p class="kicker">上班族匿名精神休息室</p>
-        <h1 class="hero-title">先发一句牢骚。</h1>
-        <p class="hero-copy">不用想清楚，也不用说得有道理。把今天那点无效、疲惫、想骂但不能骂的话，先放这里。</p>
+        <p class="kicker">FW LAB / LOW POWER MODE</p>
+        <h1 class="hero-title">F.w 研究所</h1>
+        <p class="hero-copy">一个允许你低功耗运行的匿名精神休息室。可以发牢骚，可以摸鱼，也可以只是把今天暂时放在这里。</p>
         <div class="hero-actions">
-          <a class="btn primary" href="#post">匿名发布 →</a>
+          <button class="btn primary" data-login-cta type="button">加入研究所 →</button>
+          <a class="btn light" href="#post">先发一句牢骚 →</a>
           <a class="btn light" href="#live">随便看看 →</a>
         </div>
       </div>
@@ -47,23 +50,23 @@
   <label class="form-label">今天的精神状态</label>
   <div class="chips">
     <button type="button" class="chip active" data-status="已疲惫">已疲惫</button>
-    <button type="button" class="chip" data-status="正在摸鱼">正在摸鱼</button>
+    <button type="button" class="chip" data-status="摸鱼现场">正在摸鱼</button>
     <button type="button" class="chip" data-status="精神离岗">精神离岗</button>
     <button type="button" class="chip" data-status="今日无效">今日无效</button>
-    <button type="button" class="chip" data-status="想发疯">想发疯</button>
+    <button type="button" class="chip" data-status="今日崩溃">想发疯</button>
   </div>
   <label class="form-label">今天想说点什么？</label>
   <textarea placeholder="例如：今天开了三个会，最后决定下次再讨论。"></textarea>
   <button class="btn dark full" type="submit" style="margin-top:18px">匿名发布 →</button>
   <p class="form-tip" data-notice></p>
-  <p class="form-tip">静态版会先保存在当前浏览器里。后续接入数据库后，才会变成真正多人实时共享。</p>
+  <p class="form-tip">需要先登录/注册；站内只展示匿名研究员编号。当前先保存在你的浏览器里。</p>
 </form>
 </div>
     </div>
   </section>
 
   <section class="section bg-night">
-    <h2 class="section-title">其他入口</h2>
+    <h2 class="section-title" style="color:var(--white)">其他入口</h2>
     <div class="entry-grid">
       <a class="entry-card" href="square.html"><h3>看别人崩溃</h3><p>精神广场 →</p></a>
       <a class="entry-card" href="rooms.html"><h3>进入摸鱼房</h3><p>摸鱼房间 →</p></a>
@@ -74,7 +77,7 @@
 
   <section class="section bg-night" id="live">
     <div class="live-head">
-      <h2 class="section-title">刚刚有人说</h2>
+      <h2 class="section-title" style="color:var(--white)">刚刚有人说</h2>
       <small>实时牢骚流 / 最新发布</small>
     </div>
     <div class="feed-grid" data-feed data-limit="4"></div>
@@ -87,5 +90,6 @@
 </main>
 
 <script src="assets/app.js"></script>
+<script src="assets/auth.js"></script>
 </body>
 </html>
