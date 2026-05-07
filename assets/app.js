@@ -168,3 +168,22 @@ document.addEventListener("DOMContentLoaded", ()=>{
   initInteractions();
   renderFeeds();
 });
+
+(function loadSupabaseBridge(){
+  const scripts = [
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+    "assets/supabase-config.js",
+    "assets/supabase-db.js",
+    "assets/supabase-live.js"
+  ];
+  function loadNext(i){
+    if(i >= scripts.length) return;
+    const s = document.createElement("script");
+    s.src = scripts[i];
+    s.defer = false;
+    s.onload = () => loadNext(i + 1);
+    s.onerror = () => console.warn("Supabase bridge failed to load:", scripts[i]);
+    document.head.appendChild(s);
+  }
+  loadNext(0);
+})();
