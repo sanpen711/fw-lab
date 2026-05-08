@@ -11,96 +11,55 @@
     .room-card{cursor:pointer;text-align:left}
     .room-card:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
     .room-online{display:inline-block;margin-top:16px;color:#f0f0e8;font-weight:950;letter-spacing:.02em}
-    .fw-room-modal{
-      position:fixed;inset:0;z-index:9998;display:none;align-items:center;justify-content:center;
-      padding:22px;background:rgba(5,7,5,.72);backdrop-filter:blur(8px)
-    }
+    .fw-room-modal{position:fixed;inset:0;z-index:9998;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(5,7,5,.72);backdrop-filter:blur(8px)}
     .fw-room-modal.show{display:flex}
-    .fw-chat-window{
-      width:min(920px,96vw);height:min(720px,88vh);display:grid;grid-template-columns:260px 1fr;
-      overflow:hidden;background:#f5f1e8;color:#171715;border:1px solid rgba(217,121,121,.55);
-      box-shadow:0 28px 90px rgba(0,0,0,.38)
-    }
-    .fw-chat-sidebar{
-      background:#20241f;color:#f6f1e8;border-right:1px solid rgba(255,255,255,.08);
-      padding:22px;overflow:auto
-    }
-    .fw-chat-sidebar small{
-      display:block;margin-bottom:8px;color:#d97979;font-weight:950;letter-spacing:.14em;text-transform:uppercase
-    }
+    .fw-chat-window{width:min(940px,96vw);height:min(740px,90vh);display:grid;grid-template-columns:260px 1fr;overflow:hidden;background:#f5f1e8;color:#171715;border:1px solid rgba(217,121,121,.55);box-shadow:0 28px 90px rgba(0,0,0,.38)}
+    .fw-chat-sidebar{background:#20241f;color:#f6f1e8;border-right:1px solid rgba(255,255,255,.08);padding:22px;overflow:auto}
+    .fw-chat-sidebar small{display:block;margin-bottom:8px;color:#d97979;font-weight:950;letter-spacing:.14em;text-transform:uppercase}
     .fw-chat-sidebar h3{margin:0 0 8px;font-size:26px;letter-spacing:-.05em}
     .fw-chat-sidebar p{margin:0 0 18px;color:rgba(246,241,232,.72);line-height:1.6;font-weight:760;font-size:13px}
     .fw-online-title{margin:20px 0 10px;color:rgba(246,241,232,.76);font-weight:950;font-size:13px}
     .fw-online-list{display:grid;gap:10px}
-    .fw-online-user{
-      display:flex;align-items:center;gap:10px;min-width:0;padding:8px;
-      border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04)
-    }
+    .fw-online-user{display:flex;align-items:center;gap:10px;min-width:0;padding:8px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04)}
     .fw-online-user span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:850;font-size:13px}
-    .fw-chat-main{display:grid;grid-template-rows:auto 1fr auto;min-width:0;background:linear-gradient(180deg,#f8f4ec,#eee7db)}
-    .fw-chat-head{
-      display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 22px;
-      border-bottom:1px solid rgba(28,28,24,.12);background:rgba(255,255,255,.45)
-    }
+    .fw-chat-main{display:grid;grid-template-rows:auto 1fr auto auto;min-width:0;background:linear-gradient(180deg,#f8f4ec,#eee7db)}
+    .fw-chat-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 22px;border-bottom:1px solid rgba(28,28,24,.12);background:rgba(255,255,255,.45)}
     .fw-chat-head strong{display:block;font-size:20px;letter-spacing:-.04em}
     .fw-chat-head span{display:block;margin-top:4px;color:#696256;font-weight:800;font-size:13px}
-    .fw-chat-close{
-      width:38px;height:38px;border-radius:999px;border:1px solid rgba(28,28,24,.18);
-      background:transparent;font-size:22px;cursor:pointer
-    }
-    .fw-chat-body{
-      padding:24px;overflow:auto;display:flex;flex-direction:column;gap:16px;
-      background:linear-gradient(rgba(28,28,24,.035) 1px, transparent 1px),
-                 linear-gradient(90deg, rgba(28,28,24,.035) 1px, transparent 1px);
-      background-size:28px 28px
-    }
-    .fw-msg{display:flex;gap:10px;align-items:flex-start;max-width:78%}
+    .fw-chat-close{width:38px;height:38px;border-radius:999px;border:1px solid rgba(28,28,24,.18);background:transparent;font-size:22px;cursor:pointer}
+    .fw-chat-body{padding:24px;overflow:auto;display:flex;flex-direction:column;gap:18px;background:linear-gradient(rgba(28,28,24,.035) 1px, transparent 1px),linear-gradient(90deg, rgba(28,28,24,.035) 1px, transparent 1px);background-size:28px 28px}
+    .fw-msg{position:relative;display:flex;gap:10px;align-items:flex-start;max-width:82%}
     .fw-msg.me{align-self:flex-end;flex-direction:row-reverse}
     .fw-msg-stack{display:grid;gap:5px;min-width:0}
     .fw-msg-name{color:#9d4a4a;font-size:12px;font-weight:950;line-height:1;padding-left:4px}
     .fw-msg.me .fw-msg-name{text-align:right;padding-left:0;padding-right:4px;color:#9d4a4a}
-    .fw-bubble{
-      padding:12px 14px;border-radius:16px;border:1px solid rgba(28,28,24,.1);
-      background:#fffaf0;box-shadow:0 8px 20px rgba(0,0,0,.05)
-    }
+    .fw-bubble{padding:12px 14px;border-radius:16px;border:1px solid rgba(28,28,24,.1);background:#fffaf0;box-shadow:0 8px 20px rgba(0,0,0,.05)}
     .fw-msg.me .fw-bubble{background:#d97979;color:#fff;border-color:#d97979}
     .fw-bubble p{margin:0;line-height:1.55;font-weight:760;white-space:pre-wrap;word-break:break-word}
-    .fw-room-empty{
-      align-self:center;margin:auto;padding:18px 22px;border:1px dashed rgba(28,28,24,.18);
-      color:#746b5d;background:rgba(255,255,255,.45);font-weight:850
-    }
-    .fw-chat-input{
-      display:grid;grid-template-columns:1fr auto;gap:12px;padding:16px 18px;
-      border-top:1px solid rgba(28,28,24,.12);background:rgba(255,255,255,.62)
-    }
-    .fw-chat-input input{
-      min-height:46px;border:1px solid rgba(28,28,24,.18);background:#fffdf7;
-      padding:0 14px;font:inherit;font-weight:760
-    }
-    .fw-chat-input button{
-      border:0;border-radius:999px;padding:0 22px;background:#1b1b18;color:#fff;font-weight:950;cursor:pointer
-    }
+    .fw-quote-in-msg{margin-bottom:7px;padding:7px 9px;border-left:3px solid rgba(157,74,74,.45);background:rgba(0,0,0,.04);font-size:12px;color:#6d6357;line-height:1.45}
+    .fw-msg.me .fw-quote-in-msg{background:rgba(255,255,255,.16);color:rgba(255,255,255,.82);border-left-color:rgba(255,255,255,.55)}
+    .fw-msg-actions{position:absolute;top:-12px;left:48px;display:flex;gap:6px;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .18s ease 1s,transform .18s ease 1s;z-index:4;white-space:nowrap}
+    .fw-msg.me .fw-msg-actions{left:auto;right:48px}
+    .fw-msg:hover .fw-msg-actions{opacity:1;pointer-events:auto;transform:translateY(-10px)}
+    .fw-msg-actions button{border:1px solid rgba(28,28,24,.14);background:#fffdf7;color:#352f28;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:950;box-shadow:0 8px 18px rgba(0,0,0,.08);cursor:pointer}
+    .fw-msg-actions button.danger{color:#8B2E2E;border-color:rgba(139,46,46,.24)}
+    .fw-room-empty{align-self:center;margin:auto;padding:18px 22px;border:1px dashed rgba(28,28,24,.18);color:#746b5d;background:rgba(255,255,255,.45);font-weight:850}
+    .fw-quote-bar{display:none;margin:10px 18px 0;padding:10px 12px;background:#fffaf0;border:1px solid rgba(28,28,24,.12);font-size:13px;font-weight:850;color:#6c6255;align-items:center;justify-content:space-between;gap:12px}
+    .fw-quote-bar.show{display:flex}
+    .fw-quote-bar button{border:0;background:transparent;font-size:18px;cursor:pointer}
+    .fw-chat-input{display:grid;grid-template-columns:1fr auto;gap:12px;padding:12px 18px 12px;border-top:1px solid rgba(28,28,24,.12);background:rgba(255,255,255,.62)}
+    .fw-chat-input input{min-height:46px;border:1px solid rgba(28,28,24,.18);background:#fffdf7;padding:0 14px;font:inherit;font-weight:760}
+    .fw-chat-input button{border:0;border-radius:999px;padding:0 22px;background:#1b1b18;color:#fff;font-weight:950;cursor:pointer}
     .fw-chat-input button:disabled{opacity:.55;cursor:not-allowed}
     .fw-chat-tip{font-size:12px;color:#736a5d;font-weight:800;margin:0 18px 12px}
-    .fw-avatar.room{
-      width:34px;height:34px;min-width:34px;border-radius:999px;display:inline-grid;place-items:center;
-      overflow:hidden;background:#171715;color:#fff;border:1px solid rgba(217,121,121,.55);
-      font-size:11px;font-weight:950
-    }
+    .fw-avatar.room{width:34px;height:34px;min-width:34px;border-radius:999px;display:inline-grid;place-items:center;overflow:hidden;background:#171715;color:#fff;border:1px solid rgba(217,121,121,.55);font-size:11px;font-weight:950}
     .fw-avatar.room img{width:100%;height:100%;object-fit:cover}
-    @media(max-width:760px){
-      .fw-chat-window{grid-template-columns:1fr;height:90vh}
-      .fw-chat-sidebar{display:none}
-      .fw-msg{max-width:92%}
-      .fw-chat-input{grid-template-columns:1fr}
-      .fw-chat-input button{min-height:44px}
-    }
+    @media(max-width:760px){.fw-chat-window{grid-template-columns:1fr;height:90vh}.fw-chat-sidebar{display:none}.fw-msg{max-width:92%}.fw-msg-actions{position:static;opacity:1;pointer-events:auto;transform:none;margin-top:5px;flex-wrap:wrap}.fw-chat-input{grid-template-columns:1fr}.fw-chat-input button{min-height:44px}}
   </style>
 </head>
 <body>
 
 <main class="page bg-night">
-
 <header class="header dark">
   <a class="logo" href="index.html">F.w 研究所</a>
   <nav class="nav">
@@ -121,40 +80,20 @@
   <a href="admin.html">管理入口</a>
 </nav>
 
-  <section class="section">
-    <h1 class="hero-title" style="color:var(--white)">摸鱼房间</h1>
-    <p class="section-desc">点击房间后，需要先注册 / 登录。登录后会进入聊天窗口；每个房间保留最近 500 条文字消息。</p>
+<section class="section">
+  <h1 class="hero-title" style="color:var(--white)">摸鱼房间</h1>
+  <p class="section-desc">登录后进入房间发言；每个房间保留最近 500 条文字消息，单条最多 300 字。</p>
+  <div class="rooms-grid">
+    <button class="room-card" type="button" data-room="complain"><small>实时发泄区</small><h3>今日牢骚房</h3><p>把当天不爽先放这里，不一定要被解决。</p><p class="room-online">推门进去 →</p></button>
+    <button class="room-card" type="button" data-room="lowpower"><small>安静摸鱼区</small><h3>低功耗休息区</h3><p>不想说太多，只想证明自己还在。</p><p class="room-online">推门进去 →</p></button>
+    <button class="room-card" type="button" data-room="nonsense"><small>荒诞语录区</small><h3>废话研究室</h3><p>专门研究看似有道理但没有用的话。</p><p class="room-online">推门进去 →</p></button>
+    <button class="room-card" type="button" data-room="offline"><small>放空聊天区</small><h3>精神离岗室</h3><p>身体在场，意识暂时请假。</p><p class="room-online">推门进去 →</p></button>
+    <button class="room-card" type="button" data-room="countdown"><small>时间观察区</small><h3>下班倒计时区</h3><p>距离下班还有多久，这件事值得被严肃研究。</p><p class="room-online">推门进去 →</p></button>
+    <button class="room-card" type="button" data-room="tea"><small>轻聊天区</small><h3>茶水间回声</h3><p>像在茶水间遇到同事一样，随便说两句。</p><p class="room-online">推门进去 →</p></button>
+  </div>
+</section>
 
-    <div class="rooms-grid">
-      <button class="room-card" type="button" data-room="complain">
-        <small>实时发泄区</small><h3>今日牢骚房</h3><p>把当天不爽先放这里，不一定要被解决。</p><p class="room-online">推门进去 →</p>
-      </button>
-      <button class="room-card" type="button" data-room="lowpower">
-        <small>安静摸鱼区</small><h3>低功耗休息区</h3><p>不想说太多，只想证明自己还在。</p><p class="room-online">推门进去 →</p>
-      </button>
-      <button class="room-card" type="button" data-room="nonsense">
-        <small>荒诞语录区</small><h3>废话研究室</h3><p>专门研究看似有道理但没有用的话。</p><p class="room-online">推门进去 →</p>
-      </button>
-      <button class="room-card" type="button" data-room="offline">
-        <small>放空聊天区</small><h3>精神离岗室</h3><p>身体在场，意识暂时请假。</p><p class="room-online">推门进去 →</p>
-      </button>
-      <button class="room-card" type="button" data-room="countdown">
-        <small>时间观察区</small><h3>下班倒计时区</h3><p>距离下班还有多久，这件事值得被严肃研究。</p><p class="room-online">推门进去 →</p>
-      </button>
-      <button class="room-card" type="button" data-room="tea">
-        <small>轻聊天区</small><h3>茶水间回声</h3><p>像在茶水间遇到同事一样，随便说两句。</p><p class="room-online">推门进去 →</p>
-      </button>
-    </div>
-
-    <div class="chat-preview">
-      <h2 class="section-title" style="color:var(--white);font-size:54px">房间预览</h2>
-      <div class="chat-line"><b>临时研究员 024</b><span>我现在的工作状态像一个开着机但没联网的打印机。</span></div>
-      <div class="chat-line"><b>临时研究员 109</b><span>俺也一样。</span></div>
-      <div class="chat-line"><b>临时研究员 066</b><span>这句话建议归档。</span></div>
-    </div>
-  </section>
-
-  <footer class="footer"><span>F.w 研究所</span><span>摸鱼房间 / Chat Rooms</span></footer>
+<footer class="footer"><span>F.w 研究所</span><span>摸鱼房间 / Chat Rooms</span></footer>
 </main>
 
 <div class="fw-room-modal" data-room-modal>
@@ -168,18 +107,16 @@
     </aside>
     <section class="fw-chat-main">
       <header class="fw-chat-head">
-        <div>
-          <strong data-room-head-title>今日牢骚房</strong>
-          <span data-room-head-status>最近 500 条 · 仅文字</span>
-        </div>
+        <div><strong data-room-head-title>今日牢骚房</strong><span data-room-head-status>最近 500 条 · 仅文字</span></div>
         <button class="fw-chat-close" type="button" data-room-close>×</button>
       </header>
       <div class="fw-chat-body" data-room-messages></div>
+      <div class="fw-quote-bar" data-quote-bar><span data-quote-text></span><button type="button" data-clear-quote>×</button></div>
       <form class="fw-chat-input" data-room-form>
         <input name="message" maxlength="300" placeholder="说一句不一定有用的话，最多 300 字..." autocomplete="off" />
         <button type="submit">发送</button>
       </form>
-      <p class="fw-chat-tip">仅支持文字；每个房间保留最近 500 条。</p>
+      <p class="fw-chat-tip">悬停消息 1 秒可引用、赞同、举报；自己 2 分钟内可撤回。禁止链接和不合适词语。</p>
     </section>
   </div>
 </div>
@@ -188,8 +125,8 @@
 <script src="assets/auth.js"></script>
 <script>
 (function(){
-  const MAX_LEN = 300;
-  const rooms = {
+  const MAX_LEN=300;
+  const roomInfo={
     complain:{type:'实时发泄区',title:'今日牢骚房',desc:'把当天不爽先放这里，不一定要被解决。'},
     lowpower:{type:'安静摸鱼区',title:'低功耗休息区',desc:'不想说太多，只想证明自己还在。'},
     nonsense:{type:'荒诞语录区',title:'废话研究室',desc:'专门研究看似有道理但没有用的话。'},
@@ -197,261 +134,176 @@
     countdown:{type:'时间观察区',title:'下班倒计时区',desc:'距离下班还有多久，这件事值得被严肃研究。'},
     tea:{type:'轻聊天区',title:'茶水间回声',desc:'像在茶水间遇到同事一样，随便说两句。'}
   };
+  const blockedTerms=['黄色网站','裸聊','约炮','赌博','博彩','代开发票','加微信','加qq'];
+  const linkReg=/(https?:\/\/|www\.|[a-z0-9][a-z0-9-]*\.(com|net|org|xyz|top|cn|cc|io|me|vip|club|site|info|online|shop|live|app)(\/|$|\s))/i;
   const fallbackUsers=['低功耗研究员','会议幸存者','工位植物','摸鱼观察员','茶水间路人'];
 
   const modal=document.querySelector('[data-room-modal]');
   const usersBox=document.querySelector('[data-room-users]');
   const msgBox=document.querySelector('[data-room-messages]');
   const form=document.querySelector('[data-room-form]');
-  let currentUser=null;
-  let currentRoom='';
-  let pollTimer=null;
+  const quoteBar=document.querySelector('[data-quote-bar]');
+  const quoteText=document.querySelector('[data-quote-text]');
+  let currentUser=null,currentRoom='',pollTimer=null,quoteTarget=null,lastRows=[],lastProfiles={},lastAgrees={};
 
-  function toast(msg){
-    let t=document.querySelector('.fw-toast');
-    if(!t){
-      t=document.createElement('div');
-      t.className='fw-toast';
-      document.body.appendChild(t);
-    }
-    t.textContent=msg;
-    t.classList.add('show');
-    clearTimeout(window.__fwRoomToast);
-    window.__fwRoomToast=setTimeout(function(){t.classList.remove('show')},2600);
+  function toast(msg){let t=document.querySelector('.fw-toast');if(!t){t=document.createElement('div');t.className='fw-toast';document.body.appendChild(t)}t.textContent=msg;t.classList.add('show');clearTimeout(window.__fwRoomToast);window.__fwRoomToast=setTimeout(()=>t.classList.remove('show'),2600)}
+  function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+  function avatar(name,url){return url?'<span class="fw-avatar room"><img src="'+escapeHtml(url)+'" alt="'+escapeHtml(name)+'"></span>':'<span class="fw-avatar room">'+escapeHtml(String(name||'FW').slice(0,2))+'</span>'}
+  function cleanText(text){return String(text||'').trim()}
+  function validateText(text){
+    if(!text)return '先说点什么。';
+    if(text.length>MAX_LEN)return '每条消息最多 300 字。';
+    if(linkReg.test(text))return '当前暂不支持发送链接。';
+    const lower=text.toLowerCase();
+    if(blockedTerms.some(t=>lower.includes(t.toLowerCase())))return '内容包含不合适词语，请修改后再发送。';
+    return '';
   }
-
-  function escapeHtml(value){
-    return String(value||'').replace(/[&<>"']/g,function(ch){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
-    });
-  }
-
-  function avatar(name,url){
-    if(url){
-      return '<span class="fw-avatar room"><img src="'+escapeHtml(url)+'" alt="'+escapeHtml(name)+'"></span>';
-    }
-    return '<span class="fw-avatar room">'+escapeHtml(String(name||'FW').slice(0,2))+'</span>';
-  }
-
-  function waitForFwDb(){
-    return new Promise(function(resolve){
-      if(window.fwDb?.enabled) return resolve(true);
-      let count=0;
-      const timer=setInterval(function(){
-        count++;
-        if(window.fwDb?.enabled){
-          clearInterval(timer);
-          resolve(true);
-        }
-        if(count>40){
-          clearInterval(timer);
-          resolve(false);
-        }
-      },100);
-    });
-  }
-
-  async function getUser(){
-    await waitForFwDb();
-    if(!window.fwDb?.enabled) return null;
-    return await window.fwDb.getCurrentUser().catch(function(){return null});
-  }
-
-  function openLogin(){
-    const loginBtn=document.querySelector('[data-fw-open], [data-login-cta], [data-sb-open]');
-    if(loginBtn) loginBtn.click();
-    else toast('请先注册 / 登录。');
-  }
+  function waitForFwDb(){return new Promise(resolve=>{if(window.fwDb?.enabled)return resolve(true);let c=0;const timer=setInterval(()=>{c++;if(window.fwDb?.enabled){clearInterval(timer);resolve(true)}if(c>40){clearInterval(timer);resolve(false)}},100)})}
+  async function getUser(){await waitForFwDb();if(!window.fwDb?.enabled)return null;return await window.fwDb.getCurrentUser().catch(()=>null)}
+  function openLogin(){const loginBtn=document.querySelector('[data-fw-open], [data-login-cta], [data-sb-open]');if(loginBtn)loginBtn.click();else toast('请先注册 / 登录。')}
 
   async function fetchProfiles(ids){
     const unique=[...new Set(ids.filter(Boolean))];
-    if(!unique.length) return {};
-    const result=await window.fwDb.client
-      .from('profiles')
-      .select('id,nickname,avatar_url')
-      .in('id',unique);
-    if(result.error) return {};
-    const map={};
-    (result.data||[]).forEach(function(p){ map[p.id]=p; });
-    return map;
+    if(!unique.length)return {};
+    const result=await window.fwDb.client.from('profiles').select('id,nickname,avatar_url').in('id',unique);
+    if(result.error)return {};
+    const map={};(result.data||[]).forEach(p=>map[p.id]=p);return map;
+  }
+  async function fetchAgrees(ids){
+    if(!ids.length)return {};
+    const result=await window.fwDb.client.from('chat_message_reactions').select('message_id,type').in('message_id',ids).eq('type','agree');
+    if(result.error)return {};
+    const map={};(result.data||[]).forEach(r=>map[r.message_id]=(map[r.message_id]||0)+1);return map;
   }
 
-  async function loadMessages(roomKey, silent){
-    if(!window.fwDb?.client) return;
-    if(!silent) msgBox.innerHTML='<div class="fw-room-empty">正在读取房间消息...</div>';
-
-    const result=await window.fwDb.client
-      .from('chat_messages')
-      .select('id,user_id,content,created_at')
-      .eq('room_key',roomKey)
-      .eq('is_deleted',false)
-      .order('created_at',{ascending:false})
-      .limit(500);
-
-    if(result.error){
-      msgBox.innerHTML='<div class="fw-room-empty">聊天数据表还没配置。请先在 Supabase 运行 SQL。</div>';
-      toast('聊天数据表还没配置，请先运行 SQL。');
-      return;
-    }
-
+  async function loadMessages(roomKey,silent){
+    if(!window.fwDb?.client)return;
+    if(!silent)msgBox.innerHTML='<div class="fw-room-empty">正在读取房间消息...</div>';
+    const result=await window.fwDb.client.from('chat_messages').select('id,user_id,content,created_at,reply_to_id').eq('room_key',roomKey).eq('is_deleted',false).order('created_at',{ascending:false}).limit(500);
+    if(result.error){msgBox.innerHTML='<div class="fw-room-empty">聊天数据表还没配置。请先在 Supabase 运行 SQL。</div>';toast('聊天数据表还没配置，请先运行 SQL。');return}
     const rows=(result.data||[]).reverse();
-    const profiles=await fetchProfiles(rows.map(function(r){return r.user_id;}));
-
-    renderMessages(rows,profiles);
+    const profiles=await fetchProfiles(rows.map(r=>r.user_id));
+    const agrees=await fetchAgrees(rows.map(r=>r.id));
+    lastRows=rows;lastProfiles=profiles;lastAgrees=agrees;
+    renderMessages(rows,profiles,agrees);
     renderRecentUsers(rows,profiles);
   }
 
-  function renderMessages(rows,profiles){
-    if(!rows.length){
-      msgBox.innerHTML='<div class="fw-room-empty">这个房间暂时很安静，推门的人还没说话。</div>';
-      return;
-    }
-
-    msgBox.innerHTML=rows.map(function(row){
+  function renderMessages(rows,profiles,agrees){
+    if(!rows.length){msgBox.innerHTML='<div class="fw-room-empty">这个房间暂时很安静，推门的人还没说话。</div>';return}
+    const byId={};rows.forEach(r=>byId[r.id]=r);
+    msgBox.innerHTML=rows.map(row=>{
       const profile=profiles[row.user_id]||{};
-      const isMe=currentUser && row.user_id===currentUser.id;
-      const name=profile.nickname || (isMe ? currentUser.nickname : '研究员');
-      const url=profile.avatar_url || (isMe ? currentUser.avatar_url : '');
-      return '<div class="fw-msg '+(isMe?'me':'')+'">'
+      const isMe=currentUser&&row.user_id===currentUser.id;
+      const isAdmin=!!currentUser?.isAdmin;
+      const name=profile.nickname||(isMe?currentUser.nickname:'研究员');
+      const url=profile.avatar_url||(isMe?currentUser.avatar_url:'');
+      const created=new Date(row.created_at).getTime();
+      const canRecall=isMe&&(Date.now()-created<=120000);
+      const reply=row.reply_to_id?byId[row.reply_to_id]:null;
+      const replyProfile=reply?(profiles[reply.user_id]||{}):null;
+      const replyName=reply?(replyProfile.nickname||(reply.user_id===currentUser?.id?currentUser.nickname:'研究员')):'';
+      const quoteHtml=reply?'<div class="fw-quote-in-msg">引用 '+escapeHtml(replyName)+'：'+escapeHtml(reply.content).slice(0,70)+'</div>':'';
+      const actions=[
+        '<button data-msg-action="quote">引用</button>',
+        '<button data-msg-action="agree">赞同 '+(agrees[row.id]||0)+'</button>',
+        '<button data-msg-action="report">举报</button>'
+      ];
+      if(canRecall)actions.push('<button class="danger" data-msg-action="recall">撤回</button>');
+      if(isAdmin){
+        actions.push('<button class="danger" data-msg-action="admin-delete">删除</button>');
+        actions.push('<button class="danger" data-msg-action="admin-mute">禁言24h</button>');
+        actions.push('<button class="danger" data-msg-action="admin-ban">封号</button>');
+      }
+      return '<div class="fw-msg '+(isMe?'me':'')+'" data-message-id="'+row.id+'" data-user-id="'+row.user_id+'">'
         +avatar(name,url)
-        +'<div class="fw-msg-stack">'
-        +'<div class="fw-msg-name">'+escapeHtml(name)+(isMe?'（我）':'')+'</div>'
-        +'<div class="fw-bubble"><p>'+escapeHtml(row.content)+'</p></div>'
-        +'</div></div>';
+        +'<div class="fw-msg-stack"><div class="fw-msg-name">'+escapeHtml(name)+(isMe?'（我）':'')+'</div><div class="fw-bubble">'+quoteHtml+'<p>'+escapeHtml(row.content)+'</p></div><div class="fw-msg-actions">'+actions.join('')+'</div></div></div>';
     }).join('');
-
     msgBox.scrollTop=msgBox.scrollHeight;
   }
 
   function renderRecentUsers(rows,profiles){
-    const list=[];
-    if(currentUser) list.push({nickname:currentUser.nickname||'我',avatar_url:currentUser.avatar_url||'', isMe:true});
-
-    rows.slice().reverse().forEach(function(row){
-      const p=profiles[row.user_id];
-      if(!p) return;
-      if(list.some(function(x){return x.nickname===p.nickname;})) return;
-      list.push({nickname:p.nickname||'研究员',avatar_url:p.avatar_url||'', isMe:false});
-    });
-
-    fallbackUsers.forEach(function(name){
-      if(list.length>=6) return;
-      if(!list.some(function(x){return x.nickname===name;})) list.push({nickname:name,avatar_url:'',isMe:false});
-    });
-
-    usersBox.innerHTML=list.slice(0,6).map(function(u){
-      return '<div class="fw-online-user">'+avatar(u.nickname,u.avatar_url)+'<span>'+escapeHtml(u.nickname)+(u.isMe?'（我）':'')+'</span></div>';
-    }).join('');
+    const list=[];if(currentUser)list.push({nickname:currentUser.nickname||'我',avatar_url:currentUser.avatar_url||'',isMe:true});
+    rows.slice().reverse().forEach(row=>{const p=profiles[row.user_id];if(!p)return;if(list.some(x=>x.nickname===p.nickname))return;list.push({nickname:p.nickname||'研究员',avatar_url:p.avatar_url||'',isMe:false})});
+    fallbackUsers.forEach(name=>{if(list.length>=6)return;if(!list.some(x=>x.nickname===name))list.push({nickname:name,avatar_url:'',isMe:false})});
+    usersBox.innerHTML=list.slice(0,6).map(u=>'<div class="fw-online-user">'+avatar(u.nickname,u.avatar_url)+'<span>'+escapeHtml(u.nickname)+(u.isMe?'（我）':'')+'</span></div>').join('');
   }
 
-  function setupRoomHeader(roomKey){
-    const room=rooms[roomKey]||rooms.complain;
+  function setupRoom(roomKey){
+    const room=roomInfo[roomKey]||roomInfo.complain;
     document.querySelector('[data-room-type]').textContent=room.type;
     document.querySelector('[data-room-title]').textContent=room.title;
     document.querySelector('[data-room-desc]').textContent=room.desc;
     document.querySelector('[data-room-head-title]').textContent=room.title;
     document.querySelector('[data-room-head-status]').textContent='最近 500 条 · 仅文字';
   }
-
-  function startPolling(){
-    clearInterval(pollTimer);
-    pollTimer=setInterval(function(){
-      if(modal.classList.contains('show') && currentRoom){
-        loadMessages(currentRoom,true);
-      }
-    },5000);
-  }
-
-  function closeRoom(){
-    modal.classList.remove('show');
-    clearInterval(pollTimer);
-  }
-
+  function startPolling(){clearInterval(pollTimer);pollTimer=setInterval(()=>{if(modal.classList.contains('show')&&currentRoom)loadMessages(currentRoom,true)},5000)}
+  function closeRoom(){modal.classList.remove('show');clearInterval(pollTimer);clearQuote()}
   async function enterRoom(roomKey){
     const user=await getUser();
-    if(!user){
-      sessionStorage.setItem('fw_pending_room',roomKey);
-      toast('登录后才能进入房间。');
-      openLogin();
-      return;
-    }
-
-    currentUser=user;
-    currentRoom=roomKey;
-    sessionStorage.removeItem('fw_pending_room');
-
-    setupRoomHeader(roomKey);
-    modal.classList.add('show');
-    await loadMessages(roomKey,false);
-    startPolling();
-    setTimeout(function(){form.querySelector('input')?.focus()},120);
+    if(!user){sessionStorage.setItem('fw_pending_room',roomKey);toast('登录后才能进入房间。');openLogin();return}
+    currentUser=user;currentRoom=roomKey;sessionStorage.removeItem('fw_pending_room');
+    setupRoom(roomKey);modal.classList.add('show');await loadMessages(roomKey,false);startPolling();setTimeout(()=>form.querySelector('input')?.focus(),120);
   }
+  async function checkPendingRoom(){const key=sessionStorage.getItem('fw_pending_room');if(!key)return;const user=await getUser();if(user)enterRoom(key)}
 
-  async function checkPendingRoom(){
-    const key=sessionStorage.getItem('fw_pending_room');
-    if(!key) return;
-    const user=await getUser();
-    if(user) enterRoom(key);
+  function setQuote(row){
+    const p=lastProfiles[row.user_id]||{};
+    const name=p.nickname||(row.user_id===currentUser?.id?currentUser.nickname:'研究员');
+    quoteTarget={id:row.id,name,content:row.content};
+    quoteText.textContent='引用 '+name+'：'+row.content.slice(0,60);
+    quoteBar.classList.add('show');
+    form.querySelector('input')?.focus();
   }
+  function clearQuote(){quoteTarget=null;quoteBar.classList.remove('show');quoteText.textContent=''}
 
-  document.addEventListener('click',function(e){
-    const card=e.target.closest('[data-room]');
-    if(card){
-      e.preventDefault();
-      enterRoom(card.dataset.room);
-    }
-    if(e.target.closest('[data-room-close]')||e.target===modal){
-      closeRoom();
-    }
-  });
-
-  document.addEventListener('keydown',function(e){
-    if(e.key==='Escape') closeRoom();
-  });
-
-  form.addEventListener('submit',async function(e){
-    e.preventDefault();
-
-    const user=await getUser();
-    if(!user){
-      toast('登录后才能发言。');
-      openLogin();
-      return;
-    }
-
-    const input=form.querySelector('input');
-    const content=input.value.trim();
-
-    if(!content) return;
-    if(content.length>MAX_LEN){
-      toast('每条消息最多 300 字。');
-      return;
-    }
-
-    const btn=form.querySelector('button');
-    const old=btn.textContent;
-    btn.disabled=true;
-    btn.textContent='发送中...';
-
+  async function handleMsgAction(btn){
+    const wrap=btn.closest('[data-message-id]');
+    const id=Number(wrap?.dataset.messageId);
+    const userId=wrap?.dataset.userId;
+    const row=lastRows.find(r=>r.id===id);
+    const act=btn.dataset.msgAction;
+    if(!id)return;
     try{
-      const result=await window.fwDb.client
-        .from('chat_messages')
-        .insert({
-          room_key:currentRoom,
-          user_id:user.id,
-          content:content
-        });
+      if(act==='quote'&&row){setQuote(row);return}
+      if(act==='agree'){await window.fwDb.client.rpc('agree_chat_message',{target_message_id:id});await loadMessages(currentRoom,true);return}
+      if(act==='report'){await window.fwDb.client.rpc('report_chat_message',{target_message_id:id,report_reason:'用户举报'});toast('已收到举报。');return}
+      if(act==='recall'){await window.fwDb.client.rpc('recall_own_chat_message',{target_message_id:id});toast('已撤回。');await loadMessages(currentRoom,true);return}
+      if(act==='admin-delete'){await window.fwDb.client.rpc('admin_delete_chat_message',{target_message_id:id});toast('已删除。');await loadMessages(currentRoom,true);return}
+      if(act==='admin-mute'){await window.fwDb.client.rpc('admin_set_user_muted',{target_user_id:userId,mute_minutes:1440});toast('已禁言 24 小时。');return}
+      if(act==='admin-ban'){await window.fwDb.client.rpc('admin_set_user_banned',{target_user_id:userId,banned:true});toast('已封号。');return}
+    }catch(err){toast(err.message||'操作失败。')}
+  }
 
-      if(result.error) throw result.error;
+  document.addEventListener('click',e=>{
+    const card=e.target.closest('[data-room]');
+    if(card){e.preventDefault();enterRoom(card.dataset.room)}
+    const action=e.target.closest('[data-msg-action]');
+    if(action){e.preventDefault();handleMsgAction(action)}
+    if(e.target.closest('[data-clear-quote]'))clearQuote();
+    if(e.target.closest('[data-room-close]')||e.target===modal)closeRoom();
+  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeRoom()});
 
-      input.value='';
-      await loadMessages(currentRoom,true);
-    }catch(err){
-      toast(err.message || '发送失败，请稍后再试。');
-    }finally{
-      btn.disabled=false;
-      btn.textContent=old;
-    }
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const user=await getUser();
+    if(!user){toast('登录后才能发言。');openLogin();return}
+    currentUser=user;
+    const input=form.querySelector('input');
+    const content=cleanText(input.value);
+    const err=validateText(content);
+    if(err){toast(err);return}
+    const btn=form.querySelector('button'),old=btn.textContent;
+    btn.disabled=true;btn.textContent='发送中...';
+    try{
+      const payload={room_key:currentRoom,user_id:user.id,content};
+      if(quoteTarget)payload.reply_to_id=quoteTarget.id;
+      const result=await window.fwDb.client.from('chat_messages').insert(payload);
+      if(result.error)throw result.error;
+      input.value='';clearQuote();await loadMessages(currentRoom,true);
+    }catch(err){toast(err.message||'发送失败，请稍后再试。')}
+    finally{btn.disabled=false;btn.textContent=old}
   });
 
   setInterval(checkPendingRoom,1200);
