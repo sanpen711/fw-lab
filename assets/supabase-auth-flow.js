@@ -5,34 +5,269 @@
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const ini=v=>String(v||'FW').trim().slice(0,2).toUpperCase();
   const av=(n,u,m='')=>u?`<span class="fw-avatar ${m}"><img src="${esc(u)}" alt="${esc(n)}"></span>`:`<span class="fw-avatar ${m}">${esc(ini(n))}</span>`;
-  function toast(msg){let t=$('.fw-toast');if(!t){t=document.createElement('div');t.className='fw-toast';document.body.appendChild(t)}t.textContent=msg;t.classList.add('show');clearTimeout(window.__fwToast);window.__fwToast=setTimeout(()=>t.classList.remove('show'),2600)}
-  function css(){if($('#fw-auth-flow-style'))return;const s=document.createElement('style');s.id='fw-auth-flow-style';s.textContent='.fw-auth-view{display:none}.fw-auth-view.show{display:block}.fw-auth-progress{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0}.fw-auth-progress span{border:1px solid var(--line-soft);padding:8px;border-radius:999px;text-align:center;font-size:12px;font-weight:900;color:var(--muted)}.fw-auth-progress span.on{background:var(--text);color:var(--white)}.fw-auth-links{display:flex;gap:14px;flex-wrap:wrap}.fw-auth-links button{border:0;background:transparent;color:var(--accent-dark);font-weight:950;text-decoration:underline;cursor:pointer}.fw-auth-view h3{margin:8px 0 16px;font-size:24px;letter-spacing:-.04em}.fw-auth-panel input{box-sizing:border-box}';document.head.appendChild(s)}
-  function userbar(){ $$('.header').forEach(h=>{if(h.querySelector('.fw-userbar'))return;const b=document.createElement('div');b.className='fw-userbar fw-userbar-supabase';b.innerHTML=`<button type="button" class="fw-login-pill" data-fw-open><span data-fw-avatar-slot></span><span data-fw-current>注册 / 登录</span></button><div class="fw-profile-popover"><div class="fw-profile-card-head"><span data-fw-card-avatar></span><div><b data-fw-card-name>未登录</b><span data-fw-card-status>点击注册 / 登录</span></div></div><p><strong>绑定邮箱：</strong><span data-fw-card-email>未绑定</span></p><p><strong>账号状态：</strong><span data-fw-card-role>游客</span></p><div class="fw-profile-card-actions"><button type="button" data-fw-open>编辑资料</button><button type="button" data-sb-logout>退出</button></div></div>`;h.appendChild(b)}) }
-  async function refreshUser(){if(!on())return;userbar();me=await db().getCurrentUser().catch(()=>null);$$('[data-fw-current]').forEach(x=>x.textContent=me?me.nickname:'注册 / 登录');$$('[data-fw-avatar-slot]').forEach(x=>x.innerHTML=me?av(me.nickname,me.avatar_url,'mini'):'');$$('[data-fw-card-avatar]').forEach(x=>x.innerHTML=me?av(me.nickname,me.avatar_url):av('FW',''));$$('[data-fw-card-name]').forEach(x=>x.textContent=me?me.nickname:'未登录');$$('[data-fw-card-status]').forEach(x=>x.textContent=me?'已进入研究所':'点击注册 / 登录');$$('[data-fw-card-email]').forEach(x=>x.textContent=me?.email||'未绑定');$$('[data-fw-card-role]').forEach(x=>x.textContent=me?(me.isAdmin?'管理员':(me.disabled?'已停用':'正常')):'游客');$$('.fw-profile-card-actions').forEach(x=>x.style.display=me?'flex':'none')}
-  async function refreshPosts(){if(!on())return;const posts=await db().loadPosts();if(typeof savePosts==='function')savePosts(posts);if(typeof renderFeeds==='function')renderFeeds()}
-  function renderOverride(){if(!on()||typeof window.renderPost!=='function')return;window.renderPost=function(p){const cs=(p.comments||[]).map(c=>`<li data-comment-id="${esc(c.id)}">${av(c.authorName,c.authorAvatar,'mini')}<strong>${esc(c.authorName||'匿名回声')}</strong><span>${esc(c.content)}</span>${me?.isAdmin?`<button type="button" class="fw-text-danger" data-sb-admin="delete-comment" data-comment-id="${esc(c.id)}">删除</button>`:''}</li>`).join('');return `<article class="post-card" data-id="${p.id}" data-status="${esc(p.status)}"><div class="post-top"><span class="status">${esc(p.status)}</span><span class="time">${esc(p.time||'刚刚')}</span></div><p class="fw-author">${av(p.authorName,p.authorAvatar,'mini')}<span>${esc(p.authorName||'匿名研究员')}</span></p><p class="post-content">${esc(p.content)}</p><div class="interactions"><button data-sb-action="resonance">点赞 ${p.resonance||0}</button><button data-sb-action="comment-toggle">评论 ${(p.comments||[]).length}</button><button data-sb-action="same">俺也一样 ${p.same||0}</button><button data-sb-action="tissue">递纸巾 ${p.tissue||0}</button>${me?.isAdmin?`<button class="fw-danger-pill" data-sb-admin="delete-post" data-post-id="${p.id}">删帖</button>`:''}</div><div class="comment-box"><ul class="comment-list">${cs||'<li><span>还没有回声，可以先留一句。</span></li>'}</ul><input placeholder="留一句回声，评论不限量" /><button class="btn dark full" data-sb-action="comment-submit" style="margin-top:10px">发送回声</button></div></article>`}}
-  function modal(){if($('[data-sb-auth]'))return;css();const m=document.createElement('div');m.className='fw-auth sb-auth';m.dataset.sbAuth='1';m.innerHTML=`<div class="fw-auth-panel"><button class="fw-close" data-sb-close type="button">×</button><p class="fw-kicker">FW ACCOUNT</p><h2 data-title>账号登录</h2><p class="fw-muted" data-desc>输入邮箱和密码，进入研究所。</p><div class="fw-auth-progress" data-progress style="display:none"><span>1 验证邮箱</span><span>2 设置密码</span><span>3 完善资料</span></div><section class="fw-auth-view show" data-view="login"><form data-login class="fw-form show"><label>邮箱</label><input name="email" type="email" placeholder="your@email.com" autocomplete="email"><label>密码</label><input name="password" type="password" placeholder="输入账号密码" autocomplete="current-password"><button class="btn dark full" type="submit">登录</button><p class="form-tip fw-auth-links"><button type="button" data-go="register1">没有账号？去注册</button><button type="button" data-go="reset">忘记密码？</button></p></form></section><section class="fw-auth-view" data-view="register1"><form data-reg1 class="fw-form show"><h3>第一步：验证邮箱</h3><label>邮箱</label><input name="email" type="email" placeholder="用于登录和找回密码"><button class="btn dark full" type="button" data-send-code>发送验证码</button><label>验证码</label><input name="token" inputmode="numeric" autocomplete="one-time-code" placeholder="填写邮件里的 6 位验证码"><button class="btn dark full" type="submit">验证邮箱，下一步</button><p class="form-tip fw-auth-links"><button type="button" data-go="login">已有账号？返回登录</button></p></form></section><section class="fw-auth-view" data-view="register2"><form data-reg2 class="fw-form show"><h3>第二步：设置密码</h3><label>密码</label><input name="password" type="password" placeholder="至少 6 位，以后用它登录"><label>确认密码</label><input name="password2" type="password" placeholder="再输入一次密码"><button class="btn dark full" type="submit">保存密码，下一步</button></form></section><section class="fw-auth-view" data-view="register3"><form data-reg3 class="fw-form show"><h3>第三步：完善资料</h3><div class="fw-profile-preview"><p class="fw-muted">设置昵称和头像。</p></div><label>昵称</label><input name="nickname" maxlength="24" placeholder="例如：低功耗研究员"><label>头像</label><input name="avatar" type="file" accept="image/*"><button class="btn dark full" type="submit">完成注册</button><p class="form-tip">完成后会回到登录页，邮箱自动填好，直接输入密码登录。</p></form></section><section class="fw-auth-view" data-view="reset"><form data-reset class="fw-form show"><h3>找回密码</h3><label>邮箱</label><input name="email" type="email" placeholder="输入绑定邮箱"><button class="btn dark full" type="submit">发送找回密码邮件</button><p class="form-tip fw-auth-links"><button type="button" data-go="login">返回登录</button></p></form></section><section class="fw-auth-view" data-view="newpass"><form data-newpass class="fw-form show"><h3>设置新密码</h3><label>新密码</label><input name="password" type="password" placeholder="至少 6 位"><label>确认新密码</label><input name="password2" type="password" placeholder="再输入一次"><button class="btn dark full" type="submit">保存新密码</button></form></section><section class="fw-auth-view" data-view="profile"><form data-profile class="fw-form show"><h3>个人资料</h3><div class="fw-profile-preview" data-profile-preview></div><label>昵称</label><input name="nickname" maxlength="24"><label>头像</label><input name="avatar" type="file" accept="image/*"><label>修改密码 / 可选</label><input name="password" type="password" placeholder="不修改就留空"><button class="btn dark full" type="submit">保存资料</button><button class="btn full" data-sb-logout type="button" style="margin-top:10px">退出登录</button></form></section></div>`;document.body.appendChild(m)}
-  function copy(v){const map={login:['账号登录','输入邮箱和密码，进入研究所。'],register1:['注册账号','第一步：先验证邮箱。'],register2:['注册账号','第二步：设置以后登录用的密码。'],register3:['注册账号','第三步：设置昵称和头像。'],reset:['找回密码','输入邮箱，接收找回密码邮件。'],newpass:['设置新密码','请输入并确认新密码。'],profile:['个人资料','修改昵称、头像或密码。']};const [t,d]=map[v]||map.login;$('[data-title]').textContent=t;$('[data-desc]').textContent=d;const p=$('[data-progress]');p.style.display=/register/.test(v)?'grid':'none';if(/register/.test(v)){const n={register1:0,register2:1,register3:2}[v];Array.from(p.children).forEach((x,i)=>x.classList.toggle('on',i<=n))}}
-  function show(v){modal();$$('[data-view]').forEach(x=>x.classList.toggle('show',x.dataset.view===v));copy(v);setTimeout(()=>{$(`[data-view="${v}"] input`)?.focus()},80)}
-  function fillProfile(){const box=$('[data-profile-preview]'),nick=$('[data-profile] input[name="nickname"]');if(box)box.innerHTML=me?`${av(me.nickname,me.avatar_url)}<div><b>${esc(me.nickname)}</b><span>${esc(me.email||'已绑定邮箱')}</span></div>`:'<p class="fw-muted">登录后可以修改资料。</p>';if(nick)nick.value=me?.nickname||''}
-  function openModal(v,opts={}){modal();fillProfile();$('[data-sb-auth]').classList.add('show');const target=v||(recovery?'newpass':(me?'profile':'login'));show(target);if(target==='login'){const e=$('[data-login] input[name="email"]'),p=$('[data-login] input[name="password"]');if(opts.email||regEmail)e.value=opts.email||regEmail;if(opts.focusPassword)setTimeout(()=>p?.focus(),120)}}
+
+  function toast(msg){
+    let t=$('.fw-toast');
+    if(!t){t=document.createElement('div');t.className='fw-toast';document.body.appendChild(t)}
+    t.textContent=msg;
+    t.classList.add('show');
+    clearTimeout(window.__fwToast);
+    window.__fwToast=setTimeout(()=>t.classList.remove('show'),3200);
+  }
+
+  function css(){
+    if($('#fw-auth-flow-style'))return;
+    const s=document.createElement('style');
+    s.id='fw-auth-flow-style';
+    s.textContent='.fw-auth-view{display:none}.fw-auth-view.show{display:block}.fw-auth-progress{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0}.fw-auth-progress span{border:1px solid var(--line-soft);padding:8px;border-radius:999px;text-align:center;font-size:12px;font-weight:900;color:var(--muted)}.fw-auth-progress span.on{background:var(--text);color:var(--white)}.fw-auth-links{display:flex;gap:14px;flex-wrap:wrap}.fw-auth-links button{border:0;background:transparent;color:var(--accent-dark);font-weight:950;text-decoration:underline;cursor:pointer}.fw-auth-view h3{margin:8px 0 16px;font-size:24px;letter-spacing:-.04em}.fw-auth-panel input{box-sizing:border-box}.fw-btn-loading{opacity:.65;pointer-events:none}';
+    document.head.appendChild(s);
+  }
+
+  function userbar(){
+    $$('.header').forEach(h=>{
+      if(h.querySelector('.fw-userbar'))return;
+      const b=document.createElement('div');
+      b.className='fw-userbar fw-userbar-supabase';
+      b.innerHTML=`<button type="button" class="fw-login-pill" data-fw-open><span data-fw-avatar-slot></span><span data-fw-current>注册 / 登录</span></button><div class="fw-profile-popover"><div class="fw-profile-card-head"><span data-fw-card-avatar></span><div><b data-fw-card-name>未登录</b><span data-fw-card-status>点击注册 / 登录</span></div></div><p><strong>绑定邮箱：</strong><span data-fw-card-email>未绑定</span></p><p><strong>账号状态：</strong><span data-fw-card-role>游客</span></p><div class="fw-profile-card-actions"><button type="button" data-fw-open>编辑资料</button><button type="button" data-sb-logout>退出</button></div></div>`;
+      h.appendChild(b);
+    });
+  }
+
+  async function refreshUser(){
+    if(!on())return;
+    userbar();
+    me=await db().getCurrentUser().catch(()=>null);
+    $$('[data-fw-current]').forEach(x=>x.textContent=me?me.nickname:'注册 / 登录');
+    $$('[data-fw-avatar-slot]').forEach(x=>x.innerHTML=me?av(me.nickname,me.avatar_url,'mini'):'');
+    $$('[data-fw-card-avatar]').forEach(x=>x.innerHTML=me?av(me.nickname,me.avatar_url):av('FW',''));
+    $$('[data-fw-card-name]').forEach(x=>x.textContent=me?me.nickname:'未登录');
+    $$('[data-fw-card-status]').forEach(x=>x.textContent=me?'已进入研究所':'点击注册 / 登录');
+    $$('[data-fw-card-email]').forEach(x=>x.textContent=me?.email||'未绑定');
+    $$('[data-fw-card-role]').forEach(x=>x.textContent=me?(me.isAdmin?'管理员':(me.disabled?'已停用':'正常')):'游客');
+    $$('.fw-profile-card-actions').forEach(x=>x.style.display=me?'flex':'none');
+  }
+
+  async function refreshPosts(){
+    if(!on())return;
+    const posts=await db().loadPosts();
+    if(typeof savePosts==='function')savePosts(posts);
+    if(typeof renderFeeds==='function')renderFeeds();
+  }
+
+  function renderOverride(){
+    if(!on()||typeof window.renderPost!=='function')return;
+    window.renderPost=function(p){
+      const cs=(p.comments||[]).map(c=>`<li data-comment-id="${esc(c.id)}">${av(c.authorName,c.authorAvatar,'mini')}<strong>${esc(c.authorName||'匿名回声')}</strong><span>${esc(c.content)}</span>${me?.isAdmin?`<button type="button" class="fw-text-danger" data-sb-admin="delete-comment" data-comment-id="${esc(c.id)}">删除</button>`:''}</li>`).join('');
+      return `<article class="post-card" data-id="${p.id}" data-status="${esc(p.status)}"><div class="post-top"><span class="status">${esc(p.status)}</span><span class="time">${esc(p.time||'刚刚')}</span></div><p class="fw-author">${av(p.authorName,p.authorAvatar,'mini')}<span>${esc(p.authorName||'匿名研究员')}</span></p><p class="post-content">${esc(p.content)}</p><div class="interactions"><button data-sb-action="resonance">点赞 ${p.resonance||0}</button><button data-sb-action="comment-toggle">评论 ${(p.comments||[]).length}</button><button data-sb-action="same">俺也一样 ${p.same||0}</button><button data-sb-action="tissue">递纸巾 ${p.tissue||0}</button>${me?.isAdmin?`<button class="fw-danger-pill" data-sb-admin="delete-post" data-post-id="${p.id}">删帖</button>`:''}</div><div class="comment-box"><ul class="comment-list">${cs||'<li><span>还没有回声，可以先留一句。</span></li>'}</ul><input placeholder="留一句回声，评论不限量" /><button class="btn dark full" data-sb-action="comment-submit" style="margin-top:10px">发送回声</button></div></article>`;
+    };
+  }
+
+  function modal(){
+    if($('[data-sb-auth]'))return;
+    css();
+    const m=document.createElement('div');
+    m.className='fw-auth sb-auth';
+    m.dataset.sbAuth='1';
+    m.innerHTML=`<div class="fw-auth-panel"><button class="fw-close" data-sb-close type="button">×</button><p class="fw-kicker">FW ACCOUNT</p><h2 data-title>账号登录</h2><p class="fw-muted" data-desc>输入邮箱和密码，进入研究所。</p><div class="fw-auth-progress" data-progress style="display:none"><span>1 验证邮箱</span><span>2 设置密码</span><span>3 完善资料</span></div><section class="fw-auth-view show" data-view="login"><form data-login class="fw-form show"><label>邮箱</label><input name="email" type="email" placeholder="your@email.com" autocomplete="email"><label>密码</label><input name="password" type="password" placeholder="输入账号密码" autocomplete="current-password"><button class="btn dark full" type="submit">登录</button><p class="form-tip fw-auth-links"><button type="button" data-go="register1">没有账号？去注册</button><button type="button" data-go="reset">忘记密码？</button></p></form></section><section class="fw-auth-view" data-view="register1"><form data-reg1 class="fw-form show"><h3>第一步：验证邮箱</h3><label>邮箱</label><input name="email" type="email" placeholder="用于登录和找回密码"><button class="btn dark full" type="button" data-send-code>发送验证码</button><label>验证码</label><input name="token" inputmode="numeric" autocomplete="one-time-code" placeholder="填写邮件里的 6 位验证码"><button class="btn dark full" type="submit">验证邮箱，下一步</button><p class="form-tip fw-auth-links"><button type="button" data-go="login">已有账号？返回登录</button></p></form></section><section class="fw-auth-view" data-view="register2"><form data-reg2 class="fw-form show"><h3>第二步：设置密码</h3><label>密码</label><input name="password" type="password" placeholder="至少 6 位，以后用它登录"><label>确认密码</label><input name="password2" type="password" placeholder="再输入一次密码"><button class="btn dark full" type="submit">保存密码，下一步</button></form></section><section class="fw-auth-view" data-view="register3"><form data-reg3 class="fw-form show"><h3>第三步：完善资料</h3><div class="fw-profile-preview"><p class="fw-muted">设置昵称和头像。</p></div><label>昵称</label><input name="nickname" maxlength="24" placeholder="例如：低功耗研究员"><label>头像</label><input name="avatar" type="file" accept="image/*"><button class="btn dark full" type="submit">完成注册</button><p class="form-tip">完成后会回到登录页，邮箱自动填好，直接输入密码登录。</p></form></section><section class="fw-auth-view" data-view="reset"><form data-reset class="fw-form show"><h3>找回密码</h3><label>邮箱</label><input name="email" type="email" placeholder="输入绑定邮箱"><button class="btn dark full" type="submit">发送找回密码邮件</button><p class="form-tip fw-auth-links"><button type="button" data-go="login">返回登录</button></p></form></section><section class="fw-auth-view" data-view="newpass"><form data-newpass class="fw-form show"><h3>设置新密码</h3><label>新密码</label><input name="password" type="password" placeholder="至少 6 位"><label>确认新密码</label><input name="password2" type="password" placeholder="再输入一次"><button class="btn dark full" type="submit">保存新密码</button></form></section><section class="fw-auth-view" data-view="profile"><form data-profile class="fw-form show"><h3>个人资料</h3><div class="fw-profile-preview" data-profile-preview></div><label>昵称</label><input name="nickname" maxlength="24"><label>头像</label><input name="avatar" type="file" accept="image/*"><label>修改密码 / 可选</label><input name="password" type="password" placeholder="不修改就留空"><button class="btn dark full" type="submit">保存资料</button><button class="btn full" data-sb-logout type="button" style="margin-top:10px">退出登录</button></form></section></div>`;
+    document.body.appendChild(m);
+  }
+
+  function copy(v){
+    const map={login:['账号登录','输入邮箱和密码，进入研究所。'],register1:['注册账号','第一步：先验证邮箱。'],register2:['注册账号','第二步：设置以后登录用的密码。'],register3:['注册账号','第三步：设置昵称和头像。'],reset:['找回密码','输入邮箱，接收找回密码邮件。'],newpass:['设置新密码','请输入并确认新密码。'],profile:['个人资料','修改昵称、头像或密码。']};
+    const [t,d]=map[v]||map.login;
+    $('[data-title]').textContent=t;
+    $('[data-desc]').textContent=d;
+    const p=$('[data-progress]');
+    p.style.display=/register/.test(v)?'grid':'none';
+    if(/register/.test(v)){
+      const n={register1:0,register2:1,register3:2}[v];
+      Array.from(p.children).forEach((x,i)=>x.classList.toggle('on',i<=n));
+    }
+  }
+
+  function show(v){
+    modal();
+    $$('[data-view]').forEach(x=>x.classList.toggle('show',x.dataset.view===v));
+    copy(v);
+    setTimeout(()=>{$(`[data-view="${v}"] input`)?.focus()},80);
+  }
+
+  function fillProfile(){
+    const box=$('[data-profile-preview]'),nick=$('[data-profile] input[name="nickname"]');
+    if(box)box.innerHTML=me?`${av(me.nickname,me.avatar_url)}<div><b>${esc(me.nickname)}</b><span>${esc(me.email||'已绑定邮箱')}</span></div>`:'<p class="fw-muted">登录后可以修改资料。</p>';
+    if(nick)nick.value=me?.nickname||'';
+  }
+
+  function openModal(v,opts={}){
+    modal();
+    fillProfile();
+    $('[data-sb-auth]').classList.add('show');
+    const target=v||(recovery?'newpass':(me?'profile':'login'));
+    show(target);
+    if(target==='login'){
+      const e=$('[data-login] input[name="email"]'),p=$('[data-login] input[name="password"]');
+      if(opts.email||regEmail)e.value=opts.email||regEmail;
+      if(opts.focusPassword)setTimeout(()=>p?.focus(),120);
+    }
+  }
+
   function closeModal(){$('[data-sb-auth]')?.classList.remove('show')}
   function needLogin(){if(me&&!me.disabled)return true;openModal('login');toast('先注册 / 登录账号。');return false}
-  async function afterLogin(msg){me=await db().getCurrentUser().catch(()=>null);await refreshUser();await refreshPosts();fillProfile();closeModal();toast(msg||('欢迎，'+(me?.nickname||'研究员')))}
-  async function login(f){const d=new FormData(f),email=String(d.get('email')||'').trim(),password=String(d.get('password')||'').trim();if(!email.includes('@'))return toast('请填写邮箱。');if(password.length<6)return toast('请填写密码。');try{await db().signInPassword({email,password});await afterLogin()}catch(e){toast(e.message||'登录失败。')}}
-  async function sendCode(f){const d=new FormData(f),email=String(d.get('email')||'').trim();if(!email.includes('@'))return toast('请填写邮箱。');try{await db().sendEmailOtp({email,nickname:''});regEmail=email;toast('验证码已发送，请查看邮箱。');f.querySelector('[name="token"]')?.focus()}catch(e){toast(String(e.message||'').includes('rate')?'发送太频繁，请稍后再试。':(e.message||'发送失败。'))}}
-  async function reg1(f){const d=new FormData(f),email=String(d.get('email')||'').trim(),token=String(d.get('token')||'').trim();if(!email.includes('@'))return toast('请填写邮箱。');if(token.length<6)return toast('请填写验证码。');try{const r=await db().verifyEmailOtp({email,token});me=r.user||await db().getCurrentUser().catch(()=>null);regEmail=email;regVerified=true;await refreshUser();show('register2');toast('邮箱验证成功，请设置密码。')}catch(e){toast(e.message||'验证失败。')}}
-  async function reg2(f){if(!regVerified||!me)return toast('请先验证邮箱。');const d=new FormData(f),p=String(d.get('password')||'').trim(),p2=String(d.get('password2')||'').trim();if(p.length<6)return toast('密码至少 6 位。');if(p!==p2)return toast('两次密码不一致。');try{await db().updatePassword({password:p});regPassword=true;show('register3');toast('密码已保存，请完善资料。')}catch(e){toast(e.message||'密码保存失败。')}}
-  async function reg3(f){if(!regPassword||!me)return toast('请先设置密码。');const d=new FormData(f),nickname=String(d.get('nickname')||'').trim(),avatarFile=f.querySelector('[name="avatar"]')?.files?.[0];try{if(nickname||avatarFile)await db().updateProfile({nickname,avatarFile});const email=regEmail||me.email||'';await db().signOut();me=null;regVerified=false;regPassword=false;await refreshUser();closeModal();toast('注册成功，请登录。');setTimeout(()=>openModal('login',{email,focusPassword:true}),550)}catch(e){toast(e.message||'注册完成失败。')}}
-  async function reset(f){const email=String(new FormData(f).get('email')||'').trim();if(!email.includes('@'))return toast('请填写邮箱。');try{await db().sendPasswordReset({email});toast('找回密码邮件已发送，请查看邮箱。')}catch(e){toast(e.message||'发送失败。')}}
-  async function newpass(f){const d=new FormData(f),p=String(d.get('password')||'').trim(),p2=String(d.get('password2')||'').trim();if(p.length<6)return toast('密码至少 6 位。');if(p!==p2)return toast('两次密码不一致。');try{await db().updatePassword({password:p});recovery=false;await db().signOut();me=null;await refreshUser();closeModal();toast('新密码已保存，请登录。');setTimeout(()=>openModal('login'),550)}catch(e){toast(e.message||'保存失败。')}}
-  async function profile(f){if(!needLogin())return;const d=new FormData(f),nickname=String(d.get('nickname')||'').trim(),password=String(d.get('password')||'').trim(),avatarFile=f.querySelector('[name="avatar"]')?.files?.[0];try{if(nickname||avatarFile)await db().updateProfile({nickname,avatarFile});if(password)await db().updatePassword({password});await refreshUser();await refreshPosts();fillProfile();toast('资料已保存。')}catch(e){toast(e.message||'资料保存失败。')}}
-  async function post(f){if(!needLogin())return;const text=f.querySelector('textarea'),content=text.value.trim();if(!content)return text.focus();const status=f.querySelector('.chip.active[data-status]')?.dataset.status||'今日无效';try{await db().createPost({content,status});text.value='';await refreshPosts();toast('已发布到数据库。')}catch(e){toast(e.message||'发布失败。')}}
-  async function feed(btn){const card=btn.closest('.post-card'),postId=Number(card?.dataset.id),a=btn.dataset.sbAction;if(a==='comment-toggle')return card.querySelector('.comment-box')?.classList.toggle('show');if(!needLogin())return;try{if(a==='comment-submit'){const input=card.querySelector('.comment-box input'),content=input.value.trim();if(!content)return;await db().createComment({postId,content});await refreshPosts();document.querySelector(`.post-card[data-id="${postId}"] .comment-box`)?.classList.add('show');return}const r=await db().react({postId,type:a});if(r.already)return toast('同一个账号，这个按钮只能点一次。');await refreshPosts()}catch(e){toast(e.message||'操作失败。')}}
-  async function renderAdmin(){const panel=$('[data-admin-panel]');if(!panel||!on())return;if(!me?.isAdmin){panel.innerHTML='<article class="fw-admin-card"><p class="fw-kicker">ADMIN ACCESS</p><h2>站长管理入口</h2><p>请先用管理员账号登录。</p><button class="btn dark" data-sb-open type="button">登录管理员账号 →</button></article>';return}try{const users=await db().listUsers(),posts=typeof getPosts==='function'?getPosts():[],cc=posts.reduce((s,p)=>s+(p.comments||[]).length,0);panel.innerHTML=`<div class="fw-admin-head"><div><p class="fw-kicker">ADMIN PANEL</p><h2>站长控制台</h2><p>当前管理数据库中的真实内容。</p></div><div><button class="btn light-line" data-sb-logout type="button">退出</button></div></div><div class="fw-stats"><div><b>${users.length}</b><span>账号</span></div><div><b>${posts.length}</b><span>帖子</span></div><div><b>${cc}</b><span>评论</span></div></div>`}catch(e){panel.innerHTML=`<article class="fw-admin-card"><h2>读取失败</h2><p>${esc(e.message)}</p></article>`}}
-  async function admin(btn){if(!me?.isAdmin)return openModal('login');const a=btn.dataset.sbAdmin;try{if(a==='delete-post')await db().deletePost(Number(btn.dataset.postId));if(a==='delete-comment')await db().deleteComment(Number(btn.dataset.commentId));if(a==='disable-user')await db().setUserBanned(btn.dataset.userId,true);if(a==='restore-user')await db().setUserBanned(btn.dataset.userId,false);await refreshPosts();await renderAdmin();toast('管理操作已完成。')}catch(e){toast(e.message||'管理失败。')}}
-  document.addEventListener('submit',e=>{if(!on())return;const pf=e.target.closest('[data-post-form]'),lf=e.target.closest('[data-login]'),r1=e.target.closest('[data-reg1]'),r2=e.target.closest('[data-reg2]'),r3=e.target.closest('[data-reg3]'),rf=e.target.closest('[data-reset]'),np=e.target.closest('[data-newpass]'),pr=e.target.closest('[data-profile]');if(pf||lf||r1||r2||r3||rf||np||pr){e.preventDefault();e.stopImmediatePropagation();if(pf)post(pf);if(lf)login(lf);if(r1)reg1(r1);if(r2)reg2(r2);if(r3)reg3(r3);if(rf)reset(rf);if(np)newpass(np);if(pr)profile(pr)}},true);
-  document.addEventListener('click',e=>{if(!on())return;const open=e.target.closest('[data-login-cta],[data-fw-open],[data-sb-open]'),close=e.target.closest('[data-sb-close]'),go=e.target.closest('[data-go]'),send=e.target.closest('[data-send-code]'),fd=e.target.closest('[data-sb-action]'),ad=e.target.closest('[data-sb-admin]'),lo=e.target.closest('[data-sb-logout]');if(open||close||go||send||fd||ad||lo||e.target.matches('[data-sb-auth]')){e.preventDefault();e.stopImmediatePropagation();if(open)openModal();if(close||e.target.matches('[data-sb-auth]'))closeModal();if(go)openModal(go.dataset.go);if(send){const f=send.closest('[data-reg1]');if(f)sendCode(f)}if(fd)feed(fd);if(ad)admin(ad);if(lo)db().signOut().then(async()=>{me=null;recovery=false;await refreshUser();await renderAdmin();closeModal();toast('已退出。')})}},true);
-  async function boot(){if(booted||!on())return;booted=true;modal();userbar();setTimeout(async()=>{await refreshUser();renderOverride();await refreshPosts();await renderAdmin();db().onAuthChange(async event=>{if(event==='PASSWORD_RECOVERY'){recovery=true;openModal('newpass')}await refreshUser();renderOverride();await refreshPosts();await renderAdmin()})},0)}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+
+  async function afterLogin(msg){
+    me=await db().getCurrentUser().catch(()=>null);
+    await refreshUser();
+    await refreshPosts();
+    fillProfile();
+    closeModal();
+    toast(msg||('欢迎，'+(me?.nickname||'研究员')));
+  }
+
+  async function login(f){
+    const d=new FormData(f),email=String(d.get('email')||'').trim(),password=String(d.get('password')||'').trim();
+    if(!email.includes('@'))return toast('请填写邮箱。');
+    if(password.length<6)return toast('请填写密码。');
+    try{await db().signInPassword({email,password});await afterLogin()}catch(e){toast(e.message||'登录失败。')}
+  }
+
+  async function sendCode(f){
+    const d=new FormData(f),email=String(d.get('email')||'').trim();
+    if(!email.includes('@'))return toast('请填写邮箱。');
+    try{await db().sendEmailOtp({email,nickname:''});regEmail=email;toast('验证码已发送，请查看邮箱。');f.querySelector('[name="token"]')?.focus()}catch(e){toast(String(e.message||'').includes('rate')?'发送太频繁，请稍后再试。':(e.message||'发送失败。'))}
+  }
+
+  async function reg1(f){
+    const d=new FormData(f),email=String(d.get('email')||'').trim(),token=String(d.get('token')||'').trim();
+    if(!email.includes('@'))return toast('请填写邮箱。');
+    if(token.length<6)return toast('请填写验证码。');
+    try{const r=await db().verifyEmailOtp({email,token});me=r.user||await db().getCurrentUser().catch(()=>null);regEmail=email;regVerified=true;await refreshUser();show('register2');toast('邮箱验证成功，请设置密码。')}catch(e){toast(e.message||'验证失败。')}
+  }
+
+  async function reg2(f){
+    const btn=f.querySelector('button[type="submit"]');
+    const old=btn?btn.textContent:'';
+    try{
+      if(btn){btn.textContent='保存中...';btn.disabled=true;btn.classList.add('fw-btn-loading');}
+      if(!me)me=await db().getCurrentUser().catch(()=>null);
+      if(!me){toast('登录状态未同步，请返回第一步重新验证邮箱。');return}
+      const d=new FormData(f),p=String(d.get('password')||'').trim(),p2=String(d.get('password2')||'').trim();
+      if(p.length<6){toast('密码至少 6 位。');return}
+      if(p!==p2){toast('两次密码不一致。');return}
+      await db().updatePassword({password:p});
+      regVerified=true;
+      regPassword=true;
+      show('register3');
+      toast('密码已保存，请完善资料。');
+    }catch(e){toast(e.message||'密码保存失败。')}
+    finally{if(btn){btn.textContent=old;btn.disabled=false;btn.classList.remove('fw-btn-loading');}}
+  }
+
+  async function reg3(f){
+    if(!regPassword||!me)return toast('请先设置密码。');
+    const d=new FormData(f),nickname=String(d.get('nickname')||'').trim(),avatarFile=f.querySelector('[name="avatar"]')?.files?.[0];
+    try{if(nickname||avatarFile)await db().updateProfile({nickname,avatarFile});const email=regEmail||me.email||'';await db().signOut();me=null;regVerified=false;regPassword=false;await refreshUser();closeModal();toast('注册成功，请登录。');setTimeout(()=>openModal('login',{email,focusPassword:true}),550)}catch(e){toast(e.message||'注册完成失败。')}
+  }
+
+  async function reset(f){
+    const email=String(new FormData(f).get('email')||'').trim();
+    if(!email.includes('@'))return toast('请填写邮箱。');
+    try{await db().sendPasswordReset({email});toast('找回密码邮件已发送，请查看邮箱。')}catch(e){toast(e.message||'发送失败。')}
+  }
+
+  async function newpass(f){
+    const d=new FormData(f),p=String(d.get('password')||'').trim(),p2=String(d.get('password2')||'').trim();
+    if(p.length<6)return toast('密码至少 6 位。');
+    if(p!==p2)return toast('两次密码不一致。');
+    try{await db().updatePassword({password:p});recovery=false;await db().signOut();me=null;await refreshUser();closeModal();toast('新密码已保存，请登录。');setTimeout(()=>openModal('login'),550)}catch(e){toast(e.message||'保存失败。')}
+  }
+
+  async function profile(f){
+    if(!needLogin())return;
+    const d=new FormData(f),nickname=String(d.get('nickname')||'').trim(),password=String(d.get('password')||'').trim(),avatarFile=f.querySelector('[name="avatar"]')?.files?.[0];
+    try{if(nickname||avatarFile)await db().updateProfile({nickname,avatarFile});if(password)await db().updatePassword({password});await refreshUser();await refreshPosts();fillProfile();toast('资料已保存。')}catch(e){toast(e.message||'资料保存失败。')}
+  }
+
+  async function post(f){
+    if(!needLogin())return;
+    const text=f.querySelector('textarea'),content=text.value.trim();
+    if(!content)return text.focus();
+    const status=f.querySelector('.chip.active[data-status]')?.dataset.status||'今日无效';
+    try{await db().createPost({content,status});text.value='';await refreshPosts();toast('已发布到数据库。')}catch(e){toast(e.message||'发布失败。')}
+  }
+
+  async function feed(btn){
+    const card=btn.closest('.post-card'),postId=Number(card?.dataset.id),a=btn.dataset.sbAction;
+    if(a==='comment-toggle')return card.querySelector('.comment-box')?.classList.toggle('show');
+    if(!needLogin())return;
+    try{
+      if(a==='comment-submit'){
+        const input=card.querySelector('.comment-box input'),content=input.value.trim();
+        if(!content)return;
+        await db().createComment({postId,content});
+        await refreshPosts();
+        document.querySelector(`.post-card[data-id="${postId}"] .comment-box`)?.classList.add('show');
+        return;
+      }
+      const r=await db().react({postId,type:a});
+      if(r.already)return toast('同一个账号，这个按钮只能点一次。');
+      await refreshPosts();
+    }catch(e){toast(e.message||'操作失败。')}
+  }
+
+  async function renderAdmin(){
+    const panel=$('[data-admin-panel]');
+    if(!panel||!on())return;
+    if(!me?.isAdmin){panel.innerHTML='<article class="fw-admin-card"><p class="fw-kicker">ADMIN ACCESS</p><h2>站长管理入口</h2><p>请先用管理员账号登录。</p><button class="btn dark" data-sb-open type="button">登录管理员账号 →</button></article>';return}
+    try{const users=await db().listUsers(),posts=typeof getPosts==='function'?getPosts():[],cc=posts.reduce((s,p)=>s+(p.comments||[]).length,0);panel.innerHTML=`<div class="fw-admin-head"><div><p class="fw-kicker">ADMIN PANEL</p><h2>站长控制台</h2><p>当前管理数据库中的真实内容。</p></div><div><button class="btn light-line" data-sb-logout type="button">退出</button></div></div><div class="fw-stats"><div><b>${users.length}</b><span>账号</span></div><div><b>${posts.length}</b><span>帖子</span></div><div><b>${cc}</b><span>评论</span></div></div>`}catch(e){panel.innerHTML=`<article class="fw-admin-card"><h2>读取失败</h2><p>${esc(e.message)}</p></article>`}
+  }
+
+  async function admin(btn){
+    if(!me?.isAdmin)return openModal('login');
+    const a=btn.dataset.sbAdmin;
+    try{if(a==='delete-post')await db().deletePost(Number(btn.dataset.postId));if(a==='delete-comment')await db().deleteComment(Number(btn.dataset.commentId));if(a==='disable-user')await db().setUserBanned(btn.dataset.userId,true);if(a==='restore-user')await db().setUserBanned(btn.dataset.userId,false);await refreshPosts();await renderAdmin();toast('管理操作已完成。')}catch(e){toast(e.message||'管理失败。')}
+  }
+
+  document.addEventListener('submit',e=>{
+    if(!on())return;
+    const pf=e.target.closest('[data-post-form]'),lf=e.target.closest('[data-login]'),r1=e.target.closest('[data-reg1]'),r2=e.target.closest('[data-reg2]'),r3=e.target.closest('[data-reg3]'),rf=e.target.closest('[data-reset]'),np=e.target.closest('[data-newpass]'),pr=e.target.closest('[data-profile]');
+    if(pf||lf||r1||r2||r3||rf||np||pr){e.preventDefault();e.stopImmediatePropagation();if(pf)post(pf);if(lf)login(lf);if(r1)reg1(r1);if(r2)reg2(r2);if(r3)reg3(r3);if(rf)reset(rf);if(np)newpass(np);if(pr)profile(pr)}
+  },true);
+
+  document.addEventListener('click',e=>{
+    if(!on())return;
+    const open=e.target.closest('[data-login-cta],[data-fw-open],[data-sb-open]'),close=e.target.closest('[data-sb-close]'),go=e.target.closest('[data-go]'),send=e.target.closest('[data-send-code]'),fd=e.target.closest('[data-sb-action]'),ad=e.target.closest('[data-sb-admin]'),lo=e.target.closest('[data-sb-logout]');
+    if(open||close||go||send||fd||ad||lo||e.target.matches('[data-sb-auth]')){
+      e.preventDefault();e.stopImmediatePropagation();
+      if(open)openModal();
+      if(close||e.target.matches('[data-sb-auth]'))closeModal();
+      if(go)openModal(go.dataset.go);
+      if(send){const f=send.closest('[data-reg1]');if(f)sendCode(f)}
+      if(fd)feed(fd);
+      if(ad)admin(ad);
+      if(lo)db().signOut().then(async()=>{me=null;recovery=false;await refreshUser();await renderAdmin();closeModal();toast('已退出。')});
+    }
+  },true);
+
+  async function boot(){
+    if(booted||!on())return;
+    booted=true;
+    modal();
+    userbar();
+    setTimeout(async()=>{
+      await refreshUser();
+      renderOverride();
+      await refreshPosts();
+      await renderAdmin();
+      db().onAuthChange(async event=>{
+        if(event==='PASSWORD_RECOVERY'){recovery=true;openModal('newpass')}
+        await refreshUser();
+        renderOverride();
+        await refreshPosts();
+        await renderAdmin();
+      });
+    },0);
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+  else boot();
 })();
