@@ -3,8 +3,15 @@
 (function(){
   if(window.__FW_SUPABASE_AUTH_FLOW_LOADED__) return;
   window.__FW_SUPABASE_AUTH_FLOW_LOADED__ = true;
-  const script = document.createElement('script');
-  script.src = 'assets/supabase-auth-flow.js?v=20260508-auth-flow';
-  script.defer = false;
-  document.head.appendChild(script);
+
+  function load(src){
+    const script = document.createElement('script');
+    script.src = src;
+    script.defer = false;
+    document.head.appendChild(script);
+  }
+
+  load('assets/supabase-auth-flow.js?v=20260508-auth-flow-2');
+  load('assets/supabase-profile-fix.js?v=20260508-profile-fix');
+  load('assets/supabase-logout-fix.js?v=20260508-logout-fix');
 })();
