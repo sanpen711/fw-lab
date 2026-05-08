@@ -5,63 +5,912 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>废话档案｜F.w 研究所</title>
   <meta name="description" content="F.w 研究所：废话档案榜单。" />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/auth.css" />
   <style>
-    :root{--bg:#f5f1e8;--paper:#fffdf7;--ink:#171715;--muted:#6f6a5f;--night:#101a12;--line:rgba(23,23,21,.18);--soft-line:rgba(23,23,21,.10);--red:#d97979;--red-deep:#9d4a4a;--gold:#d8a84a;--silver:#b9b8ae;--bronze:#bd8356}
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 84% 23%,rgba(217,121,121,.20),transparent 21rem),linear-gradient(180deg,#fbfaf4 0%,var(--bg) 58%,#eee7db 100%);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",Arial,sans-serif}a{color:inherit;text-decoration:none}button,input{font:inherit}
-    .page{min-height:100vh;padding:32px clamp(20px,4vw,56px) 56px}.header{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:84px}.logo{font-size:25px;font-weight:950;letter-spacing:-.04em;white-space:nowrap}.nav{display:flex;align-items:center;justify-content:center;gap:30px;font-weight:850;color:#57544d;font-size:14px}.nav a{position:relative;padding:6px 0}.nav a.active{color:#111;font-weight:950}.nav a.active:after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--ink)}.user-pill{display:flex;align-items:center;gap:8px;border:1px solid rgba(23,23,21,.65);border-radius:999px;padding:6px 12px 6px 7px;font-weight:900;background:rgba(255,255,255,.32);white-space:nowrap}.user-avatar{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#d97979;color:#fff;font-size:13px;overflow:hidden}.menu-btn{display:none;width:40px;height:40px;border:1px solid rgba(23,23,21,.28);background:rgba(255,255,255,.35);border-radius:999px;cursor:pointer;font-size:20px;font-weight:950}.mobile-nav{display:none;margin:-58px 0 42px;border:1px solid var(--line);background:rgba(255,253,247,.84);padding:12px}.mobile-nav.show{display:grid}.mobile-nav a{padding:12px 10px;border-bottom:1px solid var(--soft-line);font-weight:900}.mobile-nav a:last-child{border-bottom:0}
-    .hero{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:36px;align-items:end;margin-bottom:62px}.eyebrow{color:var(--red);font-weight:950;letter-spacing:.12em;font-size:13px;margin-bottom:18px;text-transform:uppercase}h1{font-size:clamp(68px,9vw,138px);line-height:.9;letter-spacing:-.1em;margin:0 0 26px;white-space:nowrap}.hero p{font-size:18px;line-height:1.9;color:#5f655d;font-weight:850;max-width:860px;margin:0}.update-card{border:1px solid var(--line);background:rgba(255,253,247,.6);padding:22px;min-height:176px;display:flex;flex-direction:column;justify-content:space-between;gap:18px}.update-card small{color:var(--red-deep);font-weight:950;letter-spacing:.08em}.update-card strong{font-size:28px;letter-spacing:-.05em;line-height:1.1}.update-card span{color:var(--muted);font-weight:800;line-height:1.6}.section-title{display:flex;align-items:end;justify-content:space-between;gap:20px;margin:0 0 18px}.section-title h2{margin:0;font-size:34px;letter-spacing:-.06em}.section-title p{margin:0;color:var(--muted);font-weight:800}
-    .weekly-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:62px}.award-card{position:relative;overflow:hidden;border:1px solid var(--line);background:rgba(255,253,247,.86);min-height:500px;padding:24px 22px 22px;display:grid;grid-template-rows:auto 1fr auto;gap:18px}.award-card:after{content:"";position:absolute;right:-80px;top:-90px;width:220px;height:220px;border-radius:999px;background:rgba(217,121,121,.14);filter:blur(2px)}.award-head{position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.award-head small{display:block;color:var(--red);font-weight:950;margin-bottom:10px;letter-spacing:.08em}.award-head h3{font-size:31px;line-height:1;margin:0;letter-spacing:-.06em}.medal{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--night);color:#fff;font-weight:950;border:1px solid rgba(217,121,121,.55);flex:0 0 auto}
-    .podium-stage{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1.08fr 1fr;align-items:end;gap:10px;min-height:286px;margin-top:10px;padding-top:30px}.winner{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;text-align:center}.winner.first{order:2}.winner.second{order:1}.winner.third{order:3}.winner-meta{width:100%;display:flex;flex-direction:column;align-items:center;margin-bottom:8px;min-width:0}.crown{width:34px;height:26px;margin-bottom:-3px;filter:drop-shadow(0 4px 5px rgba(0,0,0,.12))}.winner-avatar{width:58px;height:58px;border-radius:999px;display:grid;place-items:center;background:#fffdf7;border:2px solid rgba(23,23,21,.65);font-size:22px;font-weight:950;box-shadow:0 10px 22px rgba(0,0,0,.08)}.winner.first .winner-avatar{width:66px;height:66px;border-color:var(--gold);background:#172015;color:#fff}.winner-name{margin-top:8px;width:100%;font-weight:950;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em}.winner-room{margin-top:3px;width:100%;font-weight:800;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.winner-score{margin-top:4px;font-size:21px;font-weight:950;letter-spacing:-.06em}.winner.first .winner-score{color:var(--gold)}.winner.second .winner-score{color:#8b8a84}.winner.third .winner-score{color:#98643f}.podium-block{width:100%;border:1px solid rgba(23,23,21,.22);background:rgba(255,255,255,.45);display:grid;place-items:center;position:relative;overflow:hidden}.podium-block:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,0));pointer-events:none}.podium-block em{position:relative;z-index:1;font-style:normal;font-size:54px;font-weight:950;letter-spacing:-.08em;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.20)}.winner.first .podium-block{height:128px;background:linear-gradient(180deg,#d8a84a,#9d6d1e)}.winner.second .podium-block{height:96px;background:linear-gradient(180deg,#c5c4bc,#7c7b75)}.winner.third .podium-block{height:72px;background:linear-gradient(180deg,#c48a5d,#7f4e31)}.crown.gold path{fill:var(--gold)}.crown.silver path{fill:var(--silver)}.crown.bronze path{fill:var(--bronze)}.quote{position:relative;z-index:1;padding:15px;border-left:4px solid rgba(217,121,121,.7);background:rgba(217,121,121,.08);color:#5e574d;font-weight:850;line-height:1.65}.quote b{color:var(--red-deep)}
-    .board-layout{display:grid;grid-template-columns:1.12fr .88fr;gap:24px;align-items:start;margin-bottom:64px}.daily-board{border:1px solid var(--line);background:var(--paper);padding:24px}.tabs{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 20px}.tab{border:1px solid var(--line);background:transparent;border-radius:999px;padding:9px 14px;font-weight:950;cursor:pointer;color:#49453e}.tab.active{background:var(--night);color:#fff;border-color:var(--night)}.daily-list{display:grid;gap:8px}.daily-row{display:grid;grid-template-columns:40px 1fr 70px;gap:12px;align-items:center;border-bottom:1px solid var(--soft-line);padding:12px 0;font-weight:900}.daily-row:first-child{border-top:1px solid var(--soft-line)}.daily-row .num{color:var(--red-deep);font-weight:950}.daily-row .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.daily-row .count{text-align:right;font-size:20px;letter-spacing:-.05em}.archive-note{border:1px solid rgba(255,255,255,.12);background:var(--night);color:#fff;padding:28px;min-height:100%}.archive-note small{color:var(--red);font-weight:950;letter-spacing:.1em}.archive-note h3{font-size:35px;line-height:1.05;letter-spacing:-.06em;margin:15px 0 18px}.archive-note p{color:rgba(255,255,255,.72);font-weight:800;line-height:1.8;margin:0 0 22px}.rule-list{display:grid;gap:10px;margin-top:24px}.rule{border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.04);padding:14px;color:rgba(255,255,255,.78);font-weight:800;line-height:1.55}.history{border-top:1px solid var(--line);padding-top:34px}.history-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:20px}.history-card{border:1px solid var(--line);background:rgba(255,253,247,.55);padding:20px;min-height:180px}.history-card small{color:var(--red-deep);font-weight:950;letter-spacing:.08em}.history-card h4{font-size:26px;letter-spacing:-.05em;margin:14px 0 16px}.history-card p{margin:0;color:var(--muted);font-weight:850;line-height:1.7}.footer{display:flex;justify-content:space-between;gap:20px;margin-top:58px;padding-top:22px;border-top:1px solid var(--line);color:var(--muted);font-weight:850;font-size:13px}
-    @media(max-width:1160px){.weekly-grid{grid-template-columns:1fr}.award-card{min-height:auto}.podium-stage{max-width:560px;margin:0 auto;width:100%}}@media(max-width:980px){.header{margin-bottom:60px}.nav,.user-pill{display:none}.menu-btn{display:grid;place-items:center}.hero,.board-layout{grid-template-columns:1fr}.history-grid{grid-template-columns:1fr}.page{padding:24px 18px 42px}h1{font-size:64px;white-space:normal}.hero{margin-bottom:48px}.update-card{min-height:auto;gap:18px}.section-title{align-items:flex-start;flex-direction:column}.footer{flex-direction:column}}@media(max-width:520px){.podium-stage{gap:6px}.winner-avatar{width:48px;height:48px}.winner.first .winner-avatar{width:54px;height:54px}.winner-name{font-size:12px}.winner-room{display:none}.podium-block em{font-size:38px}.winner.first .podium-block{height:112px}.winner.second .podium-block{height:84px}.winner.third .podium-block{height:64px}.award-card{padding:20px 14px 16px}.daily-row{grid-template-columns:34px 1fr 54px}}
+    :root{
+      --archive-bg:#f5f1e8;
+      --archive-paper:#fffdf7;
+      --archive-ink:#171715;
+      --archive-muted:#6f6a5f;
+      --archive-night:#101a12;
+      --archive-line:rgba(23,23,21,.18);
+      --archive-soft-line:rgba(23,23,21,.10);
+      --archive-red:#d97979;
+      --archive-red-deep:#9d4a4a;
+      --archive-gold:#d8a84a;
+      --archive-silver:#b9b8ae;
+      --archive-bronze:#bd8356;
+    }
+    body.archive-body{
+      margin:0;
+      background:
+        radial-gradient(circle at 84% 23%,rgba(217,121,121,.20),transparent 21rem),
+        linear-gradient(180deg,#fbfaf4 0%,var(--archive-bg) 58%,#eee7db 100%);
+      color:var(--archive-ink);
+    }
+    .archive-page{
+      min-height:100vh;
+      padding:32px clamp(20px,4vw,56px) 56px;
+    }
+    .archive-page .header{
+      padding:0;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:24px;
+      margin-bottom:84px;
+    }
+    .archive-page .logo{
+      color:var(--archive-ink);
+      font-size:25px;
+      font-weight:950;
+      letter-spacing:-.04em;
+      white-space:nowrap;
+    }
+    .archive-page .nav{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:30px;
+      font-weight:850;
+      color:#57544d;
+      font-size:14px;
+    }
+    .archive-page .nav a{
+      position:relative;
+      padding:6px 0;
+      opacity:1;
+    }
+    .archive-page .nav a.active{
+      color:#111;
+      font-weight:950;
+    }
+    .archive-page .nav a.active:after{
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      height:2px;
+      background:var(--archive-ink);
+    }
+    .archive-page .menu-btn{
+      display:none;
+      width:40px;
+      height:40px;
+      border:1px solid rgba(23,23,21,.28);
+      background:rgba(255,255,255,.35);
+      border-radius:999px;
+      cursor:pointer;
+      font-size:20px;
+      font-weight:950;
+      color:var(--archive-ink);
+    }
+    .archive-page .mobile-nav{
+      display:none;
+      margin:-58px 0 42px;
+      border:1px solid var(--archive-line);
+      background:rgba(255,253,247,.84);
+      padding:12px;
+      color:var(--archive-ink);
+    }
+    .archive-page .mobile-nav.show{display:grid}
+    .archive-page .mobile-nav a{
+      display:block;
+      padding:12px 10px;
+      border-bottom:1px solid var(--archive-soft-line);
+      font-weight:900;
+    }
+    .archive-page .mobile-nav a:last-child{border-bottom:0}
+
+    .archive-hero{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 360px;
+      gap:36px;
+      align-items:end;
+      margin-bottom:62px;
+    }
+    .archive-eyebrow{
+      color:var(--archive-red);
+      font-weight:950;
+      letter-spacing:.12em;
+      font-size:13px;
+      margin-bottom:18px;
+      text-transform:uppercase;
+    }
+    .archive-hero h1{
+      font-size:clamp(68px,9vw,138px);
+      line-height:.9;
+      letter-spacing:-.1em;
+      margin:0 0 26px;
+      white-space:nowrap;
+      color:var(--archive-ink);
+    }
+    .archive-hero p{
+      font-size:18px;
+      line-height:1.9;
+      color:#5f655d;
+      font-weight:850;
+      max-width:860px;
+      margin:0;
+    }
+    .update-card{
+      border:1px solid var(--archive-line);
+      background:rgba(255,253,247,.6);
+      padding:22px;
+      min-height:176px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:18px;
+    }
+    .update-card small{
+      color:var(--archive-red-deep);
+      font-weight:950;
+      letter-spacing:.08em;
+    }
+    .update-card strong{
+      font-size:28px;
+      letter-spacing:-.05em;
+      line-height:1.1;
+    }
+    .update-card span{
+      color:var(--archive-muted);
+      font-weight:800;
+      line-height:1.6;
+    }
+    .archive-section-title{
+      display:flex;
+      align-items:end;
+      justify-content:space-between;
+      gap:20px;
+      margin:0 0 18px;
+    }
+    .archive-section-title h2{
+      margin:0;
+      font-size:34px;
+      letter-spacing:-.06em;
+      line-height:1.1;
+    }
+    .archive-section-title p{
+      margin:0;
+      color:var(--archive-muted);
+      font-weight:800;
+    }
+
+    .weekly-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:20px;
+      margin-bottom:62px;
+    }
+    .award-card{
+      position:relative;
+      overflow:hidden;
+      border:1px solid var(--archive-line);
+      background:rgba(255,253,247,.86);
+      min-height:500px;
+      padding:24px 22px 22px;
+      display:grid;
+      grid-template-rows:auto 1fr auto;
+      gap:18px;
+    }
+    .award-card:after{
+      content:"";
+      position:absolute;
+      right:-80px;
+      top:-90px;
+      width:220px;
+      height:220px;
+      border-radius:999px;
+      background:rgba(217,121,121,.14);
+      filter:blur(2px);
+    }
+    .award-head{
+      position:relative;
+      z-index:1;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+    }
+    .award-head small{
+      display:block;
+      color:var(--archive-red);
+      font-weight:950;
+      margin-bottom:10px;
+      letter-spacing:.08em;
+    }
+    .award-head h3{
+      font-size:31px;
+      line-height:1;
+      margin:0;
+      letter-spacing:-.06em;
+    }
+    .medal{
+      width:46px;
+      height:46px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:var(--archive-night);
+      color:#fff;
+      font-weight:950;
+      border:1px solid rgba(217,121,121,.55);
+      flex:0 0 auto;
+    }
+    .podium-stage{
+      position:relative;
+      z-index:1;
+      display:grid;
+      grid-template-columns:1fr 1.08fr 1fr;
+      align-items:end;
+      gap:10px;
+      min-height:286px;
+      margin-top:10px;
+      padding-top:30px;
+    }
+    .winner{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-end;
+      min-width:0;
+      text-align:center;
+    }
+    .winner.first{order:2}.winner.second{order:1}.winner.third{order:3}
+    .winner-meta{
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      margin-bottom:8px;
+      min-width:0;
+    }
+    .crown{
+      width:34px;
+      height:26px;
+      margin-bottom:-3px;
+      filter:drop-shadow(0 4px 5px rgba(0,0,0,.12));
+    }
+    .winner-avatar{
+      width:58px;
+      height:58px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      background:#fffdf7;
+      border:2px solid rgba(23,23,21,.65);
+      font-size:20px;
+      font-weight:950;
+      box-shadow:0 10px 22px rgba(0,0,0,.08);
+      overflow:hidden;
+    }
+    .winner-avatar img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .winner.first .winner-avatar{
+      width:66px;
+      height:66px;
+      border-color:var(--archive-gold);
+      background:#172015;
+      color:#fff;
+    }
+    .winner-name{
+      margin-top:8px;
+      width:100%;
+      font-weight:950;
+      font-size:14px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      letter-spacing:-.02em;
+    }
+    .winner-room{
+      margin-top:3px;
+      width:100%;
+      font-weight:800;
+      font-size:11px;
+      color:var(--archive-muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .winner-score{
+      margin-top:4px;
+      font-size:21px;
+      font-weight:950;
+      letter-spacing:-.06em;
+    }
+    .winner.first .winner-score{color:var(--archive-gold)}
+    .winner.second .winner-score{color:#8b8a84}
+    .winner.third .winner-score{color:#98643f}
+    .podium-block{
+      width:100%;
+      border:1px solid rgba(23,23,21,.22);
+      background:rgba(255,255,255,.45);
+      display:grid;
+      place-items:center;
+      position:relative;
+      overflow:hidden;
+    }
+    .podium-block:before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,0));
+      pointer-events:none;
+    }
+    .podium-block em{
+      position:relative;
+      z-index:1;
+      font-style:normal;
+      font-size:54px;
+      font-weight:950;
+      letter-spacing:-.08em;
+      color:#fff;
+      text-shadow:0 2px 0 rgba(0,0,0,.20);
+    }
+    .winner.first .podium-block{height:128px;background:linear-gradient(180deg,#d8a84a,#9d6d1e)}
+    .winner.second .podium-block{height:96px;background:linear-gradient(180deg,#c5c4bc,#7c7b75)}
+    .winner.third .podium-block{height:72px;background:linear-gradient(180deg,#c48a5d,#7f4e31)}
+    .crown.gold path{fill:var(--archive-gold)}
+    .crown.silver path{fill:var(--archive-silver)}
+    .crown.bronze path{fill:var(--archive-bronze)}
+    .quote{
+      position:relative;
+      z-index:1;
+      padding:15px;
+      border-left:4px solid rgba(217,121,121,.7);
+      background:rgba(217,121,121,.08);
+      color:#5e574d;
+      font-weight:850;
+      line-height:1.65;
+    }
+    .quote b{color:var(--archive-red-deep)}
+    .empty-award{
+      position:relative;
+      z-index:1;
+      align-self:center;
+      justify-self:center;
+      padding:26px 18px;
+      color:var(--archive-muted);
+      font-weight:900;
+      text-align:center;
+      border:1px dashed var(--archive-line);
+      background:rgba(255,255,255,.42);
+      width:100%;
+    }
+
+    .board-layout{
+      display:grid;
+      grid-template-columns:1.12fr .88fr;
+      gap:24px;
+      align-items:start;
+      margin-bottom:64px;
+    }
+    .daily-board{
+      border:1px solid var(--archive-line);
+      background:var(--archive-paper);
+      padding:24px;
+    }
+    .tabs{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin:18px 0 20px;
+    }
+    .tab{
+      border:1px solid var(--archive-line);
+      background:transparent;
+      border-radius:999px;
+      padding:9px 14px;
+      font-weight:950;
+      cursor:pointer;
+      color:#49453e;
+    }
+    .tab.active{
+      background:var(--archive-night);
+      color:#fff;
+      border-color:var(--archive-night);
+    }
+    .daily-list{display:grid;gap:8px}
+    .daily-row{
+      display:grid;
+      grid-template-columns:40px 42px 1fr 70px;
+      gap:12px;
+      align-items:center;
+      border-bottom:1px solid var(--archive-soft-line);
+      padding:12px 0;
+      font-weight:900;
+    }
+    .daily-row:first-child{border-top:1px solid var(--archive-soft-line)}
+    .daily-row .num{color:var(--archive-red-deep);font-weight:950}
+    .daily-row .small-avatar{
+      width:34px;
+      height:34px;
+      border-radius:999px;
+      overflow:hidden;
+      display:grid;
+      place-items:center;
+      background:#171715;
+      color:#fff;
+      font-size:12px;
+      font-weight:950;
+      border:1px solid rgba(217,121,121,.55);
+    }
+    .daily-row .small-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+    .daily-row .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .daily-row .count{text-align:right;font-size:20px;letter-spacing:-.05em}
+    .empty-list{
+      padding:26px 18px;
+      color:var(--archive-muted);
+      border:1px dashed var(--archive-line);
+      font-weight:900;
+      text-align:center;
+      background:rgba(255,255,255,.35);
+    }
+    .archive-note{
+      border:1px solid rgba(255,255,255,.12);
+      background:var(--archive-night);
+      color:#fff;
+      padding:28px;
+      min-height:100%;
+    }
+    .archive-note small{
+      color:var(--archive-red);
+      font-weight:950;
+      letter-spacing:.1em;
+    }
+    .archive-note h3{
+      font-size:35px;
+      line-height:1.05;
+      letter-spacing:-.06em;
+      margin:15px 0 18px;
+    }
+    .archive-note p{
+      color:rgba(255,255,255,.72);
+      font-weight:800;
+      line-height:1.8;
+      margin:0 0 22px;
+    }
+    .rule-list{display:grid;gap:10px;margin-top:24px}
+    .rule{
+      border:1px solid rgba(255,255,255,.11);
+      background:rgba(255,255,255,.04);
+      padding:14px;
+      color:rgba(255,255,255,.78);
+      font-weight:800;
+      line-height:1.55;
+    }
+    .history{
+      border-top:1px solid var(--archive-line);
+      padding-top:34px;
+    }
+    .history-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:18px;
+      margin-top:20px;
+    }
+    .history-card{
+      border:1px solid var(--archive-line);
+      background:rgba(255,253,247,.55);
+      padding:20px;
+      min-height:180px;
+    }
+    .history-card small{
+      color:var(--archive-red-deep);
+      font-weight:950;
+      letter-spacing:.08em;
+    }
+    .history-card h4{
+      font-size:26px;
+      letter-spacing:-.05em;
+      margin:14px 0 16px;
+    }
+    .history-card p{
+      margin:0;
+      color:var(--archive-muted);
+      font-weight:850;
+      line-height:1.7;
+    }
+    .archive-page .footer{
+      display:flex;
+      justify-content:space-between;
+      gap:20px;
+      margin-top:58px;
+      padding:22px 0 0;
+      border-top:1px solid var(--archive-line);
+      background:transparent;
+      color:var(--archive-muted);
+      font-weight:850;
+      font-size:13px;
+    }
+    .archive-loading{
+      grid-column:1/-1;
+      padding:30px;
+      border:1px dashed var(--archive-line);
+      background:rgba(255,253,247,.6);
+      color:var(--archive-muted);
+      font-weight:900;
+      text-align:center;
+    }
+    @media(max-width:1160px){
+      .weekly-grid{grid-template-columns:1fr}
+      .award-card{min-height:auto}
+      .podium-stage{max-width:560px;margin:0 auto;width:100%}
+    }
+    @media(max-width:980px){
+      .archive-page{padding:24px 18px 42px}
+      .archive-page .header{margin-bottom:60px}
+      .archive-page .nav{display:none}
+      .archive-page .menu-btn{display:grid;place-items:center}
+      .archive-hero,.board-layout{grid-template-columns:1fr}
+      .history-grid{grid-template-columns:1fr}
+      .archive-hero h1{font-size:64px;white-space:normal}
+      .archive-hero{margin-bottom:48px}
+      .update-card{min-height:auto;gap:18px}
+      .archive-section-title{align-items:flex-start;flex-direction:column}
+      .archive-page .footer{flex-direction:column}
+    }
+    @media(max-width:520px){
+      .podium-stage{gap:6px}
+      .winner-avatar{width:48px;height:48px}
+      .winner.first .winner-avatar{width:54px;height:54px}
+      .winner-name{font-size:12px}
+      .winner-room{display:none}
+      .podium-block em{font-size:38px}
+      .winner.first .podium-block{height:112px}
+      .winner.second .podium-block{height:84px}
+      .winner.third .podium-block{height:64px}
+      .award-card{padding:20px 14px 16px}
+      .daily-row{grid-template-columns:30px 36px 1fr 48px;gap:8px}
+      .daily-row .count{font-size:17px}
+    }
   </style>
 </head>
-<body>
-  <main class="page">
+<body class="archive-body">
+  <main class="archive-page page">
     <header class="header">
       <a class="logo" href="index.html">F.w 研究所</a>
-      <nav class="nav"><a href="index.html">首页</a><a href="square.html">精神广场</a><a href="rooms.html">摸鱼房间</a><a class="active" href="archive.html">废话档案</a><a href="rules.html">入馆须知</a></nav>
-      <div class="user-pill"><span class="user-avatar">😎</span><span>没理咋了</span></div>
-      <button class="menu-btn" type="button" aria-label="菜单" data-menu-btn>☰</button>
+      <nav class="nav">
+        <a href="index.html">首页</a>
+        <a href="square.html">精神广场</a>
+        <a href="rooms.html">摸鱼房间</a>
+        <a class="active" href="archive.html">废话档案</a>
+        <a href="rules.html">入馆须知</a>
+      </nav>
+      <button class="menu-btn" type="button" aria-label="菜单">☰</button>
     </header>
-    <nav class="mobile-nav" data-mobile-nav><a href="index.html">首页</a><a href="square.html">精神广场</a><a href="rooms.html">摸鱼房间</a><a href="archive.html">废话档案</a><a href="rules.html">入馆须知</a></nav>
+    <nav class="mobile-nav">
+      <a href="index.html">首页</a>
+      <a href="square.html">精神广场</a>
+      <a href="rooms.html">摸鱼房间</a>
+      <a href="archive.html">废话档案</a>
+      <a href="rules.html">入馆须知</a>
+      <a href="admin.html">管理入口</a>
+    </nav>
 
-    <section class="hero"><div><div class="eyebrow">WEEKLY / DAILY LOW POWER RANKING</div><h1>废话档案</h1><p>这里沉淀上班族的低功耗发言。每周一公布上周荣誉榜，每天 0 点更新昨日情绪残留榜。</p></div><aside class="update-card"><small>下一次更新</small><strong>周榜：下周一 00:00<br>日榜：明天 00:00</strong><span>统计来源：点赞、共鸣、递纸巾。被撤回、删除、举报异常的内容不进入榜单。</span></aside></section>
+    <section class="archive-hero">
+      <div>
+        <div class="archive-eyebrow">WEEKLY / DAILY LOW POWER RANKING</div>
+        <h1>废话档案</h1>
+        <p>这里沉淀上班族的低功耗发言。每周一公布上周荣誉榜，每天 0 点更新昨日情绪残留榜。</p>
+      </div>
+      <aside class="update-card">
+        <small>下一次更新</small>
+        <strong data-next-update>周榜：下周一 00:00<br>日榜：明天 00:00</strong>
+        <span>统计来源：精神广场的点赞、共鸣、递纸巾。自己给自己的反应不计入榜单。</span>
+      </aside>
+    </section>
 
-    <section><div class="section-title"><div><div class="eyebrow">LAST WEEK HONOR WALL</div><h2>上周低功耗荣誉榜</h2></div><p>三个奖项 · 领奖台前三名</p></div>
-      <div class="weekly-grid">
-        <article class="award-card"><div class="award-head"><div><small>LIKE KING</small><h3>点赞之王</h3></div><div class="medal">赞</div></div><div class="podium-stage">
-          <div class="winner second"><div class="winner-meta"><svg class="crown silver" viewBox="0 0 64 44"><path d="M8 36h48l4-26-16 12L32 4 20 22 4 10l4 26Zm2 3h44v5H10v-5Z"/></svg><div class="winner-avatar">会</div><div class="winner-name">会议幸存者</div><div class="winner-room">精神离岗室</div><div class="winner-score">71</div></div><div class="podium-block"><em>2</em></div></div>
-          <div class="winner first"><div class="winner-meta"><svg class="crown gold" viewBox="0 0 64 44"><path d="M8 36h48l4-26-16 12L32 4 20 22 4 10l4 26Zm2 3h44v5H10v-5Z"/></svg><div class="winner-avatar">没</div><div class="winner-name">没理咋了</div><div class="winner-room">今日牢骚房</div><div class="winner-score">86</div></div><div class="podium-block"><em>1</em></div></div>
-          <div class="winner third"><div class="winner-meta"><svg class="crown bronze" viewBox="0 0 64 44"><path d="M8 36h48l4-26-16 12L32 4 20 22 4 10l4 26Zm2 3h44v5H10v-5Z"/></svg><div class="winner-avatar">植</div><div class="winner-name">工位植物</div><div class="winner-room">低功耗休息区</div><div class="winner-score">64</div></div><div class="podium-block"><em>3</em></div></div>
-        </div><div class="quote"><b>代表废话：</b>“你已经完成了尚未开始的任务。”</div></article>
-
-        <article class="award-card"><div class="award-head"><div><small>RESONANCE KING</small><h3>共鸣王</h3></div><div class="medal">鸣</div></div><div class="podium-stage">
-          <div class="winner second"><div class="winner-meta"><svg class="crown silver" viewBox="0 0 64 44"><path d="M8 36h48l4-26-16 12L32 4 20 22 4 10l4 26Zm2 3h44v5H10v-5Z"/></svg><div class="winner-avatar">茶</div><div class="winner-name">茶水间路人</div><div class="winner-room">茶水间回声</div><div class="winner-score">88</div></div><div class="podium-block"><em>2</em></div></div>
-          <div class="winner first"><div class="winner-meta"><svg class="crown gold" viewBox="0 0 64 44"><path d="M8 36h48l4-26-16 12L32 4 20 22 4 10l4 26Zm2 3h44v5H10v-5Z"/></svg><div class="winner-avatar">低</div><div class="winner-name">低功耗研究员</div><div class="winner-room">今日牢骚房</div><div class="winner-score">103</div></div><div class="podium-block"><em>1</em></div></div>
-          <div class="winner third"><div class="winner-meta"><svg class="crown bronze" viewBox="0 0 64 44"><path d="M8 36h48l4-26-16 12L32 4 20 22 4 10l4 26Zm2 3h44v5H10v-5Z"/></svg><div class="winner-avatar">摸</div><div class="winner-name">摸鱼观察员</div><div class="winner-room">下班倒计时区</div><div class="winner-score">76</div></div><div class="podium-block"><em>3</em></div></div>
-        </div><div class="quote"><b>代表废话：</b>“我不是不想努力，我只是正在节能模式。”</div></article>
-
-        <article class="award-card"><div class="award-head"><div><small>TISSUE KING</small><h3>纸巾王</h3></div><div class="medal">纸</div></div><div class="podium-stage">
-          <div class="winner second"><div class="winner-meta"><svg class="crown silver" viewBox="0 0 64 44"><path d="M8 36h48l4-26-16 12L32 4 20 22 4 10l4 26Zm2 3h44v5H10v-5Z"/></svg><div class="winner-avatar">植</div><div class="winner-name">工位植物</div><div class="winner-room">今日牢骚房</div><div class="winner-score">49</div></div><div class="podium-block"><em>2</em></div></div>
-          <div class="winner first"><div class="winner-meta"><svg class="crown gold" viewBox="0 0 64 44"><path d="M8 36h48l4-26-16 12L32 4 20 22 4 10l4 26Zm2 3h44v5H10v-5Z"/></svg><div class="winner-avatar">离</div><div class="winner-name">精神离岗申请人</div><div class="winner-room">精神离岗室</div><div class="winner-score">57</div></div><div class="podium-block"><em>1</em></div></div>
-          <div class="winner third"><div class="winner-meta"><svg class="crown bronze" viewBox="0 0 64 44"><path d="M8 36h48l4-26-16 12L32 4 20 22 4 10l4 26Zm2 3h44v5H10v-5Z"/></svg><div class="winner-avatar">文</div><div class="winner-name">办公室文学家</div><div class="winner-room">废话研究室</div><div class="winner-score">43</div></div><div class="podium-block"><em>3</em></div></div>
-        </div><div class="quote"><b>代表废话：</b>“今天也没有崩溃，只是文件夹命名为最终版7。”</div></article>
+    <section>
+      <div class="archive-section-title">
+        <div>
+          <div class="archive-eyebrow">LAST WEEK HONOR WALL</div>
+          <h2>上周低功耗荣誉榜</h2>
+        </div>
+        <p>三个奖项 · 领奖台前三名</p>
+      </div>
+      <div class="weekly-grid" data-weekly-grid>
+        <div class="archive-loading">正在从数据库读取上周榜单...</div>
       </div>
     </section>
 
-    <section class="board-layout"><div class="daily-board"><div class="section-title"><div><div class="eyebrow">YESTERDAY TOP 10</div><h2>昨日情绪残留榜</h2></div><p>每天 0 点更新</p></div><div class="tabs"><button class="tab active" type="button" data-type="like">点赞榜</button><button class="tab" type="button" data-type="resonance">共鸣榜</button><button class="tab" type="button" data-type="tissue">纸巾榜</button></div><div class="daily-list" id="dailyList"></div></div><aside class="archive-note"><small>ARCHIVE RULES</small><h3>能进档案的，都是低功耗界的硬通货。</h3><p>每周三个榜单的前三名自动进入“历代废话档案”。榜单不是为了竞争，是为了证明大家都在以不同方式坚持上班。</p><div class="rule-list"><div class="rule">自己给自己的反应可以显示，但不计入榜单。</div><div class="rule">同一用户对同一条消息，同一类型只统计 1 次。</div><div class="rule">撤回、删除、被管理员处理的消息不进入榜单。</div><div class="rule">被举报异常的内容，先进入人工检查。</div></div></aside></section>
+    <section class="board-layout">
+      <div class="daily-board">
+        <div class="archive-section-title">
+          <div>
+            <div class="archive-eyebrow">YESTERDAY TOP 10</div>
+            <h2>昨日情绪残留榜</h2>
+          </div>
+          <p>每天 0 点更新</p>
+        </div>
+        <div class="tabs" role="tablist">
+          <button class="tab active" type="button" data-type="like">点赞榜</button>
+          <button class="tab" type="button" data-type="same">共鸣榜</button>
+          <button class="tab" type="button" data-type="tissue">纸巾榜</button>
+        </div>
+        <div class="daily-list" data-daily-list>
+          <div class="empty-list">正在读取昨日榜单...</div>
+        </div>
+      </div>
 
-    <section class="history"><div class="section-title"><div><div class="eyebrow">PAST ARCHIVES</div><h2>历代废话档案</h2></div><p>按周保存</p></div><div class="history-grid"><article class="history-card"><small>2026 / 第 19 周</small><h4>低功耗研究员</h4><p>共鸣王：我不是不想努力，我只是正在节能模式。</p></article><article class="history-card"><small>2026 / 第 18 周</small><h4>没理咋了</h4><p>点赞之王：你已经完成了尚未开始的任务。</p></article><article class="history-card"><small>2026 / 第 17 周</small><h4>精神离岗申请人</h4><p>纸巾王：今天只是没有电，不是没有人。</p></article><article class="history-card"><small>2026 / 第 16 周</small><h4>工位植物</h4><p>共鸣王：在工位上生根，也是一种成长。</p></article></div></section>
-    <footer class="footer"><span>F.w 研究所</span><span>废话档案 / Archive Ranking</span></footer>
+      <aside class="archive-note">
+        <small>ARCHIVE RULES</small>
+        <h3>能进档案的，都是低功耗界的硬通货。</h3>
+        <p>每周三个榜单的前三名自动进入“历代废话档案”。榜单不是为了竞争，是为了证明大家都在以不同方式坚持上班。</p>
+        <div class="rule-list">
+          <div class="rule">自己给自己的反应可以显示，但不计入榜单。</div>
+          <div class="rule">同一用户对同一条内容，同一类型只统计 1 次。</div>
+          <div class="rule">撤回、删除、被管理员处理的内容不进入榜单。</div>
+          <div class="rule">被举报异常的内容，后续可以接入人工检查。</div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="history">
+      <div class="archive-section-title">
+        <div>
+          <div class="archive-eyebrow">PAST ARCHIVES</div>
+          <h2>历代废话档案</h2>
+        </div>
+        <p>先显示最近一周的前三名，后续可扩展成永久归档表</p>
+      </div>
+      <div class="history-grid" data-history-grid>
+        <div class="archive-loading">正在生成本周归档预览...</div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>F.w 研究所</span>
+      <span>废话档案 / Archive Ranking</span>
+    </footer>
   </main>
 
+  <script src="assets/app.js"></script>
+  <script src="assets/auth.js"></script>
   <script>
-    const data={like:[["01","没理咋了",42],["02","会议幸存者",37],["03","工位植物",31],["04","茶水间路人",29],["05","办公室文学家",24],["06","低功耗研究员",22],["07","摸鱼观察员",19],["08","下班倒计时员",16],["09","精神离岗申请人",14],["10","沉默打工人",11]],resonance:[["01","低功耗研究员",56],["02","茶水间路人",48],["03","没理咋了",45],["04","会议幸存者",33],["05","工位植物",30],["06","摸鱼观察员",25],["07","办公室文学家",21],["08","精神离岗申请人",18],["09","下班倒计时员",15],["10","沉默打工人",12]],tissue:[["01","精神离岗申请人",28],["02","工位植物",24],["03","办公室文学家",22],["04","会议幸存者",19],["05","没理咋了",17],["06","茶水间路人",15],["07","低功耗研究员",13],["08","沉默打工人",11],["09","摸鱼观察员",9],["10","下班倒计时员",7]]};
-    const list=document.getElementById('dailyList');
-    function render(type){list.innerHTML=data[type].map(row=>`<div class="daily-row"><span class="num">${row[0]}</span><span class="name">${row[1]}</span><span class="count">${row[2]}</span></div>`).join('')}
-    document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');render(btn.dataset.type)}));
-    const menuBtn=document.querySelector('[data-menu-btn]'),mobileNav=document.querySelector('[data-mobile-nav]');if(menuBtn&&mobileNav){menuBtn.addEventListener('click',()=>mobileNav.classList.toggle('show'))}render('like');
+  (function(){
+    const AWARDS = {
+      like:{title:'点赞之王',en:'LIKE KING',medal:'赞',tab:'点赞榜',quote:'代表废话'},
+      same:{title:'共鸣王',en:'RESONANCE KING',medal:'鸣',tab:'共鸣榜',quote:'代表共鸣'},
+      tissue:{title:'纸巾王',en:'TISSUE KING',medal:'纸',tab:'纸巾榜',quote:'代表破防'}
+    };
+    const roomName = {
+      '已疲惫':'精神广场','摸鱼现场':'精神广场','精神离岗':'精神广场','今日无效':'精神广场','今日崩溃':'精神广场'
+    };
+    let dailyRankings={like:[],same:[],tissue:[]};
+    let currentDailyType='like';
+
+    function esc(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function initials(name){return String(name||'FW').trim().slice(0,2).toUpperCase();}
+    function avatarHtml(user,cls=''){
+      const name=user?.nickname||'匿名研究员';
+      const url=user?.avatar_url||'';
+      return url ? `<span class="${cls}"><img src="${esc(url)}" alt="${esc(name)}"></span>` : `<span class="${cls}">${esc(initials(name))}</span>`;
+    }
+    function crown(color){return `<svg class="crown ${color}" viewBox="0 0 64 44" aria-hidden="true"><path d="M8 36h48l4-26-16 12L32 4 20 22 4 10l4 26Zm2 3h44v5H10v-5Z"/></svg>`;}
+    function waitForDb(){
+      return new Promise(resolve=>{
+        if(window.fwDb?.enabled) return resolve(true);
+        let count=0;
+        const timer=setInterval(()=>{
+          count++;
+          if(window.fwDb?.enabled){clearInterval(timer);resolve(true);}
+          if(count>60){clearInterval(timer);resolve(false);}
+        },100);
+      });
+    }
+    function startOfDay(d=new Date()){
+      const x=new Date(d);
+      x.setHours(0,0,0,0);
+      return x;
+    }
+    function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+    function getRanges(){
+      const today=startOfDay(new Date());
+      const yesterday=addDays(today,-1);
+      const day=today.getDay();
+      const daysSinceMonday=(day+6)%7;
+      const thisMonday=addDays(today,-daysSinceMonday);
+      const lastMonday=addDays(thisMonday,-7);
+      return {today,yesterday,thisMonday,lastMonday};
+    }
+    function fmtDate(d){return `${d.getMonth()+1}月${d.getDate()}日`;}
+    function setNextUpdateText(){
+      const {today,thisMonday}=getRanges();
+      const nextDay=addDays(today,1);
+      const nextMonday=addDays(thisMonday,7);
+      const box=document.querySelector('[data-next-update]');
+      if(box) box.innerHTML=`周榜：${fmtDate(nextMonday)} 00:00<br>日榜：${fmtDate(nextDay)} 00:00`;
+    }
+
+    async function fetchRankings(start,end,type,limit){
+      const db=window.fwDb?.client;
+      if(!db) return [];
+
+      const postResult=await db
+        .from('posts')
+        .select('id,user_id,content,status_tag,created_at,is_deleted')
+        .eq('is_deleted',false)
+        .gte('created_at',start.toISOString())
+        .lt('created_at',end.toISOString())
+        .order('created_at',{ascending:false})
+        .limit(1000);
+
+      if(postResult.error) throw postResult.error;
+      const posts=postResult.data||[];
+      if(!posts.length) return [];
+
+      const postIds=posts.map(p=>p.id);
+      const userIds=[...new Set(posts.map(p=>p.user_id).filter(Boolean))];
+      const postMap={}; posts.forEach(p=>postMap[p.id]=p);
+
+      const [profileResult,reactionResult]=await Promise.all([
+        db.from('profiles').select('id,nickname,avatar_url').in('id',userIds),
+        db.from('reactions').select('post_id,user_id,type').in('post_id',postIds).eq('type',type)
+      ]);
+
+      if(profileResult.error) throw profileResult.error;
+      if(reactionResult.error) throw reactionResult.error;
+
+      const profiles={};
+      (profileResult.data||[]).forEach(p=>profiles[p.id]=p);
+
+      const users={};
+      const postScores={};
+      (reactionResult.data||[]).forEach(r=>{
+        const post=postMap[r.post_id];
+        if(!post) return;
+        if(r.user_id && post.user_id && r.user_id===post.user_id) return;
+        const uid=post.user_id;
+        if(!uid) return;
+        postScores[post.id]=(postScores[post.id]||0)+1;
+        if(!users[uid]){
+          users[uid]={
+            user_id:uid,
+            nickname:profiles[uid]?.nickname||'匿名研究员',
+            avatar_url:profiles[uid]?.avatar_url||'',
+            score:0,
+            topPost:post,
+            topPostScore:0
+          };
+        }
+        users[uid].score++;
+      });
+
+      Object.values(users).forEach(u=>{
+        const mine=posts.filter(p=>p.user_id===u.user_id);
+        mine.forEach(p=>{
+          const s=postScores[p.id]||0;
+          if(s>u.topPostScore){u.topPost=p;u.topPostScore=s;}
+        });
+      });
+
+      return Object.values(users).sort((a,b)=>b.score-a.score).slice(0,limit);
+    }
+
+    function podiumWinner(item,rankClass,rankNo){
+      const color=rankNo===1?'gold':rankNo===2?'silver':'bronze';
+      const post=item?.topPost||{};
+      const label=roomName[post.status_tag] || post.status_tag || '精神广场';
+      return `<div class="winner ${rankClass}">
+        <div class="winner-meta">
+          ${crown(color)}
+          ${avatarHtml(item,'winner-avatar')}
+          <div class="winner-name">${esc(item?.nickname||'暂无上榜')}</div>
+          <div class="winner-room">${esc(label)}</div>
+          <div class="winner-score">${Number(item?.score||0)}</div>
+        </div>
+        <div class="podium-block"><em>${rankNo}</em></div>
+      </div>`;
+    }
+    function renderAwardCard(type,items){
+      const cfg=AWARDS[type];
+      if(!items.length){
+        return `<article class="award-card">
+          <div class="award-head"><div><small>${cfg.en}</small><h3>${cfg.title}</h3></div><div class="medal">${cfg.medal}</div></div>
+          <div class="empty-award">上周还没有产生${cfg.title}<br>多发一点废话，榜单就会动起来。</div>
+          <div class="quote"><b>${cfg.quote}：</b>暂无。</div>
+        </article>`;
+      }
+      const first=items[0]||{};
+      const second=items[1]||{nickname:'暂无第二名',score:0,topPost:{status_tag:'',content:'暂无'}};
+      const third=items[2]||{nickname:'暂无第三名',score:0,topPost:{status_tag:'',content:'暂无'}};
+      const q=first.topPost?.content||'暂无代表废话。';
+      return `<article class="award-card">
+        <div class="award-head"><div><small>${cfg.en}</small><h3>${cfg.title}</h3></div><div class="medal">${cfg.medal}</div></div>
+        <div class="podium-stage">
+          ${podiumWinner(second,'second',2)}
+          ${podiumWinner(first,'first',1)}
+          ${podiumWinner(third,'third',3)}
+        </div>
+        <div class="quote"><b>${cfg.quote}：</b>“${esc(q)}”</div>
+      </article>`;
+    }
+    function renderWeekly(rankings){
+      const grid=document.querySelector('[data-weekly-grid]');
+      if(!grid) return;
+      grid.innerHTML=['like','same','tissue'].map(type=>renderAwardCard(type,rankings[type]||[])).join('');
+    }
+    function renderDaily(type=currentDailyType){
+      currentDailyType=type;
+      const list=document.querySelector('[data-daily-list]');
+      const rows=dailyRankings[type]||[];
+      if(!list) return;
+      if(!rows.length){
+        list.innerHTML='<div class="empty-list">昨日还没有产生这个榜单。今天先去精神广场点一点。</div>';
+        return;
+      }
+      list.innerHTML=rows.map((row,i)=>`<div class="daily-row">
+        <span class="num">${String(i+1).padStart(2,'0')}</span>
+        ${avatarHtml(row,'small-avatar')}
+        <span class="name">${esc(row.nickname)}</span>
+        <span class="count">${Number(row.score||0)}</span>
+      </div>`).join('');
+    }
+    function renderHistory(rankings){
+      const box=document.querySelector('[data-history-grid]');
+      if(!box) return;
+      const cards=['like','same','tissue'].map(type=>{
+        const cfg=AWARDS[type];
+        const one=(rankings[type]||[])[0];
+        if(!one){
+          return `<article class="history-card"><small>上周 / ${cfg.title}</small><h4>暂无上榜</h4><p>还没有足够数据进入档案。</p></article>`;
+        }
+        return `<article class="history-card"><small>上周 / ${cfg.title}</small><h4>${esc(one.nickname)}</h4><p>${esc(cfg.title)}：${esc(one.topPost?.content||'暂无代表废话。')}</p></article>`;
+      });
+      cards.push(`<article class="history-card"><small>说明</small><h4>数据库实时榜</h4><p>当前先读取 posts / reactions / profiles，后续可加 archives 表做永久留档。</p></article>`);
+      box.innerHTML=cards.join('');
+    }
+
+    async function bootArchive(){
+      setNextUpdateText();
+      const ok=await waitForDb();
+      if(!ok){
+        document.querySelector('[data-weekly-grid]').innerHTML='<div class="archive-loading">Supabase 还没加载成功，请刷新页面。</div>';
+        document.querySelector('[data-daily-list]').innerHTML='<div class="empty-list">数据库连接未就绪。</div>';
+        return;
+      }
+      const {today,yesterday,thisMonday,lastMonday}=getRanges();
+      try{
+        const [wLike,wSame,wTissue,dLike,dSame,dTissue]=await Promise.all([
+          fetchRankings(lastMonday,thisMonday,'like',3),
+          fetchRankings(lastMonday,thisMonday,'same',3),
+          fetchRankings(lastMonday,thisMonday,'tissue',3),
+          fetchRankings(yesterday,today,'like',10),
+          fetchRankings(yesterday,today,'same',10),
+          fetchRankings(yesterday,today,'tissue',10)
+        ]);
+        const weekly={like:wLike,same:wSame,tissue:wTissue};
+        dailyRankings={like:dLike,same:dSame,tissue:dTissue};
+        renderWeekly(weekly);
+        renderDaily(currentDailyType);
+        renderHistory(weekly);
+      }catch(err){
+        console.error(err);
+        document.querySelector('[data-weekly-grid]').innerHTML=`<div class="archive-loading">榜单读取失败：${esc(err.message||'未知错误')}</div>`;
+        document.querySelector('[data-daily-list]').innerHTML='<div class="empty-list">读取失败，请检查 Supabase 表权限。</div>';
+      }
+    }
+
+    document.addEventListener('click',e=>{
+      const tab=e.target.closest('.tab[data-type]');
+      if(tab){
+        document.querySelectorAll('.tab[data-type]').forEach(x=>x.classList.remove('active'));
+        tab.classList.add('active');
+        renderDaily(tab.dataset.type);
+      }
+    });
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bootArchive);
+    else bootArchive();
+  })();
   </script>
 </body>
 </html>
