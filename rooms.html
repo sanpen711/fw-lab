@@ -4,14 +4,219 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>摸鱼房间｜F.w 研究所</title>
-  <meta name="description" content="F.w 研究所：上班族匿名精神休息室。" />
+  <meta name="description" content="F.w 研究所：上班族精神休息室。" />
   <link rel="stylesheet" href="assets/styles.css" />
   <link rel="stylesheet" href="assets/auth.css" />
+  <style>
+    .room-card{cursor:pointer;text-align:left}
+    .room-card:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+    .fw-room-modal{
+      position:fixed;
+      inset:0;
+      z-index:9998;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:22px;
+      background:rgba(5,7,5,.72);
+      backdrop-filter:blur(8px);
+    }
+    .fw-room-modal.show{display:flex}
+    .fw-chat-window{
+      width:min(920px,96vw);
+      height:min(720px,88vh);
+      display:grid;
+      grid-template-columns:260px 1fr;
+      overflow:hidden;
+      background:#f5f1e8;
+      color:#171715;
+      border:1px solid rgba(217,121,121,.55);
+      box-shadow:0 28px 90px rgba(0,0,0,.38);
+    }
+    .fw-chat-sidebar{
+      background:#20241f;
+      color:#f6f1e8;
+      border-right:1px solid rgba(255,255,255,.08);
+      padding:22px;
+      overflow:auto;
+    }
+    .fw-chat-sidebar small{
+      display:block;
+      margin-bottom:8px;
+      color:#d97979;
+      font-weight:950;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+    }
+    .fw-chat-sidebar h3{
+      margin:0 0 8px;
+      font-size:26px;
+      letter-spacing:-.05em;
+    }
+    .fw-chat-sidebar p{
+      margin:0 0 18px;
+      color:rgba(246,241,232,.72);
+      line-height:1.6;
+      font-weight:760;
+      font-size:13px;
+    }
+    .fw-online-title{
+      margin:20px 0 10px;
+      color:rgba(246,241,232,.76);
+      font-weight:950;
+      font-size:13px;
+    }
+    .fw-online-list{display:grid;gap:10px}
+    .fw-online-user{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+      padding:8px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.04);
+    }
+    .fw-online-user span:last-child{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-weight:850;
+      font-size:13px;
+    }
+    .fw-chat-main{
+      display:grid;
+      grid-template-rows:auto 1fr auto;
+      min-width:0;
+      background:linear-gradient(180deg,#f8f4ec,#eee7db);
+    }
+    .fw-chat-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:18px 22px;
+      border-bottom:1px solid rgba(28,28,24,.12);
+      background:rgba(255,255,255,.45);
+    }
+    .fw-chat-head strong{
+      display:block;
+      font-size:20px;
+      letter-spacing:-.04em;
+    }
+    .fw-chat-head span{
+      display:block;
+      margin-top:4px;
+      color:#696256;
+      font-weight:800;
+      font-size:13px;
+    }
+    .fw-chat-close{
+      width:38px;
+      height:38px;
+      border-radius:999px;
+      border:1px solid rgba(28,28,24,.18);
+      background:transparent;
+      font-size:22px;
+      cursor:pointer;
+    }
+    .fw-chat-body{
+      padding:24px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      background:
+        linear-gradient(rgba(28,28,24,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(28,28,24,.035) 1px, transparent 1px);
+      background-size:28px 28px;
+    }
+    .fw-msg{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      max-width:78%;
+    }
+    .fw-msg.me{
+      align-self:flex-end;
+      flex-direction:row-reverse;
+    }
+    .fw-bubble{
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid rgba(28,28,24,.1);
+      background:#fffaf0;
+      box-shadow:0 8px 20px rgba(0,0,0,.05);
+    }
+    .fw-msg.me .fw-bubble{
+      background:#d97979;
+      color:#fff;
+      border-color:#d97979;
+    }
+    .fw-bubble b{
+      display:block;
+      margin-bottom:4px;
+      color:#9d4a4a;
+      font-size:12px;
+    }
+    .fw-msg.me .fw-bubble b{color:rgba(255,255,255,.78)}
+    .fw-bubble p{
+      margin:0;
+      line-height:1.55;
+      font-weight:760;
+    }
+    .fw-chat-input{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:12px;
+      padding:16px 18px;
+      border-top:1px solid rgba(28,28,24,.12);
+      background:rgba(255,255,255,.62);
+    }
+    .fw-chat-input input{
+      min-height:46px;
+      border:1px solid rgba(28,28,24,.18);
+      background:#fffdf7;
+      padding:0 14px;
+      font:inherit;
+      font-weight:760;
+    }
+    .fw-chat-input button{
+      border:0;
+      border-radius:999px;
+      padding:0 22px;
+      background:#1b1b18;
+      color:#fff;
+      font-weight:950;
+      cursor:pointer;
+    }
+    .fw-avatar.room{
+      width:34px;
+      height:34px;
+      min-width:34px;
+      border-radius:999px;
+      display:inline-grid;
+      place-items:center;
+      overflow:hidden;
+      background:#171715;
+      color:#fff;
+      border:1px solid rgba(217,121,121,.55);
+      font-size:11px;
+      font-weight:950;
+    }
+    .fw-avatar.room img{width:100%;height:100%;object-fit:cover}
+    @media(max-width:760px){
+      .fw-chat-window{grid-template-columns:1fr;height:90vh}
+      .fw-chat-sidebar{display:none}
+      .fw-msg{max-width:92%}
+      .fw-chat-input{grid-template-columns:1fr}
+      .fw-chat-input button{min-height:44px}
+    }
+  </style>
 </head>
 <body>
 
 <main class="page bg-night">
-  
+
 <header class="header dark">
   <a class="logo" href="index.html">F.w 研究所</a>
   <nav class="nav">
@@ -34,25 +239,29 @@
 
   <section class="section">
     <h1 class="hero-title" style="color:var(--white)">摸鱼房间</h1>
-    <p class="section-desc">不必每句话都有意义。这里先做成房间入口，后续可以升级为真正实时聊天。</p>
-    <div class="rooms-grid"><a class="room-card" href="square.html">
-  <small>实时发泄区</small><h3>今日牢骚房</h3><p>把当天不爽先放这里，不一定要被解决。</p><p class="room-online">128 人半躺中 →</p>
-</a>
-<a class="room-card" href="square.html">
-  <small>安静摸鱼区</small><h3>低功耗休息区</h3><p>不想说太多，只想证明自己还在。</p><p class="room-online">76 人低功耗 →</p>
-</a>
-<a class="room-card" href="archive.html">
-  <small>荒诞语录区</small><h3>废话研究室</h3><p>专门研究看似有道理但没有用的话。</p><p class="room-online">49 人正在研究 →</p>
-</a>
-<a class="room-card" href="square.html">
-  <small>放空聊天区</small><h3>精神离岗室</h3><p>身体在场，意识暂时请假。</p><p class="room-online">93 人离岗中 →</p>
-</a>
-<a class="room-card" href="square.html">
-  <small>时间观察区</small><h3>下班倒计时区</h3><p>距离下班还有多久，这件事值得被严肃研究。</p><p class="room-online">211 人盯表中 →</p>
-</a>
-<a class="room-card" href="square.html">
-  <small>轻聊天区</small><h3>茶水间回声</h3><p>像在茶水间遇到同事一样，随便说两句。</p><p class="room-online">64 人路过中 →</p>
-</a></div>
+    <p class="section-desc">点击房间后，需要先注册 / 登录。登录后会进入聊天窗口；未登录只能浏览房间列表。</p>
+
+    <div class="rooms-grid">
+      <button class="room-card" type="button" data-room="complain">
+        <small>实时发泄区</small><h3>今日牢骚房</h3><p>把当天不爽先放这里，不一定要被解决。</p><p class="room-online">128 人半躺中 →</p>
+      </button>
+      <button class="room-card" type="button" data-room="lowpower">
+        <small>安静摸鱼区</small><h3>低功耗休息区</h3><p>不想说太多，只想证明自己还在。</p><p class="room-online">76 人低功耗 →</p>
+      </button>
+      <button class="room-card" type="button" data-room="nonsense">
+        <small>荒诞语录区</small><h3>废话研究室</h3><p>专门研究看似有道理但没有用的话。</p><p class="room-online">49 人正在研究 →</p>
+      </button>
+      <button class="room-card" type="button" data-room="offline">
+        <small>放空聊天区</small><h3>精神离岗室</h3><p>身体在场，意识暂时请假。</p><p class="room-online">93 人离岗中 →</p>
+      </button>
+      <button class="room-card" type="button" data-room="countdown">
+        <small>时间观察区</small><h3>下班倒计时区</h3><p>距离下班还有多久，这件事值得被严肃研究。</p><p class="room-online">211 人盯表中 →</p>
+      </button>
+      <button class="room-card" type="button" data-room="tea">
+        <small>轻聊天区</small><h3>茶水间回声</h3><p>像在茶水间遇到同事一样，随便说两句。</p><p class="room-online">64 人路过中 →</p>
+      </button>
+    </div>
+
     <div class="chat-preview">
       <h2 class="section-title" style="color:var(--white);font-size:54px">房间预览</h2>
       <div class="chat-line"><b>临时研究员 024</b><span>我现在的工作状态像一个开着机但没联网的打印机。</span></div>
@@ -60,10 +269,277 @@
       <div class="chat-line"><b>临时研究员 066</b><span>这句话建议归档。</span></div>
     </div>
   </section>
+
   <footer class="footer"><span>F.w 研究所</span><span>摸鱼房间 / Chat Rooms</span></footer>
 </main>
 
+<div class="fw-room-modal" data-room-modal>
+  <div class="fw-chat-window" role="dialog" aria-modal="true" aria-label="摸鱼房间聊天窗口">
+    <aside class="fw-chat-sidebar">
+      <small data-room-type>ROOM</small>
+      <h3 data-room-title>今日牢骚房</h3>
+      <p data-room-desc>把当天不爽先放这里，不一定要被解决。</p>
+      <div class="fw-online-title">最近出现的人</div>
+      <div class="fw-online-list" data-room-users></div>
+    </aside>
+    <section class="fw-chat-main">
+      <header class="fw-chat-head">
+        <div>
+          <strong data-room-head-title>今日牢骚房</strong>
+          <span data-room-head-status>128 人半躺中 · 房间预览</span>
+        </div>
+        <button class="fw-chat-close" type="button" data-room-close>×</button>
+      </header>
+      <div class="fw-chat-body" data-room-messages></div>
+      <form class="fw-chat-input" data-room-form>
+        <input name="message" placeholder="说一句不一定有用的话..." autocomplete="off" />
+        <button type="submit">发送</button>
+      </form>
+    </section>
+  </div>
+</div>
+
 <script src="assets/app.js"></script>
 <script src="assets/auth.js"></script>
+<script>
+(function(){
+  const rooms = {
+    complain:{
+      type:'实时发泄区',
+      title:'今日牢骚房',
+      desc:'把当天不爽先放这里，不一定要被解决。',
+      status:'128 人半躺中 · 房间预览',
+      users:['没理咋了','低电量同事','会议幸存者','工位植物','摸鱼观察员'],
+      messages:[
+        ['会议幸存者','今天开了三个会，最后决定下次再讨论。'],
+        ['没理咋了','我现在只想把电脑合上，假装世界重启。'],
+        ['低电量同事','我的精神电量已经进入省电模式。']
+      ]
+    },
+    lowpower:{
+      type:'安静摸鱼区',
+      title:'低功耗休息区',
+      desc:'不想说太多，只想证明自己还在。',
+      status:'76 人低功耗 · 房间预览',
+      users:['低功耗研究员','沉默路过','电量 7%','暂时离线','摸鱼观察员'],
+      messages:[
+        ['电量 7%','今天不想表达，只想存在。'],
+        ['沉默路过','+1'],
+        ['低功耗研究员','我把努力调成了静音模式。']
+      ]
+    },
+    nonsense:{
+      type:'荒诞语录区',
+      title:'废话研究室',
+      desc:'专门研究看似有道理但没有用的话。',
+      status:'49 人正在研究 · 房间预览',
+      users:['废话专家','句子回收员','逻辑失踪者','没用但合理','归档员'],
+      messages:[
+        ['废话专家','只要你还没开始，就永远不会失败。'],
+        ['没用但合理','这句话有点道理，但不多。'],
+        ['归档员','建议收录，编号 FW-404。']
+      ]
+    },
+    offline:{
+      type:'放空聊天区',
+      title:'精神离岗室',
+      desc:'身体在场，意识暂时请假。',
+      status:'93 人离岗中 · 房间预览',
+      users:['精神请假中','身体在工位','灵魂外勤','低空漂浮','没信号'],
+      messages:[
+        ['身体在工位','我人在这里，心已经提前下班。'],
+        ['灵魂外勤','我的意识刚刚出差了。'],
+        ['没信号','请稍后再联系我的大脑。']
+      ]
+    },
+    countdown:{
+      type:'时间观察区',
+      title:'下班倒计时区',
+      desc:'距离下班还有多久，这件事值得被严肃研究。',
+      status:'211 人盯表中 · 房间预览',
+      users:['盯表专家','五点半信徒','时间研究员','还有多久','准备关机'],
+      messages:[
+        ['盯表专家','距离下班还有 2 小时，但精神已经提前打卡。'],
+        ['五点半信徒','我每十分钟看一次表，表都不好意思了。'],
+        ['准备关机','今日程序即将停止响应。']
+      ]
+    },
+    tea:{
+      type:'轻聊天区',
+      title:'茶水间回声',
+      desc:'像在茶水间遇到同事一样，随便说两句。',
+      status:'64 人路过中 · 房间预览',
+      users:['茶水间路人','咖啡续命','纸杯观察员','随便聊聊','路过一下'],
+      messages:[
+        ['咖啡续命','今天这杯咖啡像是在安慰我。'],
+        ['茶水间路人','我不是来喝水的，我是来暂停人生的。'],
+        ['随便聊聊','路过，留下一句无意义的话。']
+      ]
+    }
+  };
+
+  const modal=document.querySelector('[data-room-modal]');
+  const usersBox=document.querySelector('[data-room-users]');
+  const msgBox=document.querySelector('[data-room-messages]');
+  const form=document.querySelector('[data-room-form]');
+  let currentUser=null;
+
+  function toast(msg){
+    let t=document.querySelector('.fw-toast');
+    if(!t){
+      t=document.createElement('div');
+      t.className='fw-toast';
+      document.body.appendChild(t);
+    }
+    t.textContent=msg;
+    t.classList.add('show');
+    clearTimeout(window.__fwRoomToast);
+    window.__fwRoomToast=setTimeout(function(){t.classList.remove('show')},2600);
+  }
+
+  function avatar(name,url){
+    if(url){
+      return '<span class="fw-avatar room"><img src="'+url+'" alt="'+escapeHtml(name)+'"></span>';
+    }
+    return '<span class="fw-avatar room">'+String(name||'FW').slice(0,2)+'</span>';
+  }
+
+  function escapeHtml(value){
+    return String(value||'').replace(/[&<>"']/g,function(ch){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+    });
+  }
+
+  function renderMessages(messages){
+    msgBox.innerHTML=messages.map(function(item){
+      return '<div class="fw-msg">'+avatar(item[0])+'<div class="fw-bubble"><b>'+escapeHtml(item[0])+'</b><p>'+escapeHtml(item[1])+'</p></div></div>';
+    }).join('');
+    msgBox.scrollTop=msgBox.scrollHeight;
+  }
+
+  function openRoom(key){
+    const room=rooms[key]||rooms.complain;
+    modal.dataset.currentRoom=key;
+    document.querySelector('[data-room-type]').textContent=room.type;
+    document.querySelector('[data-room-title]').textContent=room.title;
+    document.querySelector('[data-room-desc]').textContent=room.desc;
+    document.querySelector('[data-room-head-title]').textContent=room.title;
+    document.querySelector('[data-room-head-status]').textContent=room.status;
+
+    const userName=currentUser?.nickname||'我';
+    const userAvatar=currentUser?.avatar_url||'';
+    const users=[userName].concat(room.users.filter(function(name){return name!==userName})).slice(0,6);
+
+    usersBox.innerHTML=users.map(function(name,index){
+      const url=index===0?userAvatar:'';
+      return '<div class="fw-online-user">'+avatar(name,url)+'<span>'+escapeHtml(name)+(index===0?'（我）':'')+'</span></div>';
+    }).join('');
+
+    renderMessages(room.messages);
+    modal.classList.add('show');
+    setTimeout(function(){form.querySelector('input')?.focus()},120);
+  }
+
+  function closeRoom(){
+    modal.classList.remove('show');
+  }
+
+  function openLogin(){
+    sessionStorage.setItem('fw_pending_room_login','1');
+    const loginBtn=document.querySelector('[data-fw-open], [data-login-cta], [data-sb-open]');
+    if(loginBtn){
+      loginBtn.click();
+    }else{
+      toast('请先注册 / 登录。');
+    }
+  }
+
+  function waitForFwDb(){
+    return new Promise(function(resolve){
+      if(window.fwDb?.enabled) return resolve(true);
+      let count=0;
+      const timer=setInterval(function(){
+        count++;
+        if(window.fwDb?.enabled){
+          clearInterval(timer);
+          resolve(true);
+        }
+        if(count>30){
+          clearInterval(timer);
+          resolve(false);
+        }
+      },100);
+    });
+  }
+
+  async function getUser(){
+    await waitForFwDb();
+    if(!window.fwDb?.enabled) return null;
+    return await window.fwDb.getCurrentUser().catch(function(){return null});
+  }
+
+  async function enterRoom(key){
+    const user=await getUser();
+    if(!user){
+      sessionStorage.setItem('fw_pending_room',key);
+      toast('登录后才能进入房间。');
+      openLogin();
+      return;
+    }
+    currentUser=user;
+    sessionStorage.removeItem('fw_pending_room');
+    openRoom(key);
+  }
+
+  async function checkPendingRoom(){
+    const key=sessionStorage.getItem('fw_pending_room');
+    if(!key) return;
+    const user=await getUser();
+    if(user){
+      currentUser=user;
+      sessionStorage.removeItem('fw_pending_room');
+      openRoom(key);
+    }
+  }
+
+  document.addEventListener('click',function(e){
+    const card=e.target.closest('[data-room]');
+    if(card){
+      e.preventDefault();
+      enterRoom(card.dataset.room);
+    }
+    if(e.target.closest('[data-room-close]')||e.target===modal){
+      closeRoom();
+    }
+  });
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape') closeRoom();
+  });
+
+  form.addEventListener('submit',async function(e){
+    e.preventDefault();
+    const user=await getUser();
+    if(!user){
+      toast('登录后才能发言。');
+      openLogin();
+      return;
+    }
+    currentUser=user;
+    const input=form.querySelector('input');
+    const text=input.value.trim();
+    if(!text) return;
+    const line=document.createElement('div');
+    line.className='fw-msg me';
+    line.innerHTML=avatar(user.nickname||'我',user.avatar_url)+'<div class="fw-bubble"><b>'+escapeHtml(user.nickname||'我')+'</b><p>'+escapeHtml(text)+'</p></div>';
+    msgBox.appendChild(line);
+    input.value='';
+    msgBox.scrollTop=msgBox.scrollHeight;
+  });
+
+  setInterval(checkPendingRoom,1200);
+  setTimeout(checkPendingRoom,1600);
+})();
+</script>
 </body>
 </html>
