@@ -1,8 +1,8 @@
-// F.w 研究所：Supabase 登录 / 注册 / 资料单一控制器（干净版）
+// F.w 研究所：Supabase 登录 / 注册 / 资料单一控制器（方案2：最后一步才创建账号）
 // 说明：
 // 1. 这个文件独立负责登录、注册三步、个人资料、退出。
 // 2. 不再依赖 fw-lab-code.js / fw-auth-stability-fix.js / supabase-logout-fix.js 抢事件。
-// 3. 实验品编号、昵称唯一、昵称一年 5 次、头像旧图删除依赖 Supabase SQL 触发器和本文件逻辑。
+// 3. 注册前两步只保存在浏览器内存中，第三步点击完成后才正式创建 Supabase Auth 用户。
 (function(){
   if(window.__FW_SUPABASE_AUTH_FLOW_CLEAN__) return;
   window.__FW_SUPABASE_AUTH_FLOW_CLEAN__ = true;
@@ -15,6 +15,7 @@
   let me = null;
   let booted = false;
   let regEmail = '';
+  let regPassword = '';
   let regPasswordSaved = false;
   let recovery = false;
   let busy = false;
@@ -179,9 +180,12 @@
 
   async function getSessionUser(){
     if(!db()?.client) return null;
+
     const {data, error} = await db().client.auth.getSession();
     if(error) throw error;
-    return data?.session?.user || null;
+    if(data?.session?.user) return data.session.user;
+
+    return null;
   }
 
   function avatarPathFromUrl(url){
@@ -449,22 +453,20 @@
 
         <section class="fw-auth-view" data-view="register1">
           <form data-reg1 class="fw-form show">
-            <h3>第一步：验证邮箱</h3>
+            <h3>第一步：填写邮箱</h3>
             <label>邮箱</label>
             <input name="email" type="email" placeholder="用于登录和找回密码">
-            <button class="btn dark full" type="button" data-send-code>发送验证码</button>
-            <label>验证码</label>
-            <input name="token" inputmode="numeric" autocomplete="one-time-code" placeholder="填写邮件里的 6 位验证码">
 
             <div class="fw-disclaimer" data-fw-disclaimer>
               <label class="fw-disclaimer-line">
                 <input type="checkbox" data-fw-disclaimer-check>
                 <span class="fw-disclaimer-text">我已阅读并同意 <button type="button" data-fw-statement-open>《F.w研究所声明》</button></span>
               </label>
-              <p>注册前请先阅读声明。勾选后，才能继续验证邮箱并创建账号。</p>
+              <p>注册前请先阅读声明。勾选后，才能继续设置密码并创建账号。</p>
             </div>
 
-            <button class="btn dark full" type="submit">验证邮箱，下一步</button>
+            <button class="btn dark full" type="submit">下一步，设置密码</button>
+            <p class="form-tip">账号会在第三步完成后才正式创建；中途关闭不会在后台留下注册账号。</p>
             <p class="form-tip fw-auth-links"><button type="button" data-go="login">已有账号？返回登录</button></p>
           </form>
         </section>
@@ -476,7 +478,7 @@
             <input name="password" type="password" placeholder="至少 6 位，以后用它登录" autocomplete="new-password">
             <label>确认密码</label>
             <input name="password2" type="password" placeholder="再输入一次密码" autocomplete="new-password">
-            <button class="btn dark full" type="submit">保存密码，下一步</button>
+            <button class="btn dark full" type="submit">下一步，完善资料</button>
           </form>
         </section>
 
@@ -491,8 +493,8 @@
             <input name="nickname" maxlength="12" placeholder="例如：低功耗研究员">
             <label>头像</label>
             <input name="avatar" type="file" accept="image/*">
-            <button class="btn dark full" type="submit">完成注册</button>
-            <p class="form-tip">完成后会回到登录页，邮箱自动填好，直接输入密码登录。</p>
+            <button class="btn dark full" type="submit">完成注册，创建账号</button>
+            <p class="form-tip">点击完成后才会正式创建账号。注册成功后会回到登录页。</p>
           </form>
         </section>
 
@@ -549,9 +551,9 @@
   function copy(viewName){
     const map = {
       login: ['账号登录','输入邮箱和密码，进入研究所。'],
-      register1: ['注册账号','第一步：先验证邮箱。'],
+      register1: ['注册账号','第一步：填写邮箱。'],
       register2: ['注册账号','第二步：设置以后登录用的密码。'],
-      register3: ['注册账号','第三步：设置昵称、实验品编号和头像。'],
+      register3: ['注册账号','第三步：完善资料并创建账号。'],
       reset: ['找回密码','输入邮箱，接收找回密码邮件。'],
       newpass: ['设置新密码','请输入并确认新密码。'],
       profile: ['个人资料','修改昵称、实验品编号、头像或密码。']
@@ -751,30 +753,17 @@
   async function reg1(form){
     const d = new FormData(form);
     const email = String(d.get('email') || '').trim();
-    const token = String(d.get('token') || '').trim().replace(/\s/g, '');
     const statementOk = form.querySelector('[data-fw-disclaimer-check]')?.checked;
 
-    if(!email.includes('@')) return toast('请填写邮箱。');
-    if(token.length < 6) return toast('请填写验证码。');
+    if(!email.includes('@')) return toast('请填写正确邮箱。');
     if(!statementOk) return toast('请先阅读并勾选 F.w研究所声明。');
 
-    const btn = form.querySelector('button[type="submit"]');
-    setBtnLoading(btn, true, '验证中...');
+    regEmail = email;
+    regPassword = '';
+    regPasswordSaved = false;
 
-    try{
-      const r = await withTimeout(db().verifyEmailOtp({email, token}), 16000, '邮箱验证超时，请稍后重试。');
-      me = r.user || await getCurrentUserClean().catch(() => null);
-      regEmail = email;
-      regPasswordSaved = false;
-
-      await refreshUser();
-      show('register2');
-      toast('邮箱验证成功，请设置密码。');
-    }catch(e){
-      toast(e.message || '验证失败。');
-    }finally{
-      setBtnLoading(btn, false);
-    }
+    show('register2');
+    toast('邮箱已记录，请设置密码。');
   }
 
   async function reg2(form){
@@ -782,33 +771,20 @@
     const p = String(d.get('password') || '').trim();
     const p2 = String(d.get('password2') || '').trim();
 
+    if(!regEmail || !regEmail.includes('@')) return toast('请先填写邮箱。');
     if(p.length < 6) return toast('密码至少 6 位。');
     if(p !== p2) return toast('两次密码不一致。');
 
-    const btn = form.querySelector('button[type="submit"]');
-    setBtnLoading(btn, true, '保存中...');
+    regPassword = p;
+    regPasswordSaved = true;
 
-    try{
-      const sessionUser = await withTimeout(getSessionUser(), 10000, '登录状态同步超时，请返回第一步重新验证邮箱。');
-      if(!sessionUser) throw new Error('登录状态未同步，请返回第一步重新验证邮箱。');
-
-      const r = await withTimeout(db().client.auth.updateUser({password:p}), 16000, '密码保存超时，请检查网络后重试。');
-      if(r.error) throw new Error(r.error.message);
-
-      regPasswordSaved = true;
-      me = await getCurrentUserClean().catch(() => me);
-
-      show('register3');
-      toast('密码已保存，请完善资料。');
-    }catch(e){
-      toast(e.message || '密码保存失败。');
-    }finally{
-      setBtnLoading(btn, false);
-    }
+    show('register3');
+    toast('密码已记录，请完善资料。');
   }
 
   async function reg3(form){
-    if(!regPasswordSaved) return toast('请先设置密码。');
+    if(!regEmail || !regEmail.includes('@')) return toast('请先填写邮箱。');
+    if(!regPasswordSaved || !regPassword) return toast('请先设置密码。');
 
     const d = new FormData(form);
     const labCode = normalizeLabCode(d.get('lab_code'));
@@ -819,34 +795,94 @@
     if(!validNickname(nickname)) return toast('请填写 2-12 个字符的昵称。');
 
     const btn = form.querySelector('button[type="submit"]');
-    setBtnLoading(btn, true, '完成中...');
+    setBtnLoading(btn, true, '创建中...');
 
     try{
       const check = await checkIdentity({labCode, nickname});
       if(check.lab_code_taken) throw new Error('该编号已被注册。');
       if(check.nickname_taken) throw new Error('这个昵称已经被占用。');
 
-      await withTimeout(
-        saveProfileClean({nickname, labCode, avatarFile}),
+      const sign = await withTimeout(
+        db().client.auth.signUp({
+          email: regEmail,
+          password: regPassword,
+          options: {
+            data: {
+              nickname: nickname,
+              lab_code: labCode
+            }
+          }
+        }),
         20000,
-        '资料保存超时，请检查网络后重试。'
+        '创建账号超时，请检查网络后重试。'
       );
 
-      const email = regEmail || me?.email || '';
+      if(sign.error) throw new Error(sign.error.message);
+
+      const user = sign.data?.user || null;
+      const session = sign.data?.session || null;
+
+      if(session?.access_token && session?.refresh_token){
+        await db().client.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        });
+
+        let avatar_url = '';
+        if(avatarFile && avatarFile.size && user?.id){
+          avatar_url = await uploadAvatar(user.id, avatarFile);
+        }
+
+        const patch = {
+          nickname,
+          lab_code: labCode,
+          updated_at: new Date().toISOString()
+        };
+        if(avatar_url) patch.avatar_url = avatar_url;
+
+        const res = await db().client
+          .from('profiles')
+          .update(patch)
+          .eq('id', user.id)
+          .select('id,nickname,avatar_url,role,is_banned,lab_code')
+          .maybeSingle();
+
+        if(res.error) throw new Error(formatDbError(res.error));
+
+        await db().client.auth.signOut().catch(() => {});
+        clearSupabaseLocalSession();
+
+        me = null;
+        await refreshUser();
+
+        const email = regEmail;
+        regEmail = '';
+        regPassword = '';
+        regPasswordSaved = false;
+
+        $('[data-sb-auth]')?.classList.remove('show');
+        toast('注册成功，请登录。');
+        setTimeout(() => openModal('login', {email, focusPassword:true}), 550);
+        return;
+      }
+
+      // 如果 Supabase 项目开启了“邮箱确认”，signUp 不会立即返回 session。
+      // 这时账号已经在最后一步创建成功，但资料只能等用户确认邮箱后再登录补全。
+      const email = regEmail;
+      regEmail = '';
+      regPassword = '';
       regPasswordSaved = false;
 
-      await db().client.auth.signOut().catch(() => {});
-      clearSupabaseLocalSession();
-
-      me = null;
-      await refreshUser();
-
       $('[data-sb-auth]')?.classList.remove('show');
-      toast('注册成功，请登录。');
-
-      setTimeout(() => openModal('login', {email, focusPassword:true}), 550);
+      toast('账号已创建，请先到邮箱确认，然后再登录完善资料。');
+      setTimeout(() => openModal('login', {email, focusPassword:true}), 900);
     }catch(e){
-      toast(formatDbError(e));
+      const msg = String(e.message || e || '');
+      if(msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists') || msg.includes('User already registered')){
+        toast('这个邮箱已经注册过，请直接登录，或先删除后台测试账号。');
+      }else{
+        toast(formatDbError(e));
+      }
     }finally{
       setBtnLoading(btn, false);
     }
