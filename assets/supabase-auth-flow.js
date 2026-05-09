@@ -1,8 +1,8 @@
-// F.w 研究所：Supabase 登录 / 注册 / 资料单一控制器（方案2：最后一步才创建账号）
+// F.w 研究所：Supabase 登录 / 注册 / 资料单一控制器（简化注册：信息填写 + 邮箱验证码）
 // 说明：
 // 1. 这个文件独立负责登录、注册三步、个人资料、退出。
 // 2. 不再依赖 fw-lab-code.js / fw-auth-stability-fix.js / supabase-logout-fix.js 抢事件。
-// 3. 注册前两步只保存在浏览器内存中，第三步点击完成后才正式创建 Supabase Auth 用户。
+// 3. 注册第一步创建待确认账号并发送验证码；第二步验证成功后完善资料并返回登录页。
 (function(){
   if(window.__FW_SUPABASE_AUTH_FLOW_CLEAN__) return;
   window.__FW_SUPABASE_AUTH_FLOW_CLEAN__ = true;
@@ -16,7 +16,8 @@
   let booted = false;
   let regEmail = '';
   let regPassword = '';
-  let regPasswordSaved = false;
+  let regLabCode = '';
+  let regNickname = '';
   let recovery = false;
   let busy = false;
 
@@ -134,7 +135,7 @@
     s.textContent = `
       .fw-auth-view{display:none}
       .fw-auth-view.show{display:block}
-      .fw-auth-progress{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0}
+      .fw-auth-progress{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:18px 0}
       .fw-auth-progress span{border:1px solid var(--line-soft);padding:8px;border-radius:999px;text-align:center;font-size:12px;font-weight:900;color:var(--muted)}
       .fw-auth-progress span.on{background:var(--text);color:var(--white)}
       .fw-auth-links{display:flex;gap:14px;flex-wrap:wrap}
@@ -432,9 +433,8 @@
         <p class="fw-muted" data-desc>输入邮箱和密码，进入研究所。</p>
 
         <div class="fw-auth-progress" data-progress style="display:none">
-          <span>1 验证邮箱</span>
-          <span>2 设置密码</span>
-          <span>3 完善资料</span>
+          <span>1 填写信息</span>
+          <span>2 验证邮箱</span>
         </div>
 
         <section class="fw-auth-view show" data-view="login">
@@ -453,48 +453,47 @@
 
         <section class="fw-auth-view" data-view="register1">
           <form data-reg1 class="fw-form show">
-            <h3>第一步：填写邮箱</h3>
+            <h3>第一步：填写注册信息</h3>
+
             <label>邮箱</label>
-            <input name="email" type="email" placeholder="用于登录和找回密码">
+            <input name="email" type="email" placeholder="用于登录和找回密码" autocomplete="email">
+
+            <label>实验品编号</label>
+            <input name="lab_code" maxlength="7" placeholder="必须 7 位，可用字母或数字，例如 FW2026A" autocomplete="off">
+            <p class="form-tip">实验品编号全站唯一，注册后不可修改。</p>
+
+            <label>密码</label>
+            <input name="password" type="password" placeholder="至少 6 位，以后用它登录" autocomplete="new-password">
+
+            <label>确认密码</label>
+            <input name="password2" type="password" placeholder="再输入一次密码" autocomplete="new-password">
 
             <div class="fw-disclaimer" data-fw-disclaimer>
               <label class="fw-disclaimer-line">
                 <input type="checkbox" data-fw-disclaimer-check>
                 <span class="fw-disclaimer-text">我已阅读并同意 <button type="button" data-fw-statement-open>《F.w研究所声明》</button></span>
               </label>
-              <p>注册前请先阅读声明。勾选后，才能继续设置密码并创建账号。</p>
+              <p>勾选后，才能发送邮箱验证码并继续注册。</p>
             </div>
 
-            <button class="btn dark full" type="submit">下一步，设置密码</button>
-            <p class="form-tip">账号会在第三步完成后才正式创建；中途关闭不会在后台留下注册账号。</p>
+            <button class="btn dark full" type="submit">下一步，验证邮箱</button>
             <p class="form-tip fw-auth-links"><button type="button" data-go="login">已有账号？返回登录</button></p>
           </form>
         </section>
 
         <section class="fw-auth-view" data-view="register2">
           <form data-reg2 class="fw-form show">
-            <h3>第二步：设置密码</h3>
-            <label>密码</label>
-            <input name="password" type="password" placeholder="至少 6 位，以后用它登录" autocomplete="new-password">
-            <label>确认密码</label>
-            <input name="password2" type="password" placeholder="再输入一次密码" autocomplete="new-password">
-            <button class="btn dark full" type="submit">下一步，完善资料</button>
-          </form>
-        </section>
+            <h3>第二步：验证邮箱</h3>
+            <p class="form-tip" data-reg-email-tip>验证码已发送至你的邮箱，请输入邮件中的 6 位验证码。</p>
 
-        <section class="fw-auth-view" data-view="register3">
-          <form data-reg3 class="fw-form show">
-            <h3>第三步：完善资料</h3>
-            <div class="fw-profile-preview"><p class="fw-muted">设置昵称、实验品编号和头像。</p></div>
-            <label>实验品编号</label>
-            <input name="lab_code" maxlength="7" placeholder="7 位字母或数字，例如 FW2026A" autocomplete="off">
-            <p class="form-tip fw-lab-code-tip">实验品编号全站唯一，注册后不能修改。</p>
-            <label>昵称</label>
-            <input name="nickname" maxlength="12" placeholder="例如：低功耗研究员">
-            <label>头像</label>
-            <input name="avatar" type="file" accept="image/*">
-            <button class="btn dark full" type="submit">完成注册，创建账号</button>
-            <p class="form-tip">点击完成后才会正式创建账号。注册成功后会回到登录页。</p>
+            <label>验证码</label>
+            <input name="token" inputmode="numeric" autocomplete="one-time-code" placeholder="填写邮件里的 6 位验证码">
+
+            <button class="btn dark full" type="submit">确认验证码，完成注册</button>
+            <p class="form-tip fw-auth-links">
+              <button type="button" data-resend-signup-code>重新发送验证码</button>
+              <button type="button" data-go="register1">返回修改注册信息</button>
+            </p>
           </form>
         </section>
 
@@ -551,9 +550,9 @@
   function copy(viewName){
     const map = {
       login: ['账号登录','输入邮箱和密码，进入研究所。'],
-      register1: ['注册账号','第一步：填写邮箱。'],
-      register2: ['注册账号','第二步：设置以后登录用的密码。'],
-      register3: ['注册账号','第三步：完善资料并创建账号。'],
+      register1: ['注册账号','第一步：填写注册信息。'],
+      register2: ['注册账号','第二步：验证邮箱，完成注册。'],
+      register3: ['注册账号','第三步：完成。'],
       reset: ['找回密码','输入邮箱，接收找回密码邮件。'],
       newpass: ['设置新密码','请输入并确认新密码。'],
       profile: ['个人资料','修改昵称、实验品编号、头像或密码。']
@@ -567,7 +566,7 @@
     p.style.display = /register/.test(viewName) ? 'grid' : 'none';
 
     if(/register/.test(viewName)){
-      const n = {register1:0, register2:1, register3:2}[viewName];
+      const n = {register1:0, register2:1}[viewName] ?? 0;
       Array.from(p.children).forEach((x, i) => x.classList.toggle('on', i <= n));
     }
   }
@@ -587,7 +586,7 @@
 
   function isRegisterMidway(){
     const v = currentView();
-    return v === 'register2' || v === 'register3';
+    return v === 'register2';
   }
 
   async function isIncompleteRegistration(){
@@ -753,139 +752,152 @@
   async function reg1(form){
     const d = new FormData(form);
     const email = String(d.get('email') || '').trim();
+    const labCode = normalizeLabCode(d.get('lab_code'));
+    const p = String(d.get('password') || '').trim();
+    const p2 = String(d.get('password2') || '').trim();
     const statementOk = form.querySelector('[data-fw-disclaimer-check]')?.checked;
 
     if(!email.includes('@')) return toast('请填写正确邮箱。');
-    if(!statementOk) return toast('请先阅读并勾选 F.w研究所声明。');
-
-    regEmail = email;
-    regPassword = '';
-    regPasswordSaved = false;
-
-    show('register2');
-    toast('邮箱已记录，请设置密码。');
-  }
-
-  async function reg2(form){
-    const d = new FormData(form);
-    const p = String(d.get('password') || '').trim();
-    const p2 = String(d.get('password2') || '').trim();
-
-    if(!regEmail || !regEmail.includes('@')) return toast('请先填写邮箱。');
+    if(!validLabCode(labCode)) return toast('实验品编号必须是 7 位字母或数字。');
     if(p.length < 6) return toast('密码至少 6 位。');
     if(p !== p2) return toast('两次密码不一致。');
-
-    regPassword = p;
-    regPasswordSaved = true;
-
-    show('register3');
-    toast('密码已记录，请完善资料。');
-  }
-
-  async function reg3(form){
-    if(!regEmail || !regEmail.includes('@')) return toast('请先填写邮箱。');
-    if(!regPasswordSaved || !regPassword) return toast('请先设置密码。');
-
-    const d = new FormData(form);
-    const labCode = normalizeLabCode(d.get('lab_code'));
-    const nickname = normalizeNickname(d.get('nickname'));
-    const avatarFile = form.querySelector('[name="avatar"]')?.files?.[0];
-
-    if(!validLabCode(labCode)) return toast('请填写 7 位实验品编号。');
-    if(!validNickname(nickname)) return toast('请填写 2-12 个字符的昵称。');
+    if(!statementOk) return toast('请先阅读并勾选 F.w研究所声明。');
 
     const btn = form.querySelector('button[type="submit"]');
-    setBtnLoading(btn, true, '创建中...');
+    setBtnLoading(btn, true, '发送验证码中...');
 
     try{
-      const check = await checkIdentity({labCode, nickname});
-      if(check.lab_code_taken) throw new Error('该编号已被注册。');
-      if(check.nickname_taken) throw new Error('这个昵称已经被占用。');
+      const check = await checkIdentity({labCode, nickname:null});
+      if(check.lab_code_taken) throw new Error('该实验品编号已被注册，请更换。');
+
+      const nickname = `临时研究员${labCode}`;
 
       const sign = await withTimeout(
         db().client.auth.signUp({
-          email: regEmail,
-          password: regPassword,
-          options: {
-            data: {
-              nickname: nickname,
-              lab_code: labCode
+          email,
+          password:p,
+          options:{
+            data:{
+              nickname,
+              lab_code:labCode
             }
           }
         }),
         20000,
-        '创建账号超时，请检查网络后重试。'
+        '发送验证码超时，请检查网络后重试。'
       );
 
-      if(sign.error) throw new Error(sign.error.message);
+      if(sign.error) throw sign.error;
 
-      const user = sign.data?.user || null;
-      const session = sign.data?.session || null;
+      regEmail = email;
+      regPassword = p;
+      regLabCode = labCode;
+      regNickname = nickname;
 
-      if(session?.access_token && session?.refresh_token){
-        await db().client.auth.setSession({
-          access_token: session.access_token,
-          refresh_token: session.refresh_token
-        });
+      const tip = $('[data-reg-email-tip]');
+      if(tip) tip.textContent = `验证码已发送至 ${email}，请输入邮件中的 6 位验证码。`;
 
-        let avatar_url = '';
-        if(avatarFile && avatarFile.size && user?.id){
-          avatar_url = await uploadAvatar(user.id, avatarFile);
-        }
-
-        const patch = {
-          nickname,
-          lab_code: labCode,
-          updated_at: new Date().toISOString()
-        };
-        if(avatar_url) patch.avatar_url = avatar_url;
-
-        const res = await db().client
-          .from('profiles')
-          .update(patch)
-          .eq('id', user.id)
-          .select('id,nickname,avatar_url,role,is_banned,lab_code')
-          .maybeSingle();
-
-        if(res.error) throw new Error(formatDbError(res.error));
-
-        await db().client.auth.signOut().catch(() => {});
-        clearSupabaseLocalSession();
-
-        me = null;
-        await refreshUser();
-
-        const email = regEmail;
-        regEmail = '';
-        regPassword = '';
-        regPasswordSaved = false;
-
-        $('[data-sb-auth]')?.classList.remove('show');
-        toast('注册成功，请登录。');
-        setTimeout(() => openModal('login', {email, focusPassword:true}), 550);
-        return;
-      }
-
-      // 如果 Supabase 项目开启了“邮箱确认”，signUp 不会立即返回 session。
-      // 这时账号已经在最后一步创建成功，但资料只能等用户确认邮箱后再登录补全。
-      const email = regEmail;
-      regEmail = '';
-      regPassword = '';
-      regPasswordSaved = false;
-
-      $('[data-sb-auth]')?.classList.remove('show');
-      toast('账号已创建，请先到邮箱确认，然后再登录完善资料。');
-      setTimeout(() => openModal('login', {email, focusPassword:true}), 900);
+      show('register2');
+      toast('验证码已发送，请查看邮箱。');
     }catch(e){
       const msg = String(e.message || e || '');
       if(msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists') || msg.includes('User already registered')){
-        toast('这个邮箱已经注册过，请直接登录，或先删除后台测试账号。');
+        toast('该邮箱已注册，请直接登录或找回密码。');
       }else{
         toast(formatDbError(e));
       }
     }finally{
       setBtnLoading(btn, false);
     }
+  }
+
+  async function reg2(form){
+    const d = new FormData(form);
+    const token = String(d.get('token') || '').trim().replace(/\s/g, '');
+
+    if(!regEmail || !regEmail.includes('@')) return toast('请先填写注册邮箱。');
+    if(token.length < 6) return toast('请填写邮件里的 6 位验证码。');
+
+    const btn = form.querySelector('button[type="submit"]');
+    setBtnLoading(btn, true, '验证中...');
+
+    try{
+      let verified = await withTimeout(
+        db().client.auth.verifyOtp({
+          email:regEmail,
+          token,
+          type:'signup'
+        }),
+        20000,
+        '邮箱验证超时，请稍后重试。'
+      );
+
+      // 不同 Supabase 邮件模板可能使用 email 类型验证码，signup 不通过时再试一次 email。
+      if(verified.error){
+        const fallback = await withTimeout(
+          db().client.auth.verifyOtp({
+            email:regEmail,
+            token,
+            type:'email'
+          }),
+          20000,
+          '邮箱验证超时，请稍后重试。'
+        );
+        verified = fallback;
+      }
+
+      if(verified.error) throw verified.error;
+
+      const session = verified.data?.session || null;
+      const user = verified.data?.user || session?.user || await getSessionUser().catch(() => null);
+
+      if(user?.id){
+        const patch = {
+          lab_code: regLabCode,
+          nickname: regNickname || `临时研究员${regLabCode}`,
+          updated_at: new Date().toISOString()
+        };
+
+        const res = await db().client
+          .from('profiles')
+          .update(patch)
+          .eq('id', user.id)
+          .select('id,nickname,lab_code')
+          .maybeSingle();
+
+        if(res.error) throw new Error(formatDbError(res.error));
+      }
+
+      const email = regEmail;
+
+      regEmail = '';
+      regPassword = '';
+      regLabCode = '';
+      regNickname = '';
+
+      await db().client.auth.signOut().catch(() => {});
+      clearSupabaseLocalSession();
+
+      me = null;
+      await refreshUser();
+
+      $('[data-sb-auth]')?.classList.remove('show');
+      toast('注册成功，请登录。');
+      setTimeout(() => openModal('login', {email, focusPassword:true}), 650);
+    }catch(e){
+      const msg = String(e.message || e || '');
+      if(msg.toLowerCase().includes('expired') || msg.includes('invalid')){
+        toast('验证码错误或已过期，请重新输入或重新发送。');
+      }else{
+        toast(msg || '验证失败。');
+      }
+    }finally{
+      setBtnLoading(btn, false);
+    }
+  }
+
+  async function reg3(form){
+    return toast('当前注册流程已简化，请从第一步重新开始。');
   }
 
   async function reset(form){
@@ -1080,12 +1092,11 @@
     const lf = target.closest('[data-login]');
     const r1 = target.closest('[data-reg1]');
     const r2 = target.closest('[data-reg2]');
-    const r3 = target.closest('[data-reg3]');
     const rf = target.closest('[data-reset]');
     const np = target.closest('[data-newpass]');
     const pr = target.closest('[data-profile]');
 
-    if(pf || lf || r1 || r2 || r3 || rf || np || pr){
+    if(pf || lf || r1 || r2 || rf || np || pr){
       e.preventDefault();
       e.stopImmediatePropagation();
 
@@ -1100,7 +1111,6 @@
           if(lf) return login(lf);
           if(r1) return reg1(r1);
           if(r2) return reg2(r2);
-          if(r3) return reg3(r3);
           if(rf) return reset(rf);
           if(np) return newpass(np);
           if(pr) return profile(pr);
@@ -1115,14 +1125,14 @@
     const open = e.target.closest('[data-login-cta],[data-fw-open],[data-sb-open]');
     const close = e.target.closest('[data-sb-close]');
     const go = e.target.closest('[data-go]');
-    const send = e.target.closest('[data-send-code]');
+    const resend = e.target.closest('[data-resend-signup-code]');
     const feedBtn = e.target.closest('[data-sb-action]');
     const adminBtn = e.target.closest('[data-sb-admin]');
     const logout = e.target.closest('[data-sb-logout]');
     const statementOpen = e.target.closest('[data-fw-statement-open]');
     const statementClose = e.target.closest('[data-fw-statement-close]');
 
-    if(open || close || go || send || feedBtn || adminBtn || logout || statementOpen || statementClose || e.target.matches('[data-sb-auth]') || e.target.matches('[data-fw-statement-modal]')){
+    if(open || close || go || resend || feedBtn || adminBtn || logout || statementOpen || statementClose || e.target.matches('[data-sb-auth]') || e.target.matches('[data-fw-statement-modal]')){
       e.preventDefault();
       e.stopImmediatePropagation();
 
@@ -1135,9 +1145,26 @@
         if(go.dataset.go === 'login' && isRegisterMidway()) abandonIncomplete();
         return openModal(go.dataset.go);
       }
-      if(send){
-        const form = send.closest('[data-reg1]');
-        if(form) return sendCode(form);
+      if(resend){
+        if(!regEmail) return toast('请先填写注册邮箱。');
+
+        const oldText = resend.textContent;
+        resend.disabled = true;
+        resend.textContent = '发送中...';
+
+        db().client.auth.resend({type:'signup', email:regEmail})
+          .then(function(r){
+            if(r.error) throw r.error;
+            toast('验证码已重新发送。');
+          })
+          .catch(function(err){
+            toast(err.message || '重新发送失败。');
+          })
+          .finally(function(){
+            resend.disabled = false;
+            resend.textContent = oldText;
+          });
+        return;
       }
       if(feedBtn) return feed(feedBtn);
       if(adminBtn) return admin(adminBtn);
@@ -1150,7 +1177,7 @@
     const modal = $('[data-sb-auth]');
     const view = currentView();
 
-    if(modal?.classList.contains('show') && ['register1','register2','register3'].includes(view)) return;
+    if(modal?.classList.contains('show') && ['register1','register2'].includes(view)) return;
 
     const incomplete = await isIncompleteRegistration().catch(() => false);
     if(incomplete) await signOutFast('上次注册未完成，已默认放弃，请重新注册。');
