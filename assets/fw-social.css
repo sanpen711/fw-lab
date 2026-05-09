@@ -337,3 +337,69 @@
     grid-template-columns:1fr;
   }
 }
+
+/* 实验品编号 / 搜索搭子 */
+.fw-social-search{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  align-items:center;
+  margin:0 0 16px;
+  padding:14px;
+  border:1px solid rgba(28,28,24,.12);
+  background:rgba(255,253,247,.72);
+}
+.fw-social-search input{
+  min-height:42px;
+  border:1px solid rgba(28,28,24,.18);
+  background:#fffdf7;
+  padding:0 12px;
+  font-weight:850;
+}
+.fw-social-search button{
+  min-height:42px;
+  border:0;
+  border-radius:999px;
+  padding:0 16px;
+  background:#171715;
+  color:#fff;
+  font-weight:950;
+  cursor:pointer;
+}
+.fw-social-search p{
+  grid-column:1/-1;
+  margin:0;
+  color:#736a5d;
+  font-size:12px;
+  font-weight:800;
+}
+.fw-search-results{
+  margin:0 0 18px;
+}
+.fw-lab-code-line{
+  margin:5px 0 0!important;
+  color:#9d4a4a!important;
+  font-weight:950!important;
+}
+.fw-lab-hint{
+  margin:7px 0 0;
+  font-size:12px;
+  font-weight:900;
+  color:#736a5d;
+}
+.fw-lab-hint.ok{color:#2f6f48}
+.fw-lab-hint.bad{color:#9d4a4a}
+.fw-lab-code-tip{
+  margin-top:8px!important;
+}
+input[name="lab_code"]{
+  text-transform:uppercase;
+}
+input[name="lab_code"]:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+}
+@media(max-width:640px){
+  .fw-social-search{grid-template-columns:1fr}
+  .fw-social-search button{width:100%}
+}

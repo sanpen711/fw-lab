@@ -1,4 +1,4 @@
-// F.w 研究所：回声 + 搭子 + 私聊模块（保守增加版）
+// F.w 研究所：回声 + 搭子 + 私聊模块（实验品编号最终规则版）
 // 依赖：assets/app.js 已加载 Supabase bridge，window.fwDb 可用。
 (function(){
   if(window.__FW_SOCIAL_MODULE_LOADED__) return;
@@ -118,7 +118,7 @@
     if(!unique.length) return {};
     const {data,error} = await window.fwDb.client
       .from('profiles')
-      .select('id,nickname,avatar_url')
+      .select('id,nickname,avatar_url,lab_code')
       .in('id', unique);
     if(error) return {};
     const map = {};
@@ -246,6 +246,7 @@
     const oid = otherId(f);
     const p = profiles[oid] || {};
     const name = p.nickname || '低功耗研究员';
+    const code = p.lab_code ? '实验品编号：' + p.lab_code : '实验品编号：未设置';
     const incoming = f.receiver_id === me.id && f.status === 'pending';
     const outgoing = f.requester_id === me.id && f.status === 'pending';
     const accepted = f.status === 'accepted';
@@ -263,7 +264,7 @@
 
     return `<article class="fw-social-item">
       ${avatar(name, p.avatar_url, `data-fw-profile-user="${esc(oid)}"`)}
-      <div class="fw-social-item-main"><b>${esc(name)}</b><span>${esc(statusText)}</span></div>
+      <div class="fw-social-item-main"><b>${esc(name)}</b><span>${esc(code)} · ${esc(statusText)}</span></div>
       <div class="fw-social-item-actions">${actions}</div>
     </article>`;
   }
@@ -299,12 +300,70 @@
       const empty = activeTab==='friends' ? '暂时还没有搭子。可以点击别人头像，加为摸鱼搭子。' :
                     activeTab==='incoming' ? '暂无新的搭子申请。' : '暂无发出的申请。';
 
-      $('[data-fw-social-body]').innerHTML = tabs + `<div class="fw-social-list">${
+      const searchBox = `<form class="fw-social-search" data-fw-user-search>
+        <input name="q" autocomplete="off" placeholder="搜索实验品编号 / 昵称 / 完整邮箱" />
+        <button type="submit">搜索搭子</button>
+        <p>邮箱只支持完整邮箱精准搜索；搜索结果不会显示邮箱。</p>
+      </form><div class="fw-search-results" data-fw-search-results></div>`;
+
+      $('[data-fw-social-body]').innerHTML = searchBox + tabs + `<div class="fw-social-list">${
         list.length ? list.map(f=>friendItem(f,profiles)).join('') : `<div class="fw-social-empty">${empty}</div>`
       }</div>`;
       refreshBadges();
     }catch(err){
       $('[data-fw-social-body]').innerHTML = '<div class="fw-social-empty">搭子读取失败。请确认已经运行“搭子模块 SQL”。</div>';
+    }
+  }
+
+
+  async function searchResearchers(keyword){
+    const q = String(keyword||'').trim();
+    if(q.length < 2){
+      toast('至少输入 2 个字符；邮箱需要输入完整邮箱。');
+      return [];
+    }
+    const {data,error} = await window.fwDb.client.rpc('fw_search_profiles', {search_text:q});
+    if(error) throw error;
+    return data || [];
+  }
+
+  async function renderSearchResults(keyword){
+    const box = $('[data-fw-search-results]');
+    if(!box) return;
+    box.innerHTML = '<div class="fw-social-empty">正在搜索实验品...</div>';
+    try{
+      const rows = await searchResearchers(keyword);
+      if(!rows.length){
+        box.innerHTML = '<div class="fw-social-empty">没有找到对应实验品。可以换实验品编号、昵称或完整邮箱再试。</div>';
+        return;
+      }
+      const items = [];
+      for(const p of rows){
+        const f = await getFriendshipWith(p.id);
+        let action = `<button class="fw-social-mini-btn dark" data-fw-add-friend="${esc(p.id)}">加为搭子</button>`;
+        let relation = '可以发送搭子申请';
+        if(f?.status === 'accepted'){
+          action = `<button class="fw-social-mini-btn dark" data-fw-start-chat="${esc(p.id)}">私聊</button>`;
+          relation = '已是搭子';
+        }else if(f?.status === 'pending' && f.requester_id === me.id){
+          action = '<button class="fw-social-mini-btn" disabled>等待处理</button>';
+          relation = '申请已发出';
+        }else if(f?.status === 'pending' && f.receiver_id === me.id){
+          action = `<button class="fw-social-mini-btn dark" data-fw-accept="${f.id}">同意</button><button class="fw-social-mini-btn danger" data-fw-reject="${f.id}">拒绝</button>`;
+          relation = '对方想加你为搭子';
+        }else if(f?.status === 'blocked'){
+          action = '<button class="fw-social-mini-btn" disabled>已拉黑</button>';
+          relation = '当前不可添加';
+        }
+        items.push(`<article class="fw-social-item">
+          ${avatar(p.nickname, p.avatar_url, `data-fw-profile-user="${esc(p.id)}"`)}
+          <div class="fw-social-item-main"><b>${esc(p.nickname || '低功耗研究员')}</b><span>实验品编号：${esc(p.lab_code || '未设置')} · ${esc(relation)}</span></div>
+          <div class="fw-social-item-actions">${action}<button class="fw-social-mini-btn" data-fw-profile-user="${esc(p.id)}">资料</button></div>
+        </article>`);
+      }
+      box.innerHTML = '<div class="fw-social-list">' + items.join('') + '</div>';
+    }catch(err){
+      box.innerHTML = '<div class="fw-social-empty">搜索失败，请确认已经运行实验品编号 SQL。</div>';
     }
   }
 
@@ -333,7 +392,7 @@
     try{
       const {data:p,error} = await window.fwDb.client
         .from('profiles')
-        .select('id,nickname,avatar_url,role,is_banned,created_at')
+        .select('id,nickname,avatar_url,lab_code,role,is_banned,created_at')
         .eq('id', userId)
         .maybeSingle();
       if(error) throw error;
@@ -365,6 +424,7 @@
         ${avatar(p.nickname, p.avatar_url)}
         <div class="fw-profile-info">
           <h3>${esc(p.nickname || '低功耗研究员')}</h3>
+          <p class="fw-lab-code-line">实验品编号：${esc(p.lab_code || '未设置')}</p>
           <p>${isSelf ? '这是你自己。' : accepted ? '你们已经是摸鱼搭子。' : pendingOut ? '搭子申请已发出。' : pendingIn ? '对方想加你为搭子。' : '一位正在低功耗运行的研究员。'}</p>
         </div>
         <div class="fw-profile-actions">${actions}</div>
@@ -574,6 +634,13 @@
     });
 
     document.addEventListener('submit', e=>{
+      const searchForm = e.target.closest('[data-fw-user-search]');
+      if(searchForm){
+        e.preventDefault();
+        const q = searchForm.querySelector('input[name="q"]')?.value || '';
+        renderSearchResults(q);
+        return;
+      }
       const form = e.target.closest('[data-fw-private-form]');
       if(form){e.preventDefault(); sendPrivateMessage(form);}
     });
