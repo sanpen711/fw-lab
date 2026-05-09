@@ -11,5 +11,5 @@
     document.head.appendChild(script);
   }
 
-  load('assets/supabase-auth-flow.js?v=simple-register-20260509-1');
+  load('assets/supabase-auth-flow.js?v=simple-register-profiles-fix-20260509-1');
 })();
