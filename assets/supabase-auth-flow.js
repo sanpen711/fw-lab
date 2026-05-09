@@ -1,4 +1,4 @@
-// F.w 研究所：Supabase 登录 / 注册 / 资料单一控制器（登录不阻塞修复版）
+// F.w 研究所：Supabase 登录 / 注册 / 资料单一控制器（在原有登录修复版基础上：验证码发送卡住修复版）
 // 说明：
 // 1. 这个文件独立负责登录、注册三步、个人资料、退出。
 // 2. 不再依赖 fw-lab-code.js / fw-auth-stability-fix.js / supabase-logout-fix.js 抢事件。
@@ -778,7 +778,20 @@
     setBtnLoading(btn, true, '发送验证码中...');
 
     try{
-      const check = await checkIdentity({labCode, nickname:null});
+      // 先检查实验品编号是否被占用，但这个检查不能无限卡住。
+      // 如果 RPC / 网络 / RLS 临时异常，先继续发验证码，最终仍由数据库唯一索引兜底。
+      let check = {};
+      try{
+        check = await withTimeout(
+          checkIdentity({labCode, nickname:null}),
+          5000,
+          '实验品编号检查超时'
+        );
+      }catch(checkErr){
+        console.warn('lab code check skipped:', checkErr);
+        check = {};
+      }
+
       if(check.lab_code_taken) throw new Error('该实验品编号已被注册，请更换。');
 
       const nickname = `临时研究员${labCode}`;
@@ -794,8 +807,8 @@
             }
           }
         }),
-        20000,
-        '发送验证码超时，请检查网络后重试。'
+        15000,
+        '发送验证码超时，请检查网络，或确认该邮箱是否已注册。'
       );
 
       if(sign.error) throw sign.error;
