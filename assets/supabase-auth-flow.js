@@ -1,4 +1,4 @@
-// F.w 研究所：Supabase 登录 / 注册 / 资料单一控制器（简化注册：验证成功立即跳转登录版）
+// F.w 研究所：Supabase 登录 / 注册 / 资料单一控制器（登录不阻塞修复版）
 // 说明：
 // 1. 这个文件独立负责登录、注册三步、个人资料、退出。
 // 2. 不再依赖 fw-lab-code.js / fw-auth-stability-fix.js / supabase-logout-fix.js 抢事件。
@@ -700,11 +700,22 @@
   }
 
   async function afterLogin(msg){
-    me = await refreshUser();
-    await refreshPosts();
-    fillProfile();
+    // 登录成功后不要继续阻塞等待 profiles / posts。
+    // 之前一直“登录中...”，核心原因就是 Auth 登录成功后又等待资料和帖子刷新。
     $('[data-sb-auth]')?.classList.remove('show');
-    toast(msg || ('欢迎，' + (me?.nickname || '研究员')));
+    toast(msg || '登录成功，正在进入研究所。');
+
+    $$('[data-fw-current]').forEach(x => x.textContent = '已登录');
+    $$('.fw-profile-card-actions').forEach(x => x.style.display = 'flex');
+
+    Promise.resolve()
+      .then(() => refreshUser())
+      .then(() => fillProfile())
+      .catch(err => console.warn('refreshUser after login failed:', err));
+
+    Promise.resolve()
+      .then(() => refreshPosts())
+      .catch(err => console.warn('refreshPosts after login failed:', err));
   }
 
   async function login(form){
@@ -719,7 +730,7 @@
     setBtnLoading(btn, true, '登录中...');
 
     try{
-      await withTimeout(db().signInPassword({email, password}), 16000, '登录超时，请稍后重试。');
+      await withTimeout(db().signInPassword({email, password}), 18000, '登录超时，请检查邮箱密码或网络后重试。');
       await afterLogin();
     }catch(e){
       toast(e.message || '登录失败。');
