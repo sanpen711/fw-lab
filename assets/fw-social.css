@@ -673,10 +673,7 @@ input[name="lab_code"]:disabled{
   }
 }
 
-/* F.w 研究所：关闭按钮统一优化
-   作用：去掉所有弹窗关闭按钮的圆圈，只保留更大的 ×，点击区域仍然足够大。
-   覆盖范围：登录/注册弹窗、回声/搭子弹窗、私聊弹窗、研究所声明弹窗。
-*/
+/* F.w 研究所：关闭按钮统一优化 */
 .fw-close,
 .fw-social-close,
 .fw-statement-close{
@@ -700,7 +697,6 @@ input[name="lab_code"]:disabled{
   cursor:pointer;
   transform:none!important;
 }
-
 .fw-close:hover,
 .fw-social-close:hover,
 .fw-statement-close:hover{
@@ -709,16 +705,121 @@ input[name="lab_code"]:disabled{
   background:transparent!important;
   transform:none!important;
 }
-
 .fw-auth-panel .fw-close{
   top:14px!important;
   right:16px!important;
 }
-
 .fw-social-head .fw-social-close,
 .fw-statement-head .fw-statement-close{
   margin-top:-6px;
   margin-right:-8px;
+}
+
+/* F.w 研究所：退出按钮与资料卡点击修复 */
+.fw-profile-popover{
+  z-index:13000!important;
+  pointer-events:auto!important;
+}
+.fw-profile-card-actions,
+.fw-profile-card-actions button,
+.fw-profile-popover button{
+  position:relative;
+  z-index:2;
+  pointer-events:auto!important;
+}
+.fw-profile-card-actions button{
+  cursor:pointer!important;
+}
+.fw-profile-card-actions button:hover{
+  background:rgba(217,121,121,.10);
+}
+.fw-btn-loading,
+button.fw-btn-loading{
+  opacity:.55!important;
+  cursor:not-allowed!important;
+  pointer-events:none!important;
+}
+
+/* F.w 研究所：声明勾选框最终布局修复
+   这个部分专门覆盖 auth.css 对 label 和 input 的影响，保证复选框不会变成大方块，也不会跑到中间。
+*/
+.fw-auth-panel .fw-disclaimer{
+  display:block!important;
+  margin:20px 0 10px!important;
+  padding:13px 14px!important;
+  border:1px solid rgba(157,74,74,.28)!important;
+  background:rgba(217,121,121,.07)!important;
+  color:#4f493f!important;
+  line-height:1.55!important;
+}
+
+.fw-auth-panel .fw-disclaimer .fw-disclaimer-line{
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:9px!important;
+  margin:0!important;
+  padding:0!important;
+  color:#4f493f!important;
+  cursor:pointer!important;
+}
+
+.fw-auth-panel .fw-disclaimer input[type="checkbox"],
+.fw-auth-panel .fw-disclaimer input[data-fw-disclaimer-check]{
+  all:revert!important;
+  appearance:auto!important;
+  -webkit-appearance:checkbox!important;
+  box-sizing:border-box!important;
+  width:16px!important;
+  height:16px!important;
+  min-width:16px!important;
+  min-height:16px!important;
+  max-width:16px!important;
+  max-height:16px!important;
+  margin:0!important;
+  padding:0!important;
+  border:1px solid rgba(30,30,28,.55)!important;
+  background:#fffdf7!important;
+  accent-color:#171715!important;
+  flex:0 0 16px!important;
+  cursor:pointer!important;
+}
+
+.fw-auth-panel .fw-disclaimer .fw-disclaimer-text{
+  display:inline!important;
+  margin:0!important;
+  color:#4f493f!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  line-height:1.45!important;
+}
+
+.fw-auth-panel .fw-disclaimer [data-fw-statement-open]{
+  display:inline!important;
+  min-height:0!important;
+  width:auto!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#9d4a4a!important;
+  font:inherit!important;
+  font-weight:950!important;
+  line-height:inherit!important;
+  text-decoration:underline!important;
+  text-underline-offset:3px!important;
+  cursor:pointer!important;
+}
+
+.fw-auth-panel .fw-disclaimer p{
+  margin:8px 0 0!important;
+  padding:0!important;
+  color:#6f6a5f!important;
+  font-size:12px!important;
+  font-weight:800!important;
+  line-height:1.55!important;
 }
 
 @media(max-width:640px){
@@ -731,33 +832,4 @@ input[name="lab_code"]:disabled{
     min-height:42px!important;
     font-size:30px!important;
   }
-}
-
-/* F.w 研究所：退出按钮与资料卡点击修复 */
-.fw-profile-popover{
-  z-index:13000!important;
-  pointer-events:auto!important;
-}
-
-.fw-profile-card-actions,
-.fw-profile-card-actions button,
-.fw-profile-popover button{
-  position:relative;
-  z-index:2;
-  pointer-events:auto!important;
-}
-
-.fw-profile-card-actions button{
-  cursor:pointer!important;
-}
-
-.fw-profile-card-actions button:hover{
-  background:rgba(217,121,121,.10);
-}
-
-.fw-btn-loading,
-button.fw-btn-loading{
-  opacity:.55!important;
-  cursor:not-allowed!important;
-  pointer-events:none!important;
 }
