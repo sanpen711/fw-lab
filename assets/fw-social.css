@@ -1,4 +1,4 @@
-/* F.w 研究所：回声 + 搭子 + 私聊模块（保守增加版） */
+/* F.w 研究所：回声 + 搭子 + 私聊模块（实验品编号最终规则版） */
 .fw-social-actions{
   position:relative;
   z-index:30;
@@ -402,4 +402,63 @@ input[name="lab_code"]:disabled{
 @media(max-width:640px){
   .fw-social-search{grid-template-columns:1fr}
   .fw-social-search button{width:100%}
+}
+
+/* F.w 研究所：导航栏固定居中补丁
+   作用：让“首页 / 精神广场 / 摸鱼房间 / 废话档案 / 入馆须知”这一组导航始终保持页面水平居中。
+   后续新增页面只要仍放在 .nav 里，也会作为整组导航一起居中。
+*/
+@media (min-width: 981px){
+  .header{
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .header .logo{
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 3;
+  }
+
+  .header .nav{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(18px, 2vw, 30px);
+    white-space: nowrap;
+    z-index: 2;
+  }
+
+  .header .fw-social-actions{
+    margin-left: auto;
+    position: relative;
+    z-index: 3;
+  }
+
+  .header .fw-userbar{
+    margin-left: auto;
+    position: relative;
+    z-index: 3;
+  }
+
+  .header .fw-social-actions ~ .fw-userbar{
+    margin-left: 10px;
+  }
+
+  .header .menu-btn{
+    margin-left: 12px;
+  }
+}
+
+@media (max-width: 980px){
+  .header .nav{
+    position: static;
+    transform: none;
+  }
 }
