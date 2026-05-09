@@ -175,11 +175,13 @@ document.addEventListener("DOMContentLoaded", ()=>{
     if(document.querySelector('script[src="'+src+'"]')) return;
     var s=document.createElement('script');
     s.src=src;
+    s.async=false;
     s.defer=false;
     document.body.appendChild(s);
   }
 
-  loadCss('assets/fw-social.css?v=fw-fix-20260509-2');
-  loadJs('assets/fw-lab-code.js?v=fw-fix-20260509-2');
-  loadJs('assets/fw-social.js?v=fw-fix-20260509-2');
+  loadCss('assets/fw-social.css?v=fw-auth-stability-20260509-1');
+  loadJs('assets/fw-lab-code.js?v=fw-auth-stability-20260509-1');
+  loadJs('assets/fw-social.js?v=fw-auth-stability-20260509-1');
+  loadJs('assets/fw-auth-stability-fix.js?v=fw-auth-stability-20260509-1');
 })();
