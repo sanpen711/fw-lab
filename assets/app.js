@@ -180,6 +180,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
     document.body.appendChild(s);
   }
 
-  loadCss('assets/fw-social.css?v=scheme2-final-create-20260509-1');
-  loadJs('assets/fw-social.js?v=scheme2-final-create-20260509-1');
+  loadCss('assets/fw-social.css?v=simple-register-20260509-1');
+  loadJs('assets/fw-social.js?v=simple-register-20260509-1');
 })();
