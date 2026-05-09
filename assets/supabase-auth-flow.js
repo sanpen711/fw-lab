@@ -1,4 +1,4 @@
-// F.w 研究所：Supabase 登录 / 注册 / 资料单一控制器（简化注册：信息填写 + 邮箱验证码）
+// F.w 研究所：Supabase 登录 / 注册 / 资料单一控制器（简化注册：信息填写 + 邮箱验证码｜profiles权限修复适配版）
 // 说明：
 // 1. 这个文件独立负责登录、注册三步、个人资料、退出。
 // 2. 不再依赖 fw-lab-code.js / fw-auth-stability-fix.js / supabase-logout-fix.js 抢事件。
@@ -484,10 +484,10 @@
         <section class="fw-auth-view" data-view="register2">
           <form data-reg2 class="fw-form show">
             <h3>第二步：验证邮箱</h3>
-            <p class="form-tip" data-reg-email-tip>验证码已发送至你的邮箱，请输入邮件中的 6 位验证码。</p>
+            <p class="form-tip" data-reg-email-tip>验证码已发送至你的邮箱，请输入邮件中的验证码。</p>
 
             <label>验证码</label>
-            <input name="token" inputmode="numeric" autocomplete="one-time-code" placeholder="填写邮件里的 6 位验证码">
+            <input name="token" inputmode="numeric" autocomplete="one-time-code" placeholder="填写邮件里的验证码">
 
             <button class="btn dark full" type="submit">确认验证码，完成注册</button>
             <p class="form-tip fw-auth-links">
@@ -795,7 +795,7 @@
       regNickname = nickname;
 
       const tip = $('[data-reg-email-tip]');
-      if(tip) tip.textContent = `验证码已发送至 ${email}，请输入邮件中的 6 位验证码。`;
+      if(tip) tip.textContent = `验证码已发送至 ${email}，请输入邮件中的验证码。`;
 
       show('register2');
       toast('验证码已发送，请查看邮箱。');
@@ -816,7 +816,7 @@
     const token = String(d.get('token') || '').trim().replace(/\s/g, '');
 
     if(!regEmail || !regEmail.includes('@')) return toast('请先填写注册邮箱。');
-    if(token.length < 6) return toast('请填写邮件里的 6 位验证码。');
+    if(!token) return toast('请填写邮件里的验证码。');
 
     const btn = form.querySelector('button[type="submit"]');
     setBtnLoading(btn, true, '验证中...');
@@ -860,8 +860,7 @@
 
         const res = await db().client
           .from('profiles')
-          .update(patch)
-          .eq('id', user.id)
+          .upsert({id:user.id, ...patch}, {onConflict:'id'})
           .select('id,nickname,lab_code')
           .maybeSingle();
 
