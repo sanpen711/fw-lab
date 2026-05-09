@@ -157,39 +157,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
   loadNext(0);
 })();
 
-/* F.w 研究所：加载“回声 + 搭子 + 私聊”模块
-   操作：把这一整段粘贴到 assets/app.js 文件最底部 */
-(function loadFwSocialModule(){
-  if(window.__FW_SOCIAL_LOADER__) return;
-  window.__FW_SOCIAL_LOADER__ = true;
-
-  function loadCss(){
-    if(document.querySelector('link[href*="assets/fw-social.css"]')) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'assets/fw-social.css?v=20260508-safe-social-1';
-    document.head.appendChild(link);
-  }
-
-  function loadJs(){
-    if(document.querySelector('script[src*="assets/fw-social.js"]')) return;
-    const script = document.createElement('script');
-    script.src = 'assets/fw-social.js?v=20260508-safe-social-1';
-    script.defer = false;
-    document.body.appendChild(script);
-  }
-
-  function start(){
-    loadCss();
-    loadJs();
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', start);
-  }else{
-    start();
-  }
-})();
 // F.w 研究所：加载“实验品编号最终规则 + 回声 + 搭子 + 私聊”模块
 // 只需要追加在 assets/app.js 最底部，不要删除原来的代码。
 (function loadFwLabSocialModules(){
