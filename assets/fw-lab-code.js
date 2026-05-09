@@ -425,8 +425,14 @@
     const submitBtn = form.querySelector('button[type="submit"]');
     if(!submitBtn) return;
 
-    // 清掉旧版本残留的免责声明，避免样式和逻辑混在一起。
-    form.querySelectorAll('[data-fw-disclaimer]').forEach(function(old){ old.remove(); });
+    const existing = form.querySelector('[data-fw-disclaimer]');
+    // 如果已经是新版声明，不要重复插入，也不要重置用户已勾选状态。
+    if(existing && existing.querySelector('[data-fw-statement-open]') && existing.querySelector('[data-fw-disclaimer-check]')){
+      return;
+    }
+
+    // 只清掉旧版残留的免责声明。
+    if(existing) existing.remove();
 
     const box = document.createElement('div');
     box.className = 'fw-disclaimer';
