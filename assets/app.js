@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
 });
 
 (function loadSupabaseBridge(){
-  const scripts = ["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", "assets/supabase-config.js", "assets/supabase-db.js", "assets/supabase-live.js"];
+  const scripts = ["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", "assets/supabase-config.js", "assets/supabase-db.js", "assets/supabase-live.js?v=simple-register-login-redirect-20260509-1"];
   function loadNext(i){
     if(i >= scripts.length) return;
     const s = document.createElement("script");
@@ -180,6 +180,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
     document.body.appendChild(s);
   }
 
-  loadCss('assets/fw-social.css?v=simple-register-20260509-1');
-  loadJs('assets/fw-social.js?v=simple-register-20260509-1');
+  loadCss('assets/fw-social.css?v=simple-register-login-redirect-20260509-1');
+  loadJs('assets/fw-social.js?v=simple-register-login-redirect-20260509-1');
 })();
