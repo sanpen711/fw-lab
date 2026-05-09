@@ -732,3 +732,32 @@ input[name="lab_code"]:disabled{
     font-size:30px!important;
   }
 }
+
+/* F.w 研究所：退出按钮与资料卡点击修复 */
+.fw-profile-popover{
+  z-index:13000!important;
+  pointer-events:auto!important;
+}
+
+.fw-profile-card-actions,
+.fw-profile-card-actions button,
+.fw-profile-popover button{
+  position:relative;
+  z-index:2;
+  pointer-events:auto!important;
+}
+
+.fw-profile-card-actions button{
+  cursor:pointer!important;
+}
+
+.fw-profile-card-actions button:hover{
+  background:rgba(217,121,121,.10);
+}
+
+.fw-btn-loading,
+button.fw-btn-loading{
+  opacity:.55!important;
+  cursor:not-allowed!important;
+  pointer-events:none!important;
+}
