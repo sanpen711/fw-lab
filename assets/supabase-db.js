@@ -6,22 +6,277 @@
   const fail=(r,msg)=>{if(r&&r.error)throw new Error((msg||'操作失败')+'：'+r.error.message);return r?r.data:null};
   const profileOf=r=>Array.isArray(r?.profiles)?(r.profiles[0]||{}):(r?.profiles||{});
   const timeText=v=>{if(!v)return'刚刚';const m=Math.floor(Math.max(0,Date.now()-new Date(v).getTime())/60000);if(m<1)return'刚刚';if(m<60)return m+'分钟前';const h=Math.floor(m/60);if(h<24)return h+'小时前';const d=Math.floor(h/24);return d<7?d+'天前':new Date(v).toLocaleDateString('zh-CN')};
-  async function getCurrentUser(){if(!enabled)return null;const s=fail(await client.auth.getSession(),'读取登录状态失败')?.session;if(!s?.user)return null;const p=fail(await client.from('profiles').select('id,nickname,avatar_url,role,is_banned,created_at').eq('id',s.user.id).maybeSingle(),'读取用户资料失败')||{};return{id:s.user.id,email:s.user.email,nickname:p.nickname||s.user.user_metadata?.nickname||'临时研究员',avatar_url:p.avatar_url||'',role:p.role||'user',isAdmin:p.role==='admin',disabled:!!p.is_banned,provider:'supabase'}}
-  async function sendEmailOtp({email,nickname}){const r=await client.auth.signInWithOtp({email:String(email||'').trim(),options:{shouldCreateUser:true,data:{nickname:String(nickname||'').trim()||'临时研究员'},emailRedirectTo:redirect()}});if(r.error)throw new Error(r.error.message);return{ok:true}}
-  async function verifyEmailOtp({email,token,nickname,password}){const r=await client.auth.verifyOtp({email:String(email||'').trim(),token:String(token||'').trim().replace(/\s/g,''),type:'email'});if(r.error)throw new Error(r.error.message);if(nickname)await updateProfile({nickname});if(password)await updatePassword({password});return{user:await getCurrentUser()}}
-  async function signInPassword({email,password}){const r=await client.auth.signInWithPassword({email:String(email||'').trim(),password:String(password||'').trim()});if(r.error)throw new Error(r.error.message);return{user:await getCurrentUser()}}
-  async function updatePassword({password}){const pwd=String(password||'').trim();if(pwd.length<6)throw new Error('密码至少 6 位。');const r=await client.auth.updateUser({password:pwd});if(r.error)throw new Error(r.error.message);return{ok:true}}
-  async function sendPasswordReset({email}){const r=await client.auth.resetPasswordForEmail(String(email||'').trim(),{redirectTo:redirect()});if(r.error)throw new Error(r.error.message);return{ok:true}}
-  async function signOut(){if(enabled)await client.auth.signOut()}
-  async function updateProfile({nickname,avatarFile}){const u=await getCurrentUser();if(!u)throw new Error('请先登录。');let avatar_url='';if(avatarFile&&avatarFile.size){const name=avatarFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');const path=`${u.id}/${Date.now()}_${name}`;fail(await client.storage.from('avatars').upload(path,avatarFile,{upsert:true,cacheControl:'3600'}),'头像上传失败');avatar_url=client.storage.from('avatars').getPublicUrl(path).data.publicUrl}const patch={updated_at:new Date().toISOString()};if(nickname)patch.nickname=String(nickname).trim().slice(0,24);if(avatar_url)patch.avatar_url=avatar_url;return fail(await client.from('profiles').update(patch).eq('id',u.id).select('id,nickname,avatar_url,role,is_banned').maybeSingle(),'资料保存失败')}
-  async function loadPosts(){const posts=fail(await client.from('posts').select('id,user_id,content,status_tag,created_at,profiles(nickname,avatar_url)').eq('is_deleted',false).order('created_at',{ascending:false}).limit(100),'读取帖子失败')||[];const ids=posts.map(p=>p.id);if(!ids.length)return[];const comments=fail(await client.from('comments').select('id,post_id,user_id,content,created_at,profiles(nickname,avatar_url)').in('post_id',ids).eq('is_deleted',false).order('created_at',{ascending:true}),'读取评论失败')||[];const reactions=fail(await client.from('reactions').select('post_id,user_id,type').in('post_id',ids),'读取互动失败')||[];const cb={},counts={};comments.forEach(c=>{const p=profileOf(c);(cb[c.post_id]=cb[c.post_id]||[]).push({id:c.id,userId:c.user_id,authorName:p.nickname||'匿名回声',authorAvatar:p.avatar_url||'',content:c.content,time:timeText(c.created_at)})});reactions.forEach(r=>{counts[r.post_id]=counts[r.post_id]||{resonance:0,same:0,tissue:0};if(r.type==='like')counts[r.post_id].resonance++;if(r.type==='same')counts[r.post_id].same++;if(r.type==='tissue')counts[r.post_id].tissue++});return posts.map(p=>{const prof=profileOf(p),c=counts[p.id]||{resonance:0,same:0,tissue:0};return{id:p.id,userId:p.user_id,authorId:p.user_id,authorName:prof.nickname||'匿名研究员',authorAvatar:prof.avatar_url||'',status:p.status_tag||'今日无效',content:p.content,time:timeText(p.created_at),createdAt:p.created_at,resonance:c.resonance,same:c.same,tissue:c.tissue,comments:cb[p.id]||[]}})}
-  async function createPost({content,status}){const u=await getCurrentUser();if(!u)throw new Error('请先登录。');if(u.disabled)throw new Error('这个账号已被停用。');return fail(await client.from('posts').insert({user_id:u.id,content:String(content||'').trim(),status_tag:status||'今日无效'}).select('id').single(),'发布失败')}
-  async function createComment({postId,content}){const u=await getCurrentUser();if(!u)throw new Error('请先登录。');if(u.disabled)throw new Error('这个账号已被停用。');return fail(await client.from('comments').insert({post_id:postId,user_id:u.id,content:String(content||'').trim()}).select('id').single(),'评论失败')}
-  async function react({postId,type}){const u=await getCurrentUser();if(!u)throw new Error('请先登录。');if(u.disabled)throw new Error('这个账号已被停用。');const map={resonance:'like',same:'same',tissue:'tissue',like:'like'};const r=await client.from('reactions').insert({post_id:postId,user_id:u.id,type:map[type]||type});if(r.error){if(r.error.code==='23505'||String(r.error.message).includes('duplicate'))return{already:true};throw new Error('互动失败：'+r.error.message)}return{ok:true}}
-  async function listUsers(){return fail(await client.from('profiles').select('id,nickname,avatar_url,role,is_banned,created_at').order('created_at',{ascending:false}).limit(200),'读取用户列表失败')||[]}
-  async function deletePost(postId){return fail(await client.from('posts').update({is_deleted:true}).eq('id',postId),'删除帖子失败')}
-  async function deleteComment(commentId){return fail(await client.from('comments').update({is_deleted:true}).eq('id',commentId),'删除评论失败')}
-  async function setUserBanned(userId,banned){return fail(await client.rpc('admin_set_user_banned',{target_user_id:userId,banned}),'账号状态修改失败')}
-  function onAuthChange(cb){return enabled?client.auth.onAuthStateChange((e,s)=>cb&&cb(e,s)):null}
-  window.fwDb={enabled,client,getCurrentUser,sendEmailOtp,verifyEmailOtp,signInPassword,updatePassword,sendPasswordReset,signOut,updateProfile,loadPosts,createPost,createComment,react,listUsers,deletePost,deleteComment,setUserBanned,onAuthChange};
+
+  async function getCurrentUser(){
+    if(!enabled)return null;
+    const s=fail(await client.auth.getSession(),'读取登录状态失败')?.session;
+    if(!s?.user)return null;
+    const p=fail(
+      await client.from('profiles')
+        .select('id,nickname,avatar_url,role,is_banned,created_at,lab_code')
+        .eq('id',s.user.id)
+        .maybeSingle(),
+      '读取用户资料失败'
+    )||{};
+    return {
+      id:s.user.id,
+      email:s.user.email,
+      nickname:p.nickname||s.user.user_metadata?.nickname||'临时研究员',
+      avatar_url:p.avatar_url||'',
+      role:p.role||'user',
+      isAdmin:p.role==='admin',
+      disabled:!!p.is_banned,
+      lab_code:p.lab_code||'',
+      provider:'supabase'
+    };
+  }
+
+  async function sendEmailOtp({email,nickname}){
+    const r=await client.auth.signInWithOtp({
+      email:String(email||'').trim(),
+      options:{
+        shouldCreateUser:true,
+        data:{nickname:String(nickname||'').trim()||'临时研究员'},
+        emailRedirectTo:redirect()
+      }
+    });
+    if(r.error)throw new Error(r.error.message);
+    return{ok:true};
+  }
+
+  async function verifyEmailOtp({email,token,nickname,password}){
+    const r=await client.auth.verifyOtp({
+      email:String(email||'').trim(),
+      token:String(token||'').trim().replace(/\s/g,''),
+      type:'email'
+    });
+    if(r.error)throw new Error(r.error.message);
+    if(nickname)await updateProfile({nickname});
+    if(password)await updatePassword({password});
+    return{user:await getCurrentUser()};
+  }
+
+  // 登录超时修复：
+  // 原逻辑：signInWithPassword 成功后立刻 await getCurrentUser()
+  // 问题：getCurrentUser() 会再查 profiles，如果 profiles / RLS / 网络响应慢，就会把登录按钮卡到超时。
+  // 新逻辑：这里只确认 Supabase Auth 登录成功，立刻返回；资料刷新交给页面后续逻辑处理。
+  async function signInPassword({email,password}){
+    const r=await client.auth.signInWithPassword({
+      email:String(email||'').trim(),
+      password:String(password||'').trim()
+    });
+    if(r.error)throw new Error(r.error.message);
+
+    const u=r.data?.user;
+    return {
+      user:u ? {
+        id:u.id,
+        email:u.email,
+        nickname:u.user_metadata?.nickname||'临时研究员',
+        provider:'supabase'
+      } : null
+    };
+  }
+
+  async function updatePassword({password}){
+    const pwd=String(password||'').trim();
+    if(pwd.length<6)throw new Error('密码至少 6 位。');
+    const r=await client.auth.updateUser({password:pwd});
+    if(r.error)throw new Error(r.error.message);
+    return{ok:true};
+  }
+
+  async function sendPasswordReset({email}){
+    const r=await client.auth.resetPasswordForEmail(String(email||'').trim(),{redirectTo:redirect()});
+    if(r.error)throw new Error(r.error.message);
+    return{ok:true};
+  }
+
+  async function signOut(){
+    if(enabled)await client.auth.signOut();
+  }
+
+  async function updateProfile({nickname,avatarFile}){
+    const u=await getCurrentUser();
+    if(!u)throw new Error('请先登录。');
+
+    let avatar_url='';
+    if(avatarFile&&avatarFile.size){
+      const name=avatarFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      const path=`${u.id}/${Date.now()}_${name}`;
+      fail(await client.storage.from('avatars').upload(path,avatarFile,{upsert:true,cacheControl:'3600'}),'头像上传失败');
+      avatar_url=client.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+    }
+
+    const patch={updated_at:new Date().toISOString()};
+    if(nickname)patch.nickname=String(nickname).trim().slice(0,24);
+    if(avatar_url)patch.avatar_url=avatar_url;
+
+    return fail(
+      await client.from('profiles')
+        .update(patch)
+        .eq('id',u.id)
+        .select('id,nickname,avatar_url,role,is_banned')
+        .maybeSingle(),
+      '资料保存失败'
+    );
+  }
+
+  async function loadPosts(){
+    const posts=fail(
+      await client.from('posts')
+        .select('id,user_id,content,status_tag,created_at,profiles(nickname,avatar_url)')
+        .eq('is_deleted',false)
+        .order('created_at',{ascending:false})
+        .limit(100),
+      '读取帖子失败'
+    )||[];
+
+    const ids=posts.map(p=>p.id);
+    if(!ids.length)return[];
+
+    const comments=fail(
+      await client.from('comments')
+        .select('id,post_id,user_id,content,created_at,profiles(nickname,avatar_url)')
+        .in('post_id',ids)
+        .eq('is_deleted',false)
+        .order('created_at',{ascending:true}),
+      '读取评论失败'
+    )||[];
+
+    const reactions=fail(
+      await client.from('reactions')
+        .select('post_id,user_id,type')
+        .in('post_id',ids),
+      '读取互动失败'
+    )||[];
+
+    const cb={},counts={};
+
+    comments.forEach(c=>{
+      const p=profileOf(c);
+      (cb[c.post_id]=cb[c.post_id]||[]).push({
+        id:c.id,
+        userId:c.user_id,
+        authorName:p.nickname||'匿名回声',
+        authorAvatar:p.avatar_url||'',
+        content:c.content,
+        time:timeText(c.created_at)
+      });
+    });
+
+    reactions.forEach(r=>{
+      counts[r.post_id]=counts[r.post_id]||{resonance:0,same:0,tissue:0};
+      if(r.type==='like')counts[r.post_id].resonance++;
+      if(r.type==='same')counts[r.post_id].same++;
+      if(r.type==='tissue')counts[r.post_id].tissue++;
+    });
+
+    return posts.map(p=>{
+      const prof=profileOf(p),c=counts[p.id]||{resonance:0,same:0,tissue:0};
+      return {
+        id:p.id,
+        userId:p.user_id,
+        authorId:p.user_id,
+        authorName:prof.nickname||'匿名研究员',
+        authorAvatar:prof.avatar_url||'',
+        status:p.status_tag||'今日无效',
+        content:p.content,
+        time:timeText(p.created_at),
+        createdAt:p.created_at,
+        resonance:c.resonance,
+        same:c.same,
+        tissue:c.tissue,
+        comments:cb[p.id]||[]
+      };
+    });
+  }
+
+  async function createPost({content,status}){
+    const u=await getCurrentUser();
+    if(!u)throw new Error('请先登录。');
+    if(u.disabled)throw new Error('这个账号已被停用。');
+    return fail(
+      await client.from('posts')
+        .insert({user_id:u.id,content:String(content||'').trim(),status_tag:status||'今日无效'})
+        .select('id')
+        .single(),
+      '发布失败'
+    );
+  }
+
+  async function createComment({postId,content}){
+    const u=await getCurrentUser();
+    if(!u)throw new Error('请先登录。');
+    if(u.disabled)throw new Error('这个账号已被停用。');
+    return fail(
+      await client.from('comments')
+        .insert({post_id:postId,user_id:u.id,content:String(content||'').trim()})
+        .select('id')
+        .single(),
+      '评论失败'
+    );
+  }
+
+  async function react({postId,type}){
+    const u=await getCurrentUser();
+    if(!u)throw new Error('请先登录。');
+    if(u.disabled)throw new Error('这个账号已被停用。');
+
+    const map={resonance:'like',same:'same',tissue:'tissue',like:'like'};
+    const r=await client.from('reactions').insert({post_id:postId,user_id:u.id,type:map[type]||type});
+    if(r.error){
+      if(r.error.code==='23505'||String(r.error.message).includes('duplicate'))return{already:true};
+      throw new Error('互动失败：'+r.error.message);
+    }
+    return{ok:true};
+  }
+
+  async function listUsers(){
+    return fail(
+      await client.from('profiles')
+        .select('id,nickname,avatar_url,role,is_banned,created_at')
+        .order('created_at',{ascending:false})
+        .limit(200),
+      '读取用户列表失败'
+    )||[];
+  }
+
+  async function deletePost(postId){
+    return fail(await client.from('posts').update({is_deleted:true}).eq('id',postId),'删除帖子失败');
+  }
+
+  async function deleteComment(commentId){
+    return fail(await client.from('comments').update({is_deleted:true}).eq('id',commentId),'删除评论失败');
+  }
+
+  async function setUserBanned(userId,banned){
+    return fail(await client.rpc('admin_set_user_banned',{target_user_id:userId,banned}),'账号状态修改失败');
+  }
+
+  function onAuthChange(cb){
+    return enabled?client.auth.onAuthStateChange((e,s)=>cb&&cb(e,s)):null;
+  }
+
+  window.fwDb={
+    enabled,
+    client,
+    getCurrentUser,
+    sendEmailOtp,
+    verifyEmailOtp,
+    signInPassword,
+    updatePassword,
+    sendPasswordReset,
+    signOut,
+    updateProfile,
+    loadPosts,
+    createPost,
+    createComment,
+    react,
+    listUsers,
+    deletePost,
+    deleteComment,
+    setUserBanned,
+    onAuthChange
+  };
 })();
