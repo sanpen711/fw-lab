@@ -179,7 +179,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
     document.body.appendChild(s);
   }
 
-  loadCss('assets/fw-social.css?v=fw-statement-final-20260509-1');
-  loadJs('assets/fw-lab-code.js?v=fw-statement-final-20260509-1');
-  loadJs('assets/fw-social.js?v=fw-statement-final-20260509-1');
+  loadCss('assets/fw-social.css?v=fw-fix-20260509-2');
+  loadJs('assets/fw-lab-code.js?v=fw-fix-20260509-2');
+  loadJs('assets/fw-social.js?v=fw-fix-20260509-2');
 })();
