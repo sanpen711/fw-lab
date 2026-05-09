@@ -463,6 +463,216 @@ input[name="lab_code"]:disabled{
   }
 }
 
+
+/* F.w 研究所：登录 / 注册表单间距优化 */
+.fw-auth-panel .fw-form input + button,
+.fw-auth-panel .fw-form input + .btn,
+.fw-auth-panel .fw-form textarea + button,
+.fw-auth-panel .fw-form textarea + .btn{
+  margin-top:16px;
+}
+
+.fw-auth-panel .fw-form button[type="submit"],
+.fw-auth-panel .fw-form button[data-send-code]{
+  margin-top:16px;
+}
+
+.fw-auth-panel .fw-form label{
+  margin-top:18px;
+}
+
+.fw-auth-panel .fw-form label:first-child,
+.fw-auth-panel .fw-form h3 + label{
+  margin-top:0;
+}
+
+.fw-auth-panel .fw-form .form-tip{
+  margin-top:14px;
+}
+
+/* 注册声明确认 */
+.fw-disclaimer{
+  display:block!important;
+  margin:20px 0 6px!important;
+  padding:13px 14px;
+  border:1px solid rgba(157,74,74,.28);
+  background:rgba(217,121,121,.07);
+  color:#4f493f;
+  line-height:1.55;
+}
+
+.fw-disclaimer-line{
+  display:flex!important;
+  align-items:center;
+  gap:9px;
+  margin:0!important;
+  cursor:pointer;
+}
+
+.fw-disclaimer-line input{
+  width:17px!important;
+  height:17px!important;
+  min-width:17px;
+  margin:0!important;
+  accent-color:#171715;
+  cursor:pointer;
+}
+
+.fw-disclaimer-line span{
+  display:inline;
+  color:#4f493f;
+  font-size:13px;
+  font-weight:900;
+}
+
+.fw-disclaimer-line button{
+  border:0;
+  padding:0;
+  margin:0;
+  background:transparent;
+  color:#9d4a4a;
+  font:inherit;
+  font-weight:950;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  cursor:pointer;
+}
+
+.fw-disclaimer p{
+  margin:8px 0 0;
+  color:#6f6a5f;
+  font-size:12px;
+  font-weight:800;
+}
+
+.fw-auth-panel button.fw-btn-disabled,
+.fw-auth-panel button:disabled{
+  opacity:.48;
+  cursor:not-allowed;
+  transform:none!important;
+}
+
+/* F.w 研究所声明弹窗 */
+.fw-statement-modal{
+  position:fixed;
+  inset:0;
+  z-index:12000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:22px;
+  background:rgba(6,8,6,.72);
+  backdrop-filter:blur(8px);
+}
+
+.fw-statement-modal.show{
+  display:flex;
+}
+
+.fw-statement-panel{
+  width:min(720px,96vw);
+  max-height:88vh;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  background:#f5f1e8;
+  color:#171715;
+  border:1px solid rgba(217,121,121,.55);
+  box-shadow:0 28px 90px rgba(0,0,0,.38);
+}
+
+.fw-statement-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:18px;
+  padding:22px 24px;
+  border-bottom:1px solid rgba(28,28,24,.12);
+  background:rgba(255,255,255,.48);
+}
+
+.fw-statement-head small{
+  display:block;
+  color:#d97979;
+  font-weight:950;
+  letter-spacing:.12em;
+  margin-bottom:8px;
+}
+
+.fw-statement-head h2{
+  margin:0;
+  font-size:32px;
+  line-height:1;
+  letter-spacing:-.06em;
+}
+
+.fw-statement-close{
+  width:38px;
+  height:38px;
+  border-radius:999px;
+  border:1px solid rgba(28,28,24,.18);
+  background:transparent;
+  font-size:22px;
+  cursor:pointer;
+}
+
+.fw-statement-body{
+  overflow:auto;
+  padding:22px 24px;
+  display:grid;
+  gap:16px;
+}
+
+.fw-statement-body section{
+  padding:0 0 14px;
+  border-bottom:1px solid rgba(28,28,24,.10);
+}
+
+.fw-statement-body section:last-child{
+  border-bottom:0;
+  padding-bottom:0;
+}
+
+.fw-statement-body h3{
+  margin:0 0 8px;
+  color:#9d4a4a;
+  font-size:16px;
+  font-weight:950;
+}
+
+.fw-statement-body p{
+  margin:0;
+  color:#5f5a50;
+  font-size:14px;
+  line-height:1.85;
+  font-weight:800;
+}
+
+.fw-statement-foot{
+  padding:14px 24px 20px;
+  border-top:1px solid rgba(28,28,24,.12);
+  background:rgba(255,255,255,.42);
+}
+
+.fw-statement-foot button{
+  width:100%;
+  min-height:46px;
+  border:0;
+  border-radius:999px;
+  background:#171715;
+  color:#fff;
+  font-weight:950;
+  cursor:pointer;
+}
+
+@media(max-width:640px){
+  .fw-statement-panel{
+    max-height:92vh;
+  }
+  .fw-statement-head h2{
+    font-size:28px;
+  }
+}
+
 /* F.w 研究所：关闭按钮统一优化
    作用：去掉所有弹窗关闭按钮的圆圈，只保留更大的 ×，点击区域仍然足够大。
    覆盖范围：登录/注册弹窗、回声/搭子弹窗、私聊弹窗、研究所声明弹窗。
@@ -500,20 +710,17 @@ input[name="lab_code"]:disabled{
   transform:none!important;
 }
 
-/* 登录/注册弹窗里的关闭按钮是绝对定位，单独微调位置 */
 .fw-auth-panel .fw-close{
   top:14px!important;
   right:16px!important;
 }
 
-/* 回声、搭子、私聊、声明弹窗里的关闭按钮在标题栏右侧 */
 .fw-social-head .fw-social-close,
 .fw-statement-head .fw-statement-close{
   margin-top:-6px;
   margin-right:-8px;
 }
 
-/* 手机端也保持简单的大 × */
 @media(max-width:640px){
   .fw-close,
   .fw-social-close,
