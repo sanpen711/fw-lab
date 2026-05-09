@@ -1,4 +1,4 @@
-// F.w 研究所：Supabase 登录 / 注册 / 资料单一控制器（简化注册：信息填写 + 邮箱验证码｜profiles权限修复适配版）
+// F.w 研究所：Supabase 登录 / 注册 / 资料单一控制器（简化注册：验证成功立即跳转登录版）
 // 说明：
 // 1. 这个文件独立负责登录、注册三步、个人资料、退出。
 // 2. 不再依赖 fw-lab-code.js / fw-auth-stability-fix.js / supabase-logout-fix.js 抢事件。
@@ -848,44 +848,59 @@
 
       if(verified.error) throw verified.error;
 
+      const email = regEmail;
+      const labCode = regLabCode;
+      const nickname = regNickname || `临时研究员${regLabCode}`;
       const session = verified.data?.session || null;
       const user = verified.data?.user || session?.user || await getSessionUser().catch(() => null);
 
-      if(user?.id){
-        const patch = {
-          lab_code: regLabCode,
-          nickname: regNickname || `临时研究员${regLabCode}`,
-          updated_at: new Date().toISOString()
-        };
-
-        const res = await db().client
-          .from('profiles')
-          .upsert({id:user.id, ...patch}, {onConflict:'id'})
-          .select('id,nickname,lab_code')
-          .maybeSingle();
-
-        if(res.error) throw new Error(formatDbError(res.error));
-      }
-
-      const email = regEmail;
-
+      // 验证成功后，马上切回登录页；资料补写和退出会话不再阻塞界面跳转。
       regEmail = '';
       regPassword = '';
       regLabCode = '';
       regNickname = '';
-
-      await db().client.auth.signOut().catch(() => {});
-      clearSupabaseLocalSession();
-
       me = null;
-      await refreshUser();
 
-      $('[data-sb-auth]')?.classList.remove('show');
+      setBtnLoading(btn, false);
+      show('login');
+
+      const loginEmail = $('[data-login] input[name="email"]');
+      const loginPassword = $('[data-login] input[name="password"]');
+      if(loginEmail) loginEmail.value = email;
+      if(loginPassword){
+        loginPassword.value = '';
+        setTimeout(() => loginPassword.focus(), 120);
+      }
+
       toast('注册成功，请登录。');
-      setTimeout(() => openModal('login', {email, focusPassword:true}), 650);
+
+      // 资料补写：成功最好，失败也不再卡注册页面；触发器一般已用注册 metadata 写入基础资料。
+      if(user?.id){
+        db().client
+          .from('profiles')
+          .upsert({
+            id:user.id,
+            lab_code:labCode,
+            nickname:nickname,
+            updated_at:new Date().toISOString()
+          }, {onConflict:'id'})
+          .then(({error}) => {
+            if(error) console.warn('profile upsert after signup failed:', error.message || error);
+          })
+          .catch(err => console.warn('profile upsert after signup failed:', err));
+      }
+
+      // 不等待退出，避免再次出现“验证中...”或“退出中...”卡住。
+      if(db()?.client){
+        db().client.auth.signOut().catch(() => {});
+      }
+      clearSupabaseLocalSession();
+      $$('[data-fw-current]').forEach(x => x.textContent = '注册 / 登录');
+      $$('[data-fw-avatar-slot]').forEach(x => x.innerHTML = '');
+      return;
     }catch(e){
       const msg = String(e.message || e || '');
-      if(msg.toLowerCase().includes('expired') || msg.includes('invalid')){
+      if(msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid') || msg.includes('验证码')){
         toast('验证码错误或已过期，请重新输入或重新发送。');
       }else{
         toast(msg || '验证失败。');
