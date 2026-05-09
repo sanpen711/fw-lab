@@ -1,3 +1,5 @@
+// F.w 研究所 Supabase DB Bridge｜登录超时修复版
+// 修复点：signInPassword 只等待 Auth 登录成功，不再阻塞等待 profiles。
 (function(){
   const cfg=window.FW_SUPABASE||{};
   const client=(cfg.url&&cfg.anonKey&&window.supabase)?window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
