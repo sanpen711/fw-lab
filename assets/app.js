@@ -157,31 +157,29 @@ document.addEventListener("DOMContentLoaded", ()=>{
   loadNext(0);
 })();
 
-// F.w 研究所：加载“实验品编号最终规则 + 回声 + 搭子 + 私聊”模块
-// 只需要追加在 assets/app.js 最底部，不要删除原来的代码。
-(function loadFwLabSocialModules(){
-  if(window.__FW_LAB_SOCIAL_LOADER__) return;
-  window.__FW_LAB_SOCIAL_LOADER__ = true;
+// F.w 研究所：加载“回声 + 搭子 + 私聊”模块（干净版）
+// 登录 / 注册 / 资料由 assets/supabase-auth-flow.js 单独负责。
+(function loadFwSocialModules(){
+  if(window.__FW_SOCIAL_LOADER_CLEAN__) return;
+  window.__FW_SOCIAL_LOADER_CLEAN__ = true;
 
   function loadCss(href){
     if(document.querySelector('link[href="'+href+'"]')) return;
-    var link=document.createElement('link');
-    link.rel='stylesheet';
-    link.href=href;
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
     document.head.appendChild(link);
   }
 
   function loadJs(src){
     if(document.querySelector('script[src="'+src+'"]')) return;
-    var s=document.createElement('script');
-    s.src=src;
-    s.async=false;
-    s.defer=false;
+    var s = document.createElement('script');
+    s.src = src;
+    s.async = false;
+    s.defer = false;
     document.body.appendChild(s);
   }
 
-  loadCss('assets/fw-social.css?v=fw-auth-stability-20260509-1');
-  loadJs('assets/fw-lab-code.js?v=fw-auth-stability-20260509-1');
-  loadJs('assets/fw-social.js?v=fw-auth-stability-20260509-1');
-  loadJs('assets/fw-auth-stability-fix.js?v=fw-auth-stability-20260509-1');
+  loadCss('assets/fw-social.css?v=clean-auth-20260509-1');
+  loadJs('assets/fw-social.js?v=clean-auth-20260509-1');
 })();
