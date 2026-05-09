@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
 });
 
 (function loadSupabaseBridge(){
-  const scripts = ["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", "assets/supabase-config.js", "assets/supabase-db.js", "assets/supabase-live.js?v=login-unblock-final-20260510-1"];
+  const scripts = ["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", "assets/supabase-config.js", "assets/supabase-db.js", "assets/supabase-live.js?v=send-code-unblock-20260510-1"];
   function loadNext(i){
     if(i >= scripts.length) return;
     const s = document.createElement("script");
