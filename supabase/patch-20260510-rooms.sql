@@ -1,6 +1,7 @@
 -- F.w 研究所数据库补丁 03：摸鱼房间聊天
 -- 使用方法：先运行 patch-20260510-auth-base.sql，再运行本文件。
 -- 可重复运行。
+-- 修复说明：如果旧库里已存在同名 RPC 且参数默认值不同，先 DROP 再重建，避免 42P13 报错。
 
 -- 1. 表结构
 create table if not exists public.chat_messages (
@@ -47,7 +48,9 @@ begin
 end;
 $$;
 
-create or replace function public.admin_set_user_muted(target_user_id uuid, mute_minutes int)
+drop function if exists public.admin_set_user_muted(uuid, int);
+drop function if exists public.admin_set_user_muted(uuid, integer);
+create function public.admin_set_user_muted(target_user_id uuid, mute_minutes int)
 returns void
 language plpgsql
 security definer
@@ -88,7 +91,8 @@ begin
 end;
 $$;
 
-create or replace function public.report_chat_message(target_message_id bigint, report_reason text default '用户举报')
+drop function if exists public.report_chat_message(bigint, text);
+create function public.report_chat_message(target_message_id bigint, report_reason text default '用户举报')
 returns void
 language plpgsql
 security definer
