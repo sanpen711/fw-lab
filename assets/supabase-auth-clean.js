@@ -147,16 +147,56 @@
   }
 
   function show(view){
-    modal();
-    $$('[data-view]').forEach(x => x.classList.toggle('show', x.dataset.view === view));
-    const map = {login:['账号登录','输入邮箱和密码，进入研究所。'],register1:['注册账号','第一步：填写注册信息。'],register2:['注册账号','第二步：验证邮箱，完成注册。'],reset:['找回密码','输入邮箱，接收找回密码邮件。'],profile:['个人资料','修改昵称、实验品编号、头像或密码。']};
-    const [title,desc] = map[view] || map.login;
-    $('[data-title]').textContent = title;
-    $('[data-desc]').textContent = desc;
-    const p = $('[data-progress]');
+  modal();
+
+  const authModal = $('[data-sb-auth]');
+  if(authModal){
+    authModal.classList.add('show');
+  }
+
+  $$('[data-view]').forEach(x => {
+    x.classList.toggle('show', x.dataset.view === view);
+  });
+
+  const map = {
+    login: ['账号登录', '输入邮箱和密码，进入研究所。'],
+    register1: ['注册账号', '第一步：填写注册信息。'],
+    register2: ['注册账号', '第二步：验证邮箱，完成注册。'],
+    reset: ['找回密码', '输入邮箱，接收找回密码邮件。'],
+    profile: ['个人资料', '修改昵称、实验品编号、头像或密码。']
+  };
+
+  const [title, desc] = map[view] || map.login;
+
+  const titleEl = $('[data-title]');
+  const descEl = $('[data-desc]');
+
+  if(titleEl) titleEl.textContent = title;
+  if(descEl) descEl.textContent = desc;
+
+  const p = $('[data-progress]');
+
+  if(p){
     p.style.display = /^register/.test(view) ? 'grid' : 'none';
-    if(/^register/.test(view)) Array.from(p.children).forEach((x,i)=>x.classList.toggle('on', i <= (view === 'register2' ? 1 : 0)));
-    if(view === 'profile') fillProfile();
+
+    if(/^register/.test(view)){
+      Array.from(p.children).forEach((x, i) => {
+        x.classList.toggle('on', i <= (view === 'register2' ? 1 : 0));
+      });
+    }
+  }
+
+  if(view === 'profile'){
+    fillProfile();
+  }
+
+  setTimeout(() => {
+    const input = $(`[data-view="${view}"] input`);
+    if(input && !input.disabled){
+      input.focus();
+    }
+  }, 80);
+}
   }
 
   function userbar(){
