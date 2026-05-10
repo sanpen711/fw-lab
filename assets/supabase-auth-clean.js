@@ -331,7 +331,9 @@
 
   function bind(){
     document.body.addEventListener('click', e => {
-      if(e.target.closest('[data-fw-open]')){ me ? show('profile') : show('login'); }
+      if(e.target.closest('[data-fw-open], [data-login-cta]')){
+  me ? show('profile') : show('login');
+}
       if(e.target.closest('[data-sb-close]')) $('[data-sb-auth]')?.classList.remove('show');
       if(e.target.closest('[data-sb-logout]')) logout();
       const go = e.target.closest('[data-go]'); if(go) show(go.dataset.go);
