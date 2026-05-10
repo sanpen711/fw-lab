@@ -1,5 +1,5 @@
-// F.w 研究所 Supabase 登录系统入口
-// 加载顺序：先加载登录/注册兜底修复，再加载主登录注册控制器。
+// F.w 研究所 Supabase 登录系统入口（干净版）
+// 只加载一个账号控制器，避免登录、验证码、退出互相抢流程。
 (function(){
   if(window.__FW_SUPABASE_AUTH_FLOW_LOADED__) return;
   window.__FW_SUPABASE_AUTH_FLOW_LOADED__ = true;
@@ -12,6 +12,5 @@
     document.head.appendChild(script);
   }
 
-  load('assets/fw-auth-flow-hotfix.js?v=auth-hotfix-20260510-2');
-  load('assets/supabase-auth-flow.js?v=auth-flow-20260510-2');
+  load('assets/supabase-auth-clean.js?v=auth-clean-20260510-1');
 })();
