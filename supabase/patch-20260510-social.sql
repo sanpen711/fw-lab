@@ -1,6 +1,7 @@
 -- F.w 研究所数据库补丁 02：回声 / 搭子 / 私聊
 -- 使用方法：先运行 patch-20260510-auth-base.sql，再运行本文件。
 -- 可重复运行。
+-- 修复说明：如果旧库里已经存在同名 RPC 且返回值不同，先 DROP 再重建，避免 42P13 报错。
 
 -- 1. 表结构
 create table if not exists public.notifications (
@@ -89,7 +90,8 @@ begin
 end;
 $$;
 
-create or replace function public.fw_respond_friendship(target_friendship_id bigint, accept_request boolean)
+drop function if exists public.fw_respond_friendship(bigint, boolean);
+create function public.fw_respond_friendship(target_friendship_id bigint, accept_request boolean)
 returns void
 language plpgsql
 security definer
