@@ -1,11 +1,12 @@
-// F.w 研究所：登录 / 注册完成兜底修复
+// F.w 研究所：登录超时 + 注册资料补写兜底修复 v2
 // 作用：
-// 1. 登录成功后立即刷新页面，避免被资料/帖子刷新拖到“登录超时”。
-// 2. 邮箱验证码通过后，明确写入 profiles.lab_code / email_search，避免注册后显示“实验品编号：未设置”。
-// 说明：本文件应在 supabase-auth-flow.js 之前加载，用 window 捕获阶段抢先接管 login 与 register2 表单。
+// 1. 只接管登录表单：登录成功后立即刷新页面，避免误报“登录超时”。
+// 2. 不再接管验证码验证，避免卡在“验证中...”。
+// 3. 注册第一步记录 email / lab_code / nickname。
+// 4. 注册成功后或首次登录后，自动补写 profiles.lab_code / email_search。
 (function(){
-  if(window.__FW_AUTH_FLOW_HOTFIX__) return;
-  window.__FW_AUTH_FLOW_HOTFIX__ = true;
+  if(window.__FW_AUTH_FLOW_HOTFIX_V2__) return;
+  window.__FW_AUTH_FLOW_HOTFIX_V2__ = true;
 
   function toast(msg){
     var t = document.querySelector('.fw-toast');
@@ -24,7 +25,9 @@
 
   function waitForDb(){
     return new Promise(function(resolve){
-      if(window.fwDb && window.fwDb.enabled && window.fwDb.client) return resolve(true);
+      if(window.fwDb && window.fwDb.enabled && window.fwDb.client){
+        return resolve(true);
+      }
 
       var count = 0;
       var timer = setInterval(function(){
@@ -71,11 +74,27 @@
     return n.length >= 2 && n.length <= 12;
   }
 
+  function mapAuthError(err){
+    var msg = String((err && err.message) || err || '');
+
+    if(/invalid login credentials/i.test(msg)) return '邮箱或密码不正确。';
+    if(/email not confirmed/i.test(msg)) return '邮箱还没有验证，请先完成邮箱验证码验证。';
+    if(/rate limit|too many/i.test(msg)) return '尝试次数过多，请稍后再试。';
+    if(/fetch|network|failed/i.test(msg)) return '网络连接异常，请刷新页面后重试。';
+    if(msg.indexOf('实验品编号') >= 0) return msg;
+    if(msg.indexOf('昵称') >= 0) return msg;
+    if(msg.indexOf('duplicate') >= 0) return '该资料已被占用，请换一个。';
+
+    return msg || '操作失败，请稍后重试。';
+  }
+
   function setLoading(btn, loading, text){
     if(!btn) return;
 
     if(loading){
-      if(!btn.dataset.oldText) btn.dataset.oldText = btn.textContent;
+      if(!btn.dataset.oldText){
+        btn.dataset.oldText = btn.textContent;
+      }
       btn.textContent = text || '处理中...';
       btn.disabled = true;
       btn.classList.add('fw-btn-loading');
@@ -86,25 +105,22 @@
     }
   }
 
-  function mapAuthError(err){
-    var msg = String((err && err.message) || err || '');
-
-    if(/invalid login credentials/i.test(msg)) return '邮箱或密码不正确。';
-    if(/email not confirmed/i.test(msg)) return '邮箱还没有验证，请先完成邮箱验证码验证。';
-    if(/token/i.test(msg) && /expired/i.test(msg)) return '验证码已过期，请重新发送验证码。';
-    if(/rate limit|too many/i.test(msg)) return '尝试次数过多，请稍后再试。';
-    if(/fetch|network|failed/i.test(msg)) return '网络连接异常，请刷新页面后重试。';
-    if(msg.includes('实验品编号')) return msg;
-    if(msg.includes('昵称')) return msg;
-
-    return msg || '操作失败，请稍后重试。';
-  }
-
   function storePendingRegister(email, labCode, nickname){
     try{
-      sessionStorage.setItem('fw_pending_register_email', String(email || '').trim().toLowerCase());
-      sessionStorage.setItem('fw_pending_register_lab_code', normalizeLabCode(labCode));
-      sessionStorage.setItem('fw_pending_register_nickname', normalizeNickname(nickname));
+      sessionStorage.setItem(
+        'fw_pending_register_email',
+        String(email || '').trim().toLowerCase()
+      );
+
+      sessionStorage.setItem(
+        'fw_pending_register_lab_code',
+        normalizeLabCode(labCode)
+      );
+
+      sessionStorage.setItem(
+        'fw_pending_register_nickname',
+        normalizeNickname(nickname)
+      );
     }catch(e){}
   }
 
@@ -116,7 +132,11 @@
         nickname: sessionStorage.getItem('fw_pending_register_nickname') || ''
       };
     }catch(e){
-      return {email:'', labCode:'', nickname:''};
+      return {
+        email: '',
+        labCode: '',
+        nickname: ''
+      };
     }
   }
 
@@ -128,6 +148,98 @@
     }catch(e){}
   }
 
+  async function patchPendingProfile(user){
+    if(!user || !user.id) return false;
+
+    var pending = readPendingRegister();
+    var email = String(pending.email || '').trim().toLowerCase();
+    var labCode = normalizeLabCode(pending.labCode);
+    var nickname = normalizeNickname(pending.nickname);
+
+    if(!email || !validLabCode(labCode)){
+      return false;
+    }
+
+    var userEmail = String(user.email || '').trim().toLowerCase();
+
+    // 避免把 A 邮箱注册时的编号补到 B 账号上
+    if(userEmail && email && userEmail !== email){
+      return false;
+    }
+
+    if(!validNickname(nickname)){
+      nickname = '研究员' + labCode;
+    }
+
+    if(!validNickname(nickname)){
+      nickname = '研究员' + labCode.slice(-7);
+    }
+
+    var current = await withTimeout(
+      window.fwDb.client
+        .from('profiles')
+        .select('id,nickname,lab_code,email_search')
+        .eq('id', user.id)
+        .maybeSingle(),
+      8000,
+      '读取用户资料超时。'
+    );
+
+    if(current && current.error){
+      throw current.error;
+    }
+
+    var profile = current && current.data ? current.data : null;
+
+    // 已经有编号就不重复写，防止触发“编号不可修改”
+    if(profile && profile.lab_code){
+      clearPendingRegister();
+      return true;
+    }
+
+    var saved = await withTimeout(
+      window.fwDb.client
+        .from('profiles')
+        .update({
+          lab_code: labCode,
+          email_search: email,
+          nickname: nickname,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+        .select('id,nickname,lab_code,email_search')
+        .maybeSingle(),
+      10000,
+      '保存实验品编号超时。'
+    );
+
+    if(saved && saved.error){
+      throw saved.error;
+    }
+
+    clearPendingRegister();
+    return true;
+  }
+
+  async function patchPendingProfileSafe(user){
+    try{
+      var ok = await waitForDb();
+      if(!ok) return false;
+
+      var done = await patchPendingProfile(user);
+
+      if(done){
+        console.info('[FW] pending profile patched.');
+      }
+
+      return done;
+    }catch(err){
+      console.warn('[FW] pending profile patch failed:', err);
+      toast(mapAuthError(err));
+      return false;
+    }
+  }
+
   async function fastLogin(form){
     if(window.__FW_AUTH_HOTFIX_LOGIN_BUSY__) return;
     window.__FW_AUTH_HOTFIX_LOGIN_BUSY__ = true;
@@ -137,14 +249,22 @@
 
     try{
       var ok = await waitForDb();
-      if(!ok) throw new Error('数据库连接未就绪，请刷新页面后重试。');
+
+      if(!ok){
+        throw new Error('数据库连接未就绪，请刷新页面后重试。');
+      }
 
       var fd = new FormData(form);
       var email = String(fd.get('email') || '').trim();
       var password = String(fd.get('password') || '').trim();
 
-      if(!email) throw new Error('请填写邮箱。');
-      if(!password) throw new Error('请填写密码。');
+      if(!email){
+        throw new Error('请填写邮箱。');
+      }
+
+      if(!password){
+        throw new Error('请填写密码。');
+      }
 
       var res = await withTimeout(
         window.fwDb.client.auth.signInWithPassword({
@@ -155,12 +275,23 @@
         '登录请求超时，请检查网络后重试。'
       );
 
-      if(res && res.error) throw res.error;
+      if(res && res.error){
+        throw res.error;
+      }
+
+      var user = res && res.data ? res.data.user : null;
+
+      // 如果这个账号是刚注册后首次登录，并且本地还存着 lab_code，就顺手补写资料
+      if(user){
+        await patchPendingProfileSafe(user);
+      }
 
       toast('登录成功，正在进入研究所。');
 
       var modal = document.querySelector('[data-sb-auth]');
-      if(modal) modal.classList.remove('show');
+      if(modal){
+        modal.classList.remove('show');
+      }
 
       setTimeout(function(){
         window.location.reload();
@@ -173,128 +304,12 @@
     }
   }
 
-  async function completeSignup(form){
-    if(window.__FW_AUTH_HOTFIX_SIGNUP_BUSY__) return;
-    window.__FW_AUTH_HOTFIX_SIGNUP_BUSY__ = true;
-
-    var btn = form.querySelector('button[type="submit"]');
-    setLoading(btn, true, '验证中...');
-
-    try{
-      var ok = await waitForDb();
-      if(!ok) throw new Error('数据库连接未就绪，请刷新页面后重试。');
-
-      var reg1 = document.querySelector('[data-reg1]');
-      var reg1Data = reg1 ? new FormData(reg1) : new FormData();
-      var reg2Data = new FormData(form);
-
-      var email = String(reg1Data.get('email') || '').trim().toLowerCase();
-      var password = String(reg1Data.get('password') || '').trim();
-      var labCode = normalizeLabCode(reg1Data.get('lab_code'));
-      var nickname = normalizeNickname(reg1Data.get('nickname'));
-      var token = String(reg2Data.get('token') || '').trim();
-
-      var pending = readPendingRegister();
-
-      if(!email) email = pending.email;
-      if(!labCode) labCode = normalizeLabCode(pending.labCode);
-      if(!nickname) nickname = normalizeNickname(pending.nickname);
-
-      if(!email) throw new Error('注册邮箱丢失，请返回第一步重新填写。');
-      if(!validLabCode(labCode)) throw new Error('实验品编号必须是 7 位字母或数字。');
-      if(!token) throw new Error('请填写邮箱验证码。');
-
-      if(!nickname){
-        nickname = '研究员' + labCode;
-      }
-
-      if(!validNickname(nickname)){
-        nickname = '研究员' + labCode;
-      }
-
-      var verified = await withTimeout(
-        window.fwDb.client.auth.verifyOtp({
-          email: email,
-          token: token,
-          type: 'signup'
-        }),
-        18000,
-        '验证码验证超时，请稍后重试。'
-      );
-
-      if(verified && verified.error) throw verified.error;
-
-      var user = verified && verified.data && verified.data.user;
-
-      if(!user){
-        var sessionRes = await window.fwDb.client.auth.getSession();
-        user = sessionRes &&
-          sessionRes.data &&
-          sessionRes.data.session &&
-          sessionRes.data.session.user;
-      }
-
-      if(!user || !user.id){
-        throw new Error('邮箱已验证，但登录状态未同步，请刷新后登录。');
-      }
-
-      // 兜底：某些设置下密码可能没有在 signUp 阶段稳定写入，这里验证后再设置一次。
-      if(password && password.length >= 6){
-        await window.fwDb.client.auth.updateUser({
-          password: password
-        }).catch(function(){});
-      }
-
-      var saved = await window.fwDb.client
-        .from('profiles')
-        .update({
-          lab_code: labCode,
-          email_search: email,
-          nickname: nickname,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-        .select('id,nickname,lab_code,email_search')
-        .maybeSingle();
-
-      if(saved && saved.error) throw saved.error;
-
-      clearPendingRegister();
-
-      await window.fwDb.client.auth.signOut().catch(function(){});
-
-      toast('注册成功，请登录。');
-
-      var modal = document.querySelector('[data-sb-auth]');
-      if(modal){
-        modal.querySelectorAll('[data-view]').forEach(function(v){
-          v.classList.toggle('show', v.dataset.view === 'login');
-        });
-
-        var title = modal.querySelector('[data-title]');
-        var desc = modal.querySelector('[data-desc]');
-
-        if(title) title.textContent = '账号登录';
-        if(desc) desc.textContent = '输入邮箱和密码，进入研究所。';
-
-        var loginEmail = modal.querySelector('[data-login] input[name="email"]');
-        var loginPwd = modal.querySelector('[data-login] input[name="password"]');
-
-        if(loginEmail) loginEmail.value = email;
-        if(loginPwd) loginPwd.focus();
-      }
-
-    }catch(err){
-      toast(mapAuthError(err));
-    }finally{
-      setLoading(btn, false);
-      window.__FW_AUTH_HOTFIX_SIGNUP_BUSY__ = false;
-    }
-  }
-
-  // 记录注册第一步资料，不阻止原注册第一步发送验证码逻辑。
+  // 记录注册第一步信息，不阻止原验证码发送逻辑
   window.addEventListener('submit', function(e){
-    var form = e.target && e.target.closest && e.target.closest('[data-reg1]');
+    var form = e.target &&
+      e.target.closest &&
+      e.target.closest('[data-reg1]');
+
     if(!form) return;
 
     var fd = new FormData(form);
@@ -306,16 +321,18 @@
     );
   }, true);
 
-  // 抢先接管登录与注册第二步，阻止原控制器继续等待额外刷新导致超时。
+  // 只接管登录，不接管 register2 验证码
   window.addEventListener('submit', function(e){
-    var loginForm = e.target && e.target.closest && e.target.closest('[data-login]');
-    var reg2Form = e.target && e.target.closest && e.target.closest('[data-reg2]');
-    var form = loginForm || reg2Form;
+    var form = e.target &&
+      e.target.closest &&
+      e.target.closest('[data-login]');
 
     if(!form) return;
 
     var view = form.closest('[data-view]');
-    if(view && !view.classList.contains('show')) return;
+    if(view && !view.classList.contains('show')){
+      return;
+    }
 
     e.preventDefault();
     e.stopPropagation();
@@ -324,7 +341,25 @@
       e.stopImmediatePropagation();
     }
 
-    if(loginForm) fastLogin(loginForm);
-    if(reg2Form) completeSignup(reg2Form);
+    fastLogin(form);
   }, true);
+
+  // 监听注册验证成功后的登录态，自动补写资料
+  function installAuthListener(){
+    if(!window.fwDb || !window.fwDb.client || !window.fwDb.client.auth){
+      setTimeout(installAuthListener, 300);
+      return;
+    }
+
+    if(window.__FW_AUTH_HOTFIX_AUTH_LISTENER__) return;
+    window.__FW_AUTH_HOTFIX_AUTH_LISTENER__ = true;
+
+    window.fwDb.client.auth.onAuthStateChange(function(event, session){
+      if(event === 'SIGNED_IN' && session && session.user){
+        patchPendingProfileSafe(session.user);
+      }
+    });
+  }
+
+  installAuthListener();
 })();
