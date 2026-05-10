@@ -157,8 +157,8 @@ document.addEventListener("DOMContentLoaded", ()=>{
   loadNext(0);
 })();
 
-// F.w 研究所：加载“回声 + 搭子 + 私聊”模块（干净版）
-// 登录 / 注册 / 资料由 assets/supabase-auth-flow.js 单独负责。
+  // F.w 研究所：加载“回声 + 搭子 + 私聊”模块（干净版）
+// 登录 / 注册 / 资料由 assets/supabase-auth-clean.js 负责。
 (function loadFwSocialModules(){
   if(window.__FW_SOCIAL_LOADER_CLEAN__) return;
   window.__FW_SOCIAL_LOADER_CLEAN__ = true;
@@ -180,6 +180,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
     document.body.appendChild(s);
   }
 
-  loadCss('assets/fw-social.css?v=login-unblock-final-20260510-1');
-  loadJs('assets/fw-social.js?v=login-unblock-final-20260510-1');
+  loadCss('assets/fw-social.css?v=private-chat-final-20260510-1');
+  loadJs('assets/fw-social.js?v=private-chat-final-20260510-1');
+  loadJs('assets/fw-private-chat-final.js?v=private-chat-final-20260510-1');
 })();
