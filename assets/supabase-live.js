@@ -12,6 +12,6 @@
     document.head.appendChild(script);
   }
 
-  load('assets/fw-auth-flow-hotfix.js?v=auth-hotfix-20260510-1');
+  load('assets/fw-auth-flow-hotfix.js?v=auth-hotfix-20260510-2');
   load('assets/supabase-auth-flow.js?v=auth-flow-20260510-2');
 })();
