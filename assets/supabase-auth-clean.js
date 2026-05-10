@@ -197,7 +197,6 @@
     }
   }, 80);
 }
-  }
 
   function userbar(){
     $$('.header').forEach(h => {
