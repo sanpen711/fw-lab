@@ -1,8 +1,8 @@
-// F.w 研究所：回声 / 搭子浮动面板增强
-// 作用：把回声、搭子、资料卡、私聊从遮罩弹窗改成可拖动、可调节大小的浮动工具窗。
+// F.w 研究所：回声 / 搭子 / 私聊浮动面板增强 v2
+// 修复点：去掉会造成页面卡死的 class 属性循环监听，只在打开面板、DOM 新增、窗口变化时轻量处理。
 (function(){
-  if(window.__FW_FLOATING_PANELS__) return;
-  window.__FW_FLOATING_PANELS__ = true;
+  if(window.__FW_FLOATING_PANELS_V2__) return;
+  window.__FW_FLOATING_PANELS_V2__ = true;
 
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
@@ -16,6 +16,7 @@
   };
 
   let drag = null;
+  let scheduleId = 0;
   const resizeObservers = new WeakMap();
 
   function injectStyle(){
@@ -51,7 +52,6 @@
           resize:both;
           overflow:hidden!important;
           z-index:10010;
-          border-radius:0;
           box-shadow:0 20px 72px rgba(0,0,0,.28), 0 0 0 1px rgba(217,121,121,.28);
         }
 
@@ -123,37 +123,11 @@
       }
 
       @media (max-width: 760px){
-        .fw-social-modal[data-fw-social-modal],
-        .fw-social-modal[data-fw-private-modal]{
-          backdrop-filter:blur(6px);
-          -webkit-backdrop-filter:blur(6px);
-        }
         .fw-floating-tools{display:none!important;}
       }
     `;
 
     document.head.appendChild(style);
-  }
-
-  function getType(modal){
-    if(!modal) return 'default';
-    if(modal.matches('[data-fw-private-modal]')) return 'chat';
-
-    const title = modal.querySelector('[data-fw-social-title]')?.textContent || '';
-    const kicker = modal.querySelector('[data-fw-social-kicker]')?.textContent || '';
-
-    if(/回声|ECHO/i.test(title + kicker)) return 'echo';
-    if(/搭子|BUDDY/i.test(title + kicker)) return 'buddy';
-    if(/资料|CARD|RESEARCHER/i.test(title + kicker)) return 'profile';
-    return 'default';
-  }
-
-  function panelOf(modal){
-    return modal?.querySelector('.fw-social-panel, .fw-private-window') || null;
-  }
-
-  function storageKey(type){
-    return 'fw_float_panel_' + type + '_v1';
   }
 
   function viewport(){
@@ -165,6 +139,28 @@
 
   function clamp(n, min, max){
     return Math.min(Math.max(n, min), max);
+  }
+
+  function getType(modal){
+    if(!modal) return 'default';
+    if(modal.matches('[data-fw-private-modal]')) return 'chat';
+
+    const title = modal.querySelector('[data-fw-social-title]')?.textContent || '';
+    const kicker = modal.querySelector('[data-fw-social-kicker]')?.textContent || '';
+    const text = title + ' ' + kicker;
+
+    if(/回声|ECHO/i.test(text)) return 'echo';
+    if(/搭子|BUDDY/i.test(text)) return 'buddy';
+    if(/资料|CARD|RESEARCHER/i.test(text)) return 'profile';
+    return 'default';
+  }
+
+  function panelOf(modal){
+    return modal?.querySelector('.fw-social-panel, .fw-private-window') || null;
+  }
+
+  function storageKey(type){
+    return 'fw_float_panel_' + type + '_v2';
   }
 
   function defaultRect(type){
@@ -223,23 +219,21 @@
     panel.style.bottom = 'auto';
   }
 
-  function classify(modal){
-    const type = getType(modal);
+  function setTypeClass(modal, type){
+    const current = modal.dataset.fwFloatType;
+    if(current === type) return;
     modal.classList.remove('fw-float-echo','fw-float-buddy','fw-float-profile','fw-float-chat','fw-float-default');
     modal.classList.add('fw-float-' + type);
     modal.dataset.fwFloatType = type;
-    return type;
   }
 
-  function addTools(panel, type){
+  function addTools(panel){
     const head = panel.querySelector('.fw-social-head');
     if(!head || head.querySelector('.fw-floating-tools')) return;
 
     const tools = document.createElement('div');
     tools.className = 'fw-floating-tools';
-    tools.innerHTML = `
-      <button class="fw-floating-tool-btn" type="button" data-fw-float-reset>复位</button>
-    `;
+    tools.innerHTML = '<button class="fw-floating-tool-btn" type="button" data-fw-float-reset>复位</button>';
 
     const close = head.querySelector('.fw-social-close');
     if(close){
@@ -249,44 +243,61 @@
     }
   }
 
-  function observeResize(panel, type){
+  function observeResize(panel){
     if(resizeObservers.has(panel)) return;
     if(!('ResizeObserver' in window)) return;
 
     let timer = 0;
     const ro = new ResizeObserver(() => {
       clearTimeout(timer);
-      timer = setTimeout(() => saveRect(panel.dataset.fwFloatType || type, panel), 180);
+      timer = setTimeout(() => {
+        if(panel.dataset.fwFloatReady === '1'){
+          saveRect(panel.dataset.fwFloatType || 'default', panel);
+        }
+      }, 250);
     });
+
     ro.observe(panel);
     resizeObservers.set(panel, ro);
   }
 
   function prepareModal(modal){
     if(!modal || window.innerWidth <= 760) return;
+    if(!modal.classList.contains('show')) return;
 
     const panel = panelOf(modal);
     if(!panel) return;
 
-    const type = classify(modal);
+    const type = getType(modal);
+    setTypeClass(modal, type);
     panel.dataset.fwFloatType = type;
-    addTools(panel, type);
+    addTools(panel);
 
-    if(!panel.dataset.fwFloatReady || panel.dataset.fwLastType !== type){
+    const lastType = panel.dataset.fwLastType;
+    const firstReady = panel.dataset.fwFloatReady !== '1';
+
+    if(firstReady || lastType !== type){
       const rect = readRect(type) || defaultRect(type);
       applyRect(panel, type, rect);
       panel.dataset.fwFloatReady = '1';
       panel.dataset.fwLastType = type;
+      saveRect(type, panel);
     }else{
       const r = panel.getBoundingClientRect();
       applyRect(panel, type, {left:r.left, top:r.top, width:r.width, height:r.height});
     }
 
-    observeResize(panel, type);
+    observeResize(panel);
   }
 
   function prepareAll(){
+    if(window.innerWidth <= 760) return;
     $$('[data-fw-social-modal].show, [data-fw-private-modal].show').forEach(prepareModal);
+  }
+
+  function schedulePrepare(delay){
+    clearTimeout(scheduleId);
+    scheduleId = setTimeout(prepareAll, delay || 80);
   }
 
   function startDrag(e, panel){
@@ -313,7 +324,6 @@
 
   function moveDrag(e){
     if(!drag) return;
-
     const point = e.touches ? e.touches[0] : e;
     const dx = point.clientX - drag.startX;
     const dy = point.clientY - drag.startY;
@@ -342,6 +352,19 @@
   function boot(){
     injectStyle();
 
+    document.addEventListener('click', e => {
+      if(e.target.closest('[data-fw-open-echo], [data-fw-open-buddy], [data-fw-start-chat], [data-fw-profile-user]')){
+        schedulePrepare(160);
+        schedulePrepare(700);
+      }
+
+      const reset = e.target.closest('[data-fw-float-reset]');
+      if(reset){
+        const panel = reset.closest('.fw-social-panel, .fw-private-window');
+        if(panel) resetPanel(panel);
+      }
+    }, true);
+
     document.addEventListener('mousedown', e => {
       const head = e.target.closest('.fw-social-head');
       if(!head) return;
@@ -361,19 +384,18 @@
     document.addEventListener('mouseup', endDrag, true);
     document.addEventListener('touchend', endDrag, true);
 
-    document.addEventListener('click', e => {
-      const reset = e.target.closest('[data-fw-float-reset]');
-      if(!reset) return;
-      const panel = reset.closest('.fw-social-panel, .fw-private-window');
-      if(panel) resetPanel(panel);
-    }, true);
+    window.addEventListener('resize', () => schedulePrepare(120));
 
-    window.addEventListener('resize', () => setTimeout(prepareAll, 120));
+    const observer = new MutationObserver(mutations => {
+      for(const m of mutations){
+        if(m.addedNodes && m.addedNodes.length){
+          schedulePrepare(80);
+          return;
+        }
+      }
+    });
 
-    const observer = new MutationObserver(() => prepareAll());
-    observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
-
-    setInterval(prepareAll, 1000);
+    observer.observe(document.body, {childList:true, subtree:true});
   }
 
   if(document.readyState === 'loading'){
