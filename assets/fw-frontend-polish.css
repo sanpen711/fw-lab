@@ -1,0 +1,155 @@
+/* F.w 研究所：全站前台收口补丁 */
+:root{
+  --fw-z-base:1;
+  --fw-z-floating:10020;
+  --fw-z-buddy:10060;
+  --fw-z-social:10120;
+  --fw-z-auth:10200;
+  --fw-z-toast:10300;
+}
+
+/* 统一按钮点击反馈，避免看起来点了没反应 */
+button,
+a.btn,
+.chip,
+.fw-social-mini-btn,
+.fw-wx-mini{
+  transition:transform .14s ease, opacity .14s ease, background-color .14s ease, border-color .14s ease, color .14s ease;
+}
+button:active,
+a.btn:active,
+.chip:active,
+.fw-social-mini-btn:active,
+.fw-wx-mini:active{
+  transform:translateY(1px) scale(.99);
+}
+button:disabled,
+.fw-wx-mini:disabled,
+.fw-social-mini-btn:disabled{
+  opacity:.55!important;
+  cursor:not-allowed!important;
+  transform:none!important;
+}
+
+/* 顶部回声 / 搭子未读红点 */
+.fw-has-badge{
+  position:relative!important;
+  overflow:visible!important;
+}
+.fw-top-badge{
+  position:absolute;
+  right:-7px;
+  top:-8px;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  border-radius:999px;
+  background:#df7676;
+  color:#fff;
+  border:2px solid #161611;
+  display:none;
+  place-items:center;
+  font-size:10px;
+  line-height:14px;
+  font-weight:1000;
+  box-shadow:0 4px 12px rgba(0,0,0,.25);
+}
+.fw-has-badge.show .fw-top-badge{
+  display:grid;
+}
+
+/* 统一浮层层级：登录最高，资料卡高于搭子中心，回声/私聊不被压住 */
+.fw-wx-modal.show{z-index:var(--fw-z-buddy)!important;}
+.fw-wx-panel{z-index:calc(var(--fw-z-buddy) + 1)!important;}
+.fw-social-modal[data-fw-social-modal].show,
+.fw-social-modal[data-fw-private-modal].show,
+.fw-social-modal.show{
+  z-index:var(--fw-z-social)!important;
+}
+.fw-social-modal[data-fw-social-modal].show .fw-social-panel,
+.fw-social-modal[data-fw-private-modal].show .fw-private-window,
+.fw-social-modal.show .fw-social-panel,
+.fw-social-modal.show .fw-private-window{
+  z-index:calc(var(--fw-z-social) + 1)!important;
+}
+.fw-toast{z-index:var(--fw-z-toast)!important;}
+
+/* 右上角账号资料卡：禁止 hover 大面积遮挡，只保留点击触发能力 */
+.fw-profile-popover,
+.fw-userbar:hover .fw-profile-popover,
+.fw-userbar:focus-within .fw-profile-popover{
+  display:none!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+
+/* 精神广场信息流继续压缩，方便滑动浏览 */
+.square-main .post-card{
+  padding:14px 18px!important;
+  min-height:0!important;
+}
+.square-main .post-top{
+  margin-bottom:6px!important;
+}
+.square-main .post-content{
+  margin:8px 0 0!important;
+  font-size:18px!important;
+  line-height:1.34!important;
+}
+.square-main .interactions{
+  margin-top:12px!important;
+  gap:8px!important;
+}
+.square-main .interactions button{
+  min-height:30px!important;
+  padding:5px 11px!important;
+  font-size:12px!important;
+}
+.square-main .comment-box{
+  margin-top:10px!important;
+  padding-top:10px!important;
+}
+.square-main .comment-list li:nth-child(n+4){
+  display:none;
+}
+.square-main .comment-box.show-all-comments .comment-list li{
+  display:list-item;
+}
+
+/* 发帖框重复说明收口 */
+[data-post-form] .form-tip:empty{
+  display:none!important;
+}
+[data-post-form] .form-tip.fw-duplicate-tip{
+  display:none!important;
+}
+
+/* 搭子中心左侧列表操作按钮收紧，避免误触 */
+.fw-wx-item .fw-wx-actions{
+  margin-top:6px!important;
+}
+.fw-wx-item.fw-wx-accepted-item .fw-wx-actions{
+  margin-top:0!important;
+}
+.fw-wx-more-menu button.danger{
+  font-weight:1000;
+}
+
+/* 面板关闭按钮统一可见性 */
+.fw-social-close,
+.fw-wx-close{
+  line-height:1!important;
+}
+
+@media(max-width:980px){
+  .square-main .post-content{font-size:17px!important;}
+  .square-main .post-card{padding:14px 16px!important;}
+}
+
+@media(max-width:760px){
+  .fw-top-badge{
+    right:-5px;
+    top:-6px;
+  }
+  .square-main .post-content{font-size:16px!important;}
+}
