@@ -243,7 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
     "assets/supabase-db.js",
-    "assets/supabase-live.js?v=auth-clean-20260510-6"
+    "assets/supabase-live.js?v=auth-clean-20260510-7"
   ];
 
   function loadNext(i){
@@ -292,8 +292,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(s);
   }
 
-  loadCss('assets/fw-social.css?v=social-clean-private-chat-20260510-1');
-  loadJs('assets/fw-social.js?v=social-clean-private-chat-20260510-1');
+  loadCss('assets/fw-social.css?v=social-clean-private-chat-20260510-2');
+  loadJs('assets/fw-social.js?v=social-clean-private-chat-20260510-2');
+  loadJs('assets/fw-notification-jump.js?v=notification-jump-20260511-1');
 
   if(document.querySelector('[data-weekly-grid]')){
     loadJs('assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1');
