@@ -292,8 +292,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(s);
   }
 
-  loadCss('assets/fw-social.css?v=social-clean-private-chat-20260510-2');
+  loadCss('assets/fw-social.css?v=social-floating-panels-20260511-1');
   loadJs('assets/fw-social.js?v=social-clean-private-chat-20260510-2');
+  loadJs('assets/fw-floating-panels.js?v=floating-panels-20260511-1');
   loadJs('assets/fw-notification-jump.js?v=notification-jump-20260511-1');
 
   if(document.querySelector('[data-weekly-grid]')){
