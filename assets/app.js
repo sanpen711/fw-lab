@@ -262,7 +262,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadNext(0);
 })();
 
-// F.w 研究所：加载“回声 + 搭子 + 私聊”模块（干净版）
+// F.w 研究所：加载“回声 + 搭子 + 微信式聊天中心”模块
 // 登录 / 注册 / 资料由 assets/supabase-auth-clean.js 负责。
 (function loadFwSocialModules(){
   if(window.__FW_SOCIAL_LOADER_CLEAN__) return;
@@ -292,12 +292,11 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(s);
   }
 
-  loadCss('assets/fw-social.css?v=wechat-buddy-center-20260511-1');
+  loadCss('assets/fw-social.css?v=wechat-buddy-center-20260511-2');
   loadJs('assets/fw-social.js?v=social-clean-private-chat-20260510-2');
   loadJs('assets/fw-floating-panels.js?v=floating-panels-20260511-2');
   loadJs('assets/fw-notification-jump.js?v=notification-jump-20260511-1');
-  loadJs('assets/fw-dual-social-panels.js?v=dual-social-panels-20260511-1');
-  loadJs('assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-1');
+  loadJs('assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2');
 
   if(document.querySelector('[data-weekly-grid]')){
     loadJs('assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1');
