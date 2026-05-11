@@ -6,7 +6,7 @@
   <title>精神广场｜F.w 研究所</title>
   <meta name="description" content="F.w 研究所：上班族匿名精神休息室。" />
   <link rel="stylesheet" href="assets/styles.css" />
-  <link rel="stylesheet" href="assets/square-compact.css?v=square-compact-20260511-2" />
+  <link rel="stylesheet" href="assets/square-compact.css?v=square-compact-20260511-4" />
   <link rel="stylesheet" href="assets/auth.css" />
 </head>
 <body>
@@ -35,13 +35,15 @@
 </nav>
 
     <div class="hero-inner square-hero-inner">
-      <div>
+      <div class="square-hero-copy">
         <h1 class="hero-title">精神广场</h1>
         <p class="hero-copy">这里不是严肃论坛，只是大家把今天放下来的地方。登录后可以发牢骚、点赞、评论、俺也一样、递纸巾。</p>
       </div>
+
       <div class="square-hero-compose-slot">
-        <form class="quick-form square-compose square-hero-compose" data-post-form>
+        <form class="quick-form square-hero-compose" data-post-form>
           <h2 class="form-title">先发一句牢骚</h2>
+
           <label class="form-label">今天的精神状态</label>
           <div class="chips">
             <button type="button" class="chip active" data-status="已疲惫">已疲惫</button>
@@ -50,8 +52,10 @@
             <button type="button" class="chip" data-status="今日无效">今日无效</button>
             <button type="button" class="chip" data-status="今日崩溃">想发疯</button>
           </div>
+
           <label class="form-label">今天想说点什么？</label>
           <textarea placeholder="例如：今天开了三个会，最后决定下次再讨论。"></textarea>
+
           <button class="btn dark full" type="submit" style="margin-top:14px">发布 →</button>
           <p class="form-tip" data-notice></p>
           <p class="form-tip">登录后才能发布；未登录只能浏览，不能点赞、评论、俺也一样或递纸巾。</p>
@@ -59,6 +63,7 @@
       </div>
     </div>
   </section>
+
   <section class="filter-bar">
     <div class="chips">
       <button class="chip filter active" data-filter="全部">全部</button>
@@ -70,10 +75,12 @@
       <button class="chip filter" data-filter="低功耗运行">低功耗运行</button>
     </div>
   </section>
+
   <section class="layout-two square-layout">
     <div class="square-main">
       <div class="feed-list" data-feed data-filterable="true"></div>
     </div>
+
     <aside class="square-side">
       <div class="side-card">
         <h3>今日热门状态</h3>
@@ -91,10 +98,11 @@
       </div>
     </aside>
   </section>
+
   <footer class="footer"><span>F.w 研究所</span><span>精神广场 / Public Wall</span></footer>
 </main>
 
-<script src="assets/app.js?v=wechat-buddy-center-20260511-3"></script>
+<script src="assets/app.js?v=wechat-buddy-center-20260511-4"></script>
 <script src="assets/auth.js"></script>
 </body>
 </html>
