@@ -30,6 +30,15 @@
     setTimeout(() => btn.remove(), 200);
   }
 
+  function bringSocialModalToFront(){
+    const modals = $$('[data-fw-social-modal].show, [data-fw-private-modal].show, .fw-social-modal.show');
+    modals.forEach(modal => {
+      modal.style.zIndex = '10120';
+      const panel = modal.querySelector('.fw-social-panel, .fw-private-window');
+      if(panel) panel.style.zIndex = '10121';
+    });
+  }
+
   function refreshBuddyList(){
     const active = document.querySelector('.fw-wx-tab.active[data-fw-wx-tab]');
     if(active){
@@ -68,6 +77,10 @@
       .fw-wx-more-menu button:hover{background:#f3efe6;}
       .fw-wx-more-menu button.danger{color:#b35353;}
       .fw-wx-more-menu .line{height:1px;background:rgba(28,28,24,.1);margin:5px 4px;}
+      .fw-social-modal[data-fw-social-modal].show,
+      .fw-social-modal[data-fw-private-modal].show{z-index:10120!important;}
+      .fw-social-modal[data-fw-social-modal].show .fw-social-panel,
+      .fw-social-modal[data-fw-private-modal].show .fw-private-window{z-index:10121!important;}
     `;
     document.head.appendChild(style);
   }
@@ -124,6 +137,8 @@
       e.stopPropagation();
       wrap.classList.remove('open');
       tempClick('data-fw-profile-user', userId);
+      setTimeout(bringSocialModalToFront, 80);
+      setTimeout(bringSocialModalToFront, 260);
     });
 
     wrap.querySelector('[data-fw-menu-mute]')?.addEventListener('click', e => {
@@ -151,6 +166,7 @@
 
   function enhance(){
     $$('.fw-wx-item[data-fw-wx-chat-user]').forEach(enhanceOne);
+    bringSocialModalToFront();
   }
 
   function boot(){
