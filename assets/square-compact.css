@@ -1,9 +1,12 @@
 /* F.w 研究所：精神广场紧凑版 */
 .home-hero-clean{
-  grid-template-columns:minmax(0,920px)!important;
+  grid-template-columns:minmax(0,980px)!important;
+}
+.home-hero-clean > div{
+  max-width:980px;
 }
 .square-hero{
-  min-height:420px;
+  min-height:430px;
 }
 .square-hero-inner{
   display:grid!important;
@@ -13,6 +16,9 @@
   min-height:auto!important;
   padding-top:28px!important;
   padding-bottom:54px!important;
+}
+.square-hero-copy{
+  padding-top:10px;
 }
 .square-hero .hero-title{
   font-size:clamp(58px,7.6vw,104px);
@@ -28,7 +34,28 @@
 .square-hero-compose{
   width:100%;
   margin-top:2px;
+  padding:24px;
+  background:var(--card);
+  color:var(--text);
+  border:1px solid rgba(217,121,121,.62);
   box-shadow:0 18px 54px rgba(0,0,0,.22);
+}
+.square-hero-compose .form-title{
+  font-size:30px;
+  letter-spacing:-.05em;
+}
+.square-hero-compose .form-label{
+  margin:16px 0 10px;
+}
+.square-hero-compose textarea{
+  min-height:108px;
+  padding:14px 16px;
+}
+.square-hero-compose .btn.full{
+  min-height:48px;
+}
+.square-hero-compose .form-tip{
+  margin-top:10px;
 }
 .square-layout{
   grid-template-columns:minmax(0,1fr) 360px;
@@ -39,28 +66,6 @@
   display:grid;
   gap:18px;
   align-content:start;
-}
-.square-compose{
-  padding:22px;
-  box-shadow:none;
-  border-color:rgba(30,30,28,.42);
-}
-.square-compose .form-title{
-  font-size:28px;
-  letter-spacing:-.045em;
-}
-.square-compose .form-label{
-  margin:16px 0 10px;
-}
-.square-compose textarea{
-  min-height:86px;
-  padding:14px 16px;
-}
-.square-compose .btn.full{
-  min-height:46px;
-}
-.square-compose .form-tip{
-  margin-top:9px;
 }
 .square-main .feed-list{
   gap:14px;
@@ -127,7 +132,7 @@
   .square-hero .hero-copy{
     font-size:18px;
   }
-  .square-compose{
+  .square-hero-compose{
     padding:20px;
   }
 }
