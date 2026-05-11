@@ -294,4 +294,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadCss('assets/fw-social.css?v=social-clean-private-chat-20260510-1');
   loadJs('assets/fw-social.js?v=social-clean-private-chat-20260510-1');
+
+  if(document.querySelector('[data-weekly-grid]')){
+    loadJs('assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1');
+  }
 })();
