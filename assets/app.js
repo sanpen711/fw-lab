@@ -303,6 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadJs('assets/fw-frontend-polish.js?v=frontend-polish-20260511-2');
   loadJs('assets/fw-private-routing-lite.js?v=private-routing-lite-20260512-1');
   loadJs('assets/fw-panel-stability.js?v=panel-stability-20260512-1');
+  loadJs('assets/fw-auth-and-badge-finalize.js?v=auth-badge-finalize-20260512-1');
 
   if(document.querySelector('[data-weekly-grid]')){
     loadJs('assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1');
