@@ -4,65 +4,146 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>入馆须知｜F.w 研究所</title>
-  <meta name="description" content="F.w 研究所：低功耗休息室入馆须知。" />
+  <meta name="description" content="F.w 研究所：入馆须知、使用说明与项目说明。" />
   <link rel="stylesheet" href="assets/styles.css" />
   <link rel="stylesheet" href="assets/auth.css" />
   <style>
-    .rules-brief{
+    .rules-page-wrap{
       position:relative;
       z-index:2;
-      max-width:1080px;
+      max-width:1120px;
       margin:0 auto 72px;
       padding:0 58px;
     }
-    .rules-brief-card{
+    .rules-intro{
       background:rgba(250,250,245,.95);
       border:1px solid rgba(217,121,121,.42);
-      padding:34px;
+      padding:30px 34px;
       color:var(--text);
-      box-shadow:0 24px 70px rgba(0,0,0,.16);
+      box-shadow:0 24px 70px rgba(0,0,0,.14);
     }
-    .rules-brief-card small{
+    .rules-intro small,
+    .rules-panel small{
       display:block;
       color:var(--accent-dark);
       font-weight:950;
       letter-spacing:.14em;
-      margin-bottom:14px;
+      margin-bottom:12px;
     }
-    .rules-brief-card h2{
+    .rules-intro h2{
       margin:0;
-      font-size:clamp(34px,4vw,58px);
-      line-height:1.05;
-      letter-spacing:-.06em;
+      font-size:clamp(28px,3vw,42px);
+      line-height:1.12;
+      letter-spacing:-.045em;
     }
-    .rules-brief-card p{
-      margin:18px 0 0;
-      color:var(--muted);
-      font-size:18px;
-      line-height:1.8;
-      font-weight:800;
-    }
-    .rules-grid.simple{
-      padding-top:0;
-    }
-    .rule-card h3{
-      transform:none;
-      margin:18px 0 0;
-    }
-    .rule-card p{
+    .rules-intro p{
       margin:14px 0 0;
+      color:var(--muted);
+      font-size:16px;
+      line-height:1.75;
+      font-weight:780;
     }
-    .rule-card b{
+    .rules-clean-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:18px;
+      margin-top:22px;
+    }
+    .rules-clean-card{
+      background:rgba(250,250,245,.95);
+      border:1px solid rgba(28,28,24,.14);
+      padding:22px;
+      color:var(--text);
+    }
+    .rules-clean-card b{
       display:inline-grid;
       place-items:center;
-      width:44px;
-      height:44px;
+      min-width:38px;
+      height:30px;
       border-radius:999px;
-      border:1px solid rgba(217,121,121,.46);
+      padding:0 10px;
+      border:1px solid rgba(217,121,121,.45);
+      color:var(--accent-dark);
+      font-size:13px;
+      margin-bottom:14px;
+    }
+    .rules-clean-card h3{
+      margin:0;
+      font-size:21px;
+      line-height:1.25;
+      letter-spacing:-.03em;
+    }
+    .rules-clean-card p{
+      margin:10px 0 0;
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.7;
+      font-weight:760;
+    }
+    .rules-panel{
+      margin-top:22px;
+      background:rgba(250,250,245,.95);
+      border:1px solid rgba(217,121,121,.42);
+      padding:28px 34px;
+      color:var(--text);
+    }
+    .rules-panel h2{
+      margin:0;
+      font-size:30px;
+      letter-spacing:-.04em;
+    }
+    .rules-panel p{
+      margin:12px 0 0;
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.8;
+      font-weight:780;
+    }
+    .rules-credit-list{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      margin-top:18px;
+    }
+    .rules-credit-item{
+      border:1px solid rgba(28,28,24,.12);
+      background:#fffdf7;
+      padding:14px 16px;
+    }
+    .rules-credit-item strong{
+      display:block;
+      font-size:15px;
+      margin-bottom:5px;
+    }
+    .rules-credit-item span{
+      color:var(--muted);
+      font-size:13px;
+      font-weight:760;
+      line-height:1.55;
+    }
+    .rules-note{
+      margin-top:22px;
+      padding:20px 24px;
+      background:#0b160f;
+      color:#f4f0e8;
+      border:1px solid rgba(217,121,121,.4);
+    }
+    .rules-note h2{
+      margin:0;
+      font-size:24px;
+      letter-spacing:-.035em;
+    }
+    .rules-note p{
+      margin:10px 0 0;
+      color:rgba(244,240,232,.78);
+      line-height:1.75;
+      font-size:15px;
+      font-weight:760;
     }
     @media(max-width:980px){
-      .rules-brief{padding:0 24px;margin-bottom:46px}
-      .rules-brief-card{padding:24px}
+      .rules-page-wrap{padding:0 24px;margin-bottom:46px}
+      .rules-clean-grid,.rules-credit-list{grid-template-columns:1fr}
+      .rules-intro,.rules-panel{padding:24px}
     }
   </style>
 </head>
@@ -74,7 +155,7 @@
   <nav class="nav">
     <a class="" href="index.html">首页</a>
     <a class="" href="square.html">精神广场</a>
-    <a class="" href="rooms.html">摸鱼房间</a>
+    <a class="" href="rooms.html">学术研讨</a>
     <a class="" href="archive.html">废话档案</a>
     <a class="active" href="rules.html">入馆须知</a>
   </nav>
@@ -83,7 +164,7 @@
 <nav class="mobile-nav">
   <a href="index.html">首页</a>
   <a href="square.html">精神广场</a>
-  <a href="rooms.html">摸鱼房间</a>
+  <a href="rooms.html">学术研讨</a>
   <a href="archive.html">废话档案</a>
   <a href="rules.html">入馆须知</a>
   <a href="admin.html">管理入口</a>
@@ -91,58 +172,69 @@
 
 <section class="section">
   <h1 class="hero-title" style="color:var(--white)">入馆须知</h1>
-  <p class="section-desc">这里是上班族的低功耗休息室。可以发牢骚、可以共鸣、可以递纸巾，但不要把现实世界的麻烦带进来。</p>
+  <p class="section-desc">请在使用前阅读以下说明。这里是轻量化表达、浏览和互动空间，不是现实纠纷处理平台。</p>
 </section>
 
-<section class="rules-brief">
-  <div class="rules-brief-card">
-    <small>ONE SENTENCE VERSION</small>
-    <h2>可以发疯，但别伤人；可以匿名，但别泄露隐私。</h2>
-    <p>F.w 研究所不是心理咨询，也不是职场裁判。这里主要收纳无效努力、低功耗发言、今日牢骚和一点点互联网纸巾。</p>
+<section class="rules-page-wrap">
+  <div class="rules-intro">
+    <small>FW LAB NOTICE</small>
+    <h2>保持轻松表达，也保持基本边界。</h2>
+    <p>F.w 研究所用于收纳日常牢骚、低功耗发言和轻量互动。用户可以发帖、评论、点赞、共鸣、递纸巾，也可以进入学术研讨区域进行简短交流。请勿发布违法、攻击性、隐私泄露或明显不适宜的内容。</p>
   </div>
-</section>
 
-<section class="rules-grid simple">
-  <article class="rule-card">
-    <b>01</b>
-    <h3>可以吐槽事情，不要攻击具体的人。</h3>
-    <p>可以说“这个会太折磨”，不要点名辱骂、曝光或引导别人攻击某个人。</p>
-  </article>
+  <div class="rules-clean-grid">
+    <article class="rules-clean-card">
+      <b>01</b>
+      <h3>允许吐槽，不允许伤害他人。</h3>
+      <p>可以表达情绪和经历，但不要点名攻击、辱骂、造谣、挂人或引导他人围攻。</p>
+    </article>
 
-  <article class="rule-card">
-    <b>02</b>
-    <h3>不要发布真实隐私信息。</h3>
-    <p>不要写真实姓名、电话、公司全称、地址、聊天截图、邮箱、身份证等敏感内容。</p>
-  </article>
+    <article class="rules-clean-card">
+      <b>02</b>
+      <h3>不要发布真实隐私。</h3>
+      <p>请勿公开真实姓名、电话、地址、公司内部资料、聊天截图、证件信息或其他敏感内容。</p>
+    </article>
 
-  <article class="rule-card">
-    <b>03</b>
-    <h3>互动只是表达，不代表站方立场。</h3>
-    <p>点赞、共鸣、俺也一样、递纸巾，只是低功耗地表示“我看见了”。</p>
-  </article>
+    <article class="rules-clean-card">
+      <b>03</b>
+      <h3>互动仅代表用户个人表达。</h3>
+      <p>点赞、评论、俺也一样、递纸巾等互动仅代表用户之间的轻量回应，不代表平台立场。</p>
+    </article>
 
-  <article class="rule-card">
-    <b>04</b>
-    <h3>不要发广告、引流和危险内容。</h3>
-    <p>禁止广告链接、联系方式引流、色情、赌博、诈骗、暴力、违法和明显不合适内容。</p>
-  </article>
+    <article class="rules-clean-card">
+      <b>04</b>
+      <h3>禁止广告、引流和风险内容。</h3>
+      <p>禁止发布广告营销、联系方式引流、诈骗、赌博、色情、暴力、违法或其他不适宜内容。</p>
+    </article>
 
-  <article class="rule-card">
-    <b>05</b>
-    <h3>严重内容会被删除或处理。</h3>
-    <p>被多人举报、管理员判断不合适的内容，可能被删除；账号也可能被禁言或停用。</p>
-  </article>
+    <article class="rules-clean-card">
+      <b>05</b>
+      <h3>违规内容可能被处理。</h3>
+      <p>被举报或经管理员判断不合适的内容，可能会被隐藏、删除；相关账号可能被禁言或限制使用。</p>
+    </article>
 
-  <article class="rule-card">
-    <b>06</b>
-    <h3>这里可以安静浏览。</h3>
-    <p>不发言也算入馆。只是看看别人如何低功耗运行，也是一种参与。</p>
-  </article>
-</section>
+    <article class="rules-clean-card">
+      <b>06</b>
+      <h3>这里不替代专业帮助。</h3>
+      <p>如果遇到严重心理压力、现实冲突或安全问题，请优先联系身边可信任的人或寻求专业帮助。</p>
+    </article>
+  </div>
 
-<section class="manifesto">
-  <small>最后提醒</small>
-  <h2>如果你真的撑不住了，请优先找现实中的朋友、家人或专业帮助。</h2>
+  <section class="rules-panel">
+    <small>PROJECT CREDITS</small>
+    <h2>制作团队与合作支持</h2>
+    <p>F.w 研究所由 YSP启元工作室 发起并制作，项目建设过程中使用了多方工具与技术支持，包括 ChatGPT、GitHub、Supabase 与 QQ邮箱等服务。相关工具分别用于内容协作、代码托管、数据服务与邮件验证支持。</p>
+
+    <div class="rules-credit-list">
+      <div class="rules-credit-item"><strong>制作团队</strong><span>YSP启元工作室</span></div>
+      <div class="rules-credit-item"><strong>协作与技术支持</strong><span>ChatGPT、GitHub、Supabase、QQ邮箱</span></div>
+    </div>
+  </section>
+
+  <section class="rules-note">
+    <h2>说明</h2>
+    <p>本项目仍处于持续完善阶段，功能、规则与管理机制会根据实际使用情况逐步优化。请在轻松使用的同时，保持尊重、克制与安全边界。</p>
+  </section>
 </section>
 
 <footer class="footer">
@@ -151,7 +243,7 @@
 </footer>
 </main>
 
-<script src="assets/app.js?v=frontend-polish-20260511-2"></script>
-<script src="assets/auth.js?v=frontend-polish-20260511-2"></script>
+<script src="assets/app.js?v=site-final-tweaks-20260512-1"></script>
+<script src="assets/auth.js?v=site-final-tweaks-20260512-1"></script>
 </body>
 </html>
