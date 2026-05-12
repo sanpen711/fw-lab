@@ -5,7 +5,7 @@
 // - assets/supabase-live.js
 //
 // 保留这个空壳文件，是为了兼容仍然引用 assets/auth.js 的页面，避免 404 报错。
-// 同时在这里做一个轻量兜底：如果某些页面还缓存了旧版 app.js，也尽量加载全站前台收口补丁。
+// 同时在这里做兜底加载：如果某些页面还缓存了旧版 app.js，也尽量加载最新的前台收口补丁和私聊归流逻辑。
 (function(){
   window.FW_LEGACY_AUTH_DISABLED = true;
 
@@ -30,14 +30,15 @@
     document.body.appendChild(script);
   }
 
-  function loadPolishFallback(){
-    loadCss('assets/fw-frontend-polish.css?v=frontend-polish-20260511-1');
-    loadJs('assets/fw-frontend-polish.js?v=frontend-polish-20260511-1');
+  function loadFallbacks(){
+    loadCss('assets/fw-frontend-polish.css?v=frontend-polish-20260511-2');
+    loadJs('assets/fw-frontend-polish.js?v=frontend-polish-20260511-2');
+    loadJs('assets/fw-private-routing.js?v=private-routing-20260512-1');
   }
 
   if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', loadPolishFallback);
+    document.addEventListener('DOMContentLoaded', loadFallbacks);
   }else{
-    loadPolishFallback();
+    loadFallbacks();
   }
 })();
