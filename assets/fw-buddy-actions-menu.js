@@ -1,5 +1,5 @@
 // F.w 研究所：搭子中心三点菜单增强
-// 作用：把“解除”从明显按钮收进右上角三点菜单，降低误点风险。
+// 作用：把危险操作收进右上角三点菜单，降低误点风险；同时修复头像在菜单打开后变方的问题。
 (function(){
   if(window.__FW_BUDDY_ACTIONS_MENU__) return;
   window.__FW_BUDDY_ACTIONS_MENU__ = true;
@@ -48,6 +48,21 @@
     document.querySelector('[data-fw-open-buddy]')?.click();
   }
 
+  function fixAvatarShape(item){
+    const av = item?.querySelector('.fw-wx-avatar');
+    if(!av) return;
+    av.style.borderRadius = '50%';
+    av.style.overflow = 'visible';
+    const img = av.querySelector('img');
+    if(img){
+      img.style.borderRadius = '50%';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      img.style.display = 'block';
+    }
+  }
+
   async function blockUser(userId){
     if(!userId) return;
     if(!window.confirm('确定要拉黑这个搭子吗？拉黑后将不能继续正常互动。')) return;
@@ -61,6 +76,26 @@
     }
   }
 
+  function reportUser(userId){
+    if(!userId) return;
+    const reason = window.prompt('请输入举报原因：', '不适当内容 / 骚扰 / 其他');
+    if(reason === null) return;
+    const clean = String(reason || '').trim();
+    if(!clean){
+      toast('举报原因不能为空。');
+      return;
+    }
+    try{
+      const key = 'fw_pending_user_reports_v1';
+      const rows = JSON.parse(localStorage.getItem(key) || '[]');
+      rows.unshift({target_user_id:userId, reason:clean, created_at:new Date().toISOString()});
+      localStorage.setItem(key, JSON.stringify(rows.slice(0, 80)));
+      toast('已记录举报。后续管理模式接入后可统一处理。');
+    }catch(e){
+      toast('已收到举报入口，后续管理模式会接入处理。');
+    }
+  }
+
   function injectStyle(){
     if($('#fw-buddy-actions-menu-style')) return;
     const style = document.createElement('style');
@@ -68,6 +103,8 @@
     style.textContent = `
       .fw-wx-item.fw-wx-accepted-item{position:relative; padding-right:46px;}
       .fw-wx-item.fw-wx-accepted-item .fw-wx-actions .fw-wx-mini.danger[data-fw-wx-remove]{display:none!important;}
+      .fw-wx-item .fw-wx-avatar{border-radius:50%!important;overflow:visible!important;flex:0 0 auto!important;}
+      .fw-wx-item .fw-wx-avatar img{border-radius:50%!important;width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;}
       .fw-wx-more-wrap{position:absolute; right:10px; top:10px; z-index:6;}
       .fw-wx-more-btn{width:30px;height:30px;border:1px solid rgba(28,28,24,.14);border-radius:999px;background:#fffdf7;color:#1d1d1a;font-size:20px;line-height:1;font-weight:1000;cursor:pointer;display:grid;place-items:center;padding:0 0 4px;}
       .fw-wx-more-btn:hover{border-color:rgba(217,121,121,.55);color:#9d4a4a;}
@@ -87,11 +124,13 @@
 
   function isAcceptedItem(item){
     const sub = item.querySelector('.fw-wx-sub')?.textContent || '';
-    return sub.includes('点击进入私聊') || sub.includes('已是搭子');
+    return sub.includes('点击进入私聊') || sub.includes('已是搭子') || sub.includes('实验品编号');
   }
 
   function enhanceOne(item){
-    if(!item || item.dataset.fwMenuReady === '1') return;
+    if(!item) return;
+    fixAvatarShape(item);
+    if(item.dataset.fwMenuReady === '1') return;
     if(!item.matches('[data-fw-wx-chat-user]')) return;
     if(!isAcceptedItem(item)) return;
 
@@ -111,6 +150,7 @@
         <button type="button" data-fw-menu-profile>查看资料</button>
         <button type="button" data-fw-menu-mute>消息免打扰</button>
         <div class="line"></div>
+        <button type="button" class="danger" data-fw-menu-report>举报</button>
         <button type="button" class="danger" data-fw-menu-block>拉黑</button>
         ${friendshipId ? `<button type="button" class="danger" data-fw-menu-remove="${friendshipId}">解除搭子</button>` : ''}
       </div>
@@ -121,6 +161,7 @@
     moreBtn.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
+      fixAvatarShape(item);
       $$('.fw-wx-more-wrap.open').forEach(x => { if(x !== wrap) x.classList.remove('open'); });
       wrap.classList.toggle('open');
     });
@@ -146,6 +187,13 @@
       e.stopPropagation();
       wrap.classList.remove('open');
       toast('已先做成前端入口，后面可以接入“消息免打扰”数据库开关。');
+    });
+
+    wrap.querySelector('[data-fw-menu-report]')?.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      wrap.classList.remove('open');
+      reportUser(userId);
     });
 
     wrap.querySelector('[data-fw-menu-block]')?.addEventListener('click', e => {
