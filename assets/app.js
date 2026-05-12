@@ -293,15 +293,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   loadCss('assets/fw-social.css?v=wechat-buddy-center-20260511-4');
-  loadCss('assets/fw-frontend-polish.css?v=frontend-polish-20260511-1');
+  loadCss('assets/fw-frontend-polish.css?v=frontend-polish-20260511-2');
   loadJs('assets/fw-social.js?v=social-clean-private-chat-20260510-2');
   loadJs('assets/fw-floating-panels.js?v=floating-panels-20260511-2');
   loadJs('assets/fw-notification-jump.js?v=notification-jump-20260511-1');
   loadJs('assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2');
   loadJs('assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-1');
   loadJs('assets/fw-profile-popover-fix.js?v=profile-popover-fix-20260511-1');
-  loadJs('assets/fw-frontend-polish.js?v=frontend-polish-20260511-1');
+  loadJs('assets/fw-frontend-polish.js?v=frontend-polish-20260511-2');
   loadJs('assets/fw-private-routing.js?v=private-routing-20260512-1');
+  loadJs('assets/fw-panel-stability.js?v=panel-stability-20260512-1');
 
   if(document.querySelector('[data-weekly-grid]')){
     loadJs('assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1');
