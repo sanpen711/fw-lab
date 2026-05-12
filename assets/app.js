@@ -15,12 +15,10 @@ function usingSupabase(){
 function getPosts(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
-
     if(!raw){
       localStorage.setItem(STORE_KEY, JSON.stringify(defaultPosts));
       return [...defaultPosts];
     }
-
     return JSON.parse(raw);
   }catch(e){
     return [...defaultPosts];
@@ -31,39 +29,25 @@ function savePosts(posts){
   localStorage.setItem(STORE_KEY, JSON.stringify(posts));
 }
 
-function nowText(){
-  return "刚刚";
-}
-
 function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, s => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  }[s]));
+  return String(str).replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
 }
 
 function renderPost(post){
   const comments = (post.comments || []).map(c => `<li>${escapeHtml(c)}</li>`).join("");
-
   return `
     <article class="post-card" data-id="${post.id}" data-status="${escapeHtml(post.status)}">
       <div class="post-top">
         <span class="status">${escapeHtml(post.status)}</span>
         <span class="time">${escapeHtml(post.time || "刚刚")}</span>
       </div>
-
       <p class="post-content">${escapeHtml(post.content)}</p>
-
       <div class="interactions">
         <button data-action="resonance">共鸣 ${post.resonance || 0}</button>
         <button data-action="comment-toggle">评论 ${(post.comments || []).length}</button>
         <button data-action="same">俺也一样 ${post.same || 0}</button>
         <button data-action="tissue">递纸巾 ${post.tissue || 0}</button>
       </div>
-
       <div class="comment-box">
         <ul class="comment-list">${comments}</ul>
         <input placeholder="留一句回声，不必很有道理" />
@@ -75,21 +59,15 @@ function renderPost(post){
 
 function renderFeeds(){
   const containers = document.querySelectorAll("[data-feed]");
-
   if(!containers.length) return;
-
   const posts = getPosts();
-
   containers.forEach(container => {
     const limit = Number(container.dataset.limit || posts.length);
     const active = document.querySelector(".chip.filter.active")?.dataset.filter || "全部";
-
     let list = [...posts];
-
     if(container.dataset.filterable === "true" && active !== "全部"){
       list = list.filter(p => p.status === active || p.content.includes(active));
     }
-
     container.innerHTML = !list.length
       ? `<div class="empty">暂时没有这个状态的牢骚。可以先投递一条。</div>`
       : list.slice(0, limit).map(renderPost).join("");
@@ -97,12 +75,9 @@ function renderFeeds(){
 }
 
 function initPostForm(){
-  const forms = document.querySelectorAll("[data-post-form]");
-
-  forms.forEach(form => {
+  document.querySelectorAll("[data-post-form]").forEach(form => {
     const chips = form.querySelectorAll(".chip[data-status]");
     let selected = chips[0]?.dataset.status || "已疲惫";
-
     chips.forEach(ch => {
       ch.addEventListener("click", () => {
         chips.forEach(x => x.classList.remove("active"));
@@ -110,47 +85,21 @@ function initPostForm(){
         selected = ch.dataset.status;
       });
     });
-
     form.addEventListener("submit", e => {
       if(usingSupabase()) return;
-
       e.preventDefault();
-
       const textarea = form.querySelector("textarea");
       const content = textarea.value.trim();
-
-      if(!content){
-        textarea.focus();
-        return;
-      }
-
+      if(!content){ textarea.focus(); return; }
       const posts = getPosts();
-
-      posts.unshift({
-        id: Date.now(),
-        status: selected,
-        content,
-        time: nowText(),
-        resonance: 0,
-        same: 0,
-        tissue: 0,
-        comments: []
-      });
-
+      posts.unshift({id:Date.now(), status:selected, content, time:"刚刚", resonance:0, same:0, tissue:0, comments:[]});
       savePosts(posts);
-
       textarea.value = "";
-
       renderFeeds();
-
       const notice = form.querySelector("[data-notice]");
-
       if(notice){
         notice.textContent = "已匿名投递。它现在被研究所收纳了。";
-
-        setTimeout(() => {
-          notice.textContent = "";
-        }, 2600);
+        setTimeout(() => { notice.textContent = ""; }, 2200);
       }
     });
   });
@@ -159,51 +108,31 @@ function initPostForm(){
 function initInteractions(){
   document.body.addEventListener("click", e => {
     if(usingSupabase()) return;
-
     const btn = e.target.closest("button[data-action]");
-
     if(!btn) return;
-
     const card = btn.closest(".post-card");
-
     if(!card) return;
-
     const id = Number(card.dataset.id);
     const posts = getPosts();
     const post = posts.find(p => p.id === id);
-
     if(!post) return;
-
     const action = btn.dataset.action;
-
-    if(action === "resonance"){
-      post.resonance = (post.resonance || 0) + 1;
-    }
-
-    if(action === "same"){
-      post.same = (post.same || 0) + 1;
-    }
-
-    if(action === "tissue"){
-      post.tissue = (post.tissue || 0) + 1;
-    }
-
+    if(action === "resonance") post.resonance = (post.resonance || 0) + 1;
+    if(action === "same") post.same = (post.same || 0) + 1;
+    if(action === "tissue") post.tissue = (post.tissue || 0) + 1;
     if(action === "comment-toggle"){
       card.querySelector(".comment-box").classList.toggle("show");
       return;
     }
-
     if(action === "comment-submit"){
       const input = card.querySelector(".comment-box input");
       const val = input.value.trim();
-
       if(val){
         post.comments = post.comments || [];
         post.comments.push(val);
         input.value = "";
       }
     }
-
     savePosts(posts);
     renderFeeds();
   });
@@ -222,12 +151,7 @@ function initFilters(){
 function initMenu(){
   const btn = document.querySelector(".menu-btn");
   const nav = document.querySelector(".mobile-nav");
-
-  if(btn && nav){
-    btn.addEventListener("click", () => {
-      nav.classList.toggle("show");
-    });
-  }
+  if(btn && nav) btn.addEventListener("click", () => nav.classList.toggle("show"));
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -245,65 +169,46 @@ document.addEventListener("DOMContentLoaded", () => {
     "assets/supabase-db.js",
     "assets/supabase-live.js?v=auth-clean-20260510-7"
   ];
-
   function loadNext(i){
     if(i >= scripts.length) return;
-
     const s = document.createElement("script");
-
     s.src = scripts[i];
     s.defer = false;
     s.onload = () => loadNext(i + 1);
     s.onerror = () => console.warn("Supabase bridge failed to load:", scripts[i]);
-
     document.head.appendChild(s);
   }
-
   loadNext(0);
 })();
 
-// F.w 研究所：加载“回声 + 搭子 + 微信式聊天中心”模块
-// 登录 / 注册 / 资料由 assets/supabase-auth-clean.js 负责。
 (function loadFwSocialModules(){
   if(window.__FW_SOCIAL_LOADER_CLEAN__) return;
-
   window.__FW_SOCIAL_LOADER_CLEAN__ = true;
 
   function loadCss(href){
     if(document.querySelector('link[href="' + href + '"]')) return;
-
-    var link = document.createElement('link');
-
+    const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = href;
-
     document.head.appendChild(link);
   }
 
   function loadJs(src){
     if(document.querySelector('script[src="' + src + '"]')) return;
-
-    var s = document.createElement('script');
-
+    const s = document.createElement('script');
     s.src = src;
     s.async = false;
     s.defer = false;
-
     document.body.appendChild(s);
   }
 
   loadCss('assets/fw-social.css?v=wechat-buddy-center-20260511-4');
-  loadCss('assets/fw-frontend-polish.css?v=frontend-polish-20260511-2');
   loadJs('assets/fw-social.js?v=social-clean-private-chat-20260510-2');
   loadJs('assets/fw-floating-panels.js?v=floating-panels-20260511-2');
   loadJs('assets/fw-notification-jump.js?v=notification-jump-20260511-1');
   loadJs('assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2');
   loadJs('assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-1');
-  loadJs('assets/fw-profile-popover-fix.js?v=profile-popover-fix-20260511-1');
-  loadJs('assets/fw-frontend-polish.js?v=frontend-polish-20260511-2');
-  loadJs('assets/fw-private-routing-lite.js?v=private-routing-lite-20260512-1');
-  loadJs('assets/fw-panel-stability.js?v=panel-stability-20260512-1');
-  loadJs('assets/fw-auth-and-badge-finalize.js?v=auth-badge-finalize-20260512-1');
+  loadJs('assets/fw-stable-core.js?v=stable-core-20260512-1');
 
   if(document.querySelector('[data-weekly-grid]')){
     loadJs('assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1');
