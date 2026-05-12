@@ -301,6 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadJs('assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-1');
   loadJs('assets/fw-profile-popover-fix.js?v=profile-popover-fix-20260511-1');
   loadJs('assets/fw-frontend-polish.js?v=frontend-polish-20260511-1');
+  loadJs('assets/fw-private-routing.js?v=private-routing-20260512-1');
 
   if(document.querySelector('[data-weekly-grid]')){
     loadJs('assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1');
