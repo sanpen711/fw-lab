@@ -39,6 +39,14 @@
     }
   }
 
+  function setSmallBadge(selector, count){
+    $$(selector).forEach(el => {
+      const n = Number(count || 0);
+      el.textContent = n > 99 ? '99+' : String(n);
+      el.classList.toggle('show', n > 0);
+    });
+  }
+
   async function updateBadges(){
     if(!(await waitForDb())) return;
     try{
@@ -46,14 +54,25 @@
       if(!me || !me.id){
         addBadge($('[data-fw-open-echo]'), 0);
         addBadge($('[data-fw-open-buddy]'), 0);
+        setSmallBadge('[data-fw-echo-count]', 0);
+        setSmallBadge('[data-fw-buddy-count]', 0);
         return;
       }
 
-      const {count:noticeCount} = await window.fwDb.client
+      // 回声只显示非私聊通知；私聊统一归到“搭子”。
+      const {count:echoCount} = await window.fwDb.client
         .from('notifications')
         .select('id', {count:'exact', head:true})
         .eq('user_id', me.id)
-        .eq('is_read', false);
+        .eq('is_read', false)
+        .neq('type', 'private_message');
+
+      const {count:privateCount} = await window.fwDb.client
+        .from('notifications')
+        .select('id', {count:'exact', head:true})
+        .eq('user_id', me.id)
+        .eq('is_read', false)
+        .eq('type', 'private_message');
 
       const {count:requestCount} = await window.fwDb.client
         .from('friendships')
@@ -61,8 +80,11 @@
         .eq('receiver_id', me.id)
         .eq('status', 'pending');
 
-      addBadge($('[data-fw-open-echo]'), noticeCount || 0);
-      addBadge($('[data-fw-open-buddy]'), requestCount || 0);
+      const buddyCount = (privateCount || 0) + (requestCount || 0);
+      addBadge($('[data-fw-open-echo]'), echoCount || 0);
+      addBadge($('[data-fw-open-buddy]'), buddyCount);
+      setSmallBadge('[data-fw-echo-count]', echoCount || 0);
+      setSmallBadge('[data-fw-buddy-count]', buddyCount);
     }catch(e){}
   }
 
@@ -156,7 +178,7 @@
   function bindClickRefresh(){
     document.addEventListener('click', e => {
       if(e.target.closest('[data-fw-open-echo], [data-fw-open-buddy], .fw-social-close, .fw-wx-close, [data-fw-dual-close]')){
-        setTimeout(() => { updateBadges(); fixLayering(); }, 260);
+        setTimeout(() => { updateBadges(); fixLayering(); }, 360);
       }
       if(e.target.closest('[data-action], [data-fw-dual-jump-post], [data-fw-menu-profile], [data-fw-wx-tab], [data-fw-wx-chat-user]')){
         setTimeout(() => { fixLayering(); enhanceCommentBoxes(); }, 160);
