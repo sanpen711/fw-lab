@@ -3,57 +3,178 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>站长管理｜F.w 研究所</title>
-  <meta name="description" content="F.w 研究所站长管理入口。" />
+  <title>公开处刑｜F.w 研究所</title>
+  <meta name="description" content="F.w 研究所公开处刑公告栏与管理员处理台。" />
   <link rel="stylesheet" href="assets/styles.css" />
   <link rel="stylesheet" href="assets/auth.css" />
+  <style>
+    :root{
+      --trial-bg:#f5f1e8;
+      --trial-paper:#fffdf7;
+      --trial-ink:#171715;
+      --trial-muted:#6f6a5f;
+      --trial-night:#101a12;
+      --trial-red:#d97979;
+      --trial-red-deep:#9d4a4a;
+      --trial-line:rgba(23,23,21,.16);
+      --trial-soft:rgba(23,23,21,.08);
+    }
+    .trial-page{background:
+      radial-gradient(circle at 82% 12%,rgba(217,121,121,.20),transparent 22rem),
+      linear-gradient(180deg,#fbfaf4 0%,var(--trial-bg) 62%,#eee7db 100%);
+      color:var(--trial-ink);min-height:100vh}
+    .trial-page .page-hero{padding-bottom:72px}
+    .trial-hero-inner{max-width:1180px;margin:0 auto;padding:46px clamp(22px,5vw,64px) 0}
+    .trial-eyebrow{color:var(--trial-red);font-weight:1000;letter-spacing:.14em;font-size:13px;margin-bottom:18px}
+    .trial-title{font-size:clamp(62px,8vw,126px);line-height:.9;letter-spacing:-.095em;margin:0 0 22px;color:#fffdf7}
+    .trial-copy{max-width:760px;color:rgba(255,253,247,.74);font-size:18px;line-height:1.9;font-weight:820;margin:0}
+    .trial-layout{max-width:1180px;margin:-34px auto 72px;padding:0 clamp(22px,5vw,64px);display:grid;gap:24px}
+    .trial-public-card,.trial-admin-card,.trial-info-card{border:1px solid var(--trial-line);background:rgba(255,253,247,.88);box-shadow:0 22px 70px rgba(0,0,0,.10)}
+    .trial-public-card{padding:28px}
+    .trial-card-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:22px}
+    .trial-card-head h2{margin:0;font-size:34px;letter-spacing:-.06em;line-height:1.08}
+    .trial-card-head p{margin:8px 0 0;color:var(--trial-muted);font-weight:820;line-height:1.6}
+    .trial-badge{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(217,121,121,.38);background:rgba(217,121,121,.08);color:var(--trial-red-deep);border-radius:999px;padding:8px 12px;font-weight:1000;font-size:12px;white-space:nowrap}
+    .trial-list{display:grid;gap:12px}
+    .trial-log{display:grid;grid-template-columns:118px 1fr auto;gap:16px;align-items:center;padding:16px;border:1px solid var(--trial-soft);background:rgba(255,255,255,.50)}
+    .trial-log-time{font-weight:950;color:var(--trial-red-deep);font-size:13px}
+    .trial-log-main{min-width:0}
+    .trial-log-main b{display:block;font-size:18px;letter-spacing:-.025em;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .trial-log-main span{display:block;color:var(--trial-muted);font-weight:800;line-height:1.55;font-size:13px}
+    .trial-log-action{justify-self:end;text-align:right}
+    .trial-chip{display:inline-grid;place-items:center;min-height:30px;border-radius:999px;padding:0 10px;background:var(--trial-night);color:#fff;font-weight:1000;font-size:12px}
+    .trial-chip.warn{background:var(--trial-red-deep)}
+    .trial-chip.soft{background:#796f62}
+    .trial-empty{padding:24px;border:1px dashed var(--trial-line);background:rgba(255,255,255,.40);color:var(--trial-muted);font-weight:900;text-align:center}
+    .trial-info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .trial-info-card{padding:20px}
+    .trial-info-card small{display:block;color:var(--trial-red-deep);font-weight:1000;letter-spacing:.12em;margin-bottom:10px}
+    .trial-info-card h3{margin:0;font-size:23px;letter-spacing:-.04em}
+    .trial-info-card p{margin:10px 0 0;color:var(--trial-muted);line-height:1.7;font-weight:780;font-size:14px}
+    .trial-admin-card{display:none;padding:0;overflow:hidden}
+    .trial-admin-card.show{display:block}
+    .trial-admin-head{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:24px 26px;background:var(--trial-night);color:#fff}
+    .trial-admin-head h2{margin:0;font-size:32px;letter-spacing:-.06em}
+    .trial-admin-head p{margin:6px 0 0;color:rgba(255,255,255,.66);font-weight:800}
+    .trial-tabs{display:flex;gap:8px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid var(--trial-line);background:rgba(255,255,255,.38)}
+    .trial-tab{border:1px solid var(--trial-line);background:transparent;border-radius:999px;padding:9px 13px;font-weight:1000;cursor:pointer}
+    .trial-tab.active{background:var(--trial-night);color:#fff;border-color:var(--trial-night)}
+    .trial-admin-body{padding:22px;display:grid;gap:14px}
+    .trial-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .trial-toolbar input{min-height:40px;border:1px solid var(--trial-line);background:#fffdf7;padding:0 12px;font:inherit;font-weight:780;min-width:min(360px,100%)}
+    .trial-table{display:grid;gap:10px}
+    .trial-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:14px;border:1px solid var(--trial-soft);background:rgba(255,255,255,.48)}
+    .trial-row-main{min-width:0}
+    .trial-row-main b{display:block;font-size:16px;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .trial-row-main p{margin:0;color:var(--trial-muted);font-size:13px;line-height:1.55;font-weight:780;word-break:break-word}
+    .trial-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .trial-actions button,.trial-btn{border:1px solid var(--trial-line);background:#fffdf7;border-radius:999px;min-height:34px;padding:0 11px;font-weight:1000;cursor:pointer}
+    .trial-actions button.danger{background:#8f3636;color:#fff;border-color:#8f3636}
+    .trial-actions button.dark,.trial-btn.dark{background:var(--trial-night);color:#fff;border-color:var(--trial-night)}
+    .trial-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;z-index:20000;background:#171715;color:#fff;border:1px solid rgba(217,121,121,.45);padding:12px 16px;font-weight:950;box-shadow:0 15px 45px rgba(0,0,0,.28);transition:.2s}
+    .trial-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    @media(max-width:860px){
+      .trial-card-head,.trial-admin-head,.trial-toolbar{align-items:flex-start;flex-direction:column}
+      .trial-log,.trial-row{grid-template-columns:1fr}
+      .trial-log-action,.trial-actions{justify-self:start;text-align:left;justify-content:flex-start}
+      .trial-info-grid{grid-template-columns:1fr}
+      .trial-title{font-size:58px}
+    }
+  </style>
 </head>
 <body>
 
-<main class="page bg-gradient-clean">
+<main class="page trial-page">
   <section class="page-hero bg-night">
     <header class="header dark">
       <a class="logo" href="index.html">F.w 研究所</a>
       <nav class="nav">
-        <a class="" href="index.html">首页</a>
-        <a class="" href="square.html">精神广场</a>
-        <a class="" href="rooms.html">学术研讨</a>
-        <a class="" href="archive.html">废话档案</a>
-        <a class="" href="rules.html">入馆须知</a>
+        <a href="index.html">首页</a>
+        <a href="square.html">精神广场</a>
+        <a href="rooms.html">摸鱼房间</a>
+        <a href="archive.html">废话档案</a>
+        <a href="rules.html">入馆须知</a>
+        <a class="active" href="admin.html">公开处刑</a>
       </nav>
       <button class="menu-btn" aria-label="菜单">☰</button>
     </header>
     <nav class="mobile-nav">
       <a href="index.html">首页</a>
       <a href="square.html">精神广场</a>
-      <a href="rooms.html">学术研讨</a>
+      <a href="rooms.html">摸鱼房间</a>
       <a href="archive.html">废话档案</a>
       <a href="rules.html">入馆须知</a>
-      <a href="admin.html">管理入口</a>
+      <a href="admin.html">公开处刑</a>
     </nav>
 
-    <div class="hero-inner" style="display:block;min-height:auto;padding-top:36px">
-      <p class="kicker">ADMIN / ARCHIVE CONTROL</p>
-      <h1 class="hero-title">站长管理</h1>
-      <p class="hero-copy">这里用来整理帖子、删除不合适评论、停用演示账号。当前是静态站演示版，数据只保存在当前浏览器。</p>
+    <div class="trial-hero-inner">
+      <div class="trial-eyebrow">PUBLIC TRIAL / MODERATION WALL</div>
+      <h1 class="trial-title">公开处刑</h1>
+      <p class="trial-copy">这里记录研究所内近期被封号、禁言、删帖、删评论等公开处理结果。不是为了正义，主要是为了让大家知道边界在哪里。</p>
     </div>
   </section>
 
-  <section class="fw-admin-shell" data-admin-panel></section>
+  <section class="trial-layout">
+    <article class="trial-public-card">
+      <div class="trial-card-head">
+        <div>
+          <h2>近期处理公告</h2>
+          <p>普通研究员只能围观公开记录；管理员进入后，会在下方看到隐藏处理台。</p>
+        </div>
+        <span class="trial-badge">围观群众可见</span>
+      </div>
+      <div class="trial-list" data-public-trial-list>
+        <div class="trial-empty">正在读取公开处刑记录...</div>
+      </div>
+    </article>
 
-  <section class="manifesto">
-    <small>上线说明</small>
-    <h2>当前版本适合先体验流程；真实多人版需要后端。</h2>
-    <p class="section-desc">手机号短信验证码、微信授权登录、全站唯一点赞、账号注销和全站内容审核，都需要接入数据库、登录鉴权和管理后台。现在这个页面先把流程和界面做出来，方便确认方向。</p>
+    <div class="trial-info-grid">
+      <article class="trial-info-card">
+        <small>01 / 边界</small>
+        <h3>可以吐槽，不要攻击。</h3>
+        <p>牢骚可以很废，但不能变成人身攻击、隐私曝光、恶意引战。</p>
+      </article>
+      <article class="trial-info-card">
+        <small>02 / 处理</small>
+        <h3>违规内容会被收走。</h3>
+        <p>不适合公开展示的帖子、评论、房间消息，可能被删除或归档。</p>
+      </article>
+      <article class="trial-info-card">
+        <small>03 / 后果</small>
+        <h3>账号可能被禁言或封禁。</h3>
+        <p>刷屏、广告、恶意骚扰、持续违规，会触发禁言或停用账号。</p>
+      </article>
+    </div>
+
+    <article class="trial-admin-card" data-admin-panel>
+      <div class="trial-admin-head">
+        <div>
+          <h2>站长隐藏处理台</h2>
+          <p>只有管理员账号能看到和操作。处理结果可选择是否进入公开处刑公告。</p>
+        </div>
+        <button class="trial-btn dark" type="button" data-admin-refresh>刷新数据</button>
+      </div>
+      <div class="trial-tabs">
+        <button class="trial-tab active" type="button" data-admin-tab="users">用户</button>
+        <button class="trial-tab" type="button" data-admin-tab="posts">帖子</button>
+        <button class="trial-tab" type="button" data-admin-tab="comments">评论</button>
+        <button class="trial-tab" type="button" data-admin-tab="reports">举报</button>
+        <button class="trial-tab" type="button" data-admin-tab="logs">记录</button>
+      </div>
+      <div class="trial-admin-body" data-admin-body>
+        <div class="trial-empty">正在检查管理员身份...</div>
+      </div>
+    </article>
   </section>
 
   <footer class="footer">
     <span>F.w 研究所</span>
-    <span>站长管理 / Admin Room</span>
+    <span>公开处刑 / Public Trial</span>
   </footer>
 </main>
 
-<script src="assets/app.js?v=site-final-tweaks-20260512-1"></script>
-<script src="assets/auth.js?v=site-final-tweaks-20260512-1"></script>
+<script src="assets/app.js?v=public-trial-20260513-1"></script>
+<script src="assets/auth.js?v=public-trial-20260513-1"></script>
+<script src="assets/fw-admin.js?v=public-trial-20260513-1"></script>
 </body>
 </html>
