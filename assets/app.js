@@ -290,16 +290,25 @@ loadJs("assets/fw-login-submit-fix.js?v=login-submit-fix-20260513-3");
 loadJs("assets/fw-register-disclaimer-link.js?v=register-disclaimer-link-20260513-1");
 loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
 loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
+
+/*
+  重要顺序：
+  1. stable-core 先接管“回声”点击，防止旧 fw-social 把私信也算进回声并标记已读。
+  2. buddy-wechat 先接管“搭子”点击，防止旧 fw-social 的旧搭子面板抢跑。
+  3. fw-social 保留，只用它补老的基础结构，不让它优先处理点击。
+*/
+loadJs("assets/fw-stable-core.js?v=stable-core-20260513-2");
+loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2");
+
 loadJs("assets/fw-social.js?v=social-clean-private-chat-20260510-2");
 loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
 loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
-loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2");
 loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
 loadJs("assets/fw-admin-buddy-lock.js?v=admin-buddy-lock-20260513-1");
 loadJs("assets/fw-report-rpc.js?v=report-rpc-20260513-1");
 loadJs("assets/fw-admin-polish.js?v=admin-polish-20260513-1");
 loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
-loadJs("assets/fw-stable-core.js?v=stable-core-20260512-1");
+loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260513-1");
 
   if(document.querySelector("[data-weekly-grid]")){
     loadJs("assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1");
