@@ -787,7 +787,45 @@
     }, 300);
   }
 
-  async function saveProfile(form){
+async function saveProfile(form){
+  const btn = form.querySelector('button[type="submit"]');
+  setLoading(btn, true, '保存中...');
+
+  try{
+    const fd = new FormData(form);
+
+    const nick = String(fd.get('nickname') || '').trim();
+    const avatarFile = fd.get('avatar');
+    const password = String(fd.get('password') || '').trim();
+
+    if(password){
+      if(password.length < 6){
+        throw new Error('密码至少 6 位。');
+      }
+
+      const r = await db().client.auth.updateUser({
+        password:password
+      });
+
+      if(r.error) throw r.error;
+    }
+
+    await db().updateProfile({
+      nickname:nick,
+      avatarFile:avatarFile && avatarFile.size ? avatarFile : null
+    });
+
+    toast('资料已保存。');
+
+    await refreshUser();
+    show('profile');
+
+  }catch(e){
+    toast(authMsg(e));
+  }finally{
+    setLoading(btn, false);
+  }
+}
     const btn = form.querySelector('button[type="submit"]');
     setLoading(btn, true, '保存中...');
 
