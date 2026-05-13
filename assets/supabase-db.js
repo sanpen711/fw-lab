@@ -13,22 +13,32 @@
     if(!enabled)return null;
     const s=fail(await client.auth.getSession(),'读取登录状态失败')?.session;
     if(!s?.user)return null;
-    const p=fail(
-      await client.from('profiles')
-        .select('id,nickname,avatar_url,role,is_banned,created_at,lab_code')
-        .eq('id',s.user.id)
-        .maybeSingle(),
-      '读取用户资料失败'
-    )||{};
+
+    let p={};
+    try{
+      const rows=fail(await client.rpc('fw_get_current_profile'),'读取用户资料失败')||[];
+      p=Array.isArray(rows)?(rows[0]||{}):(rows||{});
+    }catch(e){
+      // 兼容未执行公开处刑补丁的旧库：退回到最小资料读取。
+      p=fail(
+        await client.from('profiles')
+          .select('id,nickname,avatar_url,role,is_banned,created_at,lab_code')
+          .eq('id',s.user.id)
+          .maybeSingle(),
+        '读取用户资料失败'
+      )||{};
+    }
+
     return {
       id:s.user.id,
-      email:s.user.email,
+      email:p.email||s.user.email,
       nickname:p.nickname||s.user.user_metadata?.nickname||'临时研究员',
       avatar_url:p.avatar_url||'',
       role:p.role||'user',
       isAdmin:p.role==='admin',
       disabled:!!p.is_banned,
       lab_code:p.lab_code||'',
+      muted_until:p.muted_until||null,
       provider:'supabase'
     };
   }
@@ -58,10 +68,6 @@
     return{user:await getCurrentUser()};
   }
 
-  // 登录超时修复：
-  // 原逻辑：signInWithPassword 成功后立刻 await getCurrentUser()
-  // 问题：getCurrentUser() 会再查 profiles，如果 profiles / RLS / 网络响应慢，就会把登录按钮卡到超时。
-  // 新逻辑：这里只确认 Supabase Auth 登录成功，立刻返回；资料刷新交给页面后续逻辑处理。
   async function signInPassword({email,password}){
     const r=await client.auth.signInWithPassword({
       email:String(email||'').trim(),
@@ -118,7 +124,7 @@
       await client.from('profiles')
         .update(patch)
         .eq('id',u.id)
-        .select('id,nickname,avatar_url,role,is_banned')
+        .select('id,nickname,avatar_url')
         .maybeSingle(),
       '资料保存失败'
     );
@@ -198,6 +204,7 @@
     const u=await getCurrentUser();
     if(!u)throw new Error('请先登录。');
     if(u.disabled)throw new Error('这个账号已被停用。');
+    if(u.muted_until && new Date(u.muted_until).getTime()>Date.now())throw new Error('这个账号正在禁言中。');
     return fail(
       await client.from('posts')
         .insert({user_id:u.id,content:String(content||'').trim(),status_tag:status||'今日无效'})
@@ -211,6 +218,7 @@
     const u=await getCurrentUser();
     if(!u)throw new Error('请先登录。');
     if(u.disabled)throw new Error('这个账号已被停用。');
+    if(u.muted_until && new Date(u.muted_until).getTime()>Date.now())throw new Error('这个账号正在禁言中。');
     return fail(
       await client.from('comments')
         .insert({post_id:postId,user_id:u.id,content:String(content||'').trim()})
@@ -235,13 +243,17 @@
   }
 
   async function listUsers(){
-    return fail(
-      await client.from('profiles')
-        .select('id,nickname,avatar_url,role,is_banned,created_at')
-        .order('created_at',{ascending:false})
-        .limit(200),
-      '读取用户列表失败'
-    )||[];
+    try{
+      return fail(await client.rpc('admin_list_profiles'),'读取用户列表失败')||[];
+    }catch(e){
+      return fail(
+        await client.from('profiles')
+          .select('id,nickname,avatar_url,role,is_banned,created_at')
+          .order('created_at',{ascending:false})
+          .limit(200),
+        '读取用户列表失败'
+      )||[];
+    }
   }
 
   async function deletePost(postId){
