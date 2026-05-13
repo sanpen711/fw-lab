@@ -30,7 +30,13 @@ function savePosts(posts){
 }
 
 function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+  return String(str).replace(/[&<>"']/g, s => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  }[s]));
 }
 
 function renderPost(post){
@@ -60,14 +66,19 @@ function renderPost(post){
 function renderFeeds(){
   const containers = document.querySelectorAll("[data-feed]");
   if(!containers.length) return;
+
   const posts = getPosts();
+
   containers.forEach(container => {
     const limit = Number(container.dataset.limit || posts.length);
     const active = document.querySelector(".chip.filter.active")?.dataset.filter || "全部";
+
     let list = [...posts];
+
     if(container.dataset.filterable === "true" && active !== "全部"){
       list = list.filter(p => p.status === active || p.content.includes(active));
     }
+
     container.innerHTML = !list.length
       ? `<div class="empty">暂时没有这个状态的牢骚。可以先投递一条。</div>`
       : list.slice(0, limit).map(renderPost).join("");
@@ -141,6 +152,7 @@ function initInteractions(){
     const id = Number(card.dataset.id);
     const posts = getPosts();
     const post = posts.find(p => p.id === id);
+
     if(!post) return;
 
     const action = btn.dataset.action;
@@ -271,6 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadCss("assets/fw-social.css?v=wechat-buddy-center-20260511-4");
 
+  loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
   loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
   loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
   loadJs("assets/fw-social.js?v=social-clean-private-chat-20260510-2");
