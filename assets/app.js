@@ -283,16 +283,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadCss("assets/fw-social.css?v=wechat-buddy-center-20260511-4");
 
-  loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
-  loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
-  loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
-  loadJs("assets/fw-social.js?v=social-clean-private-chat-20260510-2");
-  loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
-  loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
-  loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2");
-  loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
-  loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
-  loadJs("assets/fw-stable-core.js?v=stable-core-20260512-1");
+loadJs("assets/fw-logout-home-fix.js?v=logout-home-fix-20260513-1");
+loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
+loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
+loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
+loadJs("assets/fw-social.js?v=social-clean-private-chat-20260510-2");
+loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
+loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
+loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2");
+loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
+loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
+loadJs("assets/fw-stable-core.js?v=stable-core-20260512-1");
 
   if(document.querySelector("[data-weekly-grid]")){
     loadJs("assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1");
