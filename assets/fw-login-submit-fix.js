@@ -1,10 +1,12 @@
-// F.w 研究所：登录提交修复补丁 v2
+// F.w 研究所：登录提交修复补丁 v3
 // 只处理登录表单 [data-login]，不处理注册验证码 [data-reg2]。
+// 修复：登录实际成功但页面卡住 / 提示超时的问题。
 (function(){
-  if(window.__FW_LOGIN_SUBMIT_FIX_V2__) return;
-  window.__FW_LOGIN_SUBMIT_FIX_V2__ = true;
+  if(window.__FW_LOGIN_SUBMIT_FIX_V3__) return;
+  window.__FW_LOGIN_SUBMIT_FIX_V3__ = true;
 
   var loginBusy = false;
+  var loginReloading = false;
 
   function $(s){
     return document.querySelector(s);
@@ -52,12 +54,14 @@
     });
   }
 
-  function withTimeout(promise, ms, message){
+  function withTimeout(promise, ms){
     return Promise.race([
       promise,
-      new Promise(function(_, reject){
+      new Promise(function(resolve){
         setTimeout(function(){
-          reject(new Error(message || '操作超时，请稍后重试。'));
+          resolve({
+            __timeout:true
+          });
         }, ms || 15000);
       })
     ]);
@@ -82,10 +86,6 @@
       return '网络连接异常，请刷新后重试。';
     }
 
-    if(/timeout|超时/i.test(msg)){
-      return '登录请求超时，请刷新页面后重试。';
-    }
-
     return msg || '登录失败，请稍后重试。';
   }
 
@@ -107,18 +107,6 @@
     }
   }
 
-  function resetLoginButton(){
-    var form = $('[data-login]');
-    if(!form) return;
-
-    var btn = form.querySelector('button[type="submit"]');
-    if(!btn) return;
-
-    if(!loginBusy && btn.disabled && String(btn.textContent || '').includes('登录中')){
-      setLoading(btn, false);
-    }
-  }
-
   function closeModal(){
     var modal = $('[data-sb-auth]');
 
@@ -127,13 +115,52 @@
     }
   }
 
-  function reloadAfterLogin(){
-    var url = window.location.origin + window.location.pathname + '?login=' + Date.now();
-    window.location.replace(url);
+  function goAfterLogin(){
+    if(loginReloading) return;
+
+    loginReloading = true;
+
+    toast('登录成功，正在进入研究所。');
+    closeModal();
+
+    setTimeout(function(){
+      var cleanPath = window.location.origin + window.location.pathname;
+      window.location.replace(cleanPath + '?login=' + Date.now());
+    }, 350);
+  }
+
+  async function hasSession(){
+    try{
+      if(!window.fwDb || !window.fwDb.client || !window.fwDb.client.auth){
+        return false;
+      }
+
+      var res = await window.fwDb.client.auth.getSession();
+      return !!(res && res.data && res.data.session && res.data.session.user);
+    }catch(e){
+      return false;
+    }
+  }
+
+  function watchSessionAfterLogin(){
+    var n = 0;
+
+    var timer = setInterval(async function(){
+      n += 1;
+
+      if(await hasSession()){
+        clearInterval(timer);
+        goAfterLogin();
+      }
+
+      if(n > 20){
+        clearInterval(timer);
+      }
+    }, 400);
   }
 
   async function handleLogin(form){
-    if(loginBusy) return;
+    if(loginBusy || loginReloading) return;
 
     loginBusy = true;
 
@@ -155,27 +182,49 @@
         throw new Error('请填写邮箱和密码。');
       }
 
+      // 先开启会话监听：有些情况下登录已经成功，但 signInWithPassword 返回慢。
+      watchSessionAfterLogin();
+
       var res = await withTimeout(
         window.fwDb.client.auth.signInWithPassword({
           email:email,
           password:password
         }),
-        15000,
-        '登录请求超时，请刷新页面后重试。'
+        12000
       );
 
-      if(res.error) throw res.error;
+      // 如果请求超时，但 session 已经写入，则直接进入网站，不再报超时。
+      if(res && res.__timeout){
+        if(await hasSession()){
+          goAfterLogin();
+          return;
+        }
 
-      if(!res.data || !res.data.session){
-        throw new Error('登录状态未返回，请刷新页面后重试。');
+        throw new Error('登录请求超时，请刷新页面后重试。');
       }
 
-      toast('登录成功，正在进入研究所。');
-      closeModal();
+      if(res && res.error){
+        throw res.error;
+      }
 
-      setTimeout(reloadAfterLogin, 350);
+      if(res && res.data && res.data.session){
+        goAfterLogin();
+        return;
+      }
+
+      if(await hasSession()){
+        goAfterLogin();
+        return;
+      }
+
+      throw new Error('登录状态未同步，请刷新页面后重试。');
 
     }catch(e){
+      if(await hasSession()){
+        goAfterLogin();
+        return;
+      }
+
       loginBusy = false;
       toast(loginMsg(e));
       setLoading(btn, false);
@@ -222,17 +271,27 @@
     handleLogin(form);
   }
 
-  // 点击按钮、回车提交都处理；只管 [data-login]。
   window.addEventListener('click', interceptClick, true);
   window.addEventListener('submit', interceptSubmit, true);
 
-  // 如果之前卡过“登录中...”，打开弹窗后自动恢复按钮。
+  function recoverLoginButton(){
+    var form = $('[data-login]');
+    if(!form) return;
+
+    var btn = form.querySelector('button[type="submit"]');
+    if(!btn) return;
+
+    if(!loginBusy && btn.disabled && String(btn.textContent || '').includes('登录中')){
+      setLoading(btn, false);
+    }
+  }
+
   function boot(){
-    resetLoginButton();
+    recoverLoginButton();
 
     var observer = new MutationObserver(function(){
       clearTimeout(window.__fwLoginFixRecoverTimer);
-      window.__fwLoginFixRecoverTimer = setTimeout(resetLoginButton, 80);
+      window.__fwLoginFixRecoverTimer = setTimeout(recoverLoginButton, 80);
     });
 
     observer.observe(document.body, {
