@@ -237,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const scripts = [
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
-    "assets/supabase-db.js",
+    "assets/supabase-db.js?v=profile-fix-20260513-1",
     "assets/supabase-live.js?v=auth-clean-20260510-7"
   ];
 
