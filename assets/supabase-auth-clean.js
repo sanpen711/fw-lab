@@ -1,9 +1,8 @@
-// F.w 研究所：干净版账号控制器 v5
+// F.w 研究所：干净版账号控制器 v6
 // 单一职责：注册、验证码、资料保存、登录、退出、右上角用户信息、发帖互动。
-// 标准注册闭环：signUp → verifyOtp(type:'signup') → 写 profiles → signOut → 密码登录。
 (function(){
-  if(window.__FW_SUPABASE_AUTH_CLEAN_V5__) return;
-  window.__FW_SUPABASE_AUTH_CLEAN_V5__ = true;
+  if(window.__FW_SUPABASE_AUTH_CLEAN_V6__) return;
+  window.__FW_SUPABASE_AUTH_CLEAN_V6__ = true;
 
   const db = () => window.fwDb;
   const on = () => !!(db() && db().enabled && db().client);
@@ -11,15 +10,15 @@
   const $$ = s => Array.from(document.querySelectorAll(s));
 
   let me = null;
-  let registerState = { email: '', password: '', labCode: '' };
+  let registerState = { email:'', password:'', labCode:'' };
   let busy = false;
 
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
   }[c]));
 
   const normEmail = v => String(v || '').trim().toLowerCase();
@@ -87,6 +86,10 @@
 
   function authMsg(err){
     const msg = String((err && err.message) || err || '');
+
+    if(/permission denied for table profiles/i.test(msg)){
+      return '资料保存权限异常。请确认已运行资料保存权限修复 SQL，并刷新页面。';
+    }
 
     if(/invalid login credentials/i.test(msg)) return '邮箱或密码不正确。';
     if(/email not confirmed/i.test(msg)) return '邮箱还没有验证，请先完成邮箱验证码验证。';
@@ -561,8 +564,8 @@
 
       const chk = await withTimeout(
         db().client.rpc('fw_check_profile_identity', {
-          check_lab_code: labCode,
-          check_nickname: nickname
+          check_lab_code:labCode,
+          check_nickname:nickname
         }),
         10000,
         '检查编号是否重复超时，请稍后重试。'
@@ -573,23 +576,23 @@
       if(chk.data?.nickname_taken) throw new Error('该昵称已被注册。');
 
       registerState = {
-        email: email,
-        password: password,
-        labCode: labCode
+        email:email,
+        password:password,
+        labCode:labCode
       };
 
       sessionStorage.setItem('fw_register_state', JSON.stringify(registerState));
 
       const r = await withTimeout(
         db().client.auth.signUp({
-          email: email,
-          password: password,
-          options: {
-            data: {
-              nickname: nickname,
-              lab_code: labCode
+          email:email,
+          password:password,
+          options:{
+            data:{
+              nickname:nickname,
+              lab_code:labCode
             },
-            emailRedirectTo: window.location.href.split('#')[0]
+            emailRedirectTo:window.location.href.split('#')[0]
           }
         }),
         18000,
@@ -649,9 +652,9 @@
 
       const verified = await withTimeout(
         db().client.auth.verifyOtp({
-          email: registerState.email,
-          token: token,
-          type: 'signup'
+          email:registerState.email,
+          token:token,
+          type:'signup'
         }),
         18000,
         '验证码验证超时，请稍后重试。'
@@ -676,10 +679,10 @@
       }
 
       const patch = {
-        nickname: nicknameFromCode(registerState.labCode),
-        lab_code: registerState.labCode,
-        email_search: registerState.email,
-        updated_at: new Date().toISOString()
+        nickname:nicknameFromCode(registerState.labCode),
+        lab_code:registerState.labCode,
+        email_search:registerState.email,
+        updated_at:new Date().toISOString()
       };
 
       const saved = await withTimeout(
@@ -687,7 +690,7 @@
           .from('profiles')
           .update(patch)
           .eq('id', user.id)
-          .select('id,lab_code,nickname,email_search')
+          .select('id,lab_code,nickname')
           .maybeSingle(),
         10000,
         '保存实验品编号超时，请稍后重试。'
@@ -745,8 +748,8 @@
 
       const r = await withTimeout(
         db().client.auth.signInWithPassword({
-          email: email,
-          password: password
+          email:email,
+          password:password
         }),
         30000,
         '登录请求超时，请检查网络后重试。'
@@ -782,82 +785,34 @@
       }
     }catch(e){}
 
+    try{
+      Object.keys(localStorage).forEach(k => {
+        if(/^sb-|supabase|fw_register_state/i.test(k)){
+          localStorage.removeItem(k);
+        }
+      });
+
+      Object.keys(sessionStorage).forEach(k => {
+        if(/^sb-|supabase|fw_register_state/i.test(k)){
+          sessionStorage.removeItem(k);
+        }
+      });
+    }catch(e){}
+
     setTimeout(() => {
-      window.location.reload();
+      window.location.href = window.location.origin + window.location.pathname.replace(/[^/]*$/, 'index.html') + '?logout=' + Date.now();
     }, 300);
   }
 
-async function saveProfile(form){
-  const btn = form.querySelector('button[type="submit"]');
-  setLoading(btn, true, '保存中...');
-
-  try{
-    const fd = new FormData(form);
-
-    const nick = String(fd.get('nickname') || '').trim();
-    const avatarFile = fd.get('avatar');
-    const password = String(fd.get('password') || '').trim();
-
-    if(password){
-      if(password.length < 6){
-        throw new Error('密码至少 6 位。');
-      }
-
-      const r = await db().client.auth.updateUser({
-        password:password
-      });
-
-      if(r.error) throw r.error;
-    }
-
-    await db().updateProfile({
-      nickname:nick,
-      avatarFile:avatarFile && avatarFile.size ? avatarFile : null
-    });
-
-    toast('资料已保存。');
-
-    await refreshUser();
-    show('profile');
-
-  }catch(e){
-    toast(authMsg(e));
-  }finally{
-    setLoading(btn, false);
-  }
-}
+  async function saveProfile(form){
     const btn = form.querySelector('button[type="submit"]');
     setLoading(btn, true, '保存中...');
 
     try{
       const fd = new FormData(form);
 
-      const patch = {
-        updated_at: new Date().toISOString()
-      };
-
       const nick = String(fd.get('nickname') || '').trim();
-
-      if(nick){
-        patch.nickname = nick;
-      }
-
-      const code = normCode(fd.get('lab_code'));
-
-      if(code && !me?.lab_code){
-        if(!validCode(code)){
-          throw new Error('实验品编号必须是 7 位字母或数字。');
-        }
-
-        patch.lab_code = code;
-      }
-
       const avatarFile = fd.get('avatar');
-
-      if(avatarFile && avatarFile.size){
-        patch.avatar_url = await uploadAvatar(me.id, avatarFile);
-      }
-
       const password = String(fd.get('password') || '').trim();
 
       if(password){
@@ -865,19 +820,17 @@ async function saveProfile(form){
           throw new Error('密码至少 6 位。');
         }
 
-        const r = await db().client.auth.updateUser({ password: password });
+        const r = await db().client.auth.updateUser({
+          password:password
+        });
 
         if(r.error) throw r.error;
       }
 
-      const r = await db().client
-        .from('profiles')
-        .update(patch)
-        .eq('id', me.id)
-        .select('id,nickname,avatar_url,role,is_banned,lab_code')
-        .maybeSingle();
-
-      if(r.error) throw r.error;
+      await db().updateProfile({
+        nickname:nick,
+        avatarFile:avatarFile && avatarFile.size ? avatarFile : null
+      });
 
       toast('资料已保存。');
 
@@ -891,20 +844,106 @@ async function saveProfile(form){
     }
   }
 
-  async function uploadAvatar(userId, file){
-    const safe = String(file.name || 'avatar.png').replace(/[^a-zA-Z0-9._-]/g, '_');
-    const path = `${userId}/${Date.now()}_${safe}`;
+  async function handlePostSubmit(form){
+    if(!on()) return;
 
-    const up = await db().client.storage
-      .from('avatars')
-      .upload(path, file, {
-        upsert: true,
-        cacheControl: '3600'
+    try{
+      if(!me){
+        toast('请先登录再发布。');
+        show('login');
+        return;
+      }
+
+      const textarea = form.querySelector('textarea');
+      const content = String(textarea?.value || '').trim();
+
+      if(!content){
+        textarea?.focus();
+        return;
+      }
+
+      const active = form.querySelector('.chip.active[data-status]');
+      const status = active?.dataset.status || '今日无效';
+
+      await db().createPost({
+        content:content,
+        status:status
       });
 
-    if(up.error) throw up.error;
+      if(textarea){
+        textarea.value = '';
+      }
 
-    return db().client.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+      toast('已投递到研究所。');
+      await loadRemotePosts();
+
+    }catch(e){
+      toast(authMsg(e));
+    }
+  }
+
+  async function handlePostAction(btn){
+    const card = btn.closest('.post-card');
+
+    if(!card) return;
+
+    if(!me){
+      toast('请先登录再互动。');
+      show('login');
+      return;
+    }
+
+    const postId = Number(card.dataset.id);
+    const action = btn.dataset.sbAction;
+
+    try{
+      if(action === 'comment-toggle'){
+        card.querySelector('.comment-box')?.classList.toggle('show');
+        return;
+      }
+
+      if(action === 'comment-submit'){
+        const input = card.querySelector('.comment-box input');
+        const content = String(input?.value || '').trim();
+
+        if(!content){
+          input?.focus();
+          return;
+        }
+
+        await db().createComment({
+          postId:postId,
+          content:content
+        });
+
+        if(input){
+          input.value = '';
+        }
+
+        toast('回声已发送。');
+        await loadRemotePosts();
+        return;
+      }
+
+      const map = {
+        resonance:'resonance',
+        same:'same',
+        tissue:'tissue'
+      };
+
+      if(map[action]){
+        const r = await db().react({
+          postId:postId,
+          type:map[action]
+        });
+
+        toast(r && r.already ? '你已经表达过了。' : '已收到。');
+        await loadRemotePosts();
+      }
+
+    }catch(e){
+      toast(authMsg(e));
+    }
   }
 
   function bind(){
@@ -922,6 +961,8 @@ async function saveProfile(form){
       }
 
       if(e.target.closest('[data-sb-logout]')){
+        e.preventDefault();
+        e.stopPropagation();
         logout();
       }
 
@@ -942,46 +983,60 @@ async function saveProfile(form){
       const btn = e.target.closest('button[data-sb-action]');
 
       if(btn){
+        e.preventDefault();
         handlePostAction(btn);
       }
     });
 
     document.body.addEventListener('submit', e => {
-      const f = e.target;
+      const loginForm = e.target.closest('[data-login]');
+      const reg1 = e.target.closest('[data-reg1]');
+      const reg2 = e.target.closest('[data-reg2]');
+      const reset = e.target.closest('[data-reset]');
+      const profile = e.target.closest('[data-profile]');
+      const postForm = e.target.closest('[data-post-form]');
 
-      if(f.matches('[data-login]')){
+      if(loginForm){
         e.preventDefault();
-        login(f);
+        login(loginForm);
+        return;
       }
 
-      if(f.matches('[data-reg1]')){
+      if(reg1){
         e.preventDefault();
-        registerStep1(f);
+        registerStep1(reg1);
+        return;
       }
 
-      if(f.matches('[data-reg2]')){
+      if(reg2){
         e.preventDefault();
-        registerStep2(f);
+        registerStep2(reg2);
+        return;
       }
 
-      if(f.matches('[data-reset]')){
+      if(reset){
         e.preventDefault();
-        resetPassword(f);
+        resetPassword(reset);
+        return;
       }
 
-      if(f.matches('[data-profile]')){
+      if(profile){
         e.preventDefault();
-        saveProfile(f);
+        saveProfile(profile);
+        return;
       }
 
-      if(f.matches('[data-post-form]')){
+      if(postForm && on()){
         e.preventDefault();
-        submitPost(f);
+        handlePostSubmit(postForm);
       }
-    }, true);
+    });
   }
 
   async function resetPassword(form){
+    const btn = form.querySelector('button[type="submit"]');
+    setLoading(btn, true, '发送中...');
+
     try{
       const email = normEmail(new FormData(form).get('email'));
 
@@ -989,110 +1044,43 @@ async function saveProfile(form){
         throw new Error('请填写邮箱。');
       }
 
-      const r = await db().client.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.href.split('#')[0]
+      await db().sendPasswordReset({
+        email:email
       });
-
-      if(r.error) throw r.error;
 
       toast('找回密码邮件已发送。');
       show('login');
 
     }catch(e){
       toast(authMsg(e));
-    }
-  }
-
-  async function submitPost(form){
-    if(!me){
-      toast('请先登录。');
-      show('login');
-      return;
-    }
-
-    const txt = form.querySelector('textarea');
-    const content = (txt?.value || '').trim();
-
-    if(!content) return;
-
-    const status = form.querySelector('.chip[data-status].active')?.dataset.status || '今日无效';
-
-    try{
-      await db().createPost({
-        content: content,
-        status: status
-      });
-
-      txt.value = '';
-
-      await loadRemotePosts();
-
-      toast('已发布。');
-
-    }catch(e){
-      toast(authMsg(e));
-    }
-  }
-
-  async function handlePostAction(btn){
-    const card = btn.closest('.post-card');
-
-    if(!card) return;
-
-    if(btn.dataset.sbAction === 'comment-toggle'){
-      card.querySelector('.comment-box')?.classList.toggle('show');
-      return;
-    }
-
-    if(!me){
-      toast('请先登录。');
-      show('login');
-      return;
-    }
-
-    try{
-      const postId = Number(card.dataset.id);
-
-      if(btn.dataset.sbAction === 'comment-submit'){
-        const input = card.querySelector('.comment-box input');
-        const content = (input?.value || '').trim();
-
-        if(!content) return;
-
-        await db().createComment({
-          postId: postId,
-          content: content
-        });
-
-        input.value = '';
-      }else{
-        await db().react({
-          postId: postId,
-          type: btn.dataset.sbAction
-        });
-      }
-
-      await loadRemotePosts();
-
-    }catch(e){
-      toast(authMsg(e));
+    }finally{
+      setLoading(btn, false);
     }
   }
 
   async function boot(){
+    css();
     modal();
     userbar();
     renderOverride();
     bind();
 
-    await waitForDb();
+    const ok = await waitForDb();
+
+    if(!ok){
+      await refreshUser();
+      return;
+    }
 
     await refreshUser();
     await loadRemotePosts();
 
-    db()?.client?.auth?.onAuthStateChange?.(() => {
-      refreshUser();
-    });
+    if(on() && db().onAuthChange){
+      db().onAuthChange(async () => {
+        await refreshUser();
+        await loadRemotePosts();
+      });
+    }
   }
 
   if(document.readyState === 'loading'){
