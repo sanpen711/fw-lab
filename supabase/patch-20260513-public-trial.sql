@@ -54,11 +54,22 @@ do $$ begin
 end $$;
 
 -- 3. 举报处理字段
+-- 兼容旧库：有的版本字段叫 reason，有的版本字段叫 report_reason；这里统一补齐 report_reason。
 do $$ begin
   if to_regclass('public.chat_message_reports') is not null then
+    alter table public.chat_message_reports add column if not exists report_reason text;
     alter table public.chat_message_reports add column if not exists status text not null default 'pending';
     alter table public.chat_message_reports add column if not exists handled_at timestamptz;
     alter table public.chat_message_reports add column if not exists handled_by uuid references public.profiles(id) on delete set null;
+
+    if exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'chat_message_reports'
+        and column_name = 'reason'
+    ) then
+      execute 'update public.chat_message_reports set report_reason = coalesce(report_reason, reason) where report_reason is null';
+    end if;
 
     execute 'drop policy if exists "chat_reports_select_admin" on public.chat_message_reports';
     execute 'create policy "chat_reports_select_admin" on public.chat_message_reports for select using (public.is_admin())';
@@ -135,7 +146,7 @@ set search_path = public
 as $$
   select r.id, r.message_id, r.reporter_id, rp.nickname as reporter_name,
          m.user_id as target_user_id, tp.nickname as target_name, m.room_key,
-         m.content as message_content, r.report_reason, coalesce(r.status,'pending') as status,
+         m.content as message_content, coalesce(r.report_reason, '用户举报') as report_reason, coalesce(r.status,'pending') as status,
          r.created_at, r.handled_at
   from public.chat_message_reports r
   left join public.chat_messages m on m.id = r.message_id
