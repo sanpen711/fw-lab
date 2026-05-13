@@ -1,8 +1,10 @@
-// F.w 研究所：登录提交修复补丁
+// F.w 研究所：登录提交修复补丁 v2
 // 只处理登录表单 [data-login]，不处理注册验证码 [data-reg2]。
 (function(){
-  if(window.__FW_LOGIN_SUBMIT_FIX__) return;
-  window.__FW_LOGIN_SUBMIT_FIX__ = true;
+  if(window.__FW_LOGIN_SUBMIT_FIX_V2__) return;
+  window.__FW_LOGIN_SUBMIT_FIX_V2__ = true;
+
+  var loginBusy = false;
 
   function $(s){
     return document.querySelector(s);
@@ -56,7 +58,7 @@
       new Promise(function(_, reject){
         setTimeout(function(){
           reject(new Error(message || '操作超时，请稍后重试。'));
-        }, ms || 20000);
+        }, ms || 15000);
       })
     ]);
   }
@@ -80,6 +82,10 @@
       return '网络连接异常，请刷新后重试。';
     }
 
+    if(/timeout|超时/i.test(msg)){
+      return '登录请求超时，请刷新页面后重试。';
+    }
+
     return msg || '登录失败，请稍后重试。';
   }
 
@@ -101,9 +107,37 @@
     }
   }
 
-  async function handleLogin(form){
-    var btn = form.querySelector('button[type="submit"]');
+  function resetLoginButton(){
+    var form = $('[data-login]');
+    if(!form) return;
 
+    var btn = form.querySelector('button[type="submit"]');
+    if(!btn) return;
+
+    if(!loginBusy && btn.disabled && String(btn.textContent || '').includes('登录中')){
+      setLoading(btn, false);
+    }
+  }
+
+  function closeModal(){
+    var modal = $('[data-sb-auth]');
+
+    if(modal){
+      modal.classList.remove('show');
+    }
+  }
+
+  function reloadAfterLogin(){
+    var url = window.location.origin + window.location.pathname + '?login=' + Date.now();
+    window.location.replace(url);
+  }
+
+  async function handleLogin(form){
+    if(loginBusy) return;
+
+    loginBusy = true;
+
+    var btn = form.querySelector('button[type="submit"]');
     setLoading(btn, true);
 
     try{
@@ -126,34 +160,35 @@
           email:email,
           password:password
         }),
-        25000,
-        '登录请求超时，请检查网络后重试。'
+        15000,
+        '登录请求超时，请刷新页面后重试。'
       );
 
       if(res.error) throw res.error;
 
-      toast('登录成功，正在进入研究所。');
-
-      var modal = $('[data-sb-auth]');
-
-      if(modal){
-        modal.classList.remove('show');
+      if(!res.data || !res.data.session){
+        throw new Error('登录状态未返回，请刷新页面后重试。');
       }
 
-      setTimeout(function(){
-        window.location.reload();
-      }, 450);
+      toast('登录成功，正在进入研究所。');
+      closeModal();
+
+      setTimeout(reloadAfterLogin, 350);
 
     }catch(e){
+      loginBusy = false;
       toast(loginMsg(e));
       setLoading(btn, false);
     }
   }
 
-  function intercept(e){
+  function interceptSubmit(e){
     var form = e.target && e.target.closest && e.target.closest('[data-login]');
 
     if(!form) return;
+
+    // 只拦截登录，不碰注册第二步。
+    if(form.closest('[data-reg2]')) return;
 
     e.preventDefault();
     e.stopPropagation();
@@ -165,25 +200,50 @@
     handleLogin(form);
   }
 
-  // 捕获阶段只拦截登录表单，不碰注册验证表单。
-  window.addEventListener('submit', intercept, true);
+  function interceptClick(e){
+    var btn = e.target && e.target.closest && e.target.closest('[data-login] button[type="submit"]');
 
-  // 防止上一次卡住后按钮一直 disabled。
-  function recoverLoginButton(){
-    var form = $('[data-login]');
-    if(!form) return;
-
-    var btn = form.querySelector('button[type="submit"]');
     if(!btn) return;
 
-    if(btn.disabled && btn.textContent.indexOf('登录中') >= 0){
-      setLoading(btn, false);
+    var form = btn.closest('[data-login]');
+
+    if(!form) return;
+
+    // 只拦截登录，不碰注册第二步。
+    if(form.closest('[data-reg2]')) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if(e.stopImmediatePropagation){
+      e.stopImmediatePropagation();
     }
+
+    handleLogin(form);
+  }
+
+  // 点击按钮、回车提交都处理；只管 [data-login]。
+  window.addEventListener('click', interceptClick, true);
+  window.addEventListener('submit', interceptSubmit, true);
+
+  // 如果之前卡过“登录中...”，打开弹窗后自动恢复按钮。
+  function boot(){
+    resetLoginButton();
+
+    var observer = new MutationObserver(function(){
+      clearTimeout(window.__fwLoginFixRecoverTimer);
+      window.__fwLoginFixRecoverTimer = setTimeout(resetLoginButton, 80);
+    });
+
+    observer.observe(document.body, {
+      childList:true,
+      subtree:true
+    });
   }
 
   if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', recoverLoginButton);
+    document.addEventListener('DOMContentLoaded', boot);
   }else{
-    recoverLoginButton();
+    boot();
   }
 })();
