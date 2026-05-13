@@ -218,14 +218,18 @@
 
       sessionStorage.removeItem('fw_register_state');
 
-      await withTimeout(
-        window.fwDb.client.auth.signOut(),
-        5000,
-        '退出注册状态超时'
-      ).catch(function(){});
+      toast('注册成功，正在进入研究所。');
 
-      toast('注册成功，请登录。');
-      showLogin(email);
+      var modal = $('[data-sb-auth]');
+
+      if(modal){
+        modal.classList.remove('show');
+      }
+
+      setTimeout(function(){
+        var cleanPath = window.location.origin + window.location.pathname;
+        window.location.replace(cleanPath + '?signup=' + Date.now());
+      }, 450);
 
     }catch(e){
       toast(authMsg(e));
