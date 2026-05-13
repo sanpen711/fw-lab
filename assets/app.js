@@ -292,6 +292,7 @@ loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
 loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
 loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2");
 loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
+loadJs("assets/fw-admin-buddy-lock.js?v=admin-buddy-lock-20260513-1");
 loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
 loadJs("assets/fw-stable-core.js?v=stable-core-20260512-1");
 
