@@ -78,6 +78,7 @@ function initPostForm(){
   document.querySelectorAll("[data-post-form]").forEach(form => {
     const chips = form.querySelectorAll(".chip[data-status]");
     let selected = chips[0]?.dataset.status || "已疲惫";
+
     chips.forEach(ch => {
       ch.addEventListener("click", () => {
         chips.forEach(x => x.classList.remove("active"));
@@ -85,21 +86,43 @@ function initPostForm(){
         selected = ch.dataset.status;
       });
     });
+
     form.addEventListener("submit", e => {
       if(usingSupabase()) return;
+
       e.preventDefault();
+
       const textarea = form.querySelector("textarea");
       const content = textarea.value.trim();
-      if(!content){ textarea.focus(); return; }
+
+      if(!content){
+        textarea.focus();
+        return;
+      }
+
       const posts = getPosts();
-      posts.unshift({id:Date.now(), status:selected, content, time:"刚刚", resonance:0, same:0, tissue:0, comments:[]});
+
+      posts.unshift({
+        id:Date.now(),
+        status:selected,
+        content,
+        time:"刚刚",
+        resonance:0,
+        same:0,
+        tissue:0,
+        comments:[]
+      });
+
       savePosts(posts);
       textarea.value = "";
       renderFeeds();
+
       const notice = form.querySelector("[data-notice]");
       if(notice){
         notice.textContent = "已匿名投递。它现在被研究所收纳了。";
-        setTimeout(() => { notice.textContent = ""; }, 2200);
+        setTimeout(() => {
+          notice.textContent = "";
+        }, 2200);
       }
     });
   });
@@ -108,31 +131,40 @@ function initPostForm(){
 function initInteractions(){
   document.body.addEventListener("click", e => {
     if(usingSupabase()) return;
+
     const btn = e.target.closest("button[data-action]");
     if(!btn) return;
+
     const card = btn.closest(".post-card");
     if(!card) return;
+
     const id = Number(card.dataset.id);
     const posts = getPosts();
     const post = posts.find(p => p.id === id);
     if(!post) return;
+
     const action = btn.dataset.action;
+
     if(action === "resonance") post.resonance = (post.resonance || 0) + 1;
     if(action === "same") post.same = (post.same || 0) + 1;
     if(action === "tissue") post.tissue = (post.tissue || 0) + 1;
+
     if(action === "comment-toggle"){
       card.querySelector(".comment-box").classList.toggle("show");
       return;
     }
+
     if(action === "comment-submit"){
       const input = card.querySelector(".comment-box input");
       const val = input.value.trim();
+
       if(val){
         post.comments = post.comments || [];
         post.comments.push(val);
         input.value = "";
       }
     }
+
     savePosts(posts);
     renderFeeds();
   });
@@ -151,11 +183,38 @@ function initFilters(){
 function initMenu(){
   const btn = document.querySelector(".menu-btn");
   const nav = document.querySelector(".mobile-nav");
-  if(btn && nav) btn.addEventListener("click", () => nav.classList.toggle("show"));
+
+  if(btn && nav){
+    btn.addEventListener("click", () => nav.classList.toggle("show"));
+  }
+}
+
+function initPublicTrialNav(){
+  const page = (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
+  const active = page === "admin.html";
+
+  function ensure(nav){
+    if(!nav) return;
+
+    let link = nav.querySelector('a[href="admin.html"]');
+
+    if(!link){
+      link = document.createElement("a");
+      link.href = "admin.html";
+      nav.appendChild(link);
+    }
+
+    link.textContent = "公开处刑";
+    link.classList.toggle("active", active);
+  }
+
+  document.querySelectorAll(".nav").forEach(ensure);
+  document.querySelectorAll(".mobile-nav").forEach(ensure);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   initMenu();
+  initPublicTrialNav();
   initPostForm();
   initFilters();
   initInteractions();
@@ -169,15 +228,19 @@ document.addEventListener("DOMContentLoaded", () => {
     "assets/supabase-db.js",
     "assets/supabase-live.js?v=auth-clean-20260510-7"
   ];
+
   function loadNext(i){
     if(i >= scripts.length) return;
+
     const s = document.createElement("script");
     s.src = scripts[i];
     s.defer = false;
     s.onload = () => loadNext(i + 1);
     s.onerror = () => console.warn("Supabase bridge failed to load:", scripts[i]);
+
     document.head.appendChild(s);
   }
+
   loadNext(0);
 })();
 
@@ -187,33 +250,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function loadCss(href){
     if(document.querySelector('link[href="' + href + '"]')) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
     link.href = href;
+
     document.head.appendChild(link);
   }
 
   function loadJs(src){
     if(document.querySelector('script[src="' + src + '"]')) return;
-    const s = document.createElement('script');
+
+    const s = document.createElement("script");
     s.src = src;
     s.async = false;
     s.defer = false;
+
     document.body.appendChild(s);
   }
 
-  loadCss('assets/fw-social.css?v=wechat-buddy-center-20260511-4');
-  loadJs('assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1');
-  loadJs('assets/fw-rooms-chat.js?v=rooms-chat-20260512-1');
-  loadJs('assets/fw-social.js?v=social-clean-private-chat-20260510-2');
-  loadJs('assets/fw-floating-panels.js?v=floating-panels-20260511-2');
-  loadJs('assets/fw-notification-jump.js?v=notification-jump-20260511-1');
-  loadJs('assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2');
-  loadJs('assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2');
-  loadJs('assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1');
-  loadJs('assets/fw-stable-core.js?v=stable-core-20260512-1');
+  loadCss("assets/fw-social.css?v=wechat-buddy-center-20260511-4");
 
-  if(document.querySelector('[data-weekly-grid]')){
-    loadJs('assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1');
+  loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
+  loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
+  loadJs("assets/fw-social.js?v=social-clean-private-chat-20260510-2");
+  loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
+  loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
+  loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2");
+  loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
+  loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
+  loadJs("assets/fw-stable-core.js?v=stable-core-20260512-1");
+
+  if(document.querySelector("[data-weekly-grid]")){
+    loadJs("assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1");
   }
 })();
