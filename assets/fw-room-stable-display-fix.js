@@ -1,18 +1,18 @@
-// F.w 研究所：学术研讨稳定显示补丁
+// F.w 研究所：学术研讨稳定显示补丁 v2
 // 作用：
 // 1. 修复房间头像/昵称一会有一会没有的问题。
 // 2. 给房间消息补发言时间。
-// 3. 禁用旧的异步二次修补，避免每次轮询时闪烁。
+// 3. 轮询重绘后先同步使用缓存补齐，减少时间一会有一会没有。
 (function(){
-  if(window.__FW_ROOM_STABLE_DISPLAY_FIX__) return;
-  window.__FW_ROOM_STABLE_DISPLAY_FIX__ = true;
+  if(window.__FW_ROOM_STABLE_DISPLAY_FIX_V2__) return;
+  window.__FW_ROOM_STABLE_DISPLAY_FIX_V2__ = true;
 
-  // 提前占用这个标记，阻止 fw-avatar-mobile-fix.js 里旧的房间异步补丁运行。
-  // 旧补丁会在原始消息渲染后再查库补资料，导致每 5 秒轮询时“先消失再出现”。
+  // 阻止 fw-avatar-mobile-fix.js 里旧的房间异步补丁运行。
   window.__FW_ROOM_PROFILE_TIME_FIX__ = true;
 
   var messageCache = {};
   var profileCache = {};
+  var currentMeCache = null;
   var loadingIds = false;
   var renderTimer = 0;
   var profileSelectPatched = false;
@@ -58,6 +58,8 @@
         font-weight:850!important;
         opacity:.92!important;
         white-space:nowrap!important;
+        min-width:38px!important;
+        display:inline-block!important;
       }
       .fw-msg.me .fw-room-msg-time{
         color:rgba(255,255,255,.84)!important;
@@ -101,10 +103,11 @@
 
   async function getMe(){
     try{
-      if(!(await waitDb())) return null;
-      return await window.fwDb.getCurrentUser();
+      if(!(await waitDb())) return currentMeCache;
+      currentMeCache = await window.fwDb.getCurrentUser();
+      return currentMeCache;
     }catch(e){
-      return null;
+      return currentMeCache;
     }
   }
 
@@ -206,7 +209,10 @@
       var nameEl = el.querySelector('.fw-msg-name');
       if(nameEl){
         var baseName = name + (isMe ? '（我）' : '');
-        var timeHtml = time ? '<span class="fw-room-msg-time">' + esc(time) + '</span>' : '';
+        var oldTimeEl = nameEl.querySelector('.fw-room-msg-time');
+        var oldTime = oldTimeEl ? oldTimeEl.textContent : '';
+        var finalTime = time || oldTime || '';
+        var timeHtml = finalTime ? '<span class="fw-room-msg-time">' + esc(finalTime) + '</span>' : '';
         var nextName = esc(baseName) + timeHtml;
         if(nameEl.dataset.fwStableName !== nextName){
           nameEl.innerHTML = nextName;
@@ -226,41 +232,42 @@
 
     if(!ids.length) return;
 
+    // 先同步补一次：轮询重绘后立刻恢复旧缓存，避免肉眼看到时间消失。
+    applyCached(currentMeCache);
+
     var me = await getMe();
-
-    // 先用已有缓存同步补一次，避免轮询重绘后肉眼闪烁。
     applyCached(me);
 
-    // 再补新消息缓存，补完后再更新一次。
     await loadMissing(ids);
-    applyCached(me);
+    applyCached(me || currentMeCache);
   }
 
-  function schedule(){
+  function schedule(delay){
     clearTimeout(renderTimer);
-    renderTimer = setTimeout(enhance, 20);
+    renderTimer = setTimeout(enhance, typeof delay === 'number' ? delay : 0);
   }
 
   function boot(){
     injectStyle();
     patchProfileSelect();
-    schedule();
+    getMe();
+    schedule(0);
 
     var obs = new MutationObserver(function(mutations){
       var should = mutations.some(function(m){
         return Array.from(m.addedNodes || []).some(function(n){
-          return n.nodeType === 1 && (n.matches && (n.matches('.fw-msg') || n.matches('[data-room-messages]')) || n.querySelector && n.querySelector('.fw-msg'));
+          return n.nodeType === 1 && ((n.matches && (n.matches('.fw-msg') || n.matches('[data-room-messages]'))) || (n.querySelector && n.querySelector('.fw-msg')));
         });
       });
-      if(should) schedule();
+      if(should) schedule(0);
     });
 
     obs.observe(document.body, {childList:true, subtree:true});
 
     document.addEventListener('click', function(e){
       if(e.target.closest && (e.target.closest('[data-room]') || e.target.closest('[data-room-modal]'))){
-        setTimeout(schedule, 80);
-        setTimeout(schedule, 500);
+        setTimeout(function(){ schedule(0); }, 40);
+        setTimeout(function(){ schedule(0); }, 400);
       }
     }, true);
   }
