@@ -834,8 +834,13 @@
 
       toast('资料已保存。');
 
-      await refreshUser();
-      show('profile');
+  await refreshUser();
+
+const modalEl = $('[data-sb-auth]');
+
+if(modalEl){
+  modalEl.classList.remove('show');
+}
 
     }catch(e){
       toast(authMsg(e));
