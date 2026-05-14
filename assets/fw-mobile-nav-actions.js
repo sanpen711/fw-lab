@@ -1,33 +1,19 @@
-// F.w 研究所：手机端快捷入口与回声/搭子入口
-// 只在手机端显示，不改电脑端布局。
+// F.w 研究所：手机端压缩快捷导航条
+// 作用：
+// 1. 手机端在头部下方增加一条压缩导航：左侧放页面入口，右侧放回声/搭子。
+// 2. 回声/搭子复用原有功能，不重写弹窗逻辑。
+// 3. 电脑端完全不显示、不影响原布局。
 (function(){
-  if(window.__FW_MOBILE_NAV_ACTIONS__) return;
-  window.__FW_MOBILE_NAV_ACTIONS__ = true;
+  if(window.__FW_MOBILE_NAV_ACTIONS_COMPACT__) return;
+  window.__FW_MOBILE_NAV_ACTIONS_COMPACT__ = true;
 
   var badgeTimer = 0;
 
   function $(s, root){ return (root || document).querySelector(s); }
   function $$(s, root){ return Array.from((root || document).querySelectorAll(s)); }
 
-  function waitDb(){
-    return new Promise(function(resolve){
-      if(window.fwDb && window.fwDb.enabled && window.fwDb.client){ resolve(true); return; }
-      var n = 0;
-      var t = setInterval(function(){
-        n += 1;
-        if(window.fwDb && window.fwDb.enabled && window.fwDb.client){ clearInterval(t); resolve(true); }
-        if(n > 120){ clearInterval(t); resolve(false); }
-      }, 100);
-    });
-  }
-
-  async function getMe(){
-    try{
-      if(!(await waitDb())) return null;
-      return await window.fwDb.getCurrentUser();
-    }catch(e){
-      return null;
-    }
+  function isMobile(){
+    return window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
   }
 
   function injectStyle(){
@@ -36,60 +22,88 @@
     var style = document.createElement('style');
     style.id = 'fw-mobile-nav-actions-style';
     style.textContent = `
-      .fw-mobile-header-actions,
-      .fw-mobile-quick-entry{
-        display:none;
-      }
+      .fw-mobile-compact-strip{display:none;}
 
-      @media (max-width: 760px){
-        .header{
-          gap:8px!important;
-          justify-content:flex-start!important;
-          align-items:center!important;
+      @media(max-width:760px){
+        .fw-mobile-compact-strip{
+          display:flex!important;
+          align-items:stretch!important;
+          gap:10px!important;
+          width:calc(100% - 28px)!important;
+          margin:0 auto 12px!important;
+          position:relative!important;
+          z-index:45!important;
         }
 
-        .header .logo{
-          flex:0 0 auto!important;
-          font-size:24px!important;
+        .fw-mobile-page-links{
+          flex:1 1 auto!important;
+          min-width:0!important;
+          display:grid!important;
+          grid-template-columns:repeat(4,minmax(0,1fr))!important;
+          gap:5px!important;
+          border:1px solid rgba(223,118,118,.72)!important;
+          padding:5px!important;
+          background:rgba(8,12,8,.18)!important;
+          backdrop-filter:blur(8px)!important;
+          -webkit-backdrop-filter:blur(8px)!important;
         }
 
-        .header .menu-btn{
-          flex:0 0 auto!important;
-          margin-left:0!important;
-          padding:0!important;
-          line-height:1!important;
-        }
-
-        .fw-mobile-header-actions{
+        .fw-mobile-page-link{
+          min-width:0!important;
+          height:30px!important;
           display:flex!important;
           align-items:center!important;
-          gap:6px!important;
-          margin-left:auto!important;
-          flex:0 0 auto!important;
-          position:relative!important;
-          z-index:30!important;
+          justify-content:center!important;
+          border:1px solid rgba(255,255,255,.22)!important;
+          border-radius:999px!important;
+          background:rgba(255,253,247,.055)!important;
+          color:#fffdf7!important;
+          text-decoration:none!important;
+          font-size:11px!important;
+          line-height:1!important;
+          font-weight:1000!important;
+          letter-spacing:-.05em!important;
+          white-space:nowrap!important;
+        }
+
+        .fw-mobile-page-link:active,
+        .fw-mobile-action-btn:active{
+          transform:translateY(1px)!important;
+        }
+
+        .fw-mobile-right-actions{
+          flex:0 0 116px!important;
+          width:116px!important;
+          display:grid!important;
+          grid-template-columns:1fr 1fr!important;
+          gap:5px!important;
+          border:1px solid rgba(223,118,118,.72)!important;
+          padding:5px!important;
+          background:rgba(8,12,8,.18)!important;
+          backdrop-filter:blur(8px)!important;
+          -webkit-backdrop-filter:blur(8px)!important;
         }
 
         .fw-mobile-action-btn{
           position:relative!important;
-          height:34px!important;
-          min-width:48px!important;
-          padding:0 10px!important;
+          appearance:none!important;
+          border:1px solid rgba(255,255,255,.32)!important;
           border-radius:999px!important;
-          border:1px solid rgba(246,246,240,.55)!important;
-          background:rgba(16,23,15,.48)!important;
+          background:rgba(255,253,247,.07)!important;
           color:#fffdf7!important;
-          font-size:12px!important;
-          font-weight:950!important;
+          height:30px!important;
+          padding:0!important;
+          font-size:11px!important;
           line-height:1!important;
-          backdrop-filter:blur(10px)!important;
-          -webkit-backdrop-filter:blur(10px)!important;
+          font-weight:1000!important;
+          letter-spacing:-.05em!important;
+          white-space:nowrap!important;
         }
 
         .fw-mobile-action-badge{
           position:absolute!important;
-          right:-6px!important;
-          top:-7px!important;
+          right:-7px!important;
+          top:-8px!important;
           min-width:17px!important;
           height:17px!important;
           padding:0 4px!important;
@@ -102,83 +116,42 @@
           font-size:9px!important;
           line-height:12px!important;
           font-weight:1000!important;
-          z-index:2!important;
+          z-index:3!important;
         }
 
         .fw-mobile-action-btn.show .fw-mobile-action-badge{
           display:grid!important;
         }
 
-        .header .fw-userbar{
-          flex:0 0 auto!important;
-          margin-left:0!important;
-        }
-
-        .header .fw-userbar .fw-login-pill{
-          min-width:42px!important;
-          width:42px!important;
-          height:42px!important;
-          padding:0!important;
-          justify-content:center!important;
-          overflow:hidden!important;
-        }
-
-        .header .fw-userbar [data-fw-current]{
+        /* 手机顶部太窄，原桌面回声/搭子按钮隐藏，统一用这条压缩栏显示 */
+        .header [data-fw-open-echo],
+        .header [data-fw-open-buddy],
+        .top-actions [data-fw-open-echo],
+        .top-actions [data-fw-open-buddy],
+        .header-actions [data-fw-open-echo],
+        .header-actions [data-fw-open-buddy],
+        .user-area [data-fw-open-echo],
+        .user-area [data-fw-open-buddy],
+        .auth-area [data-fw-open-echo],
+        .auth-area [data-fw-open-buddy],
+        .nav-actions [data-fw-open-echo],
+        .nav-actions [data-fw-open-buddy]{
           display:none!important;
         }
 
-        .header .fw-userbar .fw-avatar.mini,
-        .header .fw-userbar .fw-avatar.mini img{
-          width:30px!important;
-          height:30px!important;
-        }
-
-        .home-hero-clean > div:first-child{
-          width:100%!important;
-        }
-
-        .fw-mobile-quick-entry{
-          display:grid!important;
-          grid-template-columns:repeat(2,minmax(0,1fr))!important;
-          gap:12px!important;
-          width:100%!important;
-          margin-top:22px!important;
-          padding:18px!important;
-          border:1px solid rgba(217,121,121,.62)!important;
-          background:rgba(16,23,15,.28)!important;
-          backdrop-filter:blur(8px)!important;
-          -webkit-backdrop-filter:blur(8px)!important;
-        }
-
-        .fw-mobile-quick-card{
-          min-height:72px!important;
-          padding:14px 13px!important;
-          border:1px solid rgba(246,246,240,.22)!important;
-          background:rgba(250,250,245,.055)!important;
-          color:#fffdf7!important;
-          display:flex!important;
-          flex-direction:column!important;
-          justify-content:center!important;
-          gap:6px!important;
-        }
-
-        .fw-mobile-quick-card b{
-          font-size:16px!important;
-          line-height:1!important;
-          font-weight:1000!important;
-          letter-spacing:-.04em!important;
-        }
-
-        .fw-mobile-quick-card span{
-          font-size:11px!important;
-          line-height:1.35!important;
-          color:rgba(246,246,240,.68)!important;
-          font-weight:850!important;
-        }
-
-        .fw-mobile-quick-card:active,
-        .fw-mobile-action-btn:active{
-          transform:scale(.98)!important;
+        @media(max-width:390px){
+          .fw-mobile-compact-strip{
+            gap:7px!important;
+            width:calc(100% - 22px)!important;
+          }
+          .fw-mobile-right-actions{
+            flex-basis:102px!important;
+            width:102px!important;
+          }
+          .fw-mobile-page-link,
+          .fw-mobile-action-btn{
+            font-size:10px!important;
+          }
         }
       }
     `;
@@ -186,52 +159,39 @@
     document.head.appendChild(style);
   }
 
-  function ensureHeaderActions(){
-    $$('.header').forEach(function(header){
-      if(header.querySelector('.fw-mobile-header-actions')) return;
-
-      var wrap = document.createElement('div');
-      wrap.className = 'fw-mobile-header-actions';
-      wrap.innerHTML = `
-        <button type="button" class="fw-mobile-action-btn" data-fw-mobile-open="echo">回声<span class="fw-mobile-action-badge" data-fw-mobile-badge="echo"></span></button>
-        <button type="button" class="fw-mobile-action-btn" data-fw-mobile-open="buddy">搭子<span class="fw-mobile-action-badge" data-fw-mobile-badge="buddy"></span></button>
-      `;
-
-      var userbar = header.querySelector('.fw-userbar');
-      if(userbar){
-        header.insertBefore(wrap, userbar);
-        return;
-      }
-
-      header.appendChild(wrap);
-    });
+  function findHeader(){
+    return $('.header') || $('.site-header') || $('header');
   }
 
-  function ensureHomeQuickEntry(){
-    var hero = $('.home-hero-clean > div:first-child');
-    if(!hero || hero.querySelector('.fw-mobile-quick-entry')) return;
+  function ensureStrip(){
+    if($('#fw-mobile-compact-strip')) return;
 
-    var actions = hero.querySelector('.hero-actions');
-    var box = document.createElement('div');
-    box.className = 'fw-mobile-quick-entry';
-    box.innerHTML = `
-      <a class="fw-mobile-quick-card" href="rooms.html"><b>学术研讨</b><span>进房间实时发言</span></a>
-      <a class="fw-mobile-quick-card" href="archive.html"><b>废话档案</b><span>看每周荣誉榜</span></a>
-      <a class="fw-mobile-quick-card" href="rules.html"><b>入馆须知</b><span>先看边界和声明</span></a>
-      <a class="fw-mobile-quick-card" href="admin.html"><b>公开处刑</b><span>查看处理公告</span></a>
+    var header = findHeader();
+    if(!header || !header.parentNode) return;
+
+    var strip = document.createElement('div');
+    strip.id = 'fw-mobile-compact-strip';
+    strip.className = 'fw-mobile-compact-strip';
+    strip.innerHTML = `
+      <nav class="fw-mobile-page-links" aria-label="手机快捷导航">
+        <a class="fw-mobile-page-link" href="rooms.html">学术研讨</a>
+        <a class="fw-mobile-page-link" href="archive.html">废话档案</a>
+        <a class="fw-mobile-page-link" href="rules.html">入馆须知</a>
+        <a class="fw-mobile-page-link" href="admin.html">公开处刑</a>
+      </nav>
+      <div class="fw-mobile-right-actions">
+        <button type="button" class="fw-mobile-action-btn" data-fw-mobile-open="echo">回声<span class="fw-mobile-action-badge" data-fw-mobile-badge="echo"></span></button>
+        <button type="button" class="fw-mobile-action-btn" data-fw-mobile-open="buddy">搭子<span class="fw-mobile-action-badge" data-fw-mobile-badge="buddy"></span></button>
+      </div>
     `;
 
-    if(actions && actions.parentNode){
-      actions.insertAdjacentElement('afterend', box);
-    }else{
-      hero.appendChild(box);
-    }
+    header.insertAdjacentElement('afterend', strip);
   }
 
   function fireOriginal(kind){
     var selector = kind === 'buddy' ? '[data-fw-open-buddy]' : '[data-fw-open-echo]';
     var original = $$(selector).find(function(el){
-      return !el.closest('.fw-mobile-header-actions');
+      return !el.closest('#fw-mobile-compact-strip');
     });
 
     if(original){
@@ -239,14 +199,29 @@
       return;
     }
 
-    // 兜底：创建一个临时按钮，触发已有事件委托，不常驻页面，避免抢红点逻辑。
     var tmp = document.createElement('button');
     tmp.type = 'button';
     tmp.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
     tmp.setAttribute(kind === 'buddy' ? 'data-fw-open-buddy' : 'data-fw-open-echo', '1');
     document.body.appendChild(tmp);
     tmp.click();
-    setTimeout(function(){ tmp.remove(); }, 50);
+    setTimeout(function(){ tmp.remove(); }, 60);
+  }
+
+  function getOriginalBadgeCount(kind){
+    var selector = kind === 'buddy' ? '[data-fw-open-buddy]' : '[data-fw-open-echo]';
+    var el = $$(selector).find(function(x){ return !x.closest('#fw-mobile-compact-strip'); });
+    if(!el) return 0;
+
+    var badge = el.querySelector('.fw-top-badge, .fw-social-badge, [class*="badge"]');
+    var text = badge ? String(badge.textContent || '').trim() : '';
+
+    if(!text && el.classList && el.classList.contains('show')) text = '1';
+    if(!text) return 0;
+    if(text === '99+') return 99;
+
+    var n = parseInt(text, 10);
+    return isNaN(n) ? 1 : n;
   }
 
   function setBadge(kind, count){
@@ -254,8 +229,9 @@
     if(!btn) return;
 
     var badge = $('[data-fw-mobile-badge="' + kind + '"]', btn);
-    var n = Number(count || 0);
+    if(!badge) return;
 
+    var n = Number(count || 0);
     if(n > 0){
       badge.textContent = n > 99 ? '99+' : String(n);
       btn.classList.add('show');
@@ -265,48 +241,10 @@
     }
   }
 
-  function isEchoType(type){
-    return !['private_message','friend_request','friend_accept'].includes(String(type || ''));
-  }
-
-  async function refreshMobileBadges(){
-    if(window.innerWidth > 760) return;
-
-    var me = await getMe();
-    if(!me || !me.id){
-      setBadge('echo', 0);
-      setBadge('buddy', 0);
-      return;
-    }
-
-    try{
-      var notices = await window.fwDb.client
-        .from('notifications')
-        .select('id,type,is_read')
-        .eq('user_id', me.id)
-        .eq('is_read', false)
-        .limit(300);
-
-      if(notices.error) throw notices.error;
-
-      var rows = notices.data || [];
-      var echoCount = rows.filter(function(n){ return isEchoType(n.type); }).length;
-      var privateCount = rows.filter(function(n){ return n.type === 'private_message'; }).length;
-      var friendNoticeCount = rows.filter(function(n){ return n.type === 'friend_request' || n.type === 'friend_accept'; }).length;
-
-      var pending = await window.fwDb.client
-        .from('friendships')
-        .select('id', {count:'exact', head:true})
-        .eq('receiver_id', me.id)
-        .eq('status', 'pending');
-
-      var buddyCount = privateCount + Math.max(friendNoticeCount, pending.count || 0);
-
-      setBadge('echo', echoCount);
-      setBadge('buddy', buddyCount);
-    }catch(e){
-      console.warn('[FW mobile nav actions] badge refresh failed', e);
-    }
+  function syncBadgesFromOriginal(){
+    if(!isMobile()) return;
+    setBadge('echo', getOriginalBadgeCount('echo'));
+    setBadge('buddy', getOriginalBadgeCount('buddy'));
   }
 
   function bind(){
@@ -317,41 +255,38 @@
       e.preventDefault();
       e.stopPropagation();
       fireOriginal(btn.dataset.fwMobileOpen);
-
-      setTimeout(refreshMobileBadges, 800);
+      setTimeout(syncBadgesFromOriginal, 500);
     }, true);
 
-    document.addEventListener('visibilitychange', function(){
-      if(!document.hidden) refreshMobileBadges();
+    window.addEventListener('resize', function(){
+      ensureStrip();
+      setTimeout(syncBadgesFromOriginal, 100);
     });
 
-    window.addEventListener('resize', function(){
-      ensureHeaderActions();
-      ensureHomeQuickEntry();
-      refreshMobileBadges();
+    document.addEventListener('visibilitychange', function(){
+      if(!document.hidden) setTimeout(syncBadgesFromOriginal, 200);
     });
   }
 
   function boot(){
     injectStyle();
-    ensureHeaderActions();
-    ensureHomeQuickEntry();
+    ensureStrip();
     bind();
-    refreshMobileBadges();
+    syncBadgesFromOriginal();
 
     clearInterval(badgeTimer);
-    badgeTimer = setInterval(refreshMobileBadges, 12000);
+    badgeTimer = setInterval(syncBadgesFromOriginal, 5000);
 
+    var timer = 0;
     var observer = new MutationObserver(function(){
-      clearTimeout(window.__fwMobileNavActionsTimer);
-      window.__fwMobileNavActionsTimer = setTimeout(function(){
-        ensureHeaderActions();
-        ensureHomeQuickEntry();
-        refreshMobileBadges();
+      clearTimeout(timer);
+      timer = setTimeout(function(){
+        ensureStrip();
+        syncBadgesFromOriginal();
       }, 120);
     });
 
-    observer.observe(document.body, {childList:true, subtree:true});
+    observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
