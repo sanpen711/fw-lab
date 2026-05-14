@@ -41,11 +41,11 @@
           display:grid!important;
           grid-template-columns:repeat(4,minmax(0,1fr))!important;
           gap:5px!important;
-          border:1px solid rgba(223,118,118,.72)!important;
-          padding:5px!important;
-          background:rgba(8,12,8,.18)!important;
-          backdrop-filter:blur(8px)!important;
-          -webkit-backdrop-filter:blur(8px)!important;
+          border:0!important;
+          padding:0!important;
+          background:transparent!important;
+          backdrop-filter:none!important;
+          -webkit-backdrop-filter:none!important;
         }
 
         .fw-mobile-page-link{
@@ -77,11 +77,11 @@
           display:grid!important;
           grid-template-columns:1fr 1fr!important;
           gap:5px!important;
-          border:1px solid rgba(223,118,118,.72)!important;
-          padding:5px!important;
-          background:rgba(8,12,8,.18)!important;
-          backdrop-filter:blur(8px)!important;
-          -webkit-backdrop-filter:blur(8px)!important;
+          border:0!important;
+          padding:0!important;
+          background:transparent!important;
+          backdrop-filter:none!important;
+          -webkit-backdrop-filter:none!important;
         }
 
         .fw-mobile-action-btn{
