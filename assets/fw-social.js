@@ -583,7 +583,7 @@
     try{
       const {data:p, error} = await window.fwDb.client
         .from('profiles')
-        .select('id,nickname,avatar_url,lab_code,role,is_banned,created_at')
+        .select('id,nickname,avatar_url,lab_code,created_at')
         .eq('id', userId)
         .maybeSingle();
 
