@@ -211,3 +211,188 @@
 
   install();
 })();
+
+// F.w 研究所：学术研讨头像昵称 + 发言时间兜底补丁
+// 原因：房间模块旧查询包含 role 字段，普通用户读取可能被 RLS 拦截，导致头像昵称退回“研究员”。
+// 处理：不改房间核心发送逻辑，只在消息渲染后用安全字段补齐昵称、头像和时间。
+(function(){
+  if(window.__FW_ROOM_PROFILE_TIME_FIX__) return;
+  window.__FW_ROOM_PROFILE_TIME_FIX__ = true;
+
+  var timer = 0;
+  var lastSig = '';
+
+  function $(s){ return document.querySelector(s); }
+  function $$(s){ return Array.from(document.querySelectorAll(s)); }
+  function esc(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function waitDb(){
+    return new Promise(function(resolve){
+      if(window.fwDb && window.fwDb.enabled && window.fwDb.client){ resolve(true); return; }
+      var n = 0;
+      var t = setInterval(function(){
+        n += 1;
+        if(window.fwDb && window.fwDb.enabled && window.fwDb.client){ clearInterval(t); resolve(true); }
+        if(n > 120){ clearInterval(t); resolve(false); }
+      }, 100);
+    });
+  }
+
+  function fmtTime(v){
+    if(!v) return '';
+    var d = new Date(v);
+    if(isNaN(d.getTime())) return '';
+
+    var now = new Date();
+    var sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    var yest = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    var isYest = d.getFullYear() === yest.getFullYear() && d.getMonth() === yest.getMonth() && d.getDate() === yest.getDate();
+    var hm = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+
+    if(sameDay) return hm;
+    if(isYest) return '昨天 ' + hm;
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + hm;
+  }
+
+  function initials(name){
+    return String(name || 'FW').trim().slice(0,2).toUpperCase();
+  }
+
+  function avatarHtml(name, url){
+    if(url){
+      return '<img src="' + esc(url) + '" alt="' + esc(name) + '">';
+    }
+    return esc(initials(name));
+  }
+
+  function injectStyle(){
+    if($('#fw-room-profile-time-style')) return;
+    var style = document.createElement('style');
+    style.id = 'fw-room-profile-time-style';
+    style.textContent = `
+      .fw-msg-name{
+        display:flex!important;
+        align-items:center!important;
+        gap:8px!important;
+        flex-wrap:wrap!important;
+      }
+      .fw-msg.me .fw-msg-name{
+        justify-content:flex-end!important;
+      }
+      .fw-room-msg-time{
+        color:#8c8378!important;
+        font-size:11px!important;
+        font-weight:850!important;
+        letter-spacing:0!important;
+        opacity:.9!important;
+      }
+      .fw-msg.me .fw-room-msg-time{
+        color:rgba(255,255,255,.82)!important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  async function enhanceRoomMessages(){
+    var box = $('[data-room-messages]');
+    if(!box) return;
+    var items = $$('.fw-msg[data-message-id][data-user-id]', box);
+    if(!items.length) return;
+
+    var ids = items.map(function(el){ return Number(el.dataset.messageId); }).filter(Boolean);
+    var sig = ids.join(',') + '|' + items.length;
+    if(sig === lastSig && Date.now() - Number(box.dataset.fwRoomProfileTouched || 0) < 2500) return;
+    lastSig = sig;
+    box.dataset.fwRoomProfileTouched = String(Date.now());
+
+    if(!(await waitDb())) return;
+
+    try{
+      var msgRes = await window.fwDb.client
+        .from('chat_messages')
+        .select('id,user_id,created_at')
+        .in('id', ids);
+      if(msgRes.error) throw msgRes.error;
+
+      var msgMap = {};
+      var userIds = [];
+      (msgRes.data || []).forEach(function(r){
+        msgMap[String(r.id)] = r;
+        if(r.user_id && userIds.indexOf(r.user_id) < 0) userIds.push(r.user_id);
+      });
+
+      var profileMap = {};
+      if(userIds.length){
+        var profileRes = await window.fwDb.client
+          .from('profiles')
+          .select('id,nickname,avatar_url,lab_code')
+          .in('id', userIds);
+        if(!profileRes.error){
+          (profileRes.data || []).forEach(function(p){ profileMap[p.id] = p; });
+        }
+      }
+
+      var me = null;
+      try{ me = await window.fwDb.getCurrentUser(); }catch(e){}
+
+      items.forEach(function(el){
+        var msg = msgMap[String(el.dataset.messageId)] || {};
+        var uid = msg.user_id || el.dataset.userId;
+        var p = profileMap[uid] || {};
+        var isMe = me && uid === me.id;
+        var name = p.nickname || (isMe ? me.nickname : '研究员');
+        var url = p.avatar_url || (isMe ? me.avatar_url : '');
+        var time = fmtTime(msg.created_at);
+
+        var avatar = el.querySelector('.fw-avatar.room');
+        if(avatar){ avatar.innerHTML = avatarHtml(name, url); }
+
+        var nameEl = el.querySelector('.fw-msg-name');
+        if(nameEl){
+          var finalName = name + (isMe ? '（我）' : '');
+          if(nameEl.dataset.fwFinalName !== finalName){
+            nameEl.textContent = finalName;
+            nameEl.dataset.fwFinalName = finalName;
+          }
+
+          var timeEl = nameEl.querySelector('.fw-room-msg-time');
+          if(!timeEl){
+            timeEl = document.createElement('span');
+            timeEl.className = 'fw-room-msg-time';
+            nameEl.appendChild(timeEl);
+          }
+          timeEl.textContent = time;
+        }
+      });
+    }catch(e){
+      console.warn('[FW room profile time fix] failed', e);
+    }
+  }
+
+  function schedule(){
+    clearTimeout(timer);
+    timer = setTimeout(enhanceRoomMessages, 160);
+  }
+
+  function boot(){
+    injectStyle();
+    schedule();
+
+    var obs = new MutationObserver(schedule);
+    obs.observe(document.body, {childList:true, subtree:true});
+
+    document.addEventListener('click', function(e){
+      if(e.target.closest && (e.target.closest('[data-room]') || e.target.closest('[data-room-modal]'))){
+        setTimeout(schedule, 300);
+        setTimeout(schedule, 900);
+      }
+    }, true);
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
