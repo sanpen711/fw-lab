@@ -304,6 +304,7 @@ loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
 */
 loadJs("assets/fw-stable-core.js?v=stable-core-20260513-2");
 loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2");
+loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260514-1");
 
 loadJs("assets/fw-social.js?v=social-clean-private-chat-20260513-profile-1");
 loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
