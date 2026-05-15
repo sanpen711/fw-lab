@@ -1,11 +1,17 @@
-// F.w 研究所：手机端回声 / 搭子快捷按钮修复
-// 问题：手机压缩栏按钮只转点桌面按钮；搭子中心原 CSS 在手机端强制隐藏，所以看起来“点了没反应”。
+// F.w 研究所：手机端回声 / 搭子快捷按钮修复 v2
+// 只接管手机压缩栏按钮 [data-fw-mobile-open]，不碰电脑端按钮。
+// 修复重点：不再只点一次隐藏的桌面按钮；增加等待、重试、强制显示兜底。
 (function(){
-  if(window.__FW_MOBILE_SOCIAL_OPEN_FIX__) return;
-  window.__FW_MOBILE_SOCIAL_OPEN_FIX__ = true;
+  if(window.__FW_MOBILE_SOCIAL_OPEN_FIX_V2__) return;
+  window.__FW_MOBILE_SOCIAL_OPEN_FIX_V2__ = true;
 
   function $(s, root){ return (root || document).querySelector(s); }
   function $$(s, root){ return Array.from((root || document).querySelectorAll(s)); }
+
+  function isMobile(){
+    try{ return window.matchMedia && window.matchMedia('(max-width:760px)').matches; }
+    catch(e){ return window.innerWidth <= 760; }
+  }
 
   function toast(msg){
     var t = $('.fw-toast');
@@ -17,7 +23,7 @@
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(window.__fwMobileSocialToast);
-    window.__fwMobileSocialToast = setTimeout(function(){ t.classList.remove('show'); }, 2200);
+    window.__fwMobileSocialToast = setTimeout(function(){ t.classList.remove('show'); }, 2400);
   }
 
   function injectStyle(){
@@ -26,6 +32,30 @@
     style.id = 'fw-mobile-social-open-fix-style';
     style.textContent = `
       @media(max-width:760px){
+        .fw-stable-echo-modal.show,
+        [data-fw-stable-echo-modal].show{
+          display:flex!important;
+          position:fixed!important;
+          inset:0!important;
+          z-index:10220!important;
+          align-items:center!important;
+          justify-content:center!important;
+          padding:14px!important;
+          background:rgba(6,8,6,.74)!important;
+          pointer-events:auto!important;
+        }
+
+        .fw-stable-echo-modal.show .fw-stable-echo-panel,
+        [data-fw-stable-echo-modal].show .fw-stable-echo-panel{
+          position:relative!important;
+          width:100%!important;
+          height:86dvh!important;
+          max-height:86dvh!important;
+          right:auto!important;
+          top:auto!important;
+          min-height:0!important;
+        }
+
         .fw-wx-modal.show,
         [data-fw-wx-buddy-modal].show{
           display:flex!important;
@@ -61,29 +91,11 @@
           background:#fffdf7!important;
         }
 
-        .fw-wx-modal.show .fw-wx-head{
-          height:66px!important;
-          padding:14px 16px!important;
-          cursor:default!important;
-        }
+        .fw-wx-modal.show .fw-wx-head{height:66px!important;padding:14px 16px!important;cursor:default!important;}
         .fw-wx-modal.show .fw-wx-title small{font-size:10px!important;margin-bottom:4px!important;}
         .fw-wx-modal.show .fw-wx-title h2{font-size:26px!important;}
-
-        .fw-wx-modal.show .fw-wx-shell{
-          min-height:0!important;
-          display:grid!important;
-          grid-template-columns:1fr!important;
-          grid-template-rows:44% 56%!important;
-          overflow:hidden!important;
-        }
-        .fw-wx-modal.show .fw-wx-left{
-          min-height:0!important;
-          border-right:0!important;
-          border-bottom:1px solid rgba(28,28,24,.12)!important;
-          display:grid!important;
-          grid-template-rows:auto auto minmax(0,1fr)!important;
-          overflow:hidden!important;
-        }
+        .fw-wx-modal.show .fw-wx-shell{min-height:0!important;display:grid!important;grid-template-columns:1fr!important;grid-template-rows:44% 56%!important;overflow:hidden!important;}
+        .fw-wx-modal.show .fw-wx-left{min-height:0!important;border-right:0!important;border-bottom:1px solid rgba(28,28,24,.12)!important;display:grid!important;grid-template-rows:auto auto minmax(0,1fr)!important;overflow:hidden!important;}
         .fw-wx-modal.show .fw-wx-search{padding:10px!important;}
         .fw-wx-modal.show .fw-wx-search input{height:38px!important;font-size:13px!important;}
         .fw-wx-modal.show .fw-wx-search button{font-size:13px!important;}
@@ -94,13 +106,7 @@
         .fw-wx-modal.show .fw-wx-avatar{width:38px!important;height:38px!important;}
         .fw-wx-modal.show .fw-wx-name{font-size:13px!important;}
         .fw-wx-modal.show .fw-wx-sub{font-size:11px!important;}
-
-        .fw-wx-modal.show .fw-wx-right{
-          min-height:0!important;
-          display:grid!important;
-          grid-template-rows:54px minmax(0,1fr) auto!important;
-          overflow:hidden!important;
-        }
+        .fw-wx-modal.show .fw-wx-right{min-height:0!important;display:grid!important;grid-template-rows:54px minmax(0,1fr) auto!important;overflow:hidden!important;}
         .fw-wx-modal.show .fw-wx-chat-head{height:54px!important;padding:0 12px!important;}
         .fw-wx-modal.show .fw-wx-chat-head h3{font-size:17px!important;}
         .fw-wx-modal.show .fw-wx-chat-head span{font-size:10px!important;}
@@ -115,27 +121,90 @@
     document.head.appendChild(style);
   }
 
-  function openEcho(){
-    if(typeof window.fwOpenStableEcho === 'function'){
-      window.fwOpenStableEcho();
-      return;
-    }
-    var original = $$('[data-fw-open-echo]').find(function(el){ return !el.closest('#fw-mobile-compact-strip'); });
-    if(original){ original.click(); return; }
-    toast('回声功能还没加载完成，请稍后再点。');
+  function visibleEcho(){
+    var modal = $('[data-fw-stable-echo-modal], .fw-stable-echo-modal.show');
+    return !!(modal && modal.classList.contains('show'));
   }
 
-  function openBuddy(){
-    var original = $$('[data-fw-open-buddy]').find(function(el){ return !el.closest('#fw-mobile-compact-strip'); });
-    if(original){ original.click(); return; }
+  function visibleBuddy(){
+    var modal = $('[data-fw-wx-buddy-modal], .fw-wx-modal.show');
+    return !!(modal && modal.classList.contains('show'));
+  }
+
+  function findOriginal(kind){
+    var selector = kind === 'buddy' ? '[data-fw-open-buddy]' : '[data-fw-open-echo]';
+    return $$(selector).find(function(el){ return !el.closest('#fw-mobile-compact-strip'); });
+  }
+
+  function triggerOriginal(kind){
+    var original = findOriginal(kind);
+    if(original){
+      original.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}));
+      return true;
+    }
 
     var tmp = document.createElement('button');
     tmp.type = 'button';
-    tmp.setAttribute('data-fw-open-buddy', '1');
+    tmp.setAttribute(kind === 'buddy' ? 'data-fw-open-buddy' : 'data-fw-open-echo', '1');
     tmp.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;';
     document.body.appendChild(tmp);
-    tmp.click();
-    setTimeout(function(){ tmp.remove(); }, 120);
+    tmp.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}));
+    setTimeout(function(){ tmp.remove(); }, 180);
+    return true;
+  }
+
+  function forceShowEcho(){
+    var modal = $('[data-fw-stable-echo-modal], .fw-stable-echo-modal');
+    if(modal) modal.classList.add('show');
+  }
+
+  function forceShowBuddy(){
+    var modal = $('[data-fw-wx-buddy-modal], .fw-wx-modal');
+    if(modal) modal.classList.add('show');
+  }
+
+  function openEcho(){
+    if(typeof window.fwOpenStableEcho === 'function'){
+      window.fwOpenStableEcho();
+    }else{
+      triggerOriginal('echo');
+    }
+
+    var tries = 0;
+    var timer = setInterval(function(){
+      tries += 1;
+      if(visibleEcho()){
+        clearInterval(timer);
+        return;
+      }
+      if(typeof window.fwOpenStableEcho === 'function') window.fwOpenStableEcho();
+      else triggerOriginal('echo');
+      forceShowEcho();
+      if(tries >= 10){
+        clearInterval(timer);
+        if(!visibleEcho()) toast('回声功能还没加载完成，请稍后再点。');
+      }
+    }, 220);
+  }
+
+  function openBuddy(){
+    triggerOriginal('buddy');
+
+    var tries = 0;
+    var timer = setInterval(function(){
+      tries += 1;
+      if(visibleBuddy()){
+        clearInterval(timer);
+        forceShowBuddy();
+        return;
+      }
+      triggerOriginal('buddy');
+      forceShowBuddy();
+      if(tries >= 12){
+        clearInterval(timer);
+        if(!visibleBuddy()) toast('搭子功能还没加载完成，请稍后再点。');
+      }
+    }, 220);
   }
 
   function bind(){
@@ -148,6 +217,11 @@
       e.preventDefault();
       e.stopPropagation();
       if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+      if(!isMobile()){
+        triggerOriginal(kind);
+        return;
+      }
 
       if(kind === 'echo') openEcho();
       else openBuddy();
