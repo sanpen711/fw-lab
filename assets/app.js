@@ -49,7 +49,7 @@ function renderPost(post){
       </div>
       <p class="post-content">${escapeHtml(post.content)}</p>
       <div class="interactions">
-        <button data-action="resonance">共鸣 ${post.resonance || 0}</button>
+        <button data-action="resonance">点赞 ${post.resonance || 0}</button>
         <button data-action="comment-toggle">评论 ${(post.comments || []).length}</button>
         <button data-action="same">俺也一样 ${post.same || 0}</button>
         <button data-action="tissue">递纸巾 ${post.tissue || 0}</button>
@@ -237,8 +237,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const scripts = [
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
-    "assets/supabase-db.js?v=profile-fix-20260513-1",
-    "assets/supabase-live.js?v=auth-clean-20260510-7"
+    "assets/supabase-db.js?v=feed-visibility-20260515-2",
+    "assets/supabase-live.js?v=auth-live-20260515-1"
   ];
 
   function loadNext(i){
@@ -286,7 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
 loadJs("assets/fw-logout-home-fix.js?v=logout-home-fix-20260513-1");
 loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
 loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
-loadJs("assets/fw-login-submit-fix.js?v=login-submit-fix-20260513-3");
+loadJs("assets/fw-login-submit-fix.js?v=login-submit-fix-20260515-1");
 loadJs("assets/fw-register-disclaimer-link.js?v=register-disclaimer-link-20260513-1");
 loadJs("assets/fw-mobile-nav-actions.js?v=mobile-nav-actions-20260514-2");
 loadJs("assets/fw-room-stable-display-fix.js?v=room-stable-display-fix-20260514-1");
@@ -304,13 +304,13 @@ loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
 */
 loadJs("assets/fw-stable-core.js?v=stable-core-20260513-2");
 loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2");
-loadJs("assets/fw-mobile-social-open-fix.js?v=mobile-social-open-fix-20260514-1");
+loadJs("assets/fw-mobile-social-open-fix.js?v=mobile-social-open-fix-20260515-1");
 loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260514-3");
 loadJs("assets/fw-sticker-direct-render.js?v=sticker-direct-render-20260514-1");
 loadJs("assets/fw-chat-media-upload.js?v=chat-media-upload-20260514-1");
 loadJs("assets/fw-post-media-tools.js?v=post-media-tools-20260514-1");
-loadJs("assets/fw-post-render-stabilize.js?v=post-render-stabilize-20260514-1");
-loadJs("assets/fw-comment-reply-system.js?v=comment-reply-system-20260515-1");
+loadJs("assets/fw-post-render-stabilize.js?v=post-render-stabilize-20260515-1");
+loadJs("assets/fw-comment-reply-system.js?v=comment-reply-system-20260515-3");
 
 loadJs("assets/fw-social.js?v=social-clean-private-chat-20260513-profile-1");
 loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
