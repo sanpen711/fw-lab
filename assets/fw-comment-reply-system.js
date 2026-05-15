@@ -7,6 +7,7 @@
   var replyCtx = {};
   var dbPatched = false;
   var renderInstalled = false;
+  var remoteLoadedAfterPatch = false;
 
   function $(s, root){ return (root || document).querySelector(s); }
   function $$(s, root){ return Array.from((root || document).querySelectorAll(s)); }
@@ -111,7 +112,12 @@
   async function loadPostsPatched(){
     var client = window.fwDb.client;
     var posts = fail(
-      await client.from('posts').select('id,user_id,content,status_tag,created_at,profiles(nickname,avatar_url)').eq('is_deleted', false).order('created_at', {ascending:false}).limit(100),
+      await client
+        .from('posts')
+        .select('id,user_id,content,status_tag,created_at,profiles(nickname,avatar_url)')
+        .or('is_deleted.eq.false,is_deleted.is.null')
+        .order('created_at', {ascending:false})
+        .limit(100),
       '读取帖子失败'
     ) || [];
 
@@ -122,13 +128,18 @@
       .from('comments')
       .select('id,post_id,user_id,content,created_at,parent_comment_id,reply_to_user_id,profiles(nickname,avatar_url)')
       .in('post_id', ids)
-      .eq('is_deleted', false)
+      .or('is_deleted.eq.false,is_deleted.is.null')
       .order('created_at', {ascending:true});
 
     var comments;
     if(commentsRes.error && /parent_comment_id|reply_to_user_id|schema cache|column/i.test(String(commentsRes.error.message || ''))){
       comments = fail(
-        await client.from('comments').select('id,post_id,user_id,content,created_at,profiles(nickname,avatar_url)').in('post_id', ids).eq('is_deleted', false).order('created_at', {ascending:true}),
+        await client
+          .from('comments')
+          .select('id,post_id,user_id,content,created_at,profiles(nickname,avatar_url)')
+          .in('post_id', ids)
+          .or('is_deleted.eq.false,is_deleted.is.null')
+          .order('created_at', {ascending:true}),
         '读取评论失败'
       ) || [];
     }else{
@@ -232,7 +243,7 @@
       }catch(e){}
     }
 
-    var insertRow = {post_id:postId, user_id:u.id, content:content};
+    var insertRow = {post_id:postId, user_id:u.id, content:content, is_deleted:false};
     if(parentCommentId) insertRow.parent_comment_id = parentCommentId;
     if(replyToUserId) insertRow.reply_to_user_id = replyToUserId;
 
@@ -417,6 +428,13 @@
     }, true);
   }
 
+  async function reloadPostsAfterPatch(){
+    if(remoteLoadedAfterPatch) return;
+    if(!dbPatched || !window.fwDb || !window.fwDb.loadPosts) return;
+    remoteLoadedAfterPatch = true;
+    await reloadPosts();
+  }
+
   function boot(){
     injectStyle();
     bind();
@@ -426,6 +444,7 @@
       if(window.fwDb && window.fwDb.getCurrentUser){
         window.__fwLastUser = await getCurrentUser();
       }
+      reloadPostsAfterPatch().catch(function(){});
     }, 650);
     setTimeout(function(){ if(typeof window.renderFeeds === 'function') window.renderFeeds(); }, 1000);
   }
