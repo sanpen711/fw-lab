@@ -246,7 +246,7 @@
       await client
         .from('posts')
         .select('id,user_id,content,status_tag,created_at,profiles(nickname,avatar_url)')
-        .eq('is_deleted', false)
+        .or('is_deleted.eq.false,is_deleted.is.null')
         .order('created_at', {ascending:false})
         .limit(100),
       '读取帖子失败'
@@ -263,7 +263,7 @@
         .from('comments')
         .select('id,post_id,user_id,content,created_at,profiles(nickname,avatar_url)')
         .in('post_id', ids)
-        .eq('is_deleted', false)
+        .or('is_deleted.eq.false,is_deleted.is.null')
         .order('created_at', {ascending:true}),
       '读取评论失败'
     ) || [];
@@ -351,7 +351,8 @@
         .insert({
           user_id:u.id,
           content:String(content || '').trim(),
-          status_tag:status || '今日无效'
+          status_tag:status || '今日无效',
+          is_deleted:false
         })
         .select('id')
         .single(),
@@ -380,7 +381,8 @@
         .insert({
           post_id:postId,
           user_id:u.id,
-          content:String(content || '').trim()
+          content:String(content || '').trim(),
+          is_deleted:false
         })
         .select('id')
         .single(),
