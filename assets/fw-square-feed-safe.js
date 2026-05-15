@@ -1,15 +1,19 @@
-// F.w 研究所：精神广场稳定控制器
-// 目的：恢复精神广场远程帖子读取、发布、点赞/评论/俺也一样/递纸巾，并安全显示完整时间与媒体。
+// F.w 研究所：精神广场稳定控制器 v3
+// 只接管精神广场：远程帖子读取、发布、点赞、评论、俺也一样、递纸巾、完整时间、媒体展示。
+// 关键：使用 v3 独立开关，避免旧版 v1 先加载后阻止新版执行。
 (function(){
-  if(window.__FW_SQUARE_FEED_SAFE__) return;
+  if(window.__FW_SQUARE_FEED_SAFE_V3__) return;
+  window.__FW_SQUARE_FEED_SAFE_V3__ = true;
   window.__FW_SQUARE_FEED_SAFE__ = true;
 
-  var STORE_KEY = window.STORE_KEY || 'fw_lab_posts_v1';
+  var STORE_KEY = 'fw_lab_posts_v1';
   var lastLoadedAt = 0;
   var loading = false;
+  var bound = false;
 
   function $(s, root){ return (root || document).querySelector(s); }
   function $$(s, root){ return Array.from((root || document).querySelectorAll(s)); }
+  function hasFeed(){ return !!$('[data-feed]'); }
   function db(){ return window.fwDb; }
   function on(){ return !!(db() && db().enabled && db().client); }
 
@@ -32,14 +36,13 @@
     return Array.isArray(row && row.profiles) ? (row.profiles[0] || {}) : ((row && row.profiles) || {});
   }
 
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
   function exactTime(v){
     if(!v) return '';
     var d = new Date(v);
     if(isNaN(d.getTime())) return '';
-    var pad = function(n){ return n < 10 ? '0' + n : '' + n; };
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
-
   function relativeTime(v){
     if(!v) return '刚刚';
     var d = new Date(v);
@@ -52,7 +55,6 @@
     var days = Math.floor(h / 24);
     return days < 7 ? days + '天前' : exactTime(v).slice(5);
   }
-
   function showTime(createdAt, fallback){
     var ex = exactTime(createdAt);
     var rel = fallback || relativeTime(createdAt);
@@ -66,10 +68,7 @@
     return '<span class="fw-avatar ' + esc(cls) + '">' + esc(initials(name)) + '</span>';
   }
 
-  function decodeMarkerText(s){
-    try{ return atob(String(s || '')); }catch(e){ return ''; }
-  }
-
+  function decodeMarkerText(s){ try{ return atob(String(s || '')); }catch(e){ return ''; } }
   function markerAt(text, index){
     var specs = [
       ['[[FW_USER_STICKER:', 'sticker'],
@@ -88,7 +87,6 @@
     }
     return null;
   }
-
   function splitContent(text){
     text = String(text || '');
     var html = '';
@@ -113,22 +111,17 @@
     return {textHtml:html, mediaHtml:media.join('')};
   }
 
-  function localSave(posts){
-    try{ localStorage.setItem(STORE_KEY, JSON.stringify(posts || [])); }catch(e){}
-  }
-
-  function localGet(){
-    try{ return JSON.parse(localStorage.getItem(STORE_KEY) || '[]') || []; }catch(e){ return []; }
-  }
+  function localSave(posts){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(posts || [])); }catch(e){} }
+  function localGet(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY) || '[]') || []; }catch(e){ return []; } }
 
   async function safeSelectPosts(){
-    var base = db().client
+    var r = await db().client
       .from('posts')
       .select('id,user_id,content,status_tag,created_at,is_deleted,profiles(nickname,avatar_url)')
+      .or('is_deleted.eq.false,is_deleted.is.null')
       .order('created_at', {ascending:false})
       .limit(100);
 
-    var r = await base.or('is_deleted.eq.false,is_deleted.is.null');
     if(!r.error) return r.data || [];
 
     var msg = String(r.error.message || '');
@@ -176,7 +169,7 @@
   }
 
   async function loadRemotePosts(){
-    if(!on() || loading) return null;
+    if(!hasFeed() || !on() || loading) return null;
     loading = true;
     try{
       var posts = await safeSelectPosts();
@@ -329,21 +322,15 @@
 
   function appendPendingMedia(host){
     if(!host || !host.dataset.fwPendingMedia) return;
-    var input = host.matches('[data-post-form]') ? host.querySelector('textarea') : host.querySelector('.comment-box input, input');
+    var input = host.matches && host.matches('[data-post-form]') ? host.querySelector('textarea') : host.querySelector('.comment-box input, input');
     if(!input) return;
     var marker = host.dataset.fwPendingMedia;
     if(String(input.value || '').indexOf(marker) >= 0) return;
-    input.value = String(input.value || '').trim()
-      ? String(input.value || '').replace(/\s*$/, '') + '\n' + marker
-      : marker;
+    input.value = String(input.value || '').trim() ? String(input.value || '').replace(/\s*$/, '') + '\n' + marker : marker;
     input.dispatchEvent(new Event('input', {bubbles:true}));
   }
 
-  function openLogin(){
-    var opener = $('[data-fw-open], [data-login-cta]');
-    if(opener) opener.click();
-  }
-
+  function openLogin(){ var opener = $('[data-fw-open], [data-login-cta]'); if(opener) opener.click(); }
   function friendlyError(e){
     var msg = String(e && e.message || e || '操作失败。');
     if(/row-level security|permission|policy|denied/i.test(msg)) return '权限配置异常，请检查 Supabase RLS/SQL。';
@@ -351,108 +338,125 @@
     return msg;
   }
 
-  function bind(){
-    document.addEventListener('submit', async function(e){
-      var form = e.target.closest && e.target.closest('[data-post-form]');
-      if(!form || !on()) return;
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      try{
-        appendPendingMedia(form);
-        var u = await currentUser();
-        if(!u){ toast('请先登录再发布。'); openLogin(); return; }
-        var textarea = form.querySelector('textarea');
-        var content = String(textarea && textarea.value || '').trim();
-        if(!content){ if(textarea) textarea.focus(); return; }
-        var active = form.querySelector('.chip.active[data-status]');
-        var status = active && active.dataset.status || '今日无效';
-        await safeCreatePost(content, status);
-        if(textarea) textarea.value = '';
-        if(form.dataset){ delete form.dataset.fwPendingMedia; delete form.dataset.fwPendingKind; delete form.dataset.fwPendingUrl; }
-        var preview = form.querySelector('[data-fw-post-media-preview]');
+  async function submitHandler(e){
+    var form = e.target && e.target.closest && e.target.closest('[data-post-form]');
+    if(!form || !hasFeed() || !on()) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+    try{
+      appendPendingMedia(form);
+      var u = await currentUser();
+      if(!u){ toast('请先登录再发布。'); openLogin(); return; }
+      var textarea = form.querySelector('textarea');
+      var content = String(textarea && textarea.value || '').trim();
+      if(!content){ if(textarea) textarea.focus(); return; }
+      var active = form.querySelector('.chip.active[data-status]');
+      var status = active && active.dataset.status || '今日无效';
+      await safeCreatePost(content, status);
+      if(textarea) textarea.value = '';
+      if(form.dataset){ delete form.dataset.fwPendingMedia; delete form.dataset.fwPendingKind; delete form.dataset.fwPendingUrl; }
+      var preview = form.querySelector('[data-fw-post-media-preview]');
+      if(preview){ preview.classList.remove('show'); preview.innerHTML = ''; }
+      toast('已投递到研究所。');
+      await loadRemotePosts();
+    }catch(err){ toast(friendlyError(err)); }
+  }
+
+  async function clickHandler(e){
+    var btn = e.target && e.target.closest && e.target.closest('button[data-sb-action],button[data-action]');
+    if(!btn || !hasFeed() || !on()) return;
+    var card = btn.closest('.post-card');
+    if(!card) return;
+    var action = btn.dataset.sbAction || btn.dataset.action;
+    if(!/^(resonance|like|same|tissue|comment-toggle|comment-submit)$/.test(action || '')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+    try{
+      var u = await currentUser();
+      if(!u){ toast('请先登录再互动。'); openLogin(); return; }
+      var postId = card.dataset.id;
+      if(action === 'comment-toggle'){
+        var box = card.querySelector('.comment-box');
+        if(box) box.classList.toggle('show');
+        return;
+      }
+      if(action === 'comment-submit'){
+        var commentBox = btn.closest('.comment-box');
+        appendPendingMedia(commentBox);
+        var input = commentBox && commentBox.querySelector('input');
+        var content = String(input && input.value || '').trim();
+        if(!content){ if(input) input.focus(); return; }
+        await safeCreateComment(postId, content);
+        if(input) input.value = '';
+        if(commentBox && commentBox.dataset){ delete commentBox.dataset.fwPendingMedia; delete commentBox.dataset.fwPendingKind; delete commentBox.dataset.fwPendingUrl; }
+        var preview = commentBox && commentBox.querySelector('[data-fw-post-media-preview]');
         if(preview){ preview.classList.remove('show'); preview.innerHTML = ''; }
-        toast('已投递到研究所。');
+        toast('回声已发送。');
         await loadRemotePosts();
-      }catch(err){ toast(friendlyError(err)); }
-    }, true);
+        return;
+      }
+      var r = await safeReact(postId, action);
+      toast(r && r.already ? '你已经表达过了。' : '已收到。');
+      await loadRemotePosts();
+    }catch(err){ toast(friendlyError(err)); }
+  }
 
-    document.addEventListener('click', async function(e){
-      var btn = e.target.closest && e.target.closest('button[data-sb-action],button[data-action]');
-      if(!btn || !on()) return;
-      var card = btn.closest('.post-card');
-      if(!card) return;
-      var action = btn.dataset.sbAction || btn.dataset.action;
-      if(!/^(resonance|like|same|tissue|comment-toggle|comment-submit)$/.test(action || '')) return;
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      try{
-        var u = await currentUser();
-        if(!u){ toast('请先登录再互动。'); openLogin(); return; }
-        var postId = card.dataset.id;
-        if(action === 'comment-toggle'){
-          var box = card.querySelector('.comment-box');
-          if(box) box.classList.toggle('show');
-          return;
-        }
-        if(action === 'comment-submit'){
-          var commentBox = btn.closest('.comment-box');
-          appendPendingMedia(commentBox);
-          var input = commentBox && commentBox.querySelector('input');
-          var content = String(input && input.value || '').trim();
-          if(!content){ if(input) input.focus(); return; }
-          await safeCreateComment(postId, content);
-          if(input) input.value = '';
-          if(commentBox && commentBox.dataset){ delete commentBox.dataset.fwPendingMedia; delete commentBox.dataset.fwPendingKind; delete commentBox.dataset.fwPendingUrl; }
-          var preview = commentBox && commentBox.querySelector('[data-fw-post-media-preview]');
-          if(preview){ preview.classList.remove('show'); preview.innerHTML = ''; }
-          toast('回声已发送。');
-          await loadRemotePosts();
-          return;
-        }
-        var r = await safeReact(postId, action);
-        toast(r && r.already ? '你已经表达过了。' : '已收到。');
-        await loadRemotePosts();
-      }catch(err){ toast(friendlyError(err)); }
-    }, true);
+  function filterHandler(e){
+    var f = e.target && e.target.closest && e.target.closest('.chip.filter');
+    if(f) setTimeout(renderFeedsSafe, 0);
+  }
 
-    document.addEventListener('click', function(e){
-      var f = e.target.closest && e.target.closest('.chip.filter');
-      if(f) setTimeout(renderFeedsSafe, 0);
-    }, true);
+  function bind(){
+    if(bound) return;
+    bound = true;
+    // 用 window 捕获阶段抢在旧 document 监听之前，防止旧逻辑 Number(id) 或 stopImmediatePropagation 抢跑。
+    window.addEventListener('submit', submitHandler, true);
+    window.addEventListener('click', clickHandler, true);
+    window.addEventListener('click', filterHandler, true);
   }
 
   function injectStyle(){
-    if($('#fw-square-feed-safe-style')) return;
+    if($('#fw-square-feed-safe-style-v3')) return;
     var s = document.createElement('style');
-    s.id = 'fw-square-feed-safe-style';
-    s.textContent = '.fw-post-content-stable{white-space:pre-wrap}.post-top .time{font-size:12px;opacity:.86;text-align:right}.fw-post-media-list{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin:14px 0 0}.fw-post-stable-media{display:inline-block;max-width:300px;line-height:0}.fw-post-stable-media img{display:block;max-width:280px;max-height:340px;object-fit:contain;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:#fffdf7}.fw-post-stable-media video{display:block;max-width:300px;max-height:360px;border-radius:12px;background:#111}.fw-post-stable-sticker{display:inline-grid;place-items:center;max-width:150px;max-height:150px}.fw-post-stable-sticker img{display:block;max-width:144px;max-height:144px;object-fit:contain;border-radius:10px;background:transparent}.fw-square-comment{list-style:none;display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;margin:10px 0;align-items:start}.fw-square-comment-meta{font-size:12px;color:#9d4a4a;font-weight:950}.fw-square-comment-text{font-size:14px;font-weight:850;white-space:pre-wrap;word-break:break-word}.fw-comment-media-list{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 0}.fw-comment-media-list .fw-post-stable-media img{max-width:180px;max-height:220px}.fw-comment-media-list .fw-post-stable-sticker img{max-width:100px;max-height:100px}.fw-comment-empty{list-style:none;color:#77736b;font-weight:850;font-size:13px}@media(max-width:760px){.post-top .time{font-size:11px}.fw-post-stable-media img{max-width:220px;max-height:280px}.fw-post-stable-media video{max-width:230px;max-height:300px}.fw-post-media-list{margin-top:10px}}';
+    s.id = 'fw-square-feed-safe-style-v3';
+    s.textContent = '.fw-post-content-stable{white-space:pre-wrap}.post-top .time{font-size:12px;opacity:.86;text-align:right}.fw-post-media-list{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin:14px 0 0}.fw-post-stable-media{display:inline-block;max-width:300px;line-height:0}.fw-post-stable-media img{display:block;max-width:280px;max-height:340px;object-fit:contain;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:#fffdf7}.fw-post-stable-media video{display:block;max-width:300px;max-height:360px;border-radius:12px;background:#111}.fw-post-stable-sticker{display:inline-grid;place-items:center;max-width:150px;max-height:150px}.fw-post-stable-sticker img{display:block;max-width:144px;max-height:144px;object-fit:contain;border-radius:10px;background:transparent}.fw-square-comment{list-style:none;display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;margin:10px 0;align-items:start}.fw-square-comment-meta{font-size:12px;color:#9d4a4a;font-weight:950}.fw-square-comment-text{font-size:14px;font-weight:850;white-space:pre-wrap;word-break:break-word}.fw-comment-media-list{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 0}.fw-comment-media-list .fw-post-stable-media img{max-width:180px;max-height:220px}.fw-comment-media-list .fw-post-stable-sticker img{max-width:100px;max-height:100px}.fw-comment-empty{list-style:none;color:#77736b;font-weight:850;font-size:13px}.fw-square-safe-on [data-feed] .post-card .interactions button{pointer-events:auto!important}@media(max-width:760px){.post-top .time{font-size:11px}.fw-post-stable-media img{max-width:220px;max-height:280px}.fw-post-stable-media video{max-width:230px;max-height:300px}.fw-post-media-list{margin-top:10px}}';
     document.head.appendChild(s);
+  }
+
+  function takeover(){
+    if(!hasFeed()) return;
+    document.documentElement.classList.add('fw-square-safe-on');
+    window.renderPost = renderPostSafe;
+    window.renderFeeds = renderFeedsSafe;
   }
 
   function waitForDbAndLoad(){
     var n = 0;
     var timer = setInterval(function(){
       n += 1;
+      takeover();
       if(on()){
         clearInterval(timer);
-        loadRemotePosts().catch(function(e){ console.warn('[FW square feed] initial load failed', e); });
+        loadRemotePosts().catch(function(e){ console.warn('[FW square feed] initial load failed', e); toast('帖子读取失败：' + friendlyError(e)); });
       }
-      if(n > 120) clearInterval(timer);
+      if(n > 160) clearInterval(timer);
     }, 120);
   }
 
   function boot(){
     injectStyle();
-    window.renderPost = renderPostSafe;
-    window.renderFeeds = renderFeedsSafe;
     bind();
+    takeover();
     renderFeedsSafe();
     waitForDbAndLoad();
     setInterval(function(){
+      takeover();
       if(on() && Date.now() - lastLoadedAt > 12000){
         loadRemotePosts().catch(function(e){ console.warn('[FW square feed] periodic load failed', e); });
       }
-    }, 6000);
+    }, 1200);
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
