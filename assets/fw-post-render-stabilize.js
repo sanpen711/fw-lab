@@ -1,4 +1,5 @@
 // F.w 研究所：精神广场图文显示稳定补丁
+// 现在只负责媒体样式和旧 DOM 兜底；如果评论回复系统已启用，不再抢 renderPost。
 (function(){
   if(window.__FW_POST_RENDER_STABILIZE__) return;
   window.__FW_POST_RENDER_STABILIZE__ = true;
@@ -25,7 +26,7 @@
     var list = [
       ['[[FW_USER_STICKER:', 'sticker'],
       ['[[FW_MEDIA_IMAGE:', 'image'],
-      ['[[FW_MEDIA_VIDEO:', 'video']
+      ['[[FW_MEDIA_VIDEO:', 'video']]
     ];
     for(var i=0;i<list.length;i++){
       var prefix = list[i][0];
@@ -99,6 +100,7 @@
   }
 
   function install(){
+    if(window.__FW_COMMENT_REPLY_SYSTEM__) return;
     if(typeof window.renderPost === 'function' && window.renderPost !== stableRenderPost){
       window.renderPost = stableRenderPost;
       if(typeof window.renderFeeds === 'function') setTimeout(function(){ try{ window.renderFeeds(); }catch(e){} }, 40);
