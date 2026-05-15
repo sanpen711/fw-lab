@@ -307,6 +307,7 @@ loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260511-2");
 loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260514-3");
 loadJs("assets/fw-sticker-direct-render.js?v=sticker-direct-render-20260514-1");
 loadJs("assets/fw-chat-media-upload.js?v=chat-media-upload-20260514-1");
+loadJs("assets/fw-post-media-tools.js?v=post-media-tools-20260514-1");
 
 loadJs("assets/fw-social.js?v=social-clean-private-chat-20260513-profile-1");
 loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
