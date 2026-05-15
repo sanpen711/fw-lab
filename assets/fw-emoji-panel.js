@@ -1,29 +1,18 @@
-// F.w 研究所：默认 Emoji + F.w 低功耗表情包
-// 第一阶段：
+// F.w 研究所：默认 Emoji 面板
+// 当前版本：
 // 1. 学术研讨房间、搭子私聊增加表情按钮。
-// 2. 默认 Emoji 点击后插入输入框。
-// 3. F.w 表情点击后直接发送为特殊文本码，再在前端渲染成表情卡片。
-// 4. 不新增数据库表，不改现有消息结构，方便后续回滚和升级。
+// 2. 只保留默认小表情，去掉 F.w 表情包。
+// 3. 表情选用兼容性更高的常见 emoji，避免部分电脑/手机显示成方框。
+// 4. 不新增数据库表，不改现有消息结构。
 (function(){
   if(window.__FW_EMOJI_PANEL__) return;
   window.__FW_EMOJI_PANEL__ = true;
 
   var EMOJI_GROUPS = [
-    {name:'常用', items:['😂','😭','😅','😡','😴','😵‍💫']},
-    {name:'摸鱼', items:['🐟','🫠','🙃','🤔','👀','🫥']},
-    {name:'反应', items:['👍','👎','🤝','🙏','👏','🫶']},
-    {name:'研究所', items:['🧠','🧪','📉','🧻','☕','🛌']}
-  ];
-
-  var STICKERS = [
-    {id:'lowpower', icon:'📉', title:'低功耗', sub:'运行中'},
-    {id:'offline', icon:'🪑', title:'精神离岗', sub:'灵魂出走'},
-    {id:'invalid', icon:'📅', title:'今日无效', sub:'已盖章'},
-    {id:'fish', icon:'🐟', title:'摸鱼现场', sub:'装忙中'},
-    {id:'meeting', icon:'🗂️', title:'会议幸存', sub:'还活着'},
-    {id:'tissue', icon:'🧻', title:'递纸巾', sub:'撑住'},
-    {id:'crash', icon:'⚠️', title:'已宕机', sub:'ERROR'},
-    {id:'nowork', icon:'☕', title:'不想上班', sub:'放空'}
+    {name:'常用', items:['😂','😭','😅','😡','😴','😵']},
+    {name:'摸鱼', items:['🐟','😓','🙃','🤔','👀','😶']},
+    {name:'反应', items:['👍','👎','🤝','🙏','👏','❤️']},
+    {name:'研究所', items:['🧠','🔬','📉','🧻','☕','💤']}
   ];
 
   var activeInput = null;
@@ -37,33 +26,6 @@
     return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
-  }
-
-  function stickerCode(id){
-    return '[[FW_STICKER:' + id + ']]';
-  }
-
-  function stickerById(id){
-    return STICKERS.find(function(s){ return s.id === id; }) || null;
-  }
-
-  function parseStickerCode(text){
-    var m = String(text || '').trim().match(/^\[\[FW_STICKER:([a-z0-9_-]+)\]\]$/i);
-    if(!m) return null;
-    return stickerById(m[1]);
-  }
-
-  function toast(msg){
-    var t = $('.fw-toast');
-    if(!t){
-      t = document.createElement('div');
-      t.className = 'fw-toast';
-      document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(window.__fwEmojiToastTimer);
-    window.__fwEmojiToastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
   }
 
   function injectStyle(){
@@ -96,8 +58,8 @@
       .fw-emoji-panel{
         position:fixed;
         z-index:13020;
-        width:min(360px,calc(100vw - 24px));
-        max-height:min(430px,calc(100vh - 30px));
+        width:min(330px,calc(100vw - 24px));
+        max-height:min(390px,calc(100vh - 30px));
         overflow:hidden;
         display:none;
         background:#fffdf7;
@@ -146,38 +108,18 @@
         color:#1b1b18;
       }
 
-      .fw-emoji-tabs{
-        display:grid;
-        grid-template-columns:1fr 1fr;
-        gap:8px;
-        padding:10px 12px;
-        border-bottom:1px solid rgba(28,28,24,.08);
-      }
-
-      .fw-emoji-tab{
-        height:34px;
-        border-radius:999px;
-        border:1px solid rgba(28,28,24,.14);
-        background:#fffdf7;
-        color:#1b1b18;
-        font-weight:1000;
-        cursor:pointer;
-      }
-
-      .fw-emoji-tab.active{
-        background:#1b1b18;
-        color:#fffdf7;
-        border-color:#1b1b18;
-      }
-
       .fw-emoji-body{
-        max-height:310px;
+        max-height:320px;
         overflow:auto;
         padding:12px;
       }
 
       .fw-emoji-section{
         margin-bottom:12px;
+      }
+
+      .fw-emoji-section:last-child{
+        margin-bottom:0;
       }
 
       .fw-emoji-section-title{
@@ -202,117 +144,12 @@
         display:grid;
         place-items:center;
         cursor:pointer;
+        font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
       }
 
       .fw-emoji-item:hover{
         border-color:rgba(217,121,121,.5);
         background:#fff3ef;
-      }
-
-      .fw-sticker-grid{
-        display:grid;
-        grid-template-columns:1fr 1fr;
-        gap:10px;
-      }
-
-      .fw-sticker-pick{
-        min-height:76px;
-        border:1px solid rgba(28,28,24,.12);
-        background:linear-gradient(135deg,#1b1b18,#273426);
-        color:#fffdf7;
-        border-radius:18px;
-        padding:10px;
-        cursor:pointer;
-        display:grid;
-        grid-template-columns:36px 1fr;
-        gap:8px;
-        align-items:center;
-        text-align:left;
-      }
-
-      .fw-sticker-pick:hover{
-        border-color:rgba(217,121,121,.75);
-      }
-
-      .fw-sticker-pick-icon{
-        width:36px;
-        height:36px;
-        border-radius:50%;
-        display:grid;
-        place-items:center;
-        background:#fffdf7;
-        color:#1b1b18;
-        font-size:20px;
-        box-shadow:0 8px 20px rgba(0,0,0,.18);
-      }
-
-      .fw-sticker-pick strong{
-        display:block;
-        font-size:14px;
-        line-height:1.1;
-        font-weight:1000;
-        letter-spacing:-.04em;
-      }
-
-      .fw-sticker-pick span{
-        display:block;
-        margin-top:4px;
-        color:#e1a1a1;
-        font-size:11px;
-        font-weight:900;
-      }
-
-      .fw-fw-sticker{
-        display:inline-grid;
-        grid-template-columns:42px 1fr;
-        gap:10px;
-        align-items:center;
-        min-width:148px;
-        max-width:230px;
-        padding:12px 14px;
-        border-radius:18px;
-        background:linear-gradient(135deg,#171715,#283528);
-        color:#fffdf7;
-        border:1px solid rgba(217,121,121,.55);
-        box-shadow:0 12px 28px rgba(0,0,0,.18);
-        text-align:left;
-      }
-
-      .fw-fw-sticker-icon{
-        width:42px;
-        height:42px;
-        border-radius:999px;
-        display:grid;
-        place-items:center;
-        background:#fffdf7;
-        color:#1d1d1a;
-        font-size:23px;
-      }
-
-      .fw-fw-sticker-title{
-        display:block;
-        font-size:16px;
-        line-height:1.05;
-        font-weight:1000;
-        letter-spacing:-.05em;
-      }
-
-      .fw-fw-sticker-sub{
-        display:block;
-        margin-top:5px;
-        color:#e5a0a0;
-        font-size:11px;
-        font-weight:900;
-        letter-spacing:.02em;
-      }
-
-      .fw-bubble .fw-fw-sticker,
-      .fw-wx-pm-bubble .fw-fw-sticker{
-        margin:0;
-      }
-
-      .fw-wx-pm.me .fw-fw-sticker{
-        border-color:rgba(255,255,255,.42);
       }
 
       @media(max-width:760px){
@@ -323,9 +160,6 @@
         }
         .fw-emoji-grid{
           grid-template-columns:repeat(6,1fr);
-        }
-        .fw-sticker-grid{
-          grid-template-columns:1fr 1fr;
         }
       }
     `;
@@ -342,37 +176,19 @@
     panel.className = 'fw-emoji-panel';
     panel.innerHTML = `
       <div class="fw-emoji-head">
-        <div class="fw-emoji-title"><span>FW EMOJI</span><strong>表情</strong></div>
+        <div class="fw-emoji-title"><span>FW EMOJI</span><strong>小表情</strong></div>
         <button type="button" class="fw-emoji-close" data-fw-emoji-close>×</button>
-      </div>
-      <div class="fw-emoji-tabs">
-        <button type="button" class="fw-emoji-tab active" data-fw-emoji-tab="emoji">小表情</button>
-        <button type="button" class="fw-emoji-tab" data-fw-emoji-tab="sticker">F.w表情</button>
       </div>
       <div class="fw-emoji-body" data-fw-emoji-body></div>
     `;
     document.body.appendChild(panel);
-    renderPanelBody('emoji');
+    renderPanelBody();
     return panel;
   }
 
-  function renderPanelBody(tab){
+  function renderPanelBody(){
     var body = $('[data-fw-emoji-body]');
     if(!body) return;
-
-    $$('.fw-emoji-tab').forEach(function(btn){
-      btn.classList.toggle('active', btn.dataset.fwEmojiTab === tab);
-    });
-
-    if(tab === 'sticker'){
-      body.innerHTML = '<div class="fw-sticker-grid">' + STICKERS.map(function(s){
-        return '<button type="button" class="fw-sticker-pick" data-fw-sticker-send="' + esc(s.id) + '">'
-          + '<span class="fw-sticker-pick-icon">' + esc(s.icon) + '</span>'
-          + '<span><strong>' + esc(s.title) + '</strong><span>' + esc(s.sub) + '</span></span>'
-          + '</button>';
-      }).join('') + '</div>';
-      return;
-    }
 
     body.innerHTML = EMOJI_GROUPS.map(function(group){
       return '<section class="fw-emoji-section"><h4 class="fw-emoji-section-title">' + esc(group.name) + '</h4>'
@@ -401,7 +217,7 @@
     activeInput = input;
     activeForm = form;
     var panel = ensurePanel();
-    renderPanelBody('emoji');
+    renderPanelBody();
     panel.classList.add('show');
     panelOpen = true;
     requestAnimationFrame(function(){ positionPanel(trigger); });
@@ -424,20 +240,6 @@
     input.focus();
     try{ input.setSelectionRange(next, next); }catch(e){}
     input.dispatchEvent(new Event('input', {bubbles:true}));
-  }
-
-  function submitSticker(id){
-    if(!activeInput || !activeForm){
-      toast('先打开一个输入框。');
-      return;
-    }
-
-    activeInput.value = stickerCode(id);
-    activeInput.dispatchEvent(new Event('input', {bubbles:true}));
-    closePanel();
-
-    var ev = new Event('submit', {bubbles:true, cancelable:true});
-    activeForm.dispatchEvent(ev);
   }
 
   function enhanceForm(form, type){
@@ -464,23 +266,6 @@
     enhanceForm($('[data-fw-wx-compose]'), 'buddy');
   }
 
-  function stickerHtml(sticker){
-    return '<span class="fw-fw-sticker" title="' + esc(sticker.title) + '">'
-      + '<span class="fw-fw-sticker-icon">' + esc(sticker.icon) + '</span>'
-      + '<span><span class="fw-fw-sticker-title">' + esc(sticker.title) + '</span><span class="fw-fw-sticker-sub">' + esc(sticker.sub) + '</span></span>'
-      + '</span>';
-  }
-
-  function renderStickersInMessages(){
-    $$('.fw-bubble p, .fw-wx-pm-bubble').forEach(function(el){
-      if(el.dataset.fwStickerRendered === '1') return;
-      var sticker = parseStickerCode(el.textContent);
-      if(!sticker) return;
-      el.dataset.fwStickerRendered = '1';
-      el.innerHTML = stickerHtml(sticker);
-    });
-  }
-
   function bind(){
     document.addEventListener('click', function(e){
       var trigger = e.target.closest && e.target.closest('[data-fw-emoji-trigger]');
@@ -500,24 +285,10 @@
         return;
       }
 
-      var tab = e.target.closest && e.target.closest('[data-fw-emoji-tab]');
-      if(tab){
-        e.preventDefault();
-        renderPanelBody(tab.dataset.fwEmojiTab || 'emoji');
-        return;
-      }
-
       var emoji = e.target.closest && e.target.closest('[data-fw-emoji-insert]');
       if(emoji){
         e.preventDefault();
         insertAtCursor(activeInput, emoji.dataset.fwEmojiInsert || '');
-        return;
-      }
-
-      var sticker = e.target.closest && e.target.closest('[data-fw-sticker-send]');
-      if(sticker){
-        e.preventDefault();
-        submitSticker(sticker.dataset.fwStickerSend);
         return;
       }
 
@@ -531,7 +302,7 @@
     });
 
     window.addEventListener('resize', function(){
-      if(panelOpen && activeInput){
+      if(panelOpen){
         var trigger = $('[data-fw-emoji-trigger]');
         if(trigger) positionPanel(trigger);
       }
@@ -544,7 +315,6 @@
       clearTimeout(timer);
       timer = setTimeout(function(){
         enhanceForms();
-        renderStickersInMessages();
       }, 120);
     });
 
@@ -555,10 +325,8 @@
     injectStyle();
     ensurePanel();
     enhanceForms();
-    renderStickersInMessages();
     bind();
     observe();
-    setInterval(renderStickersInMessages, 1500);
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
