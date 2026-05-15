@@ -311,6 +311,7 @@ loadJs("assets/fw-chat-media-upload.js?v=chat-media-upload-20260514-1");
 loadJs("assets/fw-post-media-tools.js?v=post-media-tools-20260514-1");
 loadJs("assets/fw-post-render-stabilize.js?v=post-render-stabilize-20260515-1");
 loadJs("assets/fw-comment-reply-system.js?v=comment-reply-system-20260515-3");
+loadJs("assets/fw-square-feed-safe.js?v=square-feed-safe-20260515-1");
 
 loadJs("assets/fw-social.js?v=social-clean-private-chat-20260513-profile-1");
 loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
