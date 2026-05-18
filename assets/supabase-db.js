@@ -58,7 +58,7 @@
 
       p = Array.isArray(rows) ? (rows[0] || {}) : (rows || {});
     }catch(e){
-      // 兼容未执行公开处刑补丁的旧库：退回到最小资料读取。
+      // 兼容未执行公开处罚补丁的旧库：退回到最小资料读取。
       p = fail(
         await client
           .from('profiles')
@@ -267,7 +267,7 @@
     const comments = fail(
       await client
         .from('comments')
-        .select('id,post_id,user_id,content,created_at,profiles(nickname,avatar_url)')
+        .select('id,post_id,user_id,parent_comment_id,content,created_at,profiles(nickname,avatar_url)')
         .in('post_id', ids)
         .or('is_deleted.eq.false,is_deleted.is.null')
         .order('created_at', {ascending:true}),
@@ -292,6 +292,7 @@
       (cb[c.post_id] = cb[c.post_id] || []).push({
         id:c.id,
         userId:c.user_id,
+        parentCommentId:c.parent_comment_id || null,
         authorName:p.nickname || '匿名回声',
         authorAvatar:p.avatar_url || '',
         content:c.content,
@@ -377,7 +378,7 @@
     );
   }
 
-  async function createComment({postId, content}){
+  async function createComment({postId, content, parentCommentId}){
     const u = await getCurrentUser();
 
     if(!u){
@@ -398,6 +399,7 @@
         .insert({
           post_id:postId,
           user_id:u.id,
+          parent_comment_id:parentCommentId || null,
           content:String(content || '').trim(),
           is_deleted:false
         })
