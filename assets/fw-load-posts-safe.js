@@ -72,7 +72,7 @@
       var comments = await selectSafe(
         client
           .from('comments')
-          .select('id,post_id,user_id,content,created_at,is_deleted')
+          .select('id,post_id,user_id,parent_comment_id,content,created_at,is_deleted')
           .in('post_id', postIds)
           .or('is_deleted.eq.false,is_deleted.is.null')
           .order('created_at', {ascending:true})
@@ -103,6 +103,7 @@
         (commentMap[c.post_id] = commentMap[c.post_id] || []).push({
           id:c.id,
           userId:c.user_id,
+          parentCommentId:c.parent_comment_id || null,
           authorName:p.nickname || '匿名回声',
           authorAvatar:p.avatar_url || '',
           content:c.content || '',
