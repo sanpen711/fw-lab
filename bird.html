@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>观鸟台｜F.w 研究所</title>
+  <meta name="description" content="F.w 研究所观鸟台：匿名记录生活和职场里的奇异样本。" />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/auth.css" />
+  <style>
+    .bird-hero{min-height:430px}
+    .bird-hero .hero-inner{grid-template-columns:minmax(0,1fr) 380px;align-items:end}
+    .bird-hero .hero-title{font-size:clamp(62px,8vw,112px)}
+    .bird-hero .hero-copy{max-width:720px;font-size:22px}
+    .bird-motto{margin:0 0 16px;color:var(--accent);font-weight:950;letter-spacing:.08em}
+    .bird-rule-card{position:relative;z-index:2;background:rgba(24,34,21,.92);border:1px solid rgba(217,121,121,.46);padding:26px;color:var(--white)}
+    .bird-rule-card h2{margin:0 0 18px;font-size:28px;letter-spacing:-.05em}
+    .bird-rule-card ol{margin:0;padding-left:20px}
+    .bird-rule-card li{line-height:1.75;font-weight:760;color:rgba(246,246,240,.86)}
+    .bird-layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:34px;padding:54px 58px 76px}
+    .bird-main{display:grid;gap:24px}
+    .bird-compose{background:var(--card);border:1px solid var(--line);padding:28px;box-shadow:var(--shadow)}
+    .bird-compose-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+    .bird-compose small{display:block;color:var(--accent-dark);font-weight:950;letter-spacing:.12em;margin-bottom:10px}
+    .bird-compose h2{margin:0;font-size:34px;line-height:1;letter-spacing:-.06em}
+    .bird-compose textarea{min-height:210px}
+    .bird-field{margin-top:18px}
+    .bird-field label{display:block;margin-bottom:10px;color:var(--accent-dark);font-weight:950}
+    .bird-title-input{height:54px}
+    .bird-meta-grid{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end}
+    .bird-mode-row{display:flex;gap:8px;flex-wrap:wrap}
+    .bird-mode-row label{margin:0}
+    .bird-mode{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-soft);border-radius:999px;padding:9px 14px;font-weight:900;background:#fffdf7}
+    .bird-mode input{width:auto;height:auto;margin:0}
+    .bird-pen{display:none}
+    .bird-pen.show{display:block}
+    .bird-upload-box{border:1px dashed rgba(157,74,74,.4);background:#fffaf1;padding:16px;margin-top:18px}
+    .bird-upload-head{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .bird-upload-head strong{font-size:15px}
+    .bird-upload-head span{color:var(--muted);font-size:13px;font-weight:800}
+    .bird-upload-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+    .bird-file-input{display:none}
+    .bird-preview-grid,.bird-post-images{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+    .bird-preview{position:relative;aspect-ratio:1;background:#ebe6dc;overflow:hidden}
+    .bird-preview img,.bird-post-images img{width:100%;height:100%;object-fit:cover;display:block}
+    .bird-preview button{position:absolute;right:6px;top:6px;width:26px;height:26px;border:0;border-radius:999px;background:rgba(17,17,15,.78);color:#fff;font-weight:950}
+    .bird-actions{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:18px;flex-wrap:wrap}
+    .bird-notice{min-height:20px;margin:0;color:var(--accent-dark);font-weight:900}
+    .bird-feed-head{display:flex;justify-content:space-between;gap:16px;align-items:end;margin-top:8px}
+    .bird-feed-head h2{margin:0;font-size:38px;letter-spacing:-.06em}
+    .bird-feed-head span{color:var(--muted);font-weight:800}
+    .bird-feed{display:grid;gap:18px}
+    .bird-card{background:var(--card);border:1px solid var(--line);padding:24px}
+    .bird-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+    .bird-label{color:var(--accent-dark);font-size:13px;font-weight:950}
+    .bird-title{margin:8px 0 0;font-size:30px;line-height:1.16;letter-spacing:-.05em}
+    .bird-author{display:flex;align-items:center;gap:9px;margin-top:16px;color:var(--muted);font-weight:850}
+    .bird-avatar{width:30px;height:30px;border-radius:999px;display:inline-grid;place-items:center;overflow:hidden;background:var(--text);color:var(--white);font-size:12px;font-weight:950}
+    .bird-avatar img{width:100%;height:100%;object-fit:cover}
+    .bird-time{font-size:13px;color:var(--muted);font-weight:800;white-space:nowrap}
+    .bird-summary{margin:18px 0 0;font-size:17px;line-height:1.8;font-weight:760;white-space:pre-wrap}
+    .bird-expand{margin-top:10px;border:0;background:transparent;color:var(--accent-dark);font-weight:950;padding:0}
+    .bird-post-images a{position:relative;display:block;aspect-ratio:1;background:#ebe6dc;overflow:hidden}
+    .bird-more{display:grid!important;place-items:center;background:#1b1b18!important;color:#fff;font-weight:950}
+    .bird-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+    .bird-controls button{border:1px solid var(--line-soft);background:transparent;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:900}
+    .bird-controls .danger{margin-left:auto;border:0;color:var(--accent-dark)}
+    .bird-comments{display:none;margin-top:18px;border-top:1px solid var(--line-soft);padding-top:16px}
+    .bird-comments.show{display:block}
+    .bird-comment-list{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+    .bird-comment{display:grid;grid-template-columns:30px 1fr;gap:10px}
+    .bird-comment-body b{display:inline-block;margin-right:8px}
+    .bird-comment-body time{font-size:12px;color:var(--muted);font-weight:800}
+    .bird-comment-body p{margin:5px 0 0;line-height:1.7;white-space:pre-wrap}
+    .bird-comment-delete{margin-left:8px;border:0;background:transparent;color:var(--accent-dark);font-size:12px;font-weight:950}
+    .bird-comment-form{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:14px}
+    .bird-comment-form input{min-width:0}
+    .bird-side .side-card{margin-bottom:0}
+    .bird-empty{padding:28px;border:1px dashed var(--line-soft);background:var(--card);color:var(--muted);font-weight:850}
+    @media(max-width:980px){
+      .bird-hero .hero-inner,.bird-layout{grid-template-columns:1fr}
+      .bird-layout{padding:42px 24px 56px}
+      .bird-hero .hero-copy{font-size:18px}
+      .bird-meta-grid{grid-template-columns:1fr}
+      .bird-preview-grid,.bird-post-images{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .bird-comment-form{grid-template-columns:1fr}
+    }
+    @media(max-width:560px){
+      .bird-preview-grid,.bird-post-images{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .bird-top,.bird-feed-head,.bird-upload-head,.bird-actions{display:block}
+      .bird-time{display:block;margin-top:10px}
+      .bird-controls .danger{margin-left:0}
+    }
+  </style>
+</head>
+<body>
+
+<main class="page bg-gradient-clean">
+  <section class="page-hero bg-night bird-hero">
+    <header class="header dark">
+      <a class="logo" href="index.html">F.w 研究所</a>
+      <nav class="nav">
+        <a href="index.html">首页</a>
+        <a href="square.html">精神广场</a>
+        <a href="rooms.html">学术研讨</a>
+        <a class="active" href="bird.html">观鸟台</a>
+        <a href="archive.html">废话档案</a>
+        <a href="rules.html">入馆须知</a>
+      </nav>
+      <button class="menu-btn" aria-label="菜单">☰</button>
+    </header>
+    <nav class="mobile-nav">
+      <a href="index.html">首页</a>
+      <a href="square.html">精神广场</a>
+      <a href="rooms.html">学术研讨</a>
+      <a href="bird.html">观鸟台</a>
+      <a href="archive.html">废话档案</a>
+      <a href="rules.html">入馆须知</a>
+      <a href="admin.html">公开处刑</a>
+    </nav>
+
+    <div class="hero-inner">
+      <div>
+        <p class="bird-motto">BIRD WATCHING DECK</p>
+        <h1 class="hero-title">观鸟台</h1>
+        <p class="hero-copy">林子大了，什么鸟都有。</p>
+        <p class="hero-copy" style="margin-top:10px">这里收录生活和职场里的奇异样本。请匿名观察，文明记录，不要实名攻击。</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#bird-compose">发布观察记录</a>
+          <a class="btn light" href="#bird-feed">查看最新品种</a>
+        </div>
+      </div>
+      <aside class="bird-rule-card">
+        <h2>观鸟守则</h2>
+        <ol>
+          <li>不写真实姓名、手机号、身份证、住址、公司全称。</li>
+          <li>不上传他人清晰正脸、聊天记录隐私、工牌、车牌等可识别信息。</li>
+          <li>可以吐槽行为，不要煽动攻击个人。</li>
+          <li>内容仅代表发布者观察，不代表研究所结论。</li>
+          <li>站长可以隐藏不合适内容。</li>
+        </ol>
+      </aside>
+    </div>
+  </section>
+
+  <section class="bird-layout">
+    <div class="bird-main">
+      <form class="bird-compose" id="bird-compose" data-bird-form>
+        <div class="bird-compose-head">
+          <div>
+            <small>NEW SPECIMEN</small>
+            <h2>收录新的奇异样本</h2>
+          </div>
+        </div>
+
+        <div class="bird-field">
+          <label for="bird-title">这是什么品种？</label>
+          <input class="bird-title-input" id="bird-title" name="title" maxlength="80" placeholder="例如：一种开会三小时但没有任何结论的鸟" />
+        </div>
+
+        <div class="bird-field">
+          <label for="bird-content">观察记录</label>
+          <textarea id="bird-content" name="content" maxlength="5000" placeholder="请描述它的出没场景、行为特征、攻击方式和你的精神损耗。"></textarea>
+        </div>
+
+        <div class="bird-field bird-meta-grid">
+          <div>
+            <label>发布身份</label>
+            <div class="bird-mode-row" role="radiogroup" aria-label="发布身份">
+              <label class="bird-mode"><input type="radio" name="display_mode" value="profile" checked /> 使用当前昵称</label>
+              <label class="bird-mode"><input type="radio" name="display_mode" value="anonymous" /> 匿名观察员</label>
+              <label class="bird-mode"><input type="radio" name="display_mode" value="pen_name" /> 临时笔名</label>
+            </div>
+          </div>
+          <div class="bird-pen" data-bird-pen-wrap>
+            <label for="bird-pen-name">临时笔名</label>
+            <input id="bird-pen-name" name="pen_name" maxlength="20" placeholder="例如：路过的观察员" />
+          </div>
+        </div>
+
+        <div class="bird-upload-box">
+          <div class="bird-upload-head">
+            <strong>图片（可选）</strong>
+            <span>最多 20 张；发布时逐张压缩后上传。</span>
+          </div>
+          <div class="bird-upload-actions">
+            <label class="btn dark" for="bird-images">选择图片</label>
+            <input class="bird-file-input" id="bird-images" type="file" accept="image/*" multiple data-bird-file />
+            <span class="form-tip" data-bird-image-count>0 / 20</span>
+          </div>
+          <div class="bird-preview-grid" data-bird-preview-grid></div>
+        </div>
+
+        <div class="bird-actions">
+          <p class="bird-notice" data-bird-notice></p>
+          <button class="btn dark" type="submit">发布观察记录</button>
+        </div>
+      </form>
+
+      <div class="bird-feed-head" id="bird-feed">
+        <h2>最新品种</h2>
+        <span>长图文观察记录 / 第一版</span>
+      </div>
+      <div class="bird-feed" data-bird-feed>
+        <div class="bird-empty">正在打开观鸟镜...</div>
+      </div>
+    </div>
+
+    <aside class="bird-side">
+      <div class="side-card">
+        <h3>栏目说明</h3>
+        <p>这里看行为，不挂真人。可以写同事、甲方、亲戚、朋友、群聊和日常生活里的离谱样本，但请先去掉能把人锁定出来的信息。</p>
+      </div>
+    </aside>
+  </section>
+
+  <footer class="footer">
+    <span>F.w 研究所</span>
+    <span>观鸟台 / Bird Watching Deck</span>
+  </footer>
+</main>
+
+<script src="assets/app.js?v=site-final-tweaks-20260512-1"></script>
+<script src="assets/auth.js?v=site-final-tweaks-20260512-1"></script>
+<script src="assets/fw-bird.js?v=bird-zone-20260518-1"></script>
+</body>
+</html>
