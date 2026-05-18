@@ -1,8 +1,8 @@
-// F.w 研究所：干净版账号控制器 v6
+// F.w 研究所：干净版账号控制器 v7
 // 单一职责：注册、验证码、资料保存、登录、退出、右上角用户信息、发帖互动。
 (function(){
-  if(window.__FW_SUPABASE_AUTH_CLEAN_V6__) return;
-  window.__FW_SUPABASE_AUTH_CLEAN_V6__ = true;
+  if(window.__FW_SUPABASE_AUTH_CLEAN_V7__) return;
+  window.__FW_SUPABASE_AUTH_CLEAN_V7__ = true;
 
   const db = () => window.fwDb;
   const on = () => !!(db() && db().enabled && db().client);
@@ -263,8 +263,6 @@
             <label>头像</label>
             <input name="avatar" type="file" accept="image/*">
 
-            <label>修改密码 / 可选</label>
-            <input name="password" type="password" placeholder="不修改就留空" autocomplete="new-password">
 
             <button class="btn dark full" type="submit">保存资料</button>
             <button class="btn full" data-sb-logout type="button" style="margin-top:10px">退出登录</button>
@@ -294,7 +292,7 @@
       register1: ['注册账号', '第一步：填写注册信息。'],
       register2: ['注册账号', '第二步：验证邮箱，完成注册。'],
       reset: ['找回密码', '输入邮箱，接收找回密码邮件。'],
-      profile: ['个人资料', '修改昵称、实验品编号、头像或密码。']
+      profile: ['个人资料', '修改昵称、实验品编号和头像。修改密码稍后单独处理。']
     };
 
     const [title, desc] = map[view] || map.login;
@@ -810,37 +808,26 @@
 
     try{
       const fd = new FormData(form);
-
       const nick = String(fd.get('nickname') || '').trim();
       const avatarFile = fd.get('avatar');
-      const password = String(fd.get('password') || '').trim();
 
-      if(password){
-        if(password.length < 6){
-          throw new Error('密码至少 6 位。');
-        }
-
-        const r = await db().client.auth.updateUser({
-          password:password
-        });
-
-        if(r.error) throw r.error;
-      }
-
-      await db().updateProfile({
-        nickname:nick,
-        avatarFile:avatarFile && avatarFile.size ? avatarFile : null
-      });
+      await withTimeout(
+        db().updateProfile({
+          nickname:nick,
+          avatarFile:avatarFile && avatarFile.size ? avatarFile : null
+        }),
+        20000,
+        '资料保存超时，请稍后重试。'
+      );
 
       toast('资料已保存。');
+      await refreshUser();
 
-  await refreshUser();
+      const modalEl = $('[data-sb-auth]');
 
-const modalEl = $('[data-sb-auth]');
-
-if(modalEl){
-  modalEl.classList.remove('show');
-}
+      if(modalEl){
+        modalEl.classList.remove('show');
+      }
 
     }catch(e){
       toast(authMsg(e));
