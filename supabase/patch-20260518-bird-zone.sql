@@ -213,3 +213,6 @@ grant select on public.bird_posts to anon, authenticated;
 grant insert, update on public.bird_posts to authenticated;
 grant select on public.bird_comments to anon, authenticated;
 grant insert, update on public.bird_comments to authenticated;
+
+-- identity 自增主键需要序列权限；否则普通登录用户插入时可能报 permission denied for sequence。
+grant usage, select on all sequences in schema public to authenticated;
