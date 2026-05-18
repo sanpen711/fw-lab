@@ -74,11 +74,68 @@
     });
   }
 
+  var mediaUserCache = window.__FW_MEDIA_CURRENT_USER__ || null;
+  var mediaAuthCacheBound = false;
+  var mediaSessionRefreshRunning = false;
+
+  function setMediaUserCache(user){
+    var next = user && user.id ? {id:user.id, email:user.email || ''} : null;
+    if((mediaUserCache && mediaUserCache.id) !== (next && next.id)) stickerCache = null;
+    mediaUserCache = next;
+    if(mediaUserCache) window.__FW_MEDIA_CURRENT_USER__ = mediaUserCache;
+    else delete window.__FW_MEDIA_CURRENT_USER__;
+    return mediaUserCache;
+  }
+
+  function clearMediaUserCache(){
+    setMediaUserCache(null);
+    stickerCache = null;
+  }
+
+  function bindMediaAuthCache(){
+    if(mediaAuthCacheBound || !(window.fwDb && window.fwDb.client && window.fwDb.client.auth && window.fwDb.client.auth.onAuthStateChange)) return;
+    mediaAuthCacheBound = true;
+    window.fwDb.client.auth.onAuthStateChange(function(_, session){
+      var user = session && session.user;
+      if(user && user.id){
+        setMediaUserCache({id:user.id, email:user.email || ''});
+        return;
+      }
+      clearMediaUserCache();
+    });
+  }
+
+  function refreshMediaSessionInBackground(){
+    if(mediaSessionRefreshRunning || !(window.fwDb && window.fwDb.client && window.fwDb.client.auth && window.fwDb.client.auth.getSession)) return;
+    mediaSessionRefreshRunning = true;
+    Promise.resolve(window.fwDb.client.auth.getSession()).then(function(result){
+      var session = result && result.data && result.data.session;
+      var user = session && session.user;
+      if(user && user.id) setMediaUserCache({id:user.id, email:user.email || ''});
+      else clearMediaUserCache();
+    }).catch(function(){}).finally(function(){
+      mediaSessionRefreshRunning = false;
+    });
+  }
+
   async function getMe(){
     if(!(await waitDb())) throw new Error('账号系统还没加载完成，请刷新后重试。');
-    var user = await withTimeout(window.fwDb.getCurrentUser(), 8000, '账号状态读取超时，请刷新后重试。');
+    bindMediaAuthCache();
+    if(mediaUserCache && mediaUserCache.id){
+      refreshMediaSessionInBackground();
+      return mediaUserCache;
+    }
+    try{
+      var auth = window.fwDb.client && window.fwDb.client.auth;
+      var sessionResult = auth && auth.getSession ? await withTimeout(auth.getSession(), 5000, '账号状态读取超时，请刷新后重试。') : null;
+      var session = sessionResult && sessionResult.data && sessionResult.data.session;
+      var sessionUser = session && session.user;
+      if(sessionUser && sessionUser.id) return setMediaUserCache({id:sessionUser.id, email:sessionUser.email || ''});
+      clearMediaUserCache();
+    }catch(e){}
+    var user = await withTimeout(window.fwDb.getCurrentUser(), 15000, '账号状态读取超时，请刷新后重试。');
     if(!user || !user.id) throw new Error('请先登录。');
-    return user;
+    return setMediaUserCache({id:user.id, email:user.email || ''});
   }
 
   function friendlyError(e){
