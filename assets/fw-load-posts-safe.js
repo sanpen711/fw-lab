@@ -58,6 +58,14 @@
       var posts = postsResult.data || [];
       if(!posts.length) return [];
 
+      var meId = null;
+      try{
+        var sessionResult = await client.auth.getSession();
+        meId = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.user && sessionResult.data.session.user.id || null;
+      }catch(e){
+        console.warn('[FW safe posts] session query failed:', e && (e.message || e));
+      }
+
       var postIds = posts.map(function(p){ return p.id; });
       var userIds = uniq(posts.map(function(p){ return p.user_id; }));
 
@@ -99,17 +107,20 @@
           authorAvatar:p.avatar_url || '',
           content:c.content || '',
           time:timeText(c.created_at),
-          createdAt:c.created_at
+          createdAt:c.created_at,
+          canDelete:!!meId && c.user_id === meId
         });
       });
 
-      var counts = {};
+      var counts = {}, mine = {};
       reactions.forEach(function(r){
         var type = r.type === 'like' ? 'resonance' : r.type;
         counts[r.post_id] = counts[r.post_id] || {resonance:0, same:0, tissue:0};
+        mine[r.post_id] = mine[r.post_id] || {resonance:false, same:false, tissue:false};
         if(type === 'resonance') counts[r.post_id].resonance += 1;
         if(type === 'same') counts[r.post_id].same += 1;
         if(type === 'tissue') counts[r.post_id].tissue += 1;
+        if(meId && r.user_id === meId && (type === 'resonance' || type === 'same' || type === 'tissue')) mine[r.post_id][type] = true;
       });
 
       return posts.map(function(p){
@@ -128,7 +139,9 @@
           resonance:c.resonance,
           same:c.same,
           tissue:c.tissue,
-          comments:commentMap[p.id] || []
+          comments:commentMap[p.id] || [],
+          canDelete:!!meId && p.user_id === meId,
+          myReactions:mine[p.id] || {resonance:false, same:false, tissue:false}
         };
       });
     };
