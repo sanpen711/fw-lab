@@ -147,7 +147,16 @@ create policy "bird_comments_insert_user"
   on public.bird_comments
   for insert
   to authenticated
-  with check (auth.uid() = user_id and public.is_not_banned());
+  with check (
+    auth.uid() = user_id
+    and public.is_not_banned()
+    and exists (
+      select 1
+      from public.bird_posts p
+      where p.id = post_id
+        and p.is_deleted = false
+    )
+  );
 
 drop policy if exists "bird_comments_update_admin" on public.bird_comments;
 create policy "bird_comments_update_admin"
