@@ -12,5 +12,5 @@
     document.head.appendChild(script);
   }
 
-  load('assets/supabase-auth-clean.js?v=auth-clean-v7-square-20260515-1');
+  load('assets/supabase-auth-clean.js?v=auth-clean-v8-profile-save-20260518-1');
 })();
