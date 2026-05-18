@@ -246,7 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
     "assets/supabase-db.js?v=feed-visibility-20260518-2",
-    "assets/supabase-live.js?v=auth-live-20260515-2"
+    "assets/supabase-live.js?v=auth-live-20260518-profile-save-1"
   ];
 
   function loadNext(i){
