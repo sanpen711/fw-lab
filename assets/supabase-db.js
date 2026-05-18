@@ -242,6 +242,12 @@
   }
 
   async function loadPosts(){
+    let meId = null;
+
+    try{
+      meId = (await client.auth.getSession())?.data?.session?.user?.id || null;
+    }catch(e){}
+
     const posts = fail(
       await client
         .from('posts')
@@ -278,6 +284,7 @@
 
     const cb = {};
     const counts = {};
+    const mine = {};
 
     comments.forEach(c => {
       const p = profileOf(c);
@@ -288,20 +295,28 @@
         authorName:p.nickname || '匿名回声',
         authorAvatar:p.avatar_url || '',
         content:c.content,
-        time:timeText(c.created_at)
+        time:timeText(c.created_at),
+        canDelete:!!meId && c.user_id === meId
       });
     });
 
     reactions.forEach(r => {
+      const type = r.type === 'like' ? 'resonance' : r.type;
       counts[r.post_id] = counts[r.post_id] || {
         resonance:0,
         same:0,
         tissue:0
       };
+      mine[r.post_id] = mine[r.post_id] || {
+        resonance:false,
+        same:false,
+        tissue:false
+      };
 
-      if(r.type === 'like') counts[r.post_id].resonance++;
-      if(r.type === 'same') counts[r.post_id].same++;
-      if(r.type === 'tissue') counts[r.post_id].tissue++;
+      if(type === 'resonance') counts[r.post_id].resonance++;
+      if(type === 'same') counts[r.post_id].same++;
+      if(type === 'tissue') counts[r.post_id].tissue++;
+      if(meId && r.user_id === meId && (type === 'resonance' || type === 'same' || type === 'tissue')) mine[r.post_id][type] = true;
     });
 
     return posts.map(p => {
@@ -325,7 +340,9 @@
         resonance:c.resonance,
         same:c.same,
         tissue:c.tissue,
-        comments:cb[p.id] || []
+        comments:cb[p.id] || [],
+        canDelete:!!meId && p.user_id === meId,
+        myReactions:mine[p.id] || {resonance:false, same:false, tissue:false}
       };
     });
   }
@@ -387,6 +404,24 @@
         .select('id')
         .single(),
       '评论失败'
+    );
+  }
+
+  async function deleteOwnPost({postId}){
+    return fail(
+      await client.rpc('fw_delete_own_post', {
+        p_post_id:postId
+      }),
+      '删除帖子失败'
+    );
+  }
+
+  async function deleteOwnComment({commentId}){
+    return fail(
+      await client.rpc('fw_delete_own_comment', {
+        p_comment_id:commentId
+      }),
+      '删除评论失败'
     );
   }
 
@@ -495,6 +530,8 @@
     loadPosts,
     createPost,
     createComment,
+    deleteOwnPost,
+    deleteOwnComment,
     react,
     listUsers,
     deletePost,
