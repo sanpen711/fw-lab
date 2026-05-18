@@ -444,7 +444,7 @@
         <form class="fw-social-search" data-fw-user-search>
           <input name="q" autocomplete="off" placeholder="搜索实验品编号 / 昵称 / 完整邮箱" />
           <button type="submit">搜索搭子</button>
-          <p>邮箱只支持完整邮箱精准搜索；搜索结果不会显示邮箱。</p>
+          <p>邮箱只支持完整邮箱精确搜索；搜索结果不会显示邮箱。</p>
         </form>
         <div class="fw-search-results" data-fw-search-results></div>
       `;
@@ -877,6 +877,24 @@
   }
 
   function findUserIdFromClick(target){
+    if(!target) return '';
+
+    const squareFeed = target.closest('.feed-list[data-feed]');
+
+    if(squareFeed){
+      if(target.closest('textarea,input,button,a,select,.fw-square-reply-box,.comment-box,.fw-post-tools,.fw-comment-tools,.fw-square-delete,.fw-square-reply-action,[data-sq],[data-sb-action]')){
+        return '';
+      }
+
+      const squareProfile = target.closest('[data-fw-profile-open][data-user-id]');
+
+      if(squareProfile && squareProfile.dataset.userId){
+        return squareProfile.dataset.userId;
+      }
+
+      return '';
+    }
+
     const profile = target.closest('[data-fw-profile-user]');
 
     if(profile && profile.dataset.fwProfileUser){
