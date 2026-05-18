@@ -316,7 +316,7 @@ loadJs("assets/fw-mobile-social-open-fix.js?v=mobile-social-open-fix-20260515-1"
 loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260514-3");
 loadJs("assets/fw-sticker-direct-render.js?v=sticker-direct-render-20260514-1");
 loadJs("assets/fw-chat-media-upload.js?v=chat-media-upload-20260514-1");
-loadJs("assets/fw-post-media-tools.js?v=post-media-tools-20260518-3");
+loadJs("assets/fw-post-media-tools.js?v=post-media-tools-20260518-4");
 
 loadJs("assets/fw-social.js?v=social-clean-private-chat-20260518-profile-trigger-1");
 loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
