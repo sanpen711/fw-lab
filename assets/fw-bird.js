@@ -13,6 +13,8 @@
   var openComments = {};
   var expandedPosts = {};
   var feedCache = [];
+  var lastComposeTrigger = null;
+  var previousBodyPaddingRight = '';
 
   function $(s, root){ return (root || document).querySelector(s); }
   function $$(s, root){ return Array.from((root || document).querySelectorAll(s)); }
@@ -36,6 +38,32 @@
   function notice(msg){
     var n = $('[data-bird-notice]');
     if(n) n.textContent = msg || '';
+  }
+  function openComposeModal(trigger){
+    var modal = $('[data-bird-compose-modal]');
+    if(!modal) return;
+    lastComposeTrigger = trigger || document.activeElement || null;
+    previousBodyPaddingRight = document.body.style.paddingRight || '';
+    var scrollbarGap = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+    if(scrollbarGap) document.body.style.paddingRight = scrollbarGap + 'px';
+    document.body.classList.add('bird-modal-open');
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    setTimeout(function(){
+      var title = $('#bird-title', modal);
+      if(title) title.focus();
+    }, 0);
+  }
+  function closeComposeModal(){
+    var modal = $('[data-bird-compose-modal]');
+    if(!modal || !modal.classList.contains('show')) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('bird-modal-open');
+    document.body.style.paddingRight = previousBodyPaddingRight;
+    if(lastComposeTrigger && typeof lastComposeTrigger.focus === 'function'){
+      lastComposeTrigger.focus();
+    }
   }
   function pad(n){ return n < 10 ? '0' + n : String(n); }
   function relativeTime(v){
@@ -474,6 +502,7 @@
       clearPendingFiles();
       notice('观察记录已收录。');
       toast('观察记录已收录。');
+      closeComposeModal();
       await syncFeed();
     }catch(e){
       notice(e.message || '发布失败。');
@@ -545,6 +574,21 @@
       }
     });
     document.addEventListener('click', function(e){
+      var openCompose = e.target.closest('[data-bird-open-compose]');
+      if(openCompose){
+        e.preventDefault();
+        openComposeModal(openCompose);
+        return;
+      }
+      var closeCompose = e.target.closest('[data-bird-close-compose]');
+      if(closeCompose){
+        closeComposeModal();
+        return;
+      }
+      if(e.target.matches('[data-bird-compose-modal]')){
+        closeComposeModal();
+        return;
+      }
       var remove = e.target.closest('[data-bird-remove-image]');
       if(remove){
         var idx = Number(remove.dataset.birdRemoveImage);
@@ -589,12 +633,21 @@
         submitComment(commentForm);
       }
     });
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && $('[data-bird-compose-modal].show')){
+        closeComposeModal();
+      }
+    });
   }
   function boot(){
     exposeBirdDb();
     bind();
     updatePreview();
     syncFeed();
+    if(window.location.hash === '#bird-compose') openComposeModal();
+    window.addEventListener('hashchange', function(){
+      if(window.location.hash === '#bird-compose') openComposeModal();
+    });
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
