@@ -122,7 +122,7 @@
     if(error) throw error; state.rows.posts=data||[];
   }
   async function loadComments(){
-    const {data,error}=await db().from('comments').select('id,post_id,user_id,content,is_deleted,created_at,profiles(nickname,avatar_url),posts(content)').order('created_at',{ascending:false}).limit(120);
+    const {data,error}=await db().from('comments').select('id,post_id,user_id,content,is_deleted,created_at,profiles!comments_user_id_fkey(nickname,avatar_url),posts(content)').order('created_at',{ascending:false}).limit(120);
     if(error) throw error; state.rows.comments=data||[];
   }
   async function loadReports(){
