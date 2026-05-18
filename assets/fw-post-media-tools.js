@@ -403,7 +403,8 @@
 
   function getTextTargetFromHost(host){
     if(!host) return null;
-    return host.matches('[data-post-form]') ? host.querySelector('textarea') : host.querySelector('.comment-box input, input');
+    if(host.matches('[data-post-form]') || host.matches('.fw-square-reply-box')) return host.querySelector('textarea');
+    return host.querySelector('.comment-box input, input');
   }
 
   function insertAtCursor(input, text){
@@ -666,7 +667,7 @@
       var emoji = e.target.closest && e.target.closest('[data-fw-post-emoji]');
       if(emoji){
         e.preventDefault();
-        var host = emoji.closest('[data-post-form], .comment-box');
+        var host = emoji.closest('[data-post-form], .comment-box, .fw-square-reply-box');
         openEmoji(emoji, getTextTargetFromHost(host), host);
         return;
       }
@@ -674,7 +675,7 @@
       if(media){
         e.preventDefault();
         if(uploading){ toast('正在处理文件，请稍等。'); return; }
-        activeHost = media.closest('[data-post-form], .comment-box');
+        activeHost = media.closest('[data-post-form], .comment-box, .fw-square-reply-box');
         activeTarget = getTextTargetFromHost(activeHost);
         ensureFileInput().click();
         return;
@@ -682,7 +683,7 @@
       var remove = e.target.closest && e.target.closest('[data-fw-post-media-remove]');
       if(remove){
         e.preventDefault();
-        previewHost(remove.closest('[data-post-form], .comment-box'), '', '', '');
+        previewHost(remove.closest('[data-post-form], .comment-box, .fw-square-reply-box'), '', '', '');
         return;
       }
       var close = e.target.closest && e.target.closest('[data-fw-post-emoji-close]');
