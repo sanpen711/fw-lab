@@ -42,7 +42,14 @@ drop policy if exists "bird_reactions_select_public" on public.bird_reactions;
 create policy "bird_reactions_select_public"
   on public.bird_reactions
   for select
-  using (true);
+  using (
+    exists (
+      select 1
+      from public.bird_posts p
+      where p.id = post_id
+        and p.is_deleted = false
+    )
+  );
 
 drop policy if exists "bird_reactions_insert_own" on public.bird_reactions;
 create policy "bird_reactions_insert_own"

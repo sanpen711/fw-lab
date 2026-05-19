@@ -64,6 +64,8 @@
     .bird-more{display:grid!important;place-items:center;background:#1b1b18!important;color:#fff;font-weight:950}
     .bird-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
     .bird-controls button{border:1px solid var(--line-soft);background:transparent;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:900}
+    .bird-controls button.active{background:var(--text);color:var(--white);border-color:var(--text)}
+    .bird-controls button[disabled]{opacity:.62;cursor:not-allowed}
     .bird-controls .danger{margin-left:auto;border:0;color:var(--accent-dark)}
     .bird-comments{display:none;margin-top:18px;border-top:1px solid var(--line-soft);padding-top:16px}
     .bird-comments.show{display:block}
@@ -236,6 +238,6 @@
 
 <script src="assets/app.js?v=bird-zone-20260518-1"></script>
 <script src="assets/auth.js?v=site-final-tweaks-20260512-1"></script>
-<script src="assets/fw-bird.js?v=bird-zone-20260518-3"></script>
+<script src="assets/fw-bird.js?v=bird-zone-20260518-4"></script>
 </body>
 </html>

@@ -138,6 +138,27 @@
     return value.slice(0, 220) + '…';
   }
 
+  function emptyReactionStats(){
+    return {validCount:0, seenCount:0, tissueCount:0, myReactions:{valid:false, seen:false, tissue:false}};
+  }
+  function reactionLabel(type){
+    return {valid:'标本有效', seen:'我也见过', tissue:'递纸巾'}[type] || type;
+  }
+  function reactionCountKey(type){
+    return type === 'valid' ? 'validCount' : (type === 'seen' ? 'seenCount' : 'tissueCount');
+  }
+  function renderReactionButton(post, type, label, count){
+    var active = !!(post.myReactions && post.myReactions[type]);
+    return '<button type="button" data-bird-react="' + esc(type) + '" data-post-id="' + esc(post.id) + '" class="' + (active ? 'active' : '') + '" aria-pressed="' + (active ? 'true' : 'false') + '">' + esc(label) + ' ' + (count || 0) + '</button>';
+  }
+  function localPostById(id){
+    id = String(id);
+    for(var i = 0; i < feedCache.length; i += 1){
+      if(String(feedCache[i].id) === id) return feedCache[i];
+    }
+    return null;
+  }
+
   async function loadBirdPosts(){
     if(!(await waitDb())) throw new Error('数据库还没准备好。');
     var db = window.fwDb.client;
@@ -167,6 +188,29 @@
       .order('created_at', {ascending:true});
     if(commentsResult.error) throw new Error('读取观鸟评论失败：' + commentsResult.error.message);
     var comments = commentsResult.data || [];
+
+    var reactions = [];
+    var reactionResult = await db
+      .from('bird_reactions')
+      .select('post_id,user_id,type')
+      .in('post_id', postIds);
+    if(reactionResult.error){
+      var reactionMsg = String(reactionResult.error.message || '');
+      if(/bird_reactions|does not exist|schema cache|Could not find/i.test(reactionMsg)){
+        console.warn('bird_reactions table is not ready yet:', reactionResult.error);
+      }else{
+        throw new Error('读取观鸟台互动失败：' + reactionResult.error.message);
+      }
+    }else{
+      reactions = reactionResult.data || [];
+    }
+    var reactionStats = {};
+    reactions.forEach(function(r){
+      if(!r || !r.post_id || !/^(valid|seen|tissue)$/.test(String(r.type || ''))) return;
+      var stat = reactionStats[r.post_id] || (reactionStats[r.post_id] = emptyReactionStats());
+      stat[reactionCountKey(r.type)] += 1;
+      if(meId && r.user_id === meId) stat.myReactions[r.type] = true;
+    });
 
     var ids = uniq(
       posts
@@ -200,6 +244,7 @@
     return posts.map(function(p){
       var prof = profilesById[p.user_id] || {};
       var author = displayAuthor(p, prof);
+      var stat = reactionStats[p.id] || emptyReactionStats();
       return {
         id:p.id,
         userId:p.user_id,
@@ -214,6 +259,10 @@
         authorName:author.name,
         authorAvatar:author.avatar,
         comments:commentsByPost[p.id] || [],
+        validCount:stat.validCount || 0,
+        seenCount:stat.seenCount || 0,
+        tissueCount:stat.tissueCount || 0,
+        myReactions:stat.myReactions || {valid:false, seen:false, tissue:false},
         canDelete:!!meId && p.user_id === meId
       };
     });
@@ -272,6 +321,31 @@
     return result.data;
   }
 
+  async function createBirdReaction(payload){
+    var type = String(payload && payload.type || '');
+    if(!/^(valid|seen|tissue)$/.test(type)) throw new Error('未知的观鸟台互动类型。');
+    var user = payload.user || await currentUser();
+    if(!user) throw new Error('请先登录再互动。');
+    if(user.disabled) throw new Error('这个账号已被停用。');
+    if(user.muted_until && new Date(user.muted_until).getTime() > Date.now()) throw new Error('这个账号正在禁言中。');
+    var result = await window.fwDb.client
+      .from('bird_reactions')
+      .insert({
+        post_id:payload.postId,
+        user_id:user.id,
+        type:type
+      })
+      .select('id')
+      .single();
+    if(result.error){
+      if(result.error.code === '23505' || /duplicate|unique/i.test(String(result.error.message || ''))){
+        throw new Error('你已经标记过这个品种了。');
+      }
+      throw new Error('互动失败：' + result.error.message);
+    }
+    return result.data;
+  }
+
   async function exposeBirdDb(){
     if(!(await waitDb())) return;
     window.fwDb.loadBirdPosts = loadBirdPosts;
@@ -279,6 +353,7 @@
     window.fwDb.deleteOwnBirdPost = deleteOwnBirdPost;
     window.fwDb.createBirdComment = createBirdComment;
     window.fwDb.deleteOwnBirdComment = deleteOwnBirdComment;
+    window.fwDb.createBirdReaction = createBirdReaction;
   }
 
   function loadImage(file){
@@ -418,7 +493,7 @@
   function renderCard(post){
     var expanded = !!expandedPosts[String(post.id)];
     var toggle = String(post.content || '').length > 220
-      ? '<button type="button" class="bird-expand" data-bird-toggle-expand="' + esc(post.id) + '">' + (expanded ? '收起观察记录' : '展开观察记录') + '</button>'
+      ? '<button type="button" class="bird-expand" data-bird-toggle-expand="' + esc(post.id) + '">' + (expanded ? '收起观察记�y' : '展开观察记录') + '</button>'
       : '';
     var del = post.canDelete ? '<button type="button" class="danger" data-bird-delete-post="' + esc(post.id) + '">删除</button>' : '';
     return '<article class="bird-card" data-post-id="' + esc(post.id) + '">'
@@ -428,7 +503,11 @@
       + '<p class="bird-summary">' + esc(plainSummary(post.content, expanded)) + '</p>'
       + toggle
       + renderImages(post.images)
-      + '<div class="bird-controls"><button type="button" data-bird-toggle-comments="' + esc(post.id) + '">评论 ' + (post.comments || []).length + '</button>' + del + '</div>'
+      + '<div class="bird-controls">'
+      + renderReactionButton(post, 'valid', '标本有效', post.validCount)
+      + renderReactionButton(post, 'seen', '我也见过', post.seenCount)
+      + renderReactionButton(post, 'tissue', '递纸巾', post.tissueCount)
+      + '<button type="button" data-bird-toggle-comments="' + esc(post.id) + '">评论 ' + (post.comments || []).length + '</button>' + del + '</div>'
       + renderComments(post)
       + '</article>';
   }
@@ -543,6 +622,43 @@
       btn.textContent = old;
     }
   }
+  async function handleReaction(btn){
+    if(!btn || btn.dataset.birdReacting === '1') return;
+    var type = String(btn.dataset.birdReact || '');
+    var postId = String(btn.dataset.postId || '');
+    if(!/^(valid|seen|tissue)$/.test(type) || !postId) return;
+    var post = localPostById(postId);
+    if(post && post.myReactions && post.myReactions[type]){
+      toast('你已经标记过这个品种了。');
+      return;
+    }
+    btn.dataset.birdReacting = '1';
+    btn.disabled = true;
+    try{
+      var user = await currentUser();
+      if(!user){
+        toast('请先登录再互动。');
+        openLogin();
+        return;
+      }
+      await createBirdReaction({postId:postId, type:type, user:user});
+      if(post){
+        post.myReactions = post.myReactions || {valid:false, seen:false, tissue:false};
+        post.myReactions[type] = true;
+        var countKey = reactionCountKey(type);
+        post[countKey] = (post[countKey] || 0) + 1;
+        renderFeed();
+      }
+      toast('已标记：' + reactionLabel(type) + '。');
+      await syncFeed();
+    }catch(e){
+      toast(e.message || '互动失败。', 3200);
+      if(/已经标记过/.test(String(e.message || ''))) await syncFeed();
+    }finally{
+      delete btn.dataset.birdReacting;
+      btn.disabled = false;
+    }
+  }
   async function deletePost(id){
     if(!window.confirm('确定删除这条观察记录吗？')) return;
     try{
@@ -596,6 +712,12 @@
         if(item){ try{ URL.revokeObjectURL(item.url); }catch(err){} }
         pendingFiles.splice(idx, 1);
         updatePreview();
+        return;
+      }
+      var reaction = e.target.closest('[data-bird-react]');
+      if(reaction){
+        e.preventDefault();
+        handleReaction(reaction);
         return;
       }
       var comments = e.target.closest('[data-bird-toggle-comments]');
