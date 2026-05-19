@@ -13,6 +13,8 @@
   var openComments = {};
   var expandedPosts = {};
   var feedCache = [];
+  var detailPostId = null;
+  var detailFocusComments = false;
   var lastComposeTrigger = null;
   var previousBodyPaddingRight = '';
 
@@ -464,6 +466,25 @@
     updatePreview();
   }
 
+  function imageList(images){
+    return Array.isArray(images) ? images.filter(function(x){ return x && x.url; }) : [];
+  }
+  function renderCover(post){
+    var images = imageList(post.images);
+    var badge = images.length > 1 ? '<span class="bird-cover-badge">共 ' + images.length + ' 张图</span>' : '';
+    if(images.length){
+      return '<div class="bird-cover"><img src="' + esc(images[0].url) + '" alt="观察图片">' + badge + '</div>';
+    }
+    return '<div class="bird-cover bird-cover-empty"><span>暂无观察图</span></div>';
+  }
+  function renderDetailImages(images){
+    images = imageList(images);
+    if(!images.length) return '';
+    var html = images.map(function(img){
+      return '<a href="' + esc(img.url) + '" target="_blank" rel="noopener"><img src="' + esc(img.url) + '" alt="观察图片"></a>';
+    }).join('');
+    return '<div class="bird-detail-images">' + html + '</div>';
+  }
   function renderImages(images){
     images = Array.isArray(images) ? images.filter(function(x){ return x && x.url; }) : [];
     if(!images.length) return '';
@@ -476,7 +497,7 @@
     }).join('');
     return '<div class="bird-post-images">' + html + '</div>';
   }
-  function renderComments(post){
+  function renderComments(post, forceShow){
     var items = (post.comments || []).map(function(c){
       var del = c.canDelete ? '<button type="button" class="bird-comment-delete" data-bird-delete-comment="' + esc(c.id) + '">删除</button>' : '';
       return '<li class="bird-comment" data-comment-id="' + esc(c.id) + '">'
@@ -484,36 +505,99 @@
         + '<div class="bird-comment-body"><b>' + esc(c.authorName) + '</b><time>' + esc(c.time) + '</time>' + del
         + '<p>' + esc(c.content) + '</p></div></li>';
     }).join('');
-    return '<div class="bird-comments ' + (openComments[String(post.id)] ? 'show' : '') + '">'
+    return '<div class="bird-comments ' + (forceShow || openComments[String(post.id)] ? 'show' : '') + '" data-bird-comments-section>'
       + '<ul class="bird-comment-list">' + (items || '<li class="bird-empty">还没有评论，可以先留一句。</li>') + '</ul>'
       + '<form class="bird-comment-form" data-bird-comment-form data-post-id="' + esc(post.id) + '">'
       + '<input maxlength="' + MAX_COMMENT + '" placeholder="留一句观察补充，最多 500 字" />'
       + '<button class="btn dark" type="submit">发送评论</button></form></div>';
   }
-  function renderCard(post){
-    var expanded = !!expandedPosts[String(post.id)];
-    var toggle = String(post.content || '').length > 220
-      ? '<button type="button" class="bird-expand" data-bird-toggle-expand="' + esc(post.id) + '">' + (expanded ? '收起观察记录' : '展开观察记录') + '</button>'
-      : '';
+  function renderControls(post){
     var del = post.canDelete ? '<button type="button" class="danger" data-bird-delete-post="' + esc(post.id) + '">删除</button>' : '';
-    return '<article class="bird-card" data-post-id="' + esc(post.id) + '">'
-      + '<div class="bird-top"><div><div class="bird-label">这是什么品种：</div><h3 class="bird-title">' + esc(post.title) + '</h3></div>'
-      + '<span class="bird-time">' + esc(post.time + (post.exactTime ? ' · ' + post.exactTime : '')) + '</span></div>'
-      + '<div class="bird-author">' + avatarHtml(post.authorName, post.authorAvatar) + '<span>' + esc(post.authorName) + '</span></div>'
-      + '<p class="bird-summary">' + esc(plainSummary(post.content, expanded)) + '</p>'
-      + toggle
-      + renderImages(post.images)
-      + '<div class="bird-controls">'
+    return '<div class="bird-controls">'
       + renderReactionButton(post, 'valid', '标本有效', post.validCount)
       + renderReactionButton(post, 'seen', '我也见过', post.seenCount)
       + renderReactionButton(post, 'tissue', '递纸巾', post.tissueCount)
-      + '<button type="button" data-bird-toggle-comments="' + esc(post.id) + '">评论 ' + (post.comments || []).length + '</button>' + del + '</div>'
-      + renderComments(post)
+      + '<button type="button" data-bird-toggle-comments="' + esc(post.id) + '">评论 ' + (post.comments || []).length + '</button>' + del + '</div>';
+  }
+  function renderCompactCard(post){
+    return '<article class="bird-card bird-card-compact" data-post-id="' + esc(post.id) + '" data-bird-open-detail="' + esc(post.id) + '" role="button" tabindex="0" aria-label="查看完整观察记录">'
+      + renderCover(post)
+      + '<div class="bird-card-info">'
+      + '<h3 class="bird-card-title">' + esc(post.title) + '</h3>'
+      + '<div class="bird-card-meta">' + avatarHtml(post.authorName, post.authorAvatar) + '<span>' + esc(post.authorName) + '</span></div>'
+      + '<div class="bird-card-time">' + esc(post.time + (post.exactTime ? ' · ' + post.exactTime : '')) + '</div>'
+      + '</div>'
       + '</article>';
+  }
+  function renderCard(post){ return renderCompactCard(post); }
+  function ensureDetailModal(){
+    var modal = $('[data-bird-detail-modal]');
+    if(modal) return modal;
+    modal = document.createElement('div');
+    modal.className = 'bird-detail-modal';
+    modal.setAttribute('data-bird-detail-modal', '');
+    modal.setAttribute('aria-hidden', 'true');
+    modal.innerHTML = '<div class="bird-detail-dialog" data-bird-detail-dialog role="dialog" aria-modal="true" aria-label="完整观察记录">'
+      + '<button type="button" class="bird-detail-close" data-bird-detail-close aria-label="关闭完整观察记录">×</button>'
+      + '<div class="bird-detail-body" data-bird-detail-body></div></div>';
+    document.body.appendChild(modal);
+    return modal;
+  }
+  function renderBirdDetail(post, options){
+    var modal = ensureDetailModal();
+    var body = $('[data-bird-detail-body]', modal);
+    if(!body || !post) return;
+    body.innerHTML = '<article class="bird-detail-card" data-post-id="' + esc(post.id) + '">'
+      + '<div class="bird-top"><div><div class="bird-label">这是什么品种：</div><h2 class="bird-detail-title">' + esc(post.title) + '</h2></div>'
+      + '<span class="bird-time">' + esc(post.time + (post.exactTime ? ' · ' + post.exactTime : '')) + '</span></div>'
+      + '<div class="bird-author">' + avatarHtml(post.authorName, post.authorAvatar) + '<span>' + esc(post.authorName) + '</span></div>'
+      + '<p class="bird-detail-content">' + esc(post.content || '') + '</p>'
+      + renderDetailImages(post.images)
+      + renderControls(post)
+      + renderComments(post, true)
+      + '</article>';
+    if(options && options.comments){
+      setTimeout(function(){
+        var section = $('[data-bird-comments-section]', modal);
+        if(section) section.scrollIntoView({block:'start', behavior:'smooth'});
+        var input = $('.bird-comment-form input', modal);
+        if(input) input.focus();
+      }, 60);
+    }
+  }
+  function openBirdDetail(postId, options){
+    var post = localPostById(postId);
+    if(!post) return;
+    detailPostId = String(postId);
+    detailFocusComments = !!(options && options.comments);
+    renderBirdDetail(post, options);
+    var modal = ensureDetailModal();
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('bird-detail-open');
+  }
+  function closeBirdDetail(){
+    var modal = $('[data-bird-detail-modal]');
+    if(!modal) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('bird-detail-open');
+    detailPostId = null;
+    detailFocusComments = false;
+  }
+  function refreshOpenDetail(options){
+    if(!detailPostId) return;
+    var post = localPostById(detailPostId);
+    if(!post){
+      closeBirdDetail();
+      return;
+    }
+    renderBirdDetail(post, options || {comments:detailFocusComments});
   }
   function renderFeed(){
     var box = $('[data-bird-feed]');
     if(!box) return;
+    box.classList.add('bird-card-grid');
     box.innerHTML = feedCache.length
       ? feedCache.map(renderCard).join('')
       : '<div class="bird-empty">还没有收录新的品种。你可以先放下一条观察记录。</div>';
@@ -522,6 +606,7 @@
     try{
       feedCache = await loadBirdPosts();
       renderFeed();
+      refreshOpenDetail();
     }catch(e){
       var box = $('[data-bird-feed]');
       if(box) box.innerHTML = '<div class="bird-empty">' + esc(e.message || '读取失败。') + '</div>';
@@ -616,6 +701,7 @@
       openComments[String(form.dataset.postId)] = true;
       toast('评论已发送。');
       await syncFeed();
+      if(detailPostId === String(form.dataset.postId)) refreshOpenDetail({comments:true});
     }catch(e){
       toast(e.message || '评论失败。', 3200);
     }finally{
@@ -649,9 +735,11 @@
         var countKey = reactionCountKey(type);
         post[countKey] = (post[countKey] || 0) + 1;
         renderFeed();
+        refreshOpenDetail();
       }
       toast('已标记：' + reactionLabel(type) + '。');
       await syncFeed();
+      refreshOpenDetail();
     }catch(e){
       toast(e.message || '互动失败。', 3200);
       if(/已经标记过/.test(String(e.message || ''))) await syncFeed();
@@ -665,6 +753,7 @@
     try{
       await deleteOwnBirdPost({postId:id});
       toast('观察记录已删除。');
+      if(detailPostId === String(id)) closeBirdDetail();
       await syncFeed();
     }catch(e){
       toast(e.message || '删除失败。', 3200);
@@ -676,6 +765,7 @@
       await deleteOwnBirdComment({commentId:id});
       toast('评论已删除。');
       await syncFeed();
+      refreshOpenDetail({comments:true});
     }catch(e){
       toast(e.message || '删除失败。', 3200);
     }
@@ -706,6 +796,21 @@
         closeComposeModal();
         return;
       }
+      if(e.target.matches('[data-bird-detail-modal]')){
+        closeBirdDetail();
+        return;
+      }
+      var closeDetail = e.target.closest('[data-bird-detail-close]');
+      if(closeDetail){
+        closeBirdDetail();
+        return;
+      }
+      var openDetail = e.target.closest('[data-bird-open-detail]');
+      if(openDetail){
+        e.preventDefault();
+        openBirdDetail(openDetail.dataset.birdOpenDetail);
+        return;
+      }
       var remove = e.target.closest('[data-bird-remove-image]');
       if(remove){
         var idx = Number(remove.dataset.birdRemoveImage);
@@ -723,14 +828,15 @@
       }
       var comments = e.target.closest('[data-bird-toggle-comments]');
       if(comments){
-        openComments[String(comments.dataset.birdToggleComments)] = !openComments[String(comments.dataset.birdToggleComments)];
-        renderFeed();
+        e.preventDefault();
+        openComments[String(comments.dataset.birdToggleComments)] = true;
+        openBirdDetail(comments.dataset.birdToggleComments, {comments:true});
         return;
       }
       var expand = e.target.closest('[data-bird-toggle-expand]');
       if(expand){
-        expandedPosts[String(expand.dataset.birdToggleExpand)] = !expandedPosts[String(expand.dataset.birdToggleExpand)];
-        renderFeed();
+        e.preventDefault();
+        openBirdDetail(expand.dataset.birdToggleExpand);
         return;
       }
       var postDelete = e.target.closest('[data-bird-delete-post]');
@@ -757,6 +863,10 @@
       }
     });
     document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && $('[data-bird-detail-modal].show')){
+        closeBirdDetail();
+        return;
+      }
       if(e.key === 'Escape' && $('[data-bird-compose-modal].show')){
         closeComposeModal();
       }
