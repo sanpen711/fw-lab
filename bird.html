@@ -50,7 +50,20 @@
     .bird-feed-head h2{margin:0;font-size:38px;letter-spacing:-.06em}
     .bird-feed-head span{color:var(--muted);font-weight:800}
     .bird-feed{display:grid;gap:18px}
+    .bird-feed.bird-card-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));align-items:start}
     .bird-card{background:var(--card);border:1px solid var(--line);padding:24px}
+    .bird-card-compact{padding:0;overflow:hidden;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+    .bird-card-compact:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:rgba(157,74,74,.38)}
+    .bird-cover{position:relative;aspect-ratio:4/3;background:#ebe6dc;overflow:hidden}
+    .bird-cover img{width:100%;height:100%;object-fit:cover;display:block}
+    .bird-cover-empty{display:grid;place-items:center;background:linear-gradient(135deg,#1b1b18,#6f3a3a);color:#fffdf7;font-weight:950;letter-spacing:.04em}
+    .bird-cover-badge{position:absolute;right:10px;bottom:10px;border-radius:999px;background:rgba(17,17,15,.78);color:#fff;padding:5px 9px;font-size:12px;font-weight:950}
+    .bird-card-info{padding:14px 15px 16px}
+    .bird-card-title{margin:0;font-size:21px;line-height:1.22;letter-spacing:-.04em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .bird-card-meta{display:flex;align-items:center;gap:8px;margin-top:12px;color:var(--muted);font-size:13px;font-weight:900;min-width:0}
+    .bird-card-meta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .bird-card-meta .bird-avatar{width:24px;height:24px;font-size:11px;flex:0 0 auto}
+    .bird-card-time{margin-top:7px;color:var(--muted);font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .bird-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
     .bird-label{color:var(--accent-dark);font-size:13px;font-weight:950}
     .bird-title{margin:8px 0 0;font-size:30px;line-height:1.16;letter-spacing:-.05em}
@@ -79,12 +92,21 @@
     .bird-comment-form input{min-width:0}
     .bird-side .side-card{margin-bottom:0}
     .bird-empty{padding:28px;border:1px dashed var(--line-soft);background:var(--card);color:var(--muted);font-weight:850}
-    body.bird-modal-open{overflow:hidden}
+    body.bird-modal-open,body.bird-detail-open{overflow:hidden}
     .bird-compose-modal{position:fixed;inset:0;z-index:10020;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(6,8,6,.72);backdrop-filter:blur(10px)}
     .bird-compose-modal.show{display:flex}
     .bird-compose-dialog{width:min(920px,100%);max-height:85vh;overflow:hidden;background:var(--card);border:1px solid rgba(217,121,121,.48);box-shadow:0 30px 100px rgba(0,0,0,.34)}
     .bird-compose-modal .bird-compose{max-height:85vh;overflow:auto;border:0;box-shadow:none}
     .bird-compose-close{display:inline-grid;place-items:center;width:40px;height:40px;border:1px solid var(--line-soft);border-radius:999px;background:#fffdf7;color:var(--text);font-size:24px;font-weight:850;line-height:1}
+    .bird-detail-modal{position:fixed;inset:0;z-index:10030;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(6,8,6,.72);backdrop-filter:blur(10px)}
+    .bird-detail-modal.show{display:flex}
+    .bird-detail-dialog{position:relative;width:min(1040px,100%);max-height:85vh;overflow:auto;background:var(--card);border:1px solid rgba(217,121,121,.48);box-shadow:0 30px 100px rgba(0,0,0,.34);padding:30px}
+    .bird-detail-close{position:sticky;top:0;float:right;z-index:2;display:inline-grid;place-items:center;width:40px;height:40px;border:1px solid var(--line-soft);border-radius:999px;background:#fffdf7;color:var(--text);font-size:24px;font-weight:850;line-height:1}
+    .bird-detail-title{margin:8px 0 0;font-size:36px;line-height:1.13;letter-spacing:-.05em}
+    .bird-detail-content{margin:18px 0 0;font-size:17px;line-height:1.85;font-weight:760;white-space:pre-wrap}
+    .bird-detail-images{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+    .bird-detail-images img{width:100%;max-height:560px;object-fit:contain;display:block;background:#ebe6dc;border-radius:10px}
+    .bird-detail-dialog .bird-comments{display:block}
     @media(max-width:980px){
       .bird-hero .hero-inner,.bird-layout{grid-template-columns:1fr}
       .bird-layout{padding:42px 24px 56px}
@@ -101,6 +123,9 @@
       .bird-compose-modal{padding:14px}
       .bird-compose-dialog{max-height:calc(100vh - 28px)}
       .bird-compose-modal .bird-compose{max-height:calc(100vh - 28px);padding:20px}
+      .bird-detail-modal{padding:10px}
+      .bird-detail-dialog{max-height:calc(100vh - 20px);padding:18px}
+      .bird-detail-images{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -238,6 +263,6 @@
 
 <script src="assets/app.js?v=bird-zone-20260518-1"></script>
 <script src="assets/auth.js?v=site-final-tweaks-20260512-1"></script>
-<script src="assets/fw-bird.js?v=bird-zone-20260518-5"></script>
+<script src="assets/fw-bird.js?v=bird-zone-20260518-6"></script>
 </body>
 </html>
