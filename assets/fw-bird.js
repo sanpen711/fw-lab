@@ -493,7 +493,7 @@
   function renderCard(post){
     var expanded = !!expandedPosts[String(post.id)];
     var toggle = String(post.content || '').length > 220
-      ? '<button type="button" class="bird-expand" data-bird-toggle-expand="' + esc(post.id) + '">' + (expanded ? '收起观察记�y' : '展开观察记录') + '</button>'
+      ? '<button type="button" class="bird-expand" data-bird-toggle-expand="' + esc(post.id) + '">' + (expanded ? '收起观察记录' : '展开观察记录') + '</button>'
       : '';
     var del = post.canDelete ? '<button type="button" class="danger" data-bird-delete-post="' + esc(post.id) + '">删除</button>' : '';
     return '<article class="bird-card" data-post-id="' + esc(post.id) + '">'
@@ -542,7 +542,8 @@
     if(content.length > MAX_CONTENT) return '观察记录最多 5000 字。';
     if(pendingFiles.length > MAX_IMAGES) return '最多上传 20 张图片。';
     if(mode === 'pen_name' && !penName) return '临时笔名不能为空。';
-    if(mode === 'pen_name' && (penName.length < 2 || penName.length > 20)) return '临时笔名建议 2 到 20 字。';
+    if(mode === 'pen_name' && penName.length < 2) return '临时笔名至少 2 个字。';
+    if(mode === 'pen_name' && penName.length > 20) return '临时笔名不宜超过 20 字。';
     return '';
   }
   async function submitPost(form){
