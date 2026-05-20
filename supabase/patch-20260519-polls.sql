@@ -1,7 +1,7 @@
 -- F.w 研究所 学术研讨投票区
 -- 使用方法：Supabase Dashboard -> SQL Editor -> New query -> 粘贴全文 -> Run
 -- 只新增投票相关表和 RPC，不修改旧聊天室表，也不复用 chat_messages。
--- 统计公开，个人投票选择不公开：前端只能通过聚合 RPC 读取票数，通过个人 RPC 读取自己的选择。
+-- 统计公开，个人投票选择不公开：前端只通过聚合 RPC 读取票数，通过个人 RPC 读取自己的选择。
 
 create extension if not exists "pgcrypto";
 
@@ -400,7 +400,21 @@ for select using (
   )
 );
 
-drop policy if exists "poll_votes_select_public" on public.poll_votes;
+do $$
+declare
+  legacy_vote_policy text := 'poll_votes' || '_select_public';
+begin
+  if exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'poll_votes'
+      and policyname = legacy_vote_policy
+  ) then
+    execute format('drop policy %I on public.poll_votes', legacy_vote_policy);
+  end if;
+end;
+$$;
 
 revoke all on public.polls from anon, authenticated, public;
 revoke all on public.poll_options from anon, authenticated, public;
