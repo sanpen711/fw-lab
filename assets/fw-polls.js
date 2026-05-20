@@ -22,7 +22,10 @@
     activeCount:$('[data-active-poll-count]'),
     todayCount:$('[data-today-count]'),
     officialWrap:$('[data-official-wrap]'),
-    refresh:$('[data-poll-refresh]')
+    refresh:$('[data-poll-refresh]'),
+    modal:$('[data-poll-modal]'),
+    openModalButtons:$$('[data-open-poll-modal]'),
+    closeModalButtons:$$('[data-close-poll-modal]')
   };
 
   function escapeHtml(value){
@@ -57,9 +60,37 @@
   }
 
   function openLogin(){
-    const loginBtn = document.querySelector('[data-fw-open], [data-login-cta], [data-sb-open]');
+    const loginBtn = document.querySelector('[data-fw-open], [data-sb-open]');
     if(loginBtn) loginBtn.click();
     else toast('请先注册 / 登录。');
+  }
+
+  function setModalOpen(isOpen){
+    if(!els.modal) return;
+    els.modal.hidden = !isOpen;
+    els.modal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    document.body.classList.toggle('poll-modal-open', isOpen);
+  }
+
+  function closeCreateModal(options = {}){
+    setModalOpen(false);
+    if(options.reset && els.form) els.form.reset();
+    if(els.notice) els.notice.textContent = '';
+  }
+
+  async function openCreateModal(){
+    await refreshUser();
+    if(!state.user){
+      toast('请先登录后再发起投票。');
+      openLogin();
+      return;
+    }
+
+    if(els.notice) els.notice.textContent = '';
+    setModalOpen(true);
+    window.setTimeout(() => {
+      els.form?.querySelector('[name="title"]')?.focus();
+    }, 0);
   }
 
   function waitForFwDb(){
@@ -185,6 +216,13 @@
     return '<span class="poll-tag">用户课题</span>';
   }
 
+  function canDeleteOption(poll, option){
+    return !!state.user &&
+      !isEnded(poll) &&
+      option.source === 'user' &&
+      option.user_id === state.user.id;
+  }
+
   function renderOptions(poll, options){
     const total = pollParticipantCount(poll);
     const counts = countVotes(options, poll);
@@ -197,15 +235,21 @@
       const selected = !!myVote && String(myVote.option_id) === String(option.id);
       const disabled = ended ? ' disabled' : '';
       const aria = ended ? '投票已结束' : selected ? '当前选择' : '选择这个选项';
+      const deleteButton = canDeleteOption(poll, option) ? `
+        <button class="poll-delete-option" type="button" data-delete-option data-option-id="${option.id}">删除</button>
+      ` : '';
 
       return `
-        <button class="poll-option${selected ? ' selected' : ''}" type="button" data-vote-option data-poll-id="${poll.id}" data-option-id="${option.id}" aria-label="${escapeAttr(aria)}"${disabled}>
-          <span class="poll-option-main">
-            <span class="poll-option-label">${escapeHtml(option.label)}</span>
-            <span class="poll-option-count">${count}票 · ${percent}%</span>
-          </span>
-          <span class="poll-bar"><span style="width:${percent}%"></span></span>
-        </button>
+        <div class="poll-option-row">
+          <button class="poll-option${selected ? ' selected' : ''}" type="button" data-vote-option data-poll-id="${poll.id}" data-option-id="${option.id}" aria-label="${escapeAttr(aria)}"${disabled}>
+            <span class="poll-option-main">
+              <span class="poll-option-label">${escapeHtml(option.label)}</span>
+              <span class="poll-option-count">${count}票 · ${percent}%</span>
+            </span>
+            <span class="poll-bar"><span style="width:${percent}%"></span></span>
+          </button>
+          ${deleteButton}
+        </div>
       `;
     }).join('');
   }
@@ -435,6 +479,7 @@
       if(result.error) throw result.error;
 
       form.reset();
+      closeCreateModal();
       toast(isOfficial ? '官方课题已置顶发布。' : '投票课题已发布。');
       await updateTodayCount();
       await loadPolls();
@@ -527,11 +572,66 @@
     }
   }
 
+  async function handleDeleteOption(button){
+    await refreshUser();
+    if(!state.user){
+      toast('登录后才能删除补充选项。');
+      openLogin();
+      return;
+    }
+
+    if(!window.confirm('确定删除这个补充选项吗？已有投票的选项不能删除。')){
+      return;
+    }
+
+    button.disabled = true;
+    try{
+      const optionId = Number(button.dataset.optionId);
+      const result = await window.fwDb.client.rpc('fw_delete_my_poll_option', {
+        p_option_id:optionId
+      });
+      if(result.error) throw result.error;
+      toast('补充选项已删除。');
+      await loadPolls();
+    }catch(error){
+      console.error('[fw-polls] delete option failed', error);
+      toast(error.message || '删除失败，请稍后再试。');
+    }finally{
+      button.disabled = false;
+    }
+  }
+
   function bindEvents(){
     if(els.form) els.form.addEventListener('submit', handleCreate);
     if(els.refresh) els.refresh.addEventListener('click', () => loadPolls());
+    els.openModalButtons.forEach(button => {
+      button.addEventListener('click', event => {
+        event.preventDefault();
+        openCreateModal();
+      });
+    });
+    els.closeModalButtons.forEach(button => {
+      button.addEventListener('click', event => {
+        event.preventDefault();
+        closeCreateModal();
+      });
+    });
+
+    document.addEventListener('keydown', event => {
+      if(event.key === 'Escape' && els.modal && !els.modal.hidden){
+        closeCreateModal();
+      }
+    });
 
     document.addEventListener('click', event => {
+      const deleteButton = event.target.closest('[data-delete-option]');
+      if(deleteButton){
+        event.preventDefault();
+        event.stopPropagation();
+        handleDeleteOption(deleteButton);
+        return;
+      }
+
       const voteButton = event.target.closest('[data-vote-option]');
       if(voteButton){
         event.preventDefault();
