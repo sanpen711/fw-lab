@@ -357,8 +357,10 @@
   }
 
   function validateCreateForm(form){
-    const title = String(form.title?.value || '').trim();
-    const options = $$('[data-option-input]').map(input => String(input.value || '').trim());
+    const titleInput = form.querySelector('[name="title"]');
+    const optionInputs = Array.from(form.querySelectorAll('[data-option-input]'));
+    const title = String(titleInput?.value || '').trim();
+    const options = optionInputs.map(input => String(input.value || '').trim());
 
     if(!title) return {error:'请先填写课题标题。'};
     if(title.length > 120) return {error:'课题标题最多 120 个字。'};
@@ -390,7 +392,8 @@
 
     const button = form.querySelector('button[type="submit"]');
     const oldText = button.textContent;
-    const isOfficial = !!state.user?.isAdmin && !!form.is_official?.checked;
+    const officialInput = form.querySelector('[name="is_official"]');
+    const isOfficial = !!state.user?.isAdmin && !!officialInput?.checked;
 
     button.disabled = true;
     button.textContent = '提交中...';
