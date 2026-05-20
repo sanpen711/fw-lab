@@ -1,6 +1,7 @@
 -- F.w 研究所 学术研讨投票区
 -- 使用方法：Supabase Dashboard -> SQL Editor -> New query -> 粘贴全文 -> Run
 -- 只新增投票相关表和 RPC，不修改旧聊天室表，也不复用 chat_messages。
+-- 统计公开，个人投票选择不公开：前端只能通过聚合 RPC 读取票数，通过个人 RPC 读取自己的选择。
 
 create extension if not exists "pgcrypto";
 
@@ -310,6 +311,77 @@ begin
 end;
 $$;
 
+create or replace function public.fw_poll_vote_stats()
+returns table (
+  poll_id bigint,
+  option_id bigint,
+  vote_count integer,
+  poll_participant_count integer
+)
+language sql
+security definer
+set search_path = public
+as $$
+  with visible_options as (
+    select
+      o.poll_id as poll_id,
+      o.id as option_id
+    from public.poll_options o
+    join public.polls p on p.id = o.poll_id
+    where p.is_deleted = false
+  ),
+  option_counts as (
+    select
+      v.poll_id as poll_id,
+      v.option_id as option_id,
+      count(*)::integer as vote_count
+    from public.poll_votes v
+    join public.polls p on p.id = v.poll_id
+    where p.is_deleted = false
+    group by v.poll_id, v.option_id
+  ),
+  participant_counts as (
+    select
+      v.poll_id as poll_id,
+      count(distinct v.user_id)::integer as poll_participant_count
+    from public.poll_votes v
+    join public.polls p on p.id = v.poll_id
+    where p.is_deleted = false
+    group by v.poll_id
+  )
+  select
+    vo.poll_id,
+    vo.option_id,
+    coalesce(oc.vote_count, 0)::integer as vote_count,
+    coalesce(pc.poll_participant_count, 0)::integer as poll_participant_count
+  from visible_options vo
+  left join option_counts oc
+    on oc.poll_id = vo.poll_id
+   and oc.option_id = vo.option_id
+  left join participant_counts pc
+    on pc.poll_id = vo.poll_id
+  order by vo.poll_id, vo.option_id;
+$$;
+
+create or replace function public.fw_my_poll_votes()
+returns table (
+  poll_id bigint,
+  option_id bigint
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    v.poll_id,
+    v.option_id
+  from public.poll_votes v
+  join public.polls p on p.id = v.poll_id
+  where auth.uid() is not null
+    and v.user_id = auth.uid()
+    and p.is_deleted = false;
+$$;
+
 alter table public.polls enable row level security;
 alter table public.poll_options enable row level security;
 alter table public.poll_votes enable row level security;
@@ -329,24 +401,18 @@ for select using (
 );
 
 drop policy if exists "poll_votes_select_public" on public.poll_votes;
-create policy "poll_votes_select_public" on public.poll_votes
-for select using (
-  exists (
-    select 1 from public.polls
-    where polls.id = poll_votes.poll_id
-      and polls.is_deleted = false
-  )
-);
 
-revoke all on public.polls from anon, authenticated;
-revoke all on public.poll_options from anon, authenticated;
-revoke all on public.poll_votes from anon, authenticated;
+revoke all on public.polls from anon, authenticated, public;
+revoke all on public.poll_options from anon, authenticated, public;
+revoke all on public.poll_votes from anon, authenticated, public;
 
 grant select on public.polls to anon, authenticated;
 grant select on public.poll_options to anon, authenticated;
-grant select on public.poll_votes to anon, authenticated;
 
 grant execute on function public.fw_my_poll_daily_count() to anon, authenticated;
 grant execute on function public.fw_create_poll(text, text[], boolean) to authenticated;
 grant execute on function public.fw_add_poll_option(bigint, text) to authenticated;
 grant execute on function public.fw_vote_poll(bigint, bigint) to authenticated;
+grant execute on function public.fw_poll_vote_stats() to anon, authenticated;
+revoke execute on function public.fw_my_poll_votes() from anon, public;
+grant execute on function public.fw_my_poll_votes() to authenticated;
