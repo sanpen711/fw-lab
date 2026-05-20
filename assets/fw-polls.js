@@ -82,11 +82,19 @@
 
   async function refreshUser(){
     if(!window.fwDb?.enabled) return null;
-    state.user = await window.fwDb.getCurrentUser().catch(() => null);
+
+    try{
+      state.user = await window.fwDb.getCurrentUser();
+    }catch(error){
+      console.error('[fw-polls] user refresh failed', error);
+      state.user = null;
+    }
+
     document.body.classList.toggle('polls-admin', !!state.user?.isAdmin);
     if(els.officialWrap){
       els.officialWrap.hidden = !state.user?.isAdmin;
     }
+
     await updateTodayCount();
     return state.user;
   }
@@ -98,12 +106,14 @@
       return;
     }
 
-    const result = await window.fwDb.client.rpc('fw_my_poll_daily_count').catch(err => ({error:err}));
-    if(result.error){
-      els.todayCount.textContent = '待配置';
-      return;
+    try{
+      const {data, error} = await window.fwDb.client.rpc('fw_my_poll_daily_count');
+      if(error) throw error;
+      els.todayCount.textContent = `${data || 0}/3`;
+    }catch(error){
+      console.error('[fw-polls] daily count failed', error);
+      els.todayCount.textContent = '今日次数读取失败';
     }
-    els.todayCount.textContent = `${result.data || 0}/3`;
   }
 
   function getProfile(row){
@@ -184,7 +194,7 @@
     return options.map(option => {
       const count = counts[option.id] || 0;
       const percent = total ? Math.round((count / total) * 100) : 0;
-      const selected = myVote?.option_id === option.id;
+      const selected = !!myVote && String(myVote.option_id) === String(option.id);
       const disabled = ended ? ' disabled' : '';
       const aria = ended ? '投票已结束' : selected ? '当前选择' : '选择这个选项';
 
@@ -287,87 +297,91 @@
 
   async function loadPolls(){
     if(!window.fwDb?.client){
+      state.polls = [];
+      renderPolls();
       setStatus('投票系统需要 Supabase。请先确认全站 Supabase 配置已加载。');
       return;
     }
 
     setStatus('正在读取学术研讨课题...');
 
-    const pollResult = await window.fwDb.client
-      .from('polls')
-      .select('id,user_id,title,is_official,created_at,ends_at,closed_at,conclusion,is_deleted,profiles(nickname,avatar_url)')
-      .eq('is_deleted', false)
-      .order('is_official', {ascending:false})
-      .order('created_at', {ascending:false})
-      .limit(80);
+    try{
+      const pollResult = await window.fwDb.client
+        .from('polls')
+        .select('id,user_id,title,is_official,created_at,ends_at,closed_at,conclusion,is_deleted,profiles(nickname,avatar_url)')
+        .eq('is_deleted', false)
+        .order('is_official', {ascending:false})
+        .order('created_at', {ascending:false})
+        .limit(80);
 
-    if(pollResult.error){
-      state.polls = [];
-      renderPolls();
-      setStatus('投票数据表还没上线。请先在 Supabase 执行 supabase/patch-20260519-polls.sql。');
-      return;
-    }
+      if(pollResult.error) throw pollResult.error;
 
-    const polls = pollResult.data || [];
-    const ids = polls.map(poll => poll.id);
+      const polls = pollResult.data || [];
+      const ids = polls.map(poll => poll.id);
+      const idSet = new Set(ids.map(id => String(id)));
 
-    if(!ids.length){
-      state.polls = [];
-      renderPolls();
-      setStatus('');
-      return;
-    }
+      if(!ids.length){
+        state.polls = [];
+        renderPolls();
+        setStatus('');
+        return;
+      }
 
-    const [optionResult, statsResult, myVoteResult] = await Promise.all([
-      window.fwDb.client
+      const optionResult = await window.fwDb.client
         .from('poll_options')
         .select('id,poll_id,user_id,label,source,created_at')
         .in('poll_id', ids)
-        .order('created_at', {ascending:true}),
-      window.fwDb.client.rpc('fw_poll_vote_stats'),
-      state.user
-        ? window.fwDb.client.rpc('fw_my_poll_votes')
-        : Promise.resolve({data:[], error:null})
-    ]);
+        .order('created_at', {ascending:true});
+      if(optionResult.error) throw optionResult.error;
 
-    if(optionResult.error || statsResult.error || myVoteResult.error){
-      setStatus('投票统计读取失败，请确认数据库补丁已完整执行。');
-      return;
+      const statsResult = await window.fwDb.client.rpc('fw_poll_vote_stats');
+      if(statsResult.error) throw statsResult.error;
+
+      let myVoteResult = {data:[], error:null};
+      if(state.user){
+        myVoteResult = await window.fwDb.client.rpc('fw_my_poll_votes');
+        if(myVoteResult.error) throw myVoteResult.error;
+      }
+
+      const optionsByPoll = {};
+      (optionResult.data || []).forEach(option => {
+        (optionsByPoll[option.poll_id] = optionsByPoll[option.poll_id] || []).push(option);
+      });
+
+      const statsByPoll = {};
+      const participantByPoll = {};
+      (statsResult.data || []).forEach(row => {
+        if(!idSet.has(String(row.poll_id))) return;
+        statsByPoll[row.poll_id] = statsByPoll[row.poll_id] || {};
+        statsByPoll[row.poll_id][row.option_id] = Number(row.vote_count || 0);
+        participantByPoll[row.poll_id] = Number(row.poll_participant_count || 0);
+      });
+
+      const myVotesByPoll = {};
+      (myVoteResult.data || []).forEach(row => {
+        if(!idSet.has(String(row.poll_id))) return;
+        myVotesByPoll[row.poll_id] = {
+          poll_id:row.poll_id,
+          option_id:row.option_id
+        };
+      });
+
+      state.polls = polls.map(poll => ({
+        ...poll,
+        options:optionsByPoll[poll.id] || [],
+        stats:statsByPoll[poll.id] || {},
+        participantCount:participantByPoll[poll.id] || 0,
+        myVote:myVotesByPoll[poll.id] || null
+      }));
+
+      renderPolls();
+      setStatus('');
+    }catch(error){
+      console.error('[fw-polls] load polls failed', error);
+      state.polls = [];
+      renderPolls();
+      setStatus(`投票数据读取失败：${error.message || '请确认数据库补丁已完整执行。'}`);
     }
-
-    const optionsByPoll = {};
-    (optionResult.data || []).forEach(option => {
-      (optionsByPoll[option.poll_id] = optionsByPoll[option.poll_id] || []).push(option);
-    });
-
-    const statsByPoll = {};
-    const participantByPoll = {};
-    (statsResult.data || []).forEach(row => {
-      if(!ids.includes(row.poll_id)) return;
-      statsByPoll[row.poll_id] = statsByPoll[row.poll_id] || {};
-      statsByPoll[row.poll_id][row.option_id] = Number(row.vote_count || 0);
-      participantByPoll[row.poll_id] = Number(row.poll_participant_count || 0);
-    });
-
-    const myVotesByPoll = {};
-    (myVoteResult.data || []).forEach(row => {
-      if(!ids.includes(row.poll_id)) return;
-      myVotesByPoll[row.poll_id] = {
-        poll_id:row.poll_id,
-        option_id:row.option_id
-      };
-    });
-
-    state.polls = polls.map(poll => ({
-      ...poll,
-      options:optionsByPoll[poll.id] || [],
-      stats:statsByPoll[poll.id] || {},
-      participantCount:participantByPoll[poll.id] || 0,
-      myVote:myVotesByPoll[poll.id] || null
-    }));
-
-    renderPolls();
-    setStatus('');
   }
 
   function validateCreateForm(form){
@@ -390,36 +404,34 @@
   async function handleCreate(event){
     event.preventDefault();
     const form = event.currentTarget;
-
-    await refreshUser();
-    if(!state.user){
-      toast('登录后才能发起投票。');
-      openLogin();
-      return;
-    }
-
-    const data = validateCreateForm(form);
-    if(data.error){
-      toast(data.error);
-      return;
-    }
-
     const button = form.querySelector('button[type="submit"]');
-    const oldText = button.textContent;
-    const officialInput = form.querySelector('[name="is_official"]');
-    const isOfficial = !!state.user?.isAdmin && !!officialInput?.checked;
+    const oldText = button ? button.textContent : '';
 
-    button.disabled = true;
-    button.textContent = '提交中...';
+    if(button){
+      button.disabled = true;
+      button.textContent = '提交中...';
+    }
     if(els.notice) els.notice.textContent = '';
 
     try{
+      await refreshUser();
+      if(!state.user){
+        const loginError = new Error('登录后才能发起投票。');
+        loginError.needsLogin = true;
+        throw loginError;
+      }
+
+      const data = validateCreateForm(form);
+      if(data.error) throw new Error(data.error);
+
+      const officialInput = form.querySelector('[name="is_official"]');
+      const isOfficial = !!state.user?.isAdmin && !!officialInput?.checked;
+
       const result = await window.fwDb.client.rpc('fw_create_poll', {
         p_title:data.title,
         p_options:data.options,
         p_is_official:isOfficial
       });
-
       if(result.error) throw result.error;
 
       form.reset();
@@ -427,12 +439,16 @@
       await updateTodayCount();
       await loadPolls();
     }catch(error){
+      console.error('[fw-polls] create poll failed', error);
       const message = error.message || '发布失败，请稍后再试。';
       if(els.notice) els.notice.textContent = message;
       toast(message);
+      if(error.needsLogin) openLogin();
     }finally{
-      button.disabled = false;
-      button.textContent = oldText;
+      if(button){
+        button.disabled = false;
+        button.textContent = oldText;
+      }
     }
   }
 
@@ -536,23 +552,37 @@
     bindEvents();
     setStatus('正在连接研究数据库...');
 
-    const ready = await waitForFwDb();
-    if(!ready){
-      setStatus('Supabase 连接没有成功加载，投票区暂时无法使用。');
-      return;
-    }
+    try{
+      const ready = await waitForFwDb();
+      if(!ready){
+        state.polls = [];
+        renderPolls();
+        setStatus('Supabase 连接没有成功加载，投票区暂时无法使用。请检查全站 Supabase 配置。');
+        return;
+      }
 
-    state.ready = true;
-    await refreshUser();
-    await loadPolls();
-
-    window.fwDb.onAuthChange?.(async () => {
+      state.ready = true;
       await refreshUser();
       await loadPolls();
-    });
 
-    clearInterval(state.renderTimer);
-    state.renderTimer = setInterval(renderPolls, 60000);
+      window.fwDb.onAuthChange?.(async () => {
+        try{
+          await refreshUser();
+          await loadPolls();
+        }catch(error){
+          console.error('[fw-polls] auth refresh failed', error);
+          setStatus(`登录状态刷新失败：${error.message || '请刷新页面重试。'}`);
+        }
+      });
+
+      clearInterval(state.renderTimer);
+      state.renderTimer = setInterval(renderPolls, 60000);
+    }catch(error){
+      console.error('[fw-polls] init failed', error);
+      state.polls = [];
+      renderPolls();
+      setStatus(`投票区初始化失败：${error.message || '请刷新页面重试。'}`);
+    }
   }
 
   if(document.readyState === 'loading'){
