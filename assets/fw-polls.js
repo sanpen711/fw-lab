@@ -293,13 +293,6 @@
           </div>
         </div>
 
-        <div class="poll-metrics" aria-label="投票统计">
-          <span><strong>${total}</strong>参与人数</span>
-          <span><strong>${options.length}</strong>选项</span>
-          <span><strong>${total}</strong>总票数</span>
-          <span><strong>${myVote ? '已投' : '未投'}</strong>我的状态</span>
-        </div>
-
         <div class="poll-options">
           ${renderOptions(poll, options)}
         </div>
@@ -312,6 +305,13 @@
             <p>${escapeHtml(conclusionText(poll, options))}</p>
           </div>
         ` : ''}
+
+        <div class="poll-metrics" aria-label="投票统计">
+          <span><strong>${total}</strong>参与人数</span>
+          <span><strong>${options.length}</strong>选项</span>
+          <span><strong>${total}</strong>总票数</span>
+          <span><strong>${myVote ? '已投' : '未投'}</strong>我的状态</span>
+        </div>
       </article>
     `;
   }
