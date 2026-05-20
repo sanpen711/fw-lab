@@ -382,6 +382,62 @@ as $$
     and p.is_deleted = false;
 $$;
 
+create or replace function public.fw_delete_my_poll_option(
+  p_option_id bigint
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := public.fw_require_poll_user();
+  v_option public.poll_options%rowtype;
+  v_poll public.polls%rowtype;
+begin
+  select *
+  into v_option
+  from public.poll_options
+  where id = p_option_id
+  for update;
+
+  if not found then
+    raise exception '这个补充选项不存在。';
+  end if;
+
+  if v_option.source <> 'user' or v_option.user_id is distinct from v_uid then
+    raise exception '只能删除自己补充的选项。';
+  end if;
+
+  select *
+  into v_poll
+  from public.polls
+  where id = v_option.poll_id
+    and is_deleted = false
+  for update;
+
+  if not found then
+    raise exception '这个课题不存在。';
+  end if;
+
+  if v_poll.closed_at is not null or v_poll.ends_at <= now() then
+    raise exception '这个课题已经截止，不能删除选项。';
+  end if;
+
+  if exists (
+    select 1
+    from public.poll_votes
+    where poll_id = v_option.poll_id
+      and option_id = v_option.id
+  ) then
+    raise exception '该选项已有投票，不能删除';
+  end if;
+
+  delete from public.poll_options
+  where id = v_option.id;
+end;
+$$;
+
 alter table public.polls enable row level security;
 alter table public.poll_options enable row level security;
 alter table public.poll_votes enable row level security;
@@ -430,3 +486,5 @@ grant execute on function public.fw_vote_poll(bigint, bigint) to authenticated;
 grant execute on function public.fw_poll_vote_stats() to anon, authenticated;
 revoke execute on function public.fw_my_poll_votes() from anon, public;
 grant execute on function public.fw_my_poll_votes() to authenticated;
+revoke execute on function public.fw_delete_my_poll_option(bigint) from anon, public;
+grant execute on function public.fw_delete_my_poll_option(bigint) to authenticated;
