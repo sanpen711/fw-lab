@@ -142,7 +142,7 @@ begin
 
   if exists (
     select 1
-    from unnest(v_options) as option_label
+    from unnest(v_options) as option_rows(option_label)
     group by lower(btrim(option_label))
     having count(*) > 1
   ) then
@@ -151,7 +151,7 @@ begin
 
   if exists (
     select 1
-    from unnest(v_options) as option_label
+    from unnest(v_options) as option_rows(option_label)
     where char_length(btrim(option_label)) > 80
   ) then
     raise exception '每个选项最多 80 个字。';
@@ -187,7 +187,7 @@ begin
 
   insert into public.poll_options (poll_id, user_id, label, source)
   select v_poll_id, null, option_label, 'initial'
-  from unnest(v_options) as option_label;
+  from unnest(v_options) as option_rows(option_label);
 
   return v_poll_id;
 end;
