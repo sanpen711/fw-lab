@@ -139,26 +139,26 @@
     return new Date(value).toLocaleDateString('zh-CN', {month:'2-digit', day:'2-digit'});
   }
 
-  function participantCount(votes){
-    return new Set((votes || []).map(v => v.user_id).filter(Boolean)).size;
+  function pollParticipantCount(poll){
+    return Number(poll.participantCount || 0);
   }
 
-  function countVotes(options, votes){
+  function countVotes(options, poll){
+    const stats = poll.stats || {};
     const counts = {};
-    options.forEach(option => { counts[option.id] = 0; });
-    (votes || []).forEach(vote => {
-      counts[vote.option_id] = (counts[vote.option_id] || 0) + 1;
+    options.forEach(option => {
+      counts[option.id] = Number(stats[option.id] || 0);
     });
     return counts;
   }
 
-  function conclusionText(poll, options, votes){
+  function conclusionText(poll, options){
     if(poll.conclusion) return poll.conclusion;
 
-    const total = participantCount(votes);
+    const total = pollParticipantCount(poll);
     if(!total) return '样本量仍为 0，本课题暂时没有形成有效研究结论。';
 
-    const counts = countVotes(options, votes);
+    const counts = countVotes(options, poll);
     const max = Math.max(...options.map(option => counts[option.id] || 0));
     const winners = options.filter(option => (counts[option.id] || 0) === max);
 
@@ -175,10 +175,10 @@
     return '<span class="poll-tag">用户课题</span>';
   }
 
-  function renderOptions(poll, options, votes){
-    const total = participantCount(votes);
-    const counts = countVotes(options, votes);
-    const myVote = state.user ? votes.find(v => v.user_id === state.user.id) : null;
+  function renderOptions(poll, options){
+    const total = pollParticipantCount(poll);
+    const counts = countVotes(options, poll);
+    const myVote = poll.myVote || null;
     const ended = isEnded(poll);
 
     return options.map(option => {
@@ -218,10 +218,9 @@
 
   function renderPollCard(poll){
     const options = poll.options || [];
-    const votes = poll.votes || [];
-    const total = participantCount(votes);
+    const total = pollParticipantCount(poll);
     const ended = isEnded(poll);
-    const myVote = state.user ? votes.find(v => v.user_id === state.user.id) : null;
+    const myVote = poll.myVote || null;
 
     return `
       <article class="poll-card${poll.is_official ? ' is-official' : ''}${ended ? ' is-ended' : ''}" data-poll-card data-poll-id="${poll.id}">
@@ -243,12 +242,12 @@
         <div class="poll-metrics" aria-label="投票统计">
           <span><strong>${total}</strong>参与人数</span>
           <span><strong>${options.length}</strong>选项</span>
-          <span><strong>${votes.length}</strong>总票数</span>
+          <span><strong>${total}</strong>总票数</span>
           <span><strong>${myVote ? '已投' : '未投'}</strong>我的状态</span>
         </div>
 
         <div class="poll-options">
-          ${renderOptions(poll, options, votes)}
+          ${renderOptions(poll, options)}
         </div>
 
         ${renderAddOption(poll, options)}
@@ -256,7 +255,7 @@
         ${ended ? `
           <div class="poll-conclusion">
             <b>研究结论</b>
-            <p>${escapeHtml(conclusionText(poll, options, votes))}</p>
+            <p>${escapeHtml(conclusionText(poll, options))}</p>
           </div>
         ` : ''}
       </article>
@@ -319,19 +318,19 @@
       return;
     }
 
-    const [optionResult, voteResult] = await Promise.all([
+    const [optionResult, statsResult, myVoteResult] = await Promise.all([
       window.fwDb.client
         .from('poll_options')
         .select('id,poll_id,user_id,label,source,created_at')
         .in('poll_id', ids)
         .order('created_at', {ascending:true}),
-      window.fwDb.client
-        .from('poll_votes')
-        .select('poll_id,option_id,user_id,created_at,updated_at')
-        .in('poll_id', ids)
+      window.fwDb.client.rpc('fw_poll_vote_stats'),
+      state.user
+        ? window.fwDb.client.rpc('fw_my_poll_votes')
+        : Promise.resolve({data:[], error:null})
     ]);
 
-    if(optionResult.error || voteResult.error){
+    if(optionResult.error || statsResult.error || myVoteResult.error){
       setStatus('投票统计读取失败，请确认数据库补丁已完整执行。');
       return;
     }
@@ -341,15 +340,30 @@
       (optionsByPoll[option.poll_id] = optionsByPoll[option.poll_id] || []).push(option);
     });
 
-    const votesByPoll = {};
-    (voteResult.data || []).forEach(vote => {
-      (votesByPoll[vote.poll_id] = votesByPoll[vote.poll_id] || []).push(vote);
+    const statsByPoll = {};
+    const participantByPoll = {};
+    (statsResult.data || []).forEach(row => {
+      if(!ids.includes(row.poll_id)) return;
+      statsByPoll[row.poll_id] = statsByPoll[row.poll_id] || {};
+      statsByPoll[row.poll_id][row.option_id] = Number(row.vote_count || 0);
+      participantByPoll[row.poll_id] = Number(row.poll_participant_count || 0);
+    });
+
+    const myVotesByPoll = {};
+    (myVoteResult.data || []).forEach(row => {
+      if(!ids.includes(row.poll_id)) return;
+      myVotesByPoll[row.poll_id] = {
+        poll_id:row.poll_id,
+        option_id:row.option_id
+      };
     });
 
     state.polls = polls.map(poll => ({
       ...poll,
       options:optionsByPoll[poll.id] || [],
-      votes:votesByPoll[poll.id] || []
+      stats:statsByPoll[poll.id] || {},
+      participantCount:participantByPoll[poll.id] || 0,
+      myVote:myVotesByPoll[poll.id] || null
     }));
 
     renderPolls();
