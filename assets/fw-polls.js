@@ -59,6 +59,10 @@
     if(els.status) els.status.textContent = message || '';
   }
 
+  function pollReadFailedMessage(){
+    return '课题暂时读取失败，请稍后刷新';
+  }
+
   function openLogin(){
     const loginBtn = document.querySelector('[data-fw-open], [data-sb-open]');
     if(loginBtn) loginBtn.click();
@@ -353,7 +357,7 @@
     if(!window.fwDb?.client){
       state.polls = [];
       renderPolls();
-      setStatus('投票系统需要 Supabase。请先确认全站 Supabase 配置已加载。');
+      setStatus(pollReadFailedMessage());
       return;
     }
 
@@ -434,7 +438,7 @@
       console.error('[fw-polls] load polls failed', error);
       state.polls = [];
       renderPolls();
-      setStatus(`投票数据读取失败：${error.message || '请确认数据库补丁已完整执行。'}`);
+      setStatus(pollReadFailedMessage());
     }
   }
 
@@ -695,14 +699,14 @@
 
   async function init(){
     bindEvents();
-    setStatus('正在连接研究数据库...');
+    setStatus('正在读取学术研讨课题...');
 
     try{
       const ready = await waitForFwDb();
       if(!ready){
         state.polls = [];
         renderPolls();
-        setStatus('Supabase 连接没有成功加载，投票区暂时无法使用。请检查全站 Supabase 配置。');
+        setStatus(pollReadFailedMessage());
         return;
       }
 
@@ -716,7 +720,7 @@
           await loadPolls();
         }catch(error){
           console.error('[fw-polls] auth refresh failed', error);
-          setStatus(`登录状态刷新失败：${error.message || '请刷新页面重试。'}`);
+          setStatus(pollReadFailedMessage());
         }
       });
 
@@ -726,7 +730,7 @@
       console.error('[fw-polls] init failed', error);
       state.polls = [];
       renderPolls();
-      setStatus(`投票区初始化失败：${error.message || '请刷新页面重试。'}`);
+      setStatus(pollReadFailedMessage());
     }
   }
 
