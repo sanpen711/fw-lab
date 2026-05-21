@@ -296,7 +296,7 @@ loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
 loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
 loadJs("assets/fw-login-submit-fix.js?v=login-submit-fix-20260515-1");
 loadJs("assets/fw-register-disclaimer-link.js?v=register-disclaimer-link-20260513-1");
-loadJs("assets/fw-mobile-nav-actions.js?v=mobile-nav-actions-20260521-copy-1");
+loadJs("assets/fw-mobile-nav-actions.js?v=mobile-nav-actions-20260521-mobile-2");
 loadJs("assets/fw-avatar-mobile-fix.js?v=avatar-mobile-fix-20260514-2");
 loadJs("assets/fw-avatar-upload-stage-fix.js?v=avatar-upload-stage-fix-20260514-1");
 loadJs("assets/fw-avatar-save-guard.js?v=avatar-save-guard-20260514-1");
@@ -324,7 +324,7 @@ loadJs("assets/fw-admin-buddy-lock.js?v=admin-buddy-lock-20260513-1");
 loadJs("assets/fw-report-rpc.js?v=report-rpc-20260513-1");
 loadJs("assets/fw-admin-polish.js?v=admin-polish-20260521-copy-1");
 loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
-loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260513-1");
+loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260521-mobile-1");
 
   if(document.querySelector("[data-weekly-grid]")){
     loadJs("assets/fw-archive-enhance.js?v=archive-leaderboard-20260521-copy-1");
