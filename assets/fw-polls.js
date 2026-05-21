@@ -216,11 +216,20 @@
     return '<span class="poll-tag">用户课题</span>';
   }
 
+  function canPromotePoll(poll){
+    return !!state.user?.isAdmin && !poll.is_official && !isEnded(poll);
+  }
+
   function canDeleteOption(poll, option){
     return !!state.user &&
       !isEnded(poll) &&
       option.source === 'user' &&
       option.user_id === state.user.id;
+  }
+
+  function renderPromoteButton(poll){
+    if(!canPromotePoll(poll)) return '';
+    return `<button class="poll-promote-button" type="button" data-promote-poll data-poll-id="${poll.id}">设为官方课题</button>`;
   }
 
   function renderOptions(poll, options){
@@ -283,6 +292,7 @@
             <div class="poll-tags">
               ${pollTag(poll)}
               <span class="poll-tag ${ended ? 'ended' : 'live'}">${ended ? '已结束' : '研究中'}</span>
+              ${renderPromoteButton(poll)}
             </div>
             <h2>${escapeHtml(poll.title)}</h2>
             <p>由 ${escapeHtml(authorName(poll))} 发起 · ${dateText(poll.created_at)} 发布 · 默认 7 天截止</p>
@@ -601,6 +611,33 @@
     }
   }
 
+  async function handlePromotePoll(button){
+    await refreshUser();
+    if(!state.user?.isAdmin){
+      toast('只有管理员可以设置官方课题。');
+      return;
+    }
+
+    if(!window.confirm('确定将这个课题设为官方课题并置顶吗？')){
+      return;
+    }
+
+    button.disabled = true;
+    try{
+      const result = await window.fwDb.client.rpc('fw_promote_poll_to_official', {
+        p_poll_id:Number(button.dataset.pollId)
+      });
+      if(result.error) throw result.error;
+      toast('已设为官方课题并置顶。');
+      await loadPolls();
+    }catch(error){
+      console.error('[fw-polls] promote poll failed', error);
+      toast(error.message || '设为官方课题失败，请稍后再试。');
+    }finally{
+      button.disabled = false;
+    }
+  }
+
   function bindEvents(){
     if(els.form) els.form.addEventListener('submit', handleCreate);
     if(els.refresh) els.refresh.addEventListener('click', () => loadPolls());
@@ -624,6 +661,14 @@
     });
 
     document.addEventListener('click', event => {
+      const promoteButton = event.target.closest('[data-promote-poll]');
+      if(promoteButton){
+        event.preventDefault();
+        event.stopPropagation();
+        handlePromotePoll(promoteButton);
+        return;
+      }
+
       const deleteButton = event.target.closest('[data-delete-option]');
       if(deleteButton){
         event.preventDefault();
