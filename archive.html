@@ -595,7 +595,7 @@
       <a href="bird.html">观鸟台</a>
       <a href="archive.html">废话档案</a>
       <a href="rules.html">入馆须知</a>
-      <a href="admin.html">管理入口</a>
+      <a href="admin.html">处理公告</a>
     </nav>
 
     <section class="archive-hero">
@@ -620,7 +620,7 @@
         <p>三个奖项 · 领奖台前三名</p>
       </div>
       <div class="weekly-grid" data-weekly-grid>
-        <div class="archive-loading">正在从数据库读取上周榜单...</div>
+        <div class="archive-loading">正在整理上周榜单...</div>
       </div>
     </section>
 
@@ -639,7 +639,7 @@
           <button class="tab" type="button" data-type="tissue">纸巾榜</button>
         </div>
         <div class="daily-list" data-daily-list>
-          <div class="empty-list">正在读取昨日榜单...</div>
+          <div class="empty-list">正在整理昨日榜单...</div>
         </div>
       </div>
 
@@ -651,7 +651,7 @@
           <div class="rule">自己给自己的反应可以显示，但不计入榜单。</div>
           <div class="rule">同一用户对同一条内容，同一类型只统计 1 次。</div>
           <div class="rule">撤回、删除、被管理员处理的内容不进入榜单。</div>
-          <div class="rule">被举报异常的内容，后续可以接入人工检查。</div>
+          <div class="rule">被举报或不适合展示的内容，后续会继续完善处理。</div>
         </div>
       </aside>
     </section>
@@ -662,10 +662,10 @@
           <div class="archive-eyebrow">PAST ARCHIVES</div>
           <h2>历代废话档案</h2>
         </div>
-        <p>先显示最近一周的前三名，后续可扩展成永久归档表</p>
+        <p>先显示最近一周的前三名，后续会继续完善展示。</p>
       </div>
       <div class="history-grid" data-history-grid>
-        <div class="archive-loading">正在生成本周归档预览...</div>
+        <div class="archive-loading">正在整理本周归档预览...</div>
       </div>
     </section>
 
@@ -868,7 +868,7 @@
         }
         return `<article class="history-card"><small>上周 / ${cfg.title}</small><h4>${esc(one.nickname)}</h4><p>${esc(cfg.title)}：${esc(one.topPost?.content||'暂无代表废话。')}</p></article>`;
       });
-      cards.push(`<article class="history-card"><small>说明</small><h4>数据库实时榜</h4><p>当前先读取 posts / reactions / profiles，后续可加 archives 表做永久留档。</p></article>`);
+      cards.push(`<article class="history-card"><small>说明</small><h4>展示说明</h4><p>榜单会随互动情况更新，后续会继续完善展示。</p></article>`);
       box.innerHTML=cards.join('');
     }
 
@@ -876,8 +876,8 @@
       setNextUpdateText();
       const ok=await waitForDb();
       if(!ok){
-        document.querySelector('[data-weekly-grid]').innerHTML='<div class="archive-loading">Supabase 还没加载成功，请刷新页面。</div>';
-        document.querySelector('[data-daily-list]').innerHTML='<div class="empty-list">数据库连接未就绪。</div>';
+        document.querySelector('[data-weekly-grid]').innerHTML='<div class="archive-loading">榜单暂时读取失败，请稍后刷新。</div>';
+        document.querySelector('[data-daily-list]').innerHTML='<div class="empty-list">榜单暂时读取失败，请稍后刷新。</div>';
         return;
       }
       const {today,yesterday,thisMonday,lastMonday}=getRanges();
@@ -897,8 +897,8 @@
         renderHistory(weekly);
       }catch(err){
         console.error(err);
-        document.querySelector('[data-weekly-grid]').innerHTML=`<div class="archive-loading">榜单读取失败：${esc(err.message||'未知错误')}</div>`;
-        document.querySelector('[data-daily-list]').innerHTML='<div class="empty-list">读取失败，请检查 Supabase 表权限。</div>';
+        document.querySelector('[data-weekly-grid]').innerHTML='<div class="archive-loading">榜单暂时读取失败，请稍后刷新。</div>';
+        document.querySelector('[data-daily-list]').innerHTML='<div class="empty-list">榜单暂时读取失败，请稍后刷新。</div>';
       }
     }
 
