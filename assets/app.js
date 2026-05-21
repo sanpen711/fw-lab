@@ -327,6 +327,6 @@ loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
 loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260513-1");
 
   if(document.querySelector("[data-weekly-grid]")){
-    loadJs("assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1");
+    loadJs("assets/fw-archive-enhance.js?v=archive-leaderboard-20260521-copy-1");
   }
 })();
