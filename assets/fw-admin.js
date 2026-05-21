@@ -1,4 +1,4 @@
-// F.w 研究所：公开处刑 + 管理员处理台
+// F.w 研究所：处理公告 + 站长处理面板
 (function(){
   if(window.__FW_PUBLIC_TRIAL_ADMIN__) return;
   window.__FW_PUBLIC_TRIAL_ADMIN__ = true;
@@ -49,7 +49,7 @@
   async function boot(){
     const ok = await waitForDb();
     ensureChatTab();
-    if(!ok){ renderPublicError('数据库连接未就绪。请确认 app.js、supabase-config.js、supabase-db.js 正常加载。'); return; }
+    if(!ok){ renderPublicError('处理公告暂时读取失败，请稍后刷新。'); return; }
     await Promise.all([loadPublicLogs(), initAdmin()]);
     bind();
   }
@@ -64,17 +64,17 @@
         .order('created_at',{ascending:false}).limit(50);
       if(error) throw error;
       box.innerHTML = renderLogs(data||[], false);
-    }catch(e){ renderPublicError('公开处刑记录表还没配置。请先在 Supabase 运行 supabase/patch-20260513-public-trial.sql。'); }
+    }catch(e){ renderPublicError('处理公告暂时读取失败，请稍后刷新。'); }
   }
   function renderPublicError(msg){ const box=$('[data-public-trial-list]'); if(box) box.innerHTML = `<div class="trial-empty">${esc(msg)}</div>`; }
 
   function renderLogs(rows){
-    if(!rows.length) return '<div class="trial-empty">暂时没有处刑记录。说明大家今天还算体面。</div>';
+    if(!rows.length) return '<div class="trial-empty">暂时没有处理公告。说明大家今天还算体面。</div>';
     return rows.map(r=>{
       const action = actionText[r.action] || r.action || '处理';
       const isDanger = ['ban','mute','delete_post','delete_comment','delete_chat_message','resolve_report'].includes(r.action);
       const desc = [`对象：${targetText[r.target_type] || r.target_type || '对象'}`, r.duration_text ? `时长：${r.duration_text}` : '', r.reason ? `原因：${r.reason}` : ''].filter(Boolean).join(' · ');
-      return `<article class="trial-log"><div class="trial-log-time">${esc(fmt(r.created_at))}</div><div class="trial-log-main"><b>${esc(r.target_display_name || '某位研究员')} 被执行：${esc(action)}</b><span>${esc(desc)}</span></div><div class="trial-log-action"><span class="trial-chip ${isDanger?'warn':'soft'}">${esc(action)}</span></div></article>`;
+      return `<article class="trial-log"><div class="trial-log-time">${esc(fmt(r.created_at))}</div><div class="trial-log-main"><b>${esc(r.target_display_name || '某位研究员')} 处理：${esc(action)}</b><span>${esc(desc)}</span></div><div class="trial-log-action"><span class="trial-chip ${isDanger?'warn':'soft'}">${esc(action)}</span></div></article>`;
     }).join('');
   }
 
@@ -86,7 +86,7 @@
       if(!state.me || !state.me.isAdmin) return;
       panel.classList.add('show');
       await loadTab('users');
-    }catch(e){ $('[data-admin-body]').innerHTML = `<div class="trial-empty">管理员身份检查失败：${esc(e.message||e)}</div>`; }
+    }catch(e){ $('[data-admin-body]').innerHTML = '<div class="trial-empty">处理权限暂时确认失败，请稍后再试。</div>'; }
   }
 
   async function loadTab(tab){
@@ -94,7 +94,7 @@
     ensureChatTab();
     $$('.trial-tab').forEach(b=>b.classList.toggle('active', b.dataset.adminTab === state.tab));
     const body=$('[data-admin-body]');
-    if(body) body.innerHTML='<div class="trial-empty">正在读取数据...</div>';
+    if(body) body.innerHTML='<div class="trial-empty">正在读取记录...</div>';
     try{
       if(state.tab==='users') await loadUsers();
       if(state.tab==='posts') await loadPosts();
@@ -103,7 +103,7 @@
       if(state.tab==='chats') await loadChats();
       if(state.tab==='logs') await loadAdminLogs();
       renderAdminBody();
-    }catch(e){ if(body) body.innerHTML=`<div class="trial-empty">读取失败：${esc(e.message||e)}</div>`; }
+    }catch(e){ if(body) body.innerHTML='<div class="trial-empty">记录读取失败，请稍后再试。</div>'; }
   }
 
   async function loadUsers(){
@@ -190,8 +190,8 @@
     return toolbar('房间消息管理') + `<div class="trial-table">${rows.map(m=>{ const main=`<b>${esc(m.nickname||'匿名研究员')} · ${esc(m.room_key||'未知房间')} ${m.is_deleted?'｜已删除':''}</b><p>${esc(short(m.content,160))}<br>发送：${esc(fmt(m.created_at))}</p>`; const actions=`<button class="danger" data-chat-act="delete" data-id="${m.id}">删除</button><button data-chat-act="restore" data-id="${m.id}">恢复</button>`; return row(main, actions, `${m.nickname||''} ${m.room_key||''} ${m.content||''}`); }).join('')}</div>`;
   }
 
-  function reason(defaultText){ const r = prompt('填写公开处刑原因：', defaultText || '违反研究所公约'); if(r === null) return null; return r.trim() || defaultText || '违反研究所公约'; }
-  function visible(){ return confirm('是否公开到“公开处刑”公告栏？\n确定 = 公开；取消 = 仅管理员后台记录'); }
+  function reason(defaultText){ const r = prompt('填写处理原因：', defaultText || '违反研究所公约'); if(r === null) return null; return r.trim() || defaultText || '违反研究所公约'; }
+  function visible(){ return confirm('是否公开到“处理公告”公告栏？\n确定 = 公开；取消 = 仅后台记录'); }
   async function rpc(name,args){ const {error}=await db().rpc(name,args); if(error) throw error; }
 
   async function handleClick(e){
