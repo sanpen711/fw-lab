@@ -34,6 +34,11 @@
     });
   }
 
+  function isMobile(){
+    try{ return window.matchMedia && window.matchMedia('(max-width:760px)').matches; }
+    catch(e){ return window.innerWidth <= 760; }
+  }
+
   function toast(msg, ms){
     var t = $('.fw-toast');
     if(!t){
@@ -351,14 +356,18 @@
 
   function closePanel(){ var panel = $('#fw-emoji-panel'); if(panel) panel.classList.remove('show'); panelOpen = false; }
 
-  function insertAtCursor(input, text){
+  function insertAtCursor(input, text, options){
     if(!input) return;
+    options = options || {};
     var start = typeof input.selectionStart === 'number' ? input.selectionStart : input.value.length;
     var end = typeof input.selectionEnd === 'number' ? input.selectionEnd : input.value.length;
     input.value = input.value.slice(0, start) + text + input.value.slice(end);
     var next = start + text.length;
-    input.focus();
-    try{ input.setSelectionRange(next, next); }catch(e){}
+    var shouldFocus = options.focus !== false && !(isMobile() && activeForm && activeForm.matches('[data-fw-wx-compose]'));
+    if(shouldFocus){
+      input.focus();
+      try{ input.setSelectionRange(next, next); }catch(e){}
+    }
     input.dispatchEvent(new Event('input', {bubbles:true}));
   }
 
@@ -464,6 +473,8 @@
       el.innerHTML = '<span class="fw-sticker-message"><img src="' + esc(url) + '" alt="表情"></span>';
     });
   }
+
+  window.fwRenderStickerMessages = renderStickerMessages;
 
   function bind(){
     document.addEventListener('click', function(e){
