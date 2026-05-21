@@ -1,5 +1,5 @@
 // F.w 研究所：最终补丁
-// 修复：1）点击回声不清掉搭子私聊未读；2）搭子头像/列表/消息增加身份提示；3）全站补公开处刑入口。
+// 修复：1）点击回声不清掉搭子私聊未读；2）搭子头像/列表/消息增加身份提示；3）全站补处理公告入口。
 (function(){
   if(window.__FW_SITE_FINAL_TWEAKS__) return;
   window.__FW_SITE_FINAL_TWEAKS__ = true;
@@ -64,7 +64,7 @@
         nav.appendChild(a);
       }
 
-      a.textContent = '公开处刑';
+      a.textContent = '处理公告';
       a.classList.toggle('active', active);
     }
 
