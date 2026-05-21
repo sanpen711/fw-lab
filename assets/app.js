@@ -322,7 +322,7 @@ loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
 loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
 loadJs("assets/fw-admin-buddy-lock.js?v=admin-buddy-lock-20260513-1");
 loadJs("assets/fw-report-rpc.js?v=report-rpc-20260513-1");
-loadJs("assets/fw-admin-polish.js?v=admin-polish-20260513-1");
+loadJs("assets/fw-admin-polish.js?v=admin-polish-20260521-copy-1");
 loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
 loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260513-1");
 
