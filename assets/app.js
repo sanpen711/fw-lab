@@ -297,12 +297,10 @@ loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
 loadJs("assets/fw-login-submit-fix.js?v=login-submit-fix-20260515-1");
 loadJs("assets/fw-register-disclaimer-link.js?v=register-disclaimer-link-20260513-1");
 loadJs("assets/fw-mobile-nav-actions.js?v=mobile-nav-actions-20260514-2");
-loadJs("assets/fw-room-stable-display-fix.js?v=room-stable-display-fix-20260514-1");
 loadJs("assets/fw-avatar-mobile-fix.js?v=avatar-mobile-fix-20260514-2");
 loadJs("assets/fw-avatar-upload-stage-fix.js?v=avatar-upload-stage-fix-20260514-1");
 loadJs("assets/fw-avatar-save-guard.js?v=avatar-save-guard-20260514-1");
 loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
-loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
 
 /*
   重要顺序：
