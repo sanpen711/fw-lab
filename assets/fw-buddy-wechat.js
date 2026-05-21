@@ -53,6 +53,15 @@
     return /(https?:\/\/|www\.|[a-z0-9][a-z0-9-]*\.(com|net|org|xyz|top|cn|cc|io|me|vip|club|site|info|online|shop|live|app)(\/|$|\s))/i.test(txt || '');
   }
 
+  function isMobile(){
+    try{ return window.matchMedia && window.matchMedia('(max-width:760px)').matches; }
+    catch(e){ return window.innerWidth <= 760; }
+  }
+
+  function isStickerPayload(text){
+    return /^\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]$/.test(String(text || '').trim());
+  }
+
   function waitForDb(){
     return new Promise(resolve => {
       if(window.fwDb && window.fwDb.enabled && window.fwDb.client){ resolve(true); return; }
@@ -118,6 +127,7 @@
     const style = document.createElement('style');
     style.id = 'fw-buddy-wechat-style';
     style.textContent = `
+      .fw-wx-back-list{display:none;}
       @media (min-width:761px){
         .fw-wx-modal{position:fixed;inset:0;z-index:10060;display:none;pointer-events:none;background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
         .fw-wx-modal.show{display:block;}
@@ -189,7 +199,7 @@
             <div class="fw-wx-list" data-fw-wx-list></div>
           </aside>
           <section class="fw-wx-right">
-            <div class="fw-wx-chat-head"><div><h3 data-fw-wx-chat-title>选择一个搭子</h3><span data-fw-wx-chat-sub>左侧点一个搭子，右侧开始低功耗私聊。</span></div></div>
+            <div class="fw-wx-chat-head"><div><button class="fw-wx-back-list" data-fw-wx-back-list type="button">← 返回搭子列表</button><h3 data-fw-wx-chat-title>选择一个搭子</h3><span data-fw-wx-chat-sub>左侧点一个搭子，右侧开始低功耗私聊。</span></div></div>
             <div class="fw-wx-messages" data-fw-wx-messages><div class="fw-wx-empty">还没有选择聊天对象。</div></div>
             <form class="fw-wx-compose" data-fw-wx-compose><input name="message" maxlength="300" autocomplete="off" placeholder="说一句只给搭子看的话，最多 300 字..."><button type="submit">发送</button></form>
           </section>
@@ -204,6 +214,8 @@
     const modal = ensureHub();
     const panel = $('[data-fw-wx-panel]');
     modal.classList.add('show');
+    modal.classList.remove('fw-wx-mobile-chatting');
+    document.body.classList.add('fw-wx-modal-open');
     if(panel){
       panel.style.right = '28px';
       panel.style.top = '88px';
@@ -290,12 +302,17 @@
       const convId = Number(data);
       if(!Number.isFinite(convId) || convId <= 0) throw new Error('私聊会话创建失败。');
       activeConversationId = convId;
+      if(isMobile()){
+        $('.fw-wx-modal')?.classList.add('fw-wx-mobile-chatting');
+      }
       await loadMessages();
       clearInterval(chatTimer);
       chatTimer = setInterval(() => {
         if($('.fw-wx-modal.show')) loadMessages();
       }, 4500);
-      $('[data-fw-wx-compose] input')?.focus();
+      if(!isMobile()){
+        $('[data-fw-wx-compose] input')?.focus();
+      }
     }catch(e){
       if(box) box.innerHTML = `<div class="fw-wx-empty">私聊打开失败：${esc(e.message || '请稍后重试。')}</div>`;
     }
@@ -323,6 +340,7 @@
         const p = profiles[m.sender_id] || {};
         return `<div class="fw-wx-pm ${mine ? 'me' : ''}"><div class="fw-wx-pm-name">${mine ? '你' : esc(p.nickname || '搭子')}</div><div class="fw-wx-pm-bubble">${esc(m.content)}</div></div>`;
       }).join('');
+      if(typeof window.fwRenderStickerMessages === 'function') window.fwRenderStickerMessages();
       box.scrollTop = box.scrollHeight;
     }catch(e){
       box.innerHTML = '<div class="fw-wx-empty">私聊读取失败。</div>';
@@ -334,8 +352,9 @@
     const input = form.querySelector('input[name="message"]');
     const text = (input.value || '').trim();
     if(!text){ input.focus(); return; }
-    if(text.length > 300){ toast('私聊最多 300 字。'); return; }
-    if(hasLink(text)){ toast('私聊第一版暂不支持链接。'); return; }
+    const stickerPayload = isStickerPayload(text);
+    if(!stickerPayload && text.length > 300){ toast('私聊最多 300 字。'); return; }
+    if(!stickerPayload && hasLink(text)){ toast('私聊第一版暂不支持链接。'); return; }
     const btn = form.querySelector('button');
     const old = btn.textContent;
     btn.disabled = true;
@@ -400,6 +419,7 @@
   }
 
   function startDrag(e){
+    if(isMobile()) return;
     const head = e.target.closest('.fw-wx-head');
     if(!head) return;
     if(e.target.closest('button,input,textarea,a,select')) return;
@@ -413,6 +433,7 @@
   }
 
   function moveDrag(e){
+    if(isMobile()) return;
     if(!drag) return;
     const p = e.touches ? e.touches[0] : e;
     const dx = p.clientX - drag.startX;
@@ -452,8 +473,27 @@
       const close = e.target.closest('[data-fw-wx-close]');
       if(close){
         $('.fw-wx-modal')?.classList.remove('show');
+        $('.fw-wx-modal')?.classList.remove('fw-wx-mobile-chatting');
+        document.body.classList.remove('fw-wx-modal-open');
         clearInterval(chatTimer);
         chatTimer = null;
+        return;
+      }
+      const backList = e.target.closest('[data-fw-wx-back-list]');
+      if(backList){
+        const modal = $('.fw-wx-modal');
+        if(modal) modal.classList.remove('fw-wx-mobile-chatting');
+        activeTargetId = '';
+        activeConversationId = null;
+        clearInterval(chatTimer);
+        chatTimer = null;
+        $$('.fw-wx-item').forEach(x => x.classList.remove('active'));
+        const title = $('[data-fw-wx-chat-title]');
+        const sub = $('[data-fw-wx-chat-sub]');
+        const box = $('[data-fw-wx-messages]');
+        if(title) title.textContent = '选择一个搭子';
+        if(sub) sub.textContent = '左侧点一个搭子，右侧开始低功耗私聊。';
+        if(box) box.innerHTML = '<div class="fw-wx-empty">还没有选择聊天对象。</div>';
         return;
       }
       const reset = e.target.closest('[data-fw-wx-reset]');
