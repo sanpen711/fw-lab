@@ -28,6 +28,7 @@
   var stickerCache = null;
   var loadingStickers = false;
   var uploading = false;
+  var stickerManageMode = false;
   var scanTimer = 0;
 
   function $(s, root){ return (root || document).querySelector(s); }
@@ -177,14 +178,20 @@
       .fw-post-emoji-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
       .fw-post-emoji-item{height:42px;border:1px solid rgba(28,28,24,.1);background:#fffaf1;border-radius:12px;font-size:24px;display:grid;place-items:center;cursor:pointer;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;}
       .fw-post-emoji-item:hover{border-color:rgba(217,121,121,.5);background:#fff3ef;}
-      .fw-post-sticker-toolbar{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:10px;}
+      .fw-post-sticker-toolbar{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;margin-bottom:10px;}
       .fw-post-sticker-upload{height:38px;border-radius:12px;border:1px dashed rgba(157,74,74,.45);background:#fff7ef;color:#9d4a4a;font-weight:1000;cursor:pointer;}
+      .fw-post-sticker-manage-btn{height:38px;min-width:58px;border-radius:12px;border:1px solid rgba(28,28,24,.16);background:#fffdf7;color:#1b1b18;font-weight:1000;cursor:pointer;padding:0 12px;}
+      .fw-post-sticker-manage-btn.active{background:#1b1b18;border-color:#1b1b18;color:#fffdf7;}
       .fw-post-sticker-count{font-size:11px;color:#8d857b;font-weight:900;white-space:nowrap;}
       .fw-post-sticker-empty{min-height:150px;display:grid;place-items:center;text-align:center;border:1px dashed rgba(28,28,24,.16);background:#fffaf1;border-radius:16px;color:#8d857b;font-weight:900;line-height:1.7;padding:12px;}
       .fw-post-sticker-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;}
-      .fw-post-sticker-item{height:64px;border:1px solid rgba(28,28,24,.1);background:#fffaf1;border-radius:14px;cursor:pointer;padding:4px;display:grid;place-items:center;overflow:hidden;}
+      .fw-post-sticker-item{position:relative;height:64px;border:1px solid rgba(28,28,24,.1);background:#fffaf1;border-radius:14px;cursor:pointer;padding:4px;display:grid;place-items:center;overflow:hidden;}
       .fw-post-sticker-item:hover{border-color:rgba(217,121,121,.55);background:#fff3ef;}
+      .fw-post-sticker-item.is-manage{border-color:rgba(157,74,74,.38);cursor:default;}
       .fw-post-sticker-item img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
+      .fw-post-sticker-del{position:absolute;right:4px;top:4px;width:28px;height:28px;border:0;border-radius:999px;background:rgba(157,74,74,.92);color:#fff;font-size:20px;font-weight:1000;line-height:1;cursor:pointer;display:none;place-items:center;box-shadow:0 6px 16px rgba(0,0,0,.22);touch-action:manipulation;}
+      .fw-post-sticker-del:hover{background:#8f3636;}
+      .fw-post-sticker-item:hover .fw-post-sticker-del,.fw-post-sticker-item.is-manage .fw-post-sticker-del{display:grid;}
 
       .fw-rich-content{white-space:pre-wrap;line-height:1.55;}
       .fw-rich-content .fw-inline-sticker{display:block;margin:8px 0;max-width:144px;max-height:144px;}
@@ -196,7 +203,7 @@
       .comment-list .fw-rich-content .fw-inline-sticker img{max-width:100px;max-height:100px;}
       .comment-list .fw-rich-content .fw-inline-media img{max-width:180px;max-height:220px;}
       .comment-list .fw-rich-content .fw-inline-media video{max-width:190px;max-height:230px;}
-      @media(max-width:760px){.fw-post-emoji-panel{width:calc(100vw - 24px);left:12px!important;right:12px!important;}.fw-rich-content .fw-inline-media img{max-width:220px;}.fw-rich-content .fw-inline-media video{max-width:230px;}}
+      @media(max-width:760px){.fw-post-emoji-panel{width:calc(100vw - 24px);left:12px!important;right:12px!important;}.fw-rich-content .fw-inline-media img{max-width:220px;}.fw-rich-content .fw-inline-media video{max-width:230px;}.fw-post-sticker-del{width:32px;height:32px;font-size:21px;right:4px;top:4px;}}
     `;
     document.head.appendChild(style);
   }
@@ -477,11 +484,18 @@
   function renderStickerList(rows){
     var body = $('[data-fw-post-emoji-body]');
     if(!body) return;
-    var html = '<div class="fw-post-sticker-toolbar"><button type="button" class="fw-post-sticker-upload" data-fw-post-sticker-upload>+ 添加表情</button><span class="fw-post-sticker-count">' + rows.length + '/' + MAX_STICKERS + '</span></div>';
+    rows = rows || [];
+    var manageText = stickerManageMode ? '完成' : '管理';
+    var manageActive = stickerManageMode ? ' active' : '';
+    var html = '<div class="fw-post-sticker-toolbar"><button type="button" class="fw-post-sticker-upload" data-fw-post-sticker-upload>+ 添加表情</button><button type="button" class="fw-post-sticker-manage-btn' + manageActive + '" data-fw-post-sticker-manage-toggle>' + manageText + '</button><span class="fw-post-sticker-count">' + rows.length + '/' + MAX_STICKERS + '</span></div>';
     if(!rows.length){
       html += '<div class="fw-post-sticker-empty"><div>♥<br>还没有添加表情<br>可以先在这里添加</div></div>';
     }else{
-      html += '<div class="fw-post-sticker-grid">' + rows.map(function(s){ return '<button type="button" class="fw-post-sticker-item" data-fw-post-sticker-url="' + esc(s.image_url) + '"><img src="' + esc(s.image_url) + '" alt="表情"></button>'; }).join('') + '</div>';
+      html += '<div class="fw-post-sticker-grid">' + rows.map(function(s){
+        var manageClass = stickerManageMode ? ' is-manage' : '';
+        var title = stickerManageMode ? '管理表情' : '插入表情';
+        return '<button type="button" class="fw-post-sticker-item' + manageClass + '" data-fw-post-sticker-url="' + esc(s.image_url) + '" title="' + title + '"><img src="' + esc(s.image_url) + '" alt="表情"><span class="fw-post-sticker-del" data-fw-post-sticker-delete="' + esc(s.id) + '" title="删除" aria-label="删除表情">×</span></button>';
+      }).join('') + '</div>';
     }
     body.innerHTML = html;
   }
@@ -662,6 +676,20 @@
     toast('表情已添加。');
   }
 
+  async function deleteSticker(id){
+    if(!id) return;
+    if(!window.confirm('确定从我的表情包中移除这个表情吗？')) return;
+    try{
+      var res = await withTimeout(window.fwDb.client.from('user_stickers').update({is_deleted:true}).eq('id', id), 10000, '删除超时，请稍后重试。');
+      if(res.error) throw res.error;
+      stickerCache = (stickerCache || []).filter(function(s){ return String(s.id) !== String(id); });
+      renderStickerList(stickerCache);
+      toast('表情已删除');
+    }catch(e){
+      toast(friendlyError(e), 4000);
+    }
+  }
+
   function bind(){
     document.addEventListener('click', function(e){
       var emoji = e.target.closest && e.target.closest('[data-fw-post-emoji]');
@@ -701,9 +729,24 @@
         insertAtCursor(activeTarget, emojiItem.dataset.fwPostEmojiInsert || '');
         return;
       }
+      var manage = e.target.closest && e.target.closest('[data-fw-post-sticker-manage-toggle]');
+      if(manage){
+        e.preventDefault();
+        stickerManageMode = !stickerManageMode;
+        renderStickerList(stickerCache || []);
+        return;
+      }
+      var del = e.target.closest && e.target.closest('[data-fw-post-sticker-delete]');
+      if(del){
+        e.preventDefault();
+        e.stopPropagation();
+        deleteSticker(del.dataset.fwPostStickerDelete);
+        return;
+      }
       var sticker = e.target.closest && e.target.closest('[data-fw-post-sticker-url]');
       if(sticker){
         e.preventDefault();
+        if(stickerManageMode) return;
         insertAtCursor(activeTarget, encodeSticker(sticker.dataset.fwPostStickerUrl || ''));
         closeEmoji();
         return;
