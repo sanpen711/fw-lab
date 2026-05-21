@@ -71,6 +71,9 @@
     .poll-tag.official{background:var(--accent);border-color:var(--accent);color:var(--white)}
     .poll-tag.live{background:var(--deep);border-color:var(--deep);color:var(--white)}
     .poll-tag.ended{background:#777064;border-color:#777064;color:#fff}
+    .poll-promote-button{display:inline-grid;place-items:center;min-height:26px;padding:0 9px;border:1px solid rgba(157,74,74,.34);background:#fff7f3;color:var(--accent-dark);font-family:inherit;font-size:12px;font-weight:950;cursor:pointer}
+    .poll-promote-button:hover{border-color:var(--accent);background:#fff1eb}
+    .poll-promote-button:disabled{opacity:.58;cursor:not-allowed}
     .poll-deadline{min-width:92px;text-align:right}
     .poll-deadline strong{display:block;font-size:20px;line-height:1;color:var(--accent-dark);letter-spacing:-.04em}
     .poll-deadline span{display:block;margin-top:6px;color:var(--muted);font-size:12px;font-weight:950}
@@ -288,6 +291,6 @@
 
 <script src="assets/app.js?v=polls-20260519-1"></script>
 <script src="assets/auth.js?v=site-final-tweaks-20260512-1"></script>
-<script src="assets/fw-polls.js?v=polls-20260520-2"></script>
+<script src="assets/fw-polls.js?v=polls-20260521-promote-1"></script>
 </body>
 </html>
