@@ -224,7 +224,7 @@ function initPublicTrialNav(){
       nav.appendChild(link);
     }
 
-    link.textContent = "公开处刑";
+    link.textContent = "处理公告";
     link.classList.toggle("active", active);
   }
 
