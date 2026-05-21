@@ -1,5 +1,5 @@
 // F.w 研究所：废话档案榜单增强脚本
-// 作用：渲染上周荣誉榜、昨日榜、历史归档预览；如果上周/昨日没有数据，自动用最近数据兜底，方便测试。
+// 作用：渲染上周荣誉榜、昨日榜、历史归档预览；如果上周/昨日没有数据，自动用最近数据兜底。
 (function(){
   if(window.__FW_ARCHIVE_ENHANCE__) return;
   window.__FW_ARCHIVE_ENHANCE__ = true;
@@ -165,7 +165,7 @@
   }
 
   function emptyAward(title){
-    return `<article class="award-card"><div class="award-head"><div><small>EMPTY</small><h3>${esc(title)}</h3></div><div class="medal">--</div></div><div class="empty-award">暂时没有可归档的数据。先去精神广场贡献一点低功耗废话。</div><div class="quote"><b>系统提示：</b>有互动后这里会自动出现领奖台。</div></article>`;
+    return `<article class="award-card"><div class="award-head"><div><small>EMPTY</small><h3>${esc(title)}</h3></div><div class="medal">--</div></div><div class="empty-award">暂时没有可展示的榜单内容。先去精神广场贡献一点低功耗废话。</div><div class="quote"><b>提示：</b>有互动后这里会自动出现领奖台。</div></article>`;
   }
 
   function winnerHtml(user, index){
@@ -225,11 +225,11 @@
       const cfg = AWARDS[type];
       const top = (weeklyRankings[type] || [])[0];
       if(!top){
-        return `<article class="history-card"><small>${esc(cfg.en)}</small><h4>${esc(cfg.title)}</h4><p>暂未入档。互动数据达到后自动归档。</p></article>`;
+        return `<article class="history-card"><small>${esc(cfg.en)}</small><h4>${esc(cfg.title)}</h4><p>暂未入档。互动数量达到后会自动展示。</p></article>`;
       }
       return `<article class="history-card"><small>${esc(cfg.en)}</small><h4>${esc(top.nickname)}</h4><p>${esc(cfg.title)} · ${Number(top.score || 0)} 次<br>${esc(top.topPost?.content || '暂无代表发言。')}</p></article>`;
     });
-    box.innerHTML = cards.join('') + `<article class="history-card"><small>NOTE</small><h4>归档规则</h4><p>当前先展示最近一轮榜首。后续可以升级为每周永久保存。</p></article>`;
+    box.innerHTML = cards.join('') + `<article class="history-card"><small>NOTE</small><h4>归档规则</h4><p>当前先展示最近一轮榜首，后续会继续完善展示。</p></article>`;
   }
 
   function bindTabs(){
@@ -250,7 +250,7 @@
     const ok = await waitForDb();
     if(!ok){
       const grid = $('[data-weekly-grid]');
-      if(grid) grid.innerHTML = '<div class="archive-loading">数据库连接未就绪，刷新后再试。</div>';
+      if(grid) grid.innerHTML = '<div class="archive-loading">榜单暂时读取失败，请稍后刷新。</div>';
       return;
     }
 
@@ -271,8 +271,8 @@
     }catch(err){
       const grid = $('[data-weekly-grid]');
       const daily = $('[data-daily-list]');
-      if(grid) grid.innerHTML = `<div class="archive-loading">榜单读取失败：${esc(err.message || '请确认 Supabase 表权限正常。')}</div>`;
-      if(daily) daily.innerHTML = '<div class="empty-list">榜单读取失败。</div>';
+      if(grid) grid.innerHTML = '<div class="archive-loading">榜单暂时读取失败，请稍后刷新。</div>';
+      if(daily) daily.innerHTML = '<div class="empty-list">榜单暂时读取失败，请稍后刷新。</div>';
     }
   }
 
