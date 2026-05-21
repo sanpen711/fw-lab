@@ -93,7 +93,7 @@
   }
 
   function askPublic(){
-    return window.confirm('是否公开到“公开处刑”公告栏？\n确定 = 公开；取消 = 仅管理员后台记录');
+    return window.confirm('是否公开到“处理公告”公告栏？\n确定 = 公开；取消 = 仅后台记录');
   }
 
   async function rpc(name, args){
@@ -192,7 +192,7 @@
     var oldPrompt = window.prompt;
 
     window.prompt = function(message, defaultValue){
-      if(String(message || '').includes('填写公开处刑原因')){
+      if(String(message || '').includes('填写处理原因')){
         return reasonPicker(defaultValue);
       }
 
