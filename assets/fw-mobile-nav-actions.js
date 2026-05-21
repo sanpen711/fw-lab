@@ -177,7 +177,7 @@
         <a class="fw-mobile-page-link" href="rooms.html">学术研讨</a>
         <a class="fw-mobile-page-link" href="archive.html">废话档案</a>
         <a class="fw-mobile-page-link" href="rules.html">入馆须知</a>
-        <a class="fw-mobile-page-link" href="admin.html">公开处刑</a>
+        <a class="fw-mobile-page-link" href="admin.html">处理公告</a>
       </nav>
       <div class="fw-mobile-right-actions">
         <button type="button" class="fw-mobile-action-btn" data-fw-mobile-open="echo">回声<span class="fw-mobile-action-badge" data-fw-mobile-badge="echo"></span></button>
