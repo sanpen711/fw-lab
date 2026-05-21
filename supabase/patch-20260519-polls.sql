@@ -438,6 +438,55 @@ begin
 end;
 $$;
 
+create or replace function public.fw_promote_poll_to_official(
+  p_poll_id bigint
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := public.fw_require_poll_user();
+  v_poll public.polls%rowtype;
+  v_is_admin boolean := false;
+begin
+  select exists (
+    select 1
+    from public.profiles
+    where id = v_uid
+      and role = 'admin'
+      and is_banned = false
+  ) into v_is_admin;
+
+  if not v_is_admin then
+    raise exception '只有管理员可以将课题设为官方课题。';
+  end if;
+
+  select *
+  into v_poll
+  from public.polls
+  where id = p_poll_id
+  for update;
+
+  if not found then
+    raise exception '这个课题不存在。';
+  end if;
+
+  if v_poll.is_deleted = true then
+    raise exception '这个课题已删除，不能设为官方课题。';
+  end if;
+
+  if v_poll.closed_at is not null or v_poll.ends_at <= now() then
+    raise exception '已结束课题不能设为官方课题';
+  end if;
+
+  update public.polls
+  set is_official = true
+  where id = v_poll.id;
+end;
+$$;
+
 alter table public.polls enable row level security;
 alter table public.poll_options enable row level security;
 alter table public.poll_votes enable row level security;
@@ -488,3 +537,5 @@ revoke execute on function public.fw_my_poll_votes() from anon, public;
 grant execute on function public.fw_my_poll_votes() to authenticated;
 revoke execute on function public.fw_delete_my_poll_option(bigint) from anon, public;
 grant execute on function public.fw_delete_my_poll_option(bigint) to authenticated;
+revoke execute on function public.fw_promote_poll_to_official(bigint) from anon, public;
+grant execute on function public.fw_promote_poll_to_official(bigint) to authenticated;
