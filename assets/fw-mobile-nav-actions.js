@@ -8,6 +8,8 @@
   window.__FW_MOBILE_NAV_ACTIONS_COMPACT__ = true;
 
   var badgeTimer = 0;
+  var quickBadgeDelays = [300, 1000, 2500];
+  var optimisticHiddenUntil = {echo:0, buddy:0};
 
   function $(s, root){ return (root || document).querySelector(s); }
   function $$(s, root){ return Array.from((root || document).querySelectorAll(s)); }
@@ -39,7 +41,7 @@
           flex:1 1 auto!important;
           min-width:0!important;
           display:grid!important;
-          grid-template-columns:repeat(4,minmax(0,1fr))!important;
+          grid-template-columns:repeat(3,minmax(0,1fr))!important;
           gap:5px!important;
           border:0!important;
           padding:0!important;
@@ -174,7 +176,6 @@
     strip.className = 'fw-mobile-compact-strip';
     strip.innerHTML = `
       <nav class="fw-mobile-page-links" aria-label="手机快捷导航">
-        <a class="fw-mobile-page-link" href="rooms.html">学术研讨</a>
         <a class="fw-mobile-page-link" href="archive.html">废话档案</a>
         <a class="fw-mobile-page-link" href="rules.html">入馆须知</a>
         <a class="fw-mobile-page-link" href="admin.html">处理公告</a>
@@ -241,10 +242,50 @@
     }
   }
 
-  function syncBadgesFromOriginal(){
+  function syncBadgesFromOriginal(kind){
     if(!isMobile()) return;
-    setBadge('echo', getOriginalBadgeCount('echo'));
-    setBadge('buddy', getOriginalBadgeCount('buddy'));
+
+    function syncOne(name){
+      var count = getOriginalBadgeCount(name);
+      if(count > 0 && Date.now() < (optimisticHiddenUntil[name] || 0)) return;
+      setBadge(name, count);
+    }
+
+    if(kind){
+      syncOne(kind);
+      return;
+    }
+
+    syncOne('echo');
+    syncOne('buddy');
+  }
+
+  function refreshThenSync(kind){
+    var p = null;
+
+    if(typeof window.fwRefreshSplitBadges === 'function'){
+      try{
+        p = window.fwRefreshSplitBadges();
+      }catch(e){}
+    }
+
+    if(p && typeof p.then === 'function'){
+      p.then(function(){ syncBadgesFromOriginal(kind); }).catch(function(){ syncBadgesFromOriginal(kind); });
+      return;
+    }
+
+    syncBadgesFromOriginal(kind);
+  }
+
+  function scheduleQuickBadgeSync(kind){
+    optimisticHiddenUntil[kind] = Date.now() + 900;
+    setBadge(kind, 0);
+
+    quickBadgeDelays.forEach(function(ms){
+      setTimeout(function(){
+        refreshThenSync(kind);
+      }, ms);
+    });
   }
 
   function bind(){
@@ -252,10 +293,13 @@
       var btn = e.target.closest && e.target.closest('[data-fw-mobile-open]');
       if(!btn) return;
 
+      var kind = btn.dataset.fwMobileOpen;
+
       e.preventDefault();
       e.stopPropagation();
-      fireOriginal(btn.dataset.fwMobileOpen);
-      setTimeout(syncBadgesFromOriginal, 500);
+      setBadge(kind, 0);
+      fireOriginal(kind);
+      scheduleQuickBadgeSync(kind);
     }, true);
 
     window.addEventListener('resize', function(){
