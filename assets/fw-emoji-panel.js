@@ -246,7 +246,7 @@
       .fw-sticker-item img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
       .fw-sticker-del{position:absolute;right:4px;top:4px;width:28px;height:28px;border:0;border-radius:999px;background:rgba(157,74,74,.92);color:#fff;font-size:20px;font-weight:1000;line-height:1;cursor:pointer;display:none;place-items:center;box-shadow:0 6px 16px rgba(0,0,0,.22);touch-action:manipulation;}
       .fw-sticker-del:hover{background:#8f3636;}
-      .fw-sticker-item:hover .fw-sticker-del,.fw-sticker-item.is-manage .fw-sticker-del{display:grid;}
+      .fw-sticker-item.is-manage .fw-sticker-del{display:grid;}
       .fw-sticker-message{display:inline-grid;place-items:center;max-width:132px;max-height:132px;background:transparent!important;padding:0!important;}
       .fw-sticker-message img{max-width:128px;max-height:128px;object-fit:contain;display:block;border-radius:10px;}
       .fw-wx-pm-bubble.fw-sticker-bubble,.fw-bubble p.fw-sticker-bubble{background:transparent!important;box-shadow:none!important;border:0!important;padding:0!important;}
@@ -305,7 +305,8 @@
       html += '<div class="fw-sticker-grid">' + rows.map(function(s){
         var manageClass = stickerManageMode ? ' is-manage' : '';
         var title = stickerManageMode ? '管理表情' : '发送表情';
-        return '<button type="button" class="fw-sticker-item' + manageClass + '" data-fw-sticker-url="' + esc(s.image_url) + '" title="' + title + '"><img src="' + esc(s.image_url) + '" alt="表情"><span class="fw-sticker-del" data-fw-sticker-delete="' + esc(s.id) + '" title="删除" aria-label="删除表情">×</span></button>';
+        var deleteHtml = stickerManageMode ? '<span class="fw-sticker-del" data-fw-sticker-delete="' + esc(s.id) + '" title="删除" aria-label="删除表情">×</span>' : '';
+        return '<button type="button" class="fw-sticker-item' + manageClass + '" data-fw-sticker-url="' + esc(s.image_url) + '" title="' + title + '"><img src="' + esc(s.image_url) + '" alt="表情">' + deleteHtml + '</button>';
       }).join('') + '</div>';
     }
     body.innerHTML = html;
@@ -344,17 +345,31 @@
     panel.style.top = Math.max(12, top) + 'px';
   }
 
+  function isBuddyCompose(form){
+    return !!(form && form.matches && form.matches('[data-fw-wx-compose]'));
+  }
+
   function openPanel(trigger, input, form){
     activeInput = input;
     activeForm = form;
     var panel = ensurePanel();
+    var buddy = isBuddyCompose(form);
+    document.body.classList.toggle('fw-buddy-emoji-open', buddy);
+    if(buddy && isMobile() && input && document.activeElement === input){
+      try{ input.blur(); }catch(e){}
+    }
     renderPanelBody(activeTab || 'emoji');
     panel.classList.add('show');
     panelOpen = true;
     requestAnimationFrame(function(){ positionPanel(trigger); });
   }
 
-  function closePanel(){ var panel = $('#fw-emoji-panel'); if(panel) panel.classList.remove('show'); panelOpen = false; }
+  function closePanel(){
+    var panel = $('#fw-emoji-panel');
+    if(panel) panel.classList.remove('show');
+    document.body.classList.remove('fw-buddy-emoji-open');
+    panelOpen = false;
+  }
 
   function insertAtCursor(input, text, options){
     if(!input) return;
@@ -512,6 +527,12 @@
         return;
       }
       if(panelOpen && !e.target.closest('#fw-emoji-panel')) closePanel();
+    }, true);
+
+    document.addEventListener('focusin', function(e){
+      var target = e.target;
+      if(!isMobile() || !target || !target.closest || !target.closest('[data-fw-wx-compose]')) return;
+      if(target.matches && target.matches('input, textarea, [contenteditable="true"]')) closePanel();
     }, true);
 
     document.addEventListener('change', function(e){
