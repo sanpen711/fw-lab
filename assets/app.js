@@ -310,8 +310,8 @@ loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260521-copy-1");
 */
 loadJs("assets/fw-stable-core.js?v=stable-core-20260513-2");
 loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260521-mobile-chat-1");
-loadJs("assets/fw-mobile-social-open-fix.js?v=mobile-social-open-fix-20260521-buddy-steps-1");
-loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
+loadJs("assets/fw-mobile-social-open-fix.js?v=mobile-social-open-fix-20260522-compose-1");
+loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260522-buddy-input-1");
 loadJs("assets/fw-sticker-direct-render.js?v=sticker-direct-render-20260514-1");
 loadJs("assets/fw-chat-media-upload.js?v=chat-media-upload-20260514-1");
 loadJs("assets/fw-post-media-tools.js?v=fw-post-media-tools-20260521-1");
