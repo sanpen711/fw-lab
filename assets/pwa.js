@@ -4,6 +4,10 @@
   var installInFlight = false;
   var installed = false;
 
+  var IOS_GUIDE = 'Safari 分享 → 添加到主屏幕';
+  var DESKTOP_HINT = '可使用 Microsoft Edge 打开本站，并点击地址栏安装图标';
+  var MOBILE_HINT = '请用手机系统浏览器或 Edge 打开本站，在浏览器菜单中选择‘添加到桌面’。';
+
   function $$(selector){
     return Array.prototype.slice.call(document.querySelectorAll(selector));
   }
@@ -23,11 +27,14 @@
     return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
   }
 
-  function isIosSafari(){
+  function isIosDevice(){
     var ua = navigator.userAgent || '';
-    var iOS = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    var safari = /safari/i.test(ua) && !/crios|fxios|edgios|opios|duckduckgo/i.test(ua);
-    return iOS && safari;
+    return /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  function isMobile(){
+    var ua = navigator.userAgent || '';
+    return (window.matchMedia && window.matchMedia('(max-width: 760px)').matches) || /android|iphone|ipad|ipod|mobile/i.test(ua);
   }
 
   function injectInstallStyle(){
@@ -36,13 +43,14 @@
     var style = document.createElement('style');
     style.id = 'fw-pwa-install-style';
     style.textContent = [
-      '.fw-pwa-install-btn[hidden],.fw-pwa-mobile-install[hidden],.fw-pwa-ios-guide[hidden]{display:none!important}',
+      '[data-fw-pwa-install][hidden],.fw-pwa-mobile-install[hidden],.fw-pwa-install-hint[hidden]{display:none!important}',
       '.fw-pwa-install-btn{min-height:38px;padding:0 16px;border-radius:999px;border:1px solid rgba(246,246,240,.5);background:rgba(246,246,240,.1);color:var(--white);font-size:13px;font-weight:950;white-space:nowrap}',
-      '.fw-pwa-install-btn:hover{background:var(--accent);border-color:var(--accent)}',
-      '.fw-pwa-install-btn.is-ios-guide{max-width:220px;cursor:default}',
-      '.fw-pwa-mobile-install{margin:24px 0 0;max-width:460px;padding:16px;border:1px solid rgba(246,246,240,.24);background:rgba(246,246,240,.09);backdrop-filter:blur(10px)}',
-      '.fw-pwa-mobile-install-btn{width:100%;min-height:52px;border:0;border-radius:999px;background:var(--accent);color:var(--white);font-weight:1000}',
-      '.fw-pwa-ios-guide{margin:0;color:var(--white);font-size:15px;line-height:1.5;font-weight:950;text-align:center}',
+      '.fw-pwa-install-btn:not([aria-disabled="true"]):hover{background:var(--accent);border-color:var(--accent)}',
+      '.fw-pwa-install-btn.is-install-hint{max-width:290px;min-height:38px;height:auto;padding:7px 14px;line-height:1.35;white-space:normal;text-align:left;cursor:default;background:rgba(246,246,240,.08);border-color:rgba(246,246,240,.28)}',
+      '.fw-pwa-install-btn.is-ios-guide{max-width:230px;text-align:center}',
+      '.fw-pwa-mobile-install{margin:18px 0 0;max-width:430px;padding:12px 14px;border:1px solid rgba(246,246,240,.24);background:rgba(246,246,240,.09);backdrop-filter:blur(10px)}',
+      '.fw-pwa-mobile-install-btn{width:100%;min-height:48px;border:0;border-radius:999px;background:var(--accent);color:var(--white);font-size:15px;font-weight:1000}',
+      '.fw-pwa-install-hint{margin:0;color:var(--white);font-size:13px;line-height:1.45;font-weight:900;text-align:center}',
       '@media(min-width:761px){.fw-pwa-mobile-install{display:none!important}}',
       '@media(max-width:760px){.fw-pwa-install-nav{display:none!important}.fw-pwa-mobile-install:not([hidden]){display:block!important}}'
     ].join('\n');
@@ -77,7 +85,7 @@
       box.className = 'fw-pwa-mobile-install';
       box.setAttribute('data-fw-pwa-mobile-install', '');
       box.setAttribute('hidden', '');
-      box.innerHTML = '<button class="fw-pwa-mobile-install-btn" type="button" data-fw-pwa-install hidden>添加到桌面</button><p class="fw-pwa-ios-guide" data-fw-pwa-ios-guide hidden>Safari 分享 → 添加到主屏幕</p>';
+      box.innerHTML = '<button class="fw-pwa-mobile-install-btn" type="button" data-fw-pwa-install hidden>添加到桌面</button><p class="fw-pwa-install-hint" data-fw-pwa-install-hint hidden></p>';
 
       var actions = hero.querySelector('.hero-actions');
       if(actions) hero.insertBefore(box, actions);
@@ -102,13 +110,22 @@
     }
   }
 
-  function setButtonText(iosGuide){
+  function setInstallButtons(mode, hintText){
     $$('[data-fw-pwa-install]').forEach(function(btn){
       var isNav = btn.hasAttribute('data-fw-pwa-install-nav');
-      btn.textContent = iosGuide ? 'Safari 分享 → 添加到主屏幕' : (isNav ? '安装应用' : '添加到桌面');
-      btn.classList.toggle('is-ios-guide', !!iosGuide);
-      if(iosGuide) btn.setAttribute('aria-disabled', 'true');
-      else btn.removeAttribute('aria-disabled');
+      var disabled = mode === 'hint' || mode === 'ios';
+
+      btn.classList.toggle('is-install-hint', mode === 'hint');
+      btn.classList.toggle('is-ios-guide', mode === 'ios');
+
+      if(mode === 'prompt'){
+        btn.textContent = isNav ? '安装应用' : '添加到桌面';
+        btn.removeAttribute('aria-disabled');
+      }else{
+        btn.textContent = hintText || (isNav ? '安装应用' : '添加到桌面');
+        if(disabled) btn.setAttribute('aria-disabled', 'true');
+        else btn.removeAttribute('aria-disabled');
+      }
     });
   }
 
@@ -116,23 +133,36 @@
     ensureInstallEntrypoints();
 
     var standalone = installed || isStandalone();
-    var iosGuide = !standalone && !savedPrompt && isIosSafari();
     var promptReady = !standalone && !!savedPrompt;
+    var iosGuide = !standalone && !promptReady && isIosDevice();
+    var mobile = isMobile();
+    var mobileHint = !standalone && !promptReady && !iosGuide && mobile;
+    var desktopHint = !standalone && !promptReady && !iosGuide && !mobile;
+    var hintText = iosGuide ? IOS_GUIDE : (mobileHint ? MOBILE_HINT : (desktopHint ? DESKTOP_HINT : ''));
+    var mode = promptReady ? 'prompt' : (iosGuide ? 'ios' : ((mobileHint || desktopHint) ? 'hint' : 'hidden'));
 
-    setButtonText(iosGuide);
+    setInstallButtons(mode, hintText);
 
     $$('[data-fw-pwa-install]').forEach(function(btn){
       var isNav = btn.hasAttribute('data-fw-pwa-install-nav');
-      var show = promptReady || (iosGuide && isNav);
+      var show = false;
+
+      if(promptReady){
+        show = true;
+      }else if((iosGuide || desktopHint) && isNav){
+        show = true;
+      }
+
       setHidden(btn, !show);
     });
 
     $$('[data-fw-pwa-mobile-install]').forEach(function(box){
-      setHidden(box, !(promptReady || iosGuide));
+      setHidden(box, !(promptReady || iosGuide || mobileHint));
     });
 
-    $$('[data-fw-pwa-ios-guide]').forEach(function(el){
-      setHidden(el, !iosGuide);
+    $$('[data-fw-pwa-install-hint]').forEach(function(el){
+      el.textContent = hintText;
+      setHidden(el, !(iosGuide || mobileHint));
     });
   }
 
@@ -141,14 +171,14 @@
       var btn = e.target.closest && e.target.closest('[data-fw-pwa-install]');
       if(!btn) return;
 
+      e.preventDefault();
+
       if(btn.getAttribute('aria-disabled') === 'true'){
-        e.preventDefault();
         return;
       }
 
       if(!savedPrompt || installInFlight) return;
 
-      e.preventDefault();
       installInFlight = true;
 
       var promptEvent = savedPrompt;
@@ -190,16 +220,22 @@
       var displayMode = window.matchMedia('(display-mode: standalone)');
       if(displayMode.addEventListener) displayMode.addEventListener('change', updateInstallUI);
       else if(displayMode.addListener) displayMode.addListener(updateInstallUI);
+
+      var mobileMode = window.matchMedia('(max-width: 760px)');
+      if(mobileMode.addEventListener) mobileMode.addEventListener('change', updateInstallUI);
+      else if(mobileMode.addListener) mobileMode.addListener(updateInstallUI);
     }
   }
 
-  window.addEventListener('beforeinstallprompt', function(e){
-    if(isStandalone()) return;
-    e.preventDefault();
-    savedPrompt = e;
-    installed = false;
-    updateInstallUI();
-  });
+  if(!isIosDevice()){
+    window.addEventListener('beforeinstallprompt', function(e){
+      if(isStandalone()) return;
+      e.preventDefault();
+      savedPrompt = e;
+      installed = false;
+      updateInstallUI();
+    });
+  }
 
   window.addEventListener('appinstalled', function(){
     installed = true;
