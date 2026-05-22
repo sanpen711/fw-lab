@@ -2,7 +2,13 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="F.w 研究所">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 <title>F.w 研究所｜精神收纳站</title>
 <meta name="description" content="F.w 研究所，一个收纳摸鱼、废话、无效努力和精神离岗的非正式研究所。">
 <style>
@@ -48,5 +54,6 @@ $('#sendComment').onclick=()=>{if(!loginNeeded())return;let body=$('#commentInpu
 $('#adminLogin').onclick=()=>{if($('#adminPass').value==='fw2026'){$('#adminPanel').classList.add('admin-on');show('已进入管理台')}else show('口令不对')};$('#exitAdmin').onclick=()=>{$('#adminPanel').classList.remove('admin-on');$('#adminPass').value='';show('已退出管理')};$('#addPost').onclick=()=>{let title=$('#newTitle').value.trim(),body=$('#newBody').value.trim(),tag=$('#newTag').value;if(!title||!body)return show('标题和内容都要填');posts.unshift({id:'p'+Date.now(),title,tag,body,created:new Date().toISOString().slice(0,10)});$('#newTitle').value='';$('#newBody').value='';save();page=1;renderPosts();renderProfile();show('档案已发布')};$('#resetDemo').onclick=()=>{if(!confirm('确定恢复默认档案吗？'))return;posts=[...seed];likes={};favs={};comments={};save();renderPosts();renderProfile();show('已恢复默认')};
 renderProfile();renderPosts();renderStats();
 </script>
+  <script src="assets/pwa.js?v=pwa-20260522-1"></script>
 </body>
 </html>
