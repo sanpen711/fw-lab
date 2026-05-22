@@ -1,0 +1,144 @@
+name: One-time PWA setup
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/pwa-setup-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  pwa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate PWA files
+        run: |
+          python3 <<'PY'
+          import json, re, struct, zlib
+          from pathlib import Path
+
+          root = Path('.')
+          icons_dir = root / 'assets' / 'icons'
+          icons_dir.mkdir(parents=True, exist_ok=True)
+
+          manifest = {
+              'name': 'F.w 研究所',
+              'short_name': 'F.w',
+              'start_url': '/',
+              'scope': '/',
+              'display': 'standalone',
+              'background_color': '#0f172a',
+              'theme_color': '#0f172a',
+              'lang': 'zh-CN',
+              'icons': [
+                  {'src': '/assets/icons/icon-192.png', 'sizes': '192x192', 'type': 'image/png'},
+                  {'src': '/assets/icons/icon-512.png', 'sizes': '512x512', 'type': 'image/png'},
+                  {'src': '/assets/icons/icon-maskable-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
+              ],
+          }
+          (root / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          (root / 'service-worker.js').write_text("""// F.w 研究所：PWA 基础版 Service Worker\n// 只负责安装/激活生命周期，不缓存 HTML，也不拦截业务请求。\nself.addEventListener('install', function(){\n  self.skipWaiting();\n});\n\nself.addEventListener('activate', function(event){\n  event.waitUntil(self.clients.claim());\n});\n""", encoding='utf-8')
+
+          (root / 'assets' / 'pwa.js').write_text("""// F.w 研究所：PWA 基础注册脚本\n(function(){\n  if(!('serviceWorker' in navigator)) return;\n\n  window.addEventListener('load', function(){\n    navigator.serviceWorker.register('/service-worker.js').catch(function(err){\n      console.warn('[FW PWA] service worker registration failed', err);\n    });\n  });\n})();\n""", encoding='utf-8')
+
+          def png_chunk(kind, data):
+              return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data) & 0xffffffff)
+
+          def write_png(path, size, maskable=False):
+              bg = (15, 23, 42, 255)
+              fg = (255, 253, 247, 255)
+              accent = (217, 121, 121, 255)
+              pixels = bytearray(bg * (size * size))
+
+              def rect(x, y, w, h, color):
+                  x0 = max(0, int(x)); y0 = max(0, int(y))
+                  x1 = min(size, int(x + w)); y1 = min(size, int(y + h))
+                  for yy in range(y0, y1):
+                      row = (yy * size + x0) * 4
+                      for xx in range(x0, x1):
+                          off = (yy * size + xx) * 4
+                          pixels[off:off+4] = bytes(color)
+
+              # Subtle inner tile keeps the icon readable when rounded by platforms.
+              pad = int(size * (0.10 if maskable else 0.075))
+              rect(pad, pad, size - pad * 2, size - pad * 2, (17, 31, 54, 255))
+
+              font = {
+                  'F': ['11111','10000','10000','11110','10000','10000','10000'],
+                  'W': ['10001','10001','10001','10101','10101','11011','10001'],
+              }
+              scale = max(1, size // 18)
+              gap = max(1, scale)
+              width_units = 5 + 1 + 1 + 1 + 5
+              text_w = width_units * scale + 3 * gap
+              text_h = 7 * scale
+              x = (size - text_w) // 2
+              y = (size - text_h) // 2
+
+              def draw_pattern(pattern, x0, y0, color):
+                  for row, line in enumerate(pattern):
+                      for col, bit in enumerate(line):
+                          if bit == '1':
+                              rect(x0 + col * scale, y0 + row * scale, scale, scale, color)
+
+              draw_pattern(font['F'], x, y, fg)
+              x += 5 * scale + gap
+              rect(x, y + 6 * scale, scale, scale, accent)
+              x += scale + gap
+              draw_pattern(font['W'], x, y, fg)
+
+              rows = bytearray()
+              stride = size * 4
+              for yy in range(size):
+                  rows.append(0)
+                  rows.extend(pixels[yy*stride:(yy+1)*stride])
+              raw = zlib.compress(bytes(rows), 9)
+              data = b'\x89PNG\r\n\x1a\n'
+              data += png_chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 6, 0, 0, 0))
+              data += png_chunk(b'IDAT', raw)
+              data += png_chunk(b'IEND', b'')
+              path.write_bytes(data)
+
+          write_png(icons_dir / 'icon-192.png', 192, False)
+          write_png(icons_dir / 'icon-512.png', 512, False)
+          write_png(icons_dir / 'icon-maskable-512.png', 512, True)
+
+          pwa_head = """  <link rel=\"manifest\" href=\"/manifest.json\">\n  <meta name=\"theme-color\" content=\"#0f172a\">\n  <meta name=\"apple-mobile-web-app-capable\" content=\"yes\">\n  <meta name=\"apple-mobile-web-app-title\" content=\"F.w 研究所\">\n  <meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\">\n  <link rel=\"apple-touch-icon\" href=\"/assets/icons/icon-192.png\">"""
+          pwa_script = '  <script src="assets/pwa.js?v=pwa-20260522-1"></script>'
+
+          def has_pwa_head(text):
+              return 'rel="manifest" href="/manifest.json"' in text or "rel='manifest' href='/manifest.json'" in text
+
+          for path in sorted(root.glob('*.html')):
+              text = path.read_text(encoding='utf-8')
+              text = re.sub(r'<meta\s+name=["\']viewport["\']\s+content=["\'][^"\']*["\']\s*/?>', '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />', text, count=1, flags=re.I)
+              if 'name="viewport"' not in text and "name='viewport'" not in text:
+                  text = re.sub(r'(<meta\s+charset=["\'][^"\']+["\']\s*/?>)', r'\1\n  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />', text, count=1, flags=re.I)
+              if not has_pwa_head(text):
+                  text = re.sub(r'(<meta\s+name=["\']viewport["\'][^>]*>)', r'\1\n' + pwa_head, text, count=1, flags=re.I)
+              if 'assets/pwa.js' not in text:
+                  text = text.replace('</body>', pwa_script + '\n</body>')
+              path.write_text(text, encoding='utf-8')
+
+          workflow = root / '.github' / 'workflows' / 'pwa-setup-once.yml'
+          if workflow.exists():
+              workflow.unlink()
+          PY
+      - name: Commit generated PWA support
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No PWA changes to commit."
+            exit 0
+          fi
+          git commit -m "Add basic PWA support"
+          git push
