@@ -249,7 +249,7 @@
 
   if('serviceWorker' in navigator){
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('/service-worker.js').catch(function(err){
+      navigator.serviceWorker.register('service-worker.js').catch(function(err){
         console.warn('[FW PWA] service worker registration failed', err);
       });
     });
