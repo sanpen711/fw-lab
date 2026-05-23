@@ -9,6 +9,7 @@
 
   var badgeTimer = 0;
   var quickBadgeDelays = [300, 1000, 2500];
+  var entryRetryDelays = [180, 320];
   var optimisticHiddenUntil = {echo:0, buddy:0};
 
   function $(s, root){ return (root || document).querySelector(s); }
@@ -47,7 +48,8 @@
       @media(max-width:768px){
         :root{
           --fw-mobile-tab-height:64px;
-          --fw-mobile-bottom-space:calc(var(--fw-mobile-tab-height) + env(safe-area-inset-bottom, 0px) + 14px);
+          --fw-mobile-tabbar-height:78px;
+          --fw-mobile-bottom-space:calc(var(--fw-mobile-tabbar-height) + env(safe-area-inset-bottom, 0px) + 14px);
         }
 
         body{
@@ -174,8 +176,8 @@
         .fw-mobile-nav-menu{
           position:fixed!important;
           left:12px!important;
-          bottom:calc(var(--fw-mobile-tab-height) + env(safe-area-inset-bottom, 0px) + 12px)!important;
-          z-index:981!important;
+          bottom:calc(var(--fw-mobile-tabbar-height) + env(safe-area-inset-bottom, 0px) + 12px)!important;
+          z-index:982!important;
           width:min(246px, calc(100vw - 24px))!important;
           padding:8px!important;
           border-radius:10px!important;
@@ -221,6 +223,28 @@
           color:var(--accent)!important;
           font-size:11px!important;
           font-weight:1000!important;
+        }
+
+        .fw-toast{
+          position:fixed!important;
+          left:50%!important;
+          right:auto!important;
+          top:auto!important;
+          bottom:calc(var(--fw-mobile-tabbar-height, 78px) + env(safe-area-inset-bottom, 0px) + 16px)!important;
+          width:max-content!important;
+          max-width:min(320px, calc(100vw - 32px))!important;
+          padding:10px 14px!important;
+          box-sizing:border-box!important;
+          white-space:normal!important;
+          text-align:center!important;
+          line-height:1.45!important;
+          transform:translateX(-50%) translateY(10px)!important;
+          pointer-events:none!important;
+          z-index:981!important;
+        }
+
+        .fw-toast.show{
+          transform:translateX(-50%) translateY(0)!important;
         }
 
         @media(max-width:390px){
@@ -275,8 +299,8 @@
     bar.setAttribute('aria-label', '手机底部导航');
     bar.innerHTML = `
       <button type="button" class="fw-mobile-tab" data-fw-mobile-tab="nav" aria-controls="fw-mobile-nav-menu" aria-expanded="false">${icon('nav')}<span>导航</span></button>
-      <button type="button" class="fw-mobile-tab" data-fw-mobile-tab="buddy" data-fw-mobile-open="buddy">${icon('buddy')}<span>搭子</span><span class="fw-mobile-action-badge" data-fw-mobile-badge="buddy"></span></button>
-      <button type="button" class="fw-mobile-tab" data-fw-mobile-tab="echo" data-fw-mobile-open="echo">${icon('echo')}<span>回声</span><span class="fw-mobile-action-badge" data-fw-mobile-badge="echo"></span></button>
+      <button type="button" class="fw-mobile-tab" data-fw-mobile-tab="buddy">${icon('buddy')}<span>搭子</span><span class="fw-mobile-action-badge" data-fw-mobile-badge="buddy"></span></button>
+      <button type="button" class="fw-mobile-tab" data-fw-mobile-tab="echo">${icon('echo')}<span>回声</span><span class="fw-mobile-action-badge" data-fw-mobile-badge="echo"></span></button>
       <button type="button" class="fw-mobile-tab" data-fw-mobile-tab="me">${icon('me')}<span>我的</span></button>
     `;
 
@@ -342,39 +366,127 @@
     if(menu && menu.classList.contains('show')) setNavMenu(false);
   }
 
-  function fireOriginal(kind){
-    var selector = kind === 'buddy' ? '[data-fw-open-buddy]' : '[data-fw-open-echo]';
-    var original = $$(selector).find(function(el){
-      return !el.closest('#fw-mobile-compact-strip') && !el.closest('#fw-mobile-tabbar');
-    });
+  function isMobileNavOwned(el){
+    return !!(el && (el.closest('#fw-mobile-compact-strip') || el.closest('#fw-mobile-tabbar') || el.closest('#fw-mobile-nav-menu')));
+  }
 
-    if(original){
-      original.click();
-      return;
+  function isDisabledEntry(el){
+    return !!(el && (el.disabled || el.getAttribute('aria-disabled') === 'true'));
+  }
+
+  function isVisibleEntry(el){
+    if(!el || !el.isConnected || el.hidden || isDisabledEntry(el)) return false;
+    if(el.closest('[hidden], [aria-hidden="true"]')) return false;
+
+    var style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+    if(style && (style.display === 'none' || style.visibility === 'hidden')) return false;
+
+    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  }
+
+  function entryCandidates(selector){
+    return $$(selector).filter(function(el){
+      return el && el.isConnected && !isMobileNavOwned(el) && !isDisabledEntry(el);
+    });
+  }
+
+  function findEntry(selector){
+    var entries = entryCandidates(selector);
+    return entries.find(isVisibleEntry) || entries[0] || null;
+  }
+
+  function clickEntry(el){
+    if(!el) return false;
+    el.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}));
+    return true;
+  }
+
+  function openWithExistingFunction(kind){
+    var names = kind === 'echo'
+      ? ['fwOpenStableEcho', 'fwOpenEcho', 'fwOpenEchoPanel']
+      : ['fwOpenBuddy', 'fwOpenBuddyWechat', 'fwOpenBuddyCenter'];
+
+    for(var i = 0; i < names.length; i += 1){
+      var fn = window[names[i]];
+      if(typeof fn !== 'function') continue;
+      try{
+        fn();
+        return true;
+      }catch(e){}
     }
 
-    var tmp = document.createElement('button');
-    tmp.type = 'button';
-    tmp.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
-    tmp.setAttribute(kind === 'buddy' ? 'data-fw-open-buddy' : 'data-fw-open-echo', '1');
-    document.body.appendChild(tmp);
-    tmp.click();
-    setTimeout(function(){ tmp.remove(); }, 60);
+    return false;
+  }
+
+  function triggerOriginal(kind){
+    if(openWithExistingFunction(kind)) return true;
+
+    var selector = kind === 'buddy' ? '[data-fw-open-buddy]' : '[data-fw-open-echo]';
+    return clickEntry(findEntry(selector));
+  }
+
+  function triggerOriginalWithRetry(kind, message){
+    var attempt = 0;
+
+    function run(){
+      if(triggerOriginal(kind)) return;
+
+      if(attempt >= entryRetryDelays.length){
+        showMobileHint(message);
+        return;
+      }
+
+      setTimeout(run, entryRetryDelays[attempt]);
+      attempt += 1;
+    }
+
+    run();
   }
 
   function openMine(){
-    var userAction = $('.fw-userbar [data-fw-open], .fw-userbar .fw-login-pill, .fw-userbar button');
+    var selectors = [
+      '.fw-userbar [data-fw-open], .fw-userbar .fw-login-pill, .fw-userbar button',
+      '[data-login-cta], [data-sb-open], [data-fw-open]'
+    ];
 
-    if(userAction){
-      userAction.click();
-      return;
+    for(var i = 0; i < selectors.length; i += 1){
+      var entry = findEntry(selectors[i]);
+      if(clickEntry(entry)) return true;
     }
 
-    var loginAction = $('[data-login-cta], [data-sb-open], [data-fw-open]');
+    return false;
+  }
 
-    if(loginAction){
-      loginAction.click();
+  function openMineWithRetry(){
+    var attempt = 0;
+
+    function run(){
+      if(openMine()) return;
+
+      if(attempt >= entryRetryDelays.length){
+        showMobileHint('账号入口还没加载完成，请稍后再点。');
+        return;
+      }
+
+      setTimeout(run, entryRetryDelays[attempt]);
+      attempt += 1;
     }
+
+    run();
+  }
+
+  function showMobileHint(message){
+    var t = $('.fw-toast');
+    if(!t){
+      t = document.createElement('div');
+      t.className = 'fw-toast';
+      document.body.appendChild(t);
+    }
+
+    t.textContent = message;
+    t.classList.add('show');
+    clearTimeout(window.__fwMobileNavToast);
+    window.__fwMobileNavToast = setTimeout(function(){ t.classList.remove('show'); }, 2400);
   }
 
   function setActiveTab(kind){
@@ -388,7 +500,7 @@
 
   function getOriginalBadgeCount(kind){
     var selector = kind === 'buddy' ? '[data-fw-open-buddy]' : '[data-fw-open-echo]';
-    var el = $$(selector).find(function(x){ return !x.closest('#fw-mobile-compact-strip') && !x.closest('#fw-mobile-tabbar'); });
+    var el = findEntry(selector);
     if(!el) return 0;
 
     var badge = el.querySelector('.fw-top-badge, .fw-social-badge, [class*="badge"]');
@@ -403,7 +515,7 @@
   }
 
   function setBadge(kind, count){
-    $$('[data-fw-mobile-open="' + kind + '"]').forEach(function(btn){
+    $$('[data-fw-mobile-open="' + kind + '"], [data-fw-mobile-tab="' + kind + '"]').forEach(function(btn){
       var badge = $('[data-fw-mobile-badge="' + kind + '"]', btn);
       if(!badge) return;
 
@@ -464,6 +576,17 @@
     });
   }
 
+  function openSocialFromTab(kind){
+    closeNavMenu();
+    setActiveTab(kind);
+    scheduleQuickBadgeSync(kind);
+
+    triggerOriginalWithRetry(
+      kind,
+      kind === 'buddy' ? '搭子功能还没加载完成，请稍后再点。' : '回声功能还没加载完成，请稍后再点。'
+    );
+  }
+
   function bind(){
     document.addEventListener('click', function(e){
       var menu = $('#fw-mobile-nav-menu');
@@ -479,38 +602,44 @@
         closeNavMenu();
       }
 
+      var tab = e.target.closest && e.target.closest('[data-fw-mobile-tab]');
+      if(tab){
+        var kind = tab.dataset.fwMobileTab;
+
+        e.preventDefault();
+        e.stopPropagation();
+        if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+        if(kind === 'nav'){
+          toggleNavMenu();
+          return;
+        }
+
+        if(kind === 'buddy' || kind === 'echo'){
+          openSocialFromTab(kind);
+          return;
+        }
+
+        closeNavMenu();
+        setActiveTab(kind);
+
+        if(kind === 'me'){
+          openMineWithRetry();
+        }
+        return;
+      }
+
       var openBtn = e.target.closest && e.target.closest('[data-fw-mobile-open]');
       if(openBtn){
         var openKind = openBtn.dataset.fwMobileOpen;
 
         e.preventDefault();
         e.stopPropagation();
-        closeNavMenu();
-        setActiveTab(openKind);
-        setBadge(openKind, 0);
-        fireOriginal(openKind);
-        scheduleQuickBadgeSync(openKind);
-        return;
-      }
+        if(e.stopImmediatePropagation) e.stopImmediatePropagation();
 
-      var tab = e.target.closest && e.target.closest('[data-fw-mobile-tab]');
-      if(!tab) return;
-
-      var kind = tab.dataset.fwMobileTab;
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      if(kind === 'nav'){
-        toggleNavMenu();
-        return;
-      }
-
-      closeNavMenu();
-      setActiveTab(kind);
-
-      if(kind === 'me'){
-        openMine();
+        if(openKind === 'buddy' || openKind === 'echo'){
+          openSocialFromTab(openKind);
+        }
       }
     }, true);
 
