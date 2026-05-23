@@ -23,7 +23,10 @@
     buddyTab: 'friends',
     buddySeq: 0,
     echoSeq: 0,
-    resumeTimer: 0
+    resumeTimer: 0,
+    authStatus: 'unknown',
+    me: null,
+    authPromise: null
   };
 
   function withTimeout(promise, ms, message){
@@ -48,11 +51,91 @@
     });
   }
 
-  async function getMe(){
-    try{
-      if(!(await waitDb())) return null;
-      return await withTimeout(window.fwDb.getCurrentUser(), 5000, '登录状态读取超时，请重新加载后再试。');
-    }catch(e){ return null; }
+  function closeAuthPanels(){
+    $$('[data-sb-auth].show, .sb-auth.show, .fw-auth.show').forEach(function(modal){
+      modal.classList.remove('show');
+    });
+  }
+
+  function closeBuddyPanels(){
+    $$('[data-fw-wx-buddy-modal].show, .fw-wx-modal.show').forEach(function(modal){
+      modal.classList.remove('show', 'fw-wx-mobile-chatting');
+    });
+    if(document.body) document.body.classList.remove('fw-wx-modal-open');
+  }
+
+  function closeEchoPanels(){
+    $$('[data-fw-stable-echo-modal].show, .fw-stable-echo-modal.show, [data-fw-mobile-echo-modal].show, .fw-mobile-echo-modal.show').forEach(function(modal){
+      modal.classList.remove('show');
+    });
+  }
+
+  function closeMobilePanels(target){
+    if(target !== 'buddy') closeBuddyPanels();
+    if(target !== 'echo') closeEchoPanels();
+    if(target !== 'auth') closeAuthPanels();
+    debug('close panels', {target:target || 'none'});
+  }
+
+  async function syncAuthState(force){
+    if(state.authPromise && !force) return state.authPromise;
+
+    state.authStatus = 'recovering';
+    state.authPromise = (async function(){
+      if(!(await waitDb())){
+        state.authStatus = 'unavailable';
+        state.me = null;
+        return {status:'unavailable', me:null};
+      }
+
+      var client = window.fwDb && window.fwDb.client;
+      var sessionUser = null;
+
+      try{
+        if(client && client.auth && typeof client.auth.getSession === 'function'){
+          var sessionResult = await withTimeout(client.auth.getSession(), 6000, '登录状态读取超时，请重新加载后再试。');
+          sessionUser = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.user;
+          if(sessionResult && sessionResult.error) debug('auth session warning', sessionResult.error.message || sessionResult.error);
+        }
+      }catch(err){
+        debug('auth session failed', err && err.message ? err.message : err);
+      }
+
+      try{
+        if(!sessionUser && client && client.auth && typeof client.auth.getUser === 'function'){
+          var userResult = await withTimeout(client.auth.getUser(), 6000, '登录状态读取超时，请重新加载后再试。');
+          sessionUser = userResult && userResult.data && userResult.data.user;
+          if(userResult && userResult.error) debug('auth user warning', userResult.error.message || userResult.error);
+        }
+      }catch(err){
+        debug('auth user failed', err && err.message ? err.message : err);
+      }
+
+      if(!sessionUser || !sessionUser.id){
+        state.authStatus = 'logged-out';
+        state.me = null;
+        return {status:'logged-out', me:null};
+      }
+
+      var me = {id:sessionUser.id, email:sessionUser.email || ''};
+
+      try{
+        if(window.fwDb && typeof window.fwDb.getCurrentUser === 'function'){
+          var profile = await withTimeout(window.fwDb.getCurrentUser(), 7000, '个人资料读取超时，已先恢复登录状态。');
+          if(profile && profile.id) me = Object.assign({}, me, profile);
+        }
+      }catch(err){
+        debug('profile enrich skipped', err && err.message ? err.message : err);
+      }
+
+      if(!me.id) me.id = sessionUser.id;
+      state.authStatus = 'logged-in';
+      state.me = me;
+      return {status:'logged-in', me:me};
+    })();
+
+    try{ return await state.authPromise; }
+    finally{ state.authPromise = null; }
   }
 
   function avatar(name, url, cls){
@@ -162,23 +245,31 @@
     }).join('');
   }
 
+  function authMessage(kind, auth){
+    if(auth && auth.status === 'unavailable') return '登录状态暂时读取失败，请稍后重试，或点“导航 → 重新加载”。';
+    return kind === 'buddy' ? '请先点底部「我的」注册 / 登录后再查看搭子。' : '请先点底部「我的」注册 / 登录后再查看回声。';
+  }
+
   async function reloadBuddyCenter(selectId){
     var seq = ++state.buddySeq;
+    closeMobilePanels('buddy');
     var modal = showBuddyPanel();
     var list = $('[data-fw-wx-list]', modal || document);
     setBuddyTabs();
-    if(list) list.innerHTML = '<div class="fw-wx-empty">正在读取搭子列表...</div>';
+    if(list) list.innerHTML = '<div class="fw-wx-empty">正在恢复登录状态...</div>';
 
     try{
-      var me = await getMe();
+      var auth = await syncAuthState(true);
       if(seq !== state.buddySeq) return false;
+      var me = auth && auth.me;
       if(!me || !me.id || me.disabled){
-        if(list) list.innerHTML = '<div class="fw-wx-empty">请先注册 / 登录后再查看搭子。</div>';
-        $('[data-fw-open], [data-login-cta], [data-sb-open]')?.click();
+        if(list) list.innerHTML = '<div class="fw-wx-empty">' + esc(me && me.disabled ? '账号已停用，暂时无法查看搭子。' : authMessage('buddy', auth)) + '</div>';
+        debug('buddy auth blocked', {status:auth && auth.status});
         return false;
       }
 
-      debug('buddy load start', {tab:state.buddyTab});
+      if(list) list.innerHTML = '<div class="fw-wx-empty">正在读取搭子列表...</div>';
+      debug('buddy load start', {tab:state.buddyTab, auth:state.authStatus});
       var result = await getFriendships(me.id);
       if(seq !== state.buddySeq) return false;
       var accepted = result.rows.filter(function(row){ return row.status === 'accepted'; });
@@ -204,6 +295,7 @@
   }
 
   function openBuddyCenter(selectId){
+    closeMobilePanels('buddy');
     showBuddyPanel();
     reloadBuddyCenter(selectId || '');
     return true;
@@ -234,21 +326,24 @@
 
   async function reloadEchoCenter(){
     var seq = ++state.echoSeq;
+    closeMobilePanels('echo');
     var modal = ensureEchoPanel();
     var body = modal && (modal.querySelector('[data-fw-stable-echo-body]') || modal.querySelector('[data-fw-mobile-echo-body]'));
     if(modal) modal.classList.add('show');
-    if(body) body.innerHTML = '<div class="fw-stable-echo-empty">正在读取回声...</div>';
+    if(body) body.innerHTML = '<div class="fw-stable-echo-empty">正在恢复登录状态...</div>';
 
     try{
-      var me = await getMe();
+      var auth = await syncAuthState(true);
       if(seq !== state.echoSeq) return false;
+      var me = auth && auth.me;
       if(!me || !me.id){
-        if(body) body.innerHTML = '<div class="fw-stable-echo-empty">请先注册 / 登录后再查看回声。</div>';
-        $('[data-fw-open], [data-login-cta], [data-sb-open]')?.click();
+        if(body) body.innerHTML = '<div class="fw-stable-echo-empty">' + esc(authMessage('echo', auth)) + '</div>';
+        debug('echo auth blocked', {status:auth && auth.status});
         return false;
       }
 
-      debug('echo load start');
+      if(body) body.innerHTML = '<div class="fw-stable-echo-empty">正在读取回声...</div>';
+      debug('echo load start', {auth:state.authStatus});
       var result = await withTimeout(
         window.fwDb.client
           .from('notifications')
@@ -296,7 +391,9 @@
   }
 
   function openEchoCenter(){
-    ensureEchoPanel()?.classList.add('show');
+    closeMobilePanels('echo');
+    var modal = ensureEchoPanel();
+    if(modal) modal.classList.add('show');
     reloadEchoCenter();
     return true;
   }
@@ -307,6 +404,8 @@
     fw.reloadBuddyCenter = reloadBuddyCenter;
     fw.openEchoCenter = openEchoCenter;
     fw.reloadEchoCenter = reloadEchoCenter;
+    fw.closeMobilePanels = closeMobilePanels;
+    fw.syncMobileAuth = function(){ return syncAuthState(true); };
     window.fwOpenStableEcho = openEchoCenter;
 
     var api = window.FWMobileActions = window.FWMobileActions || {};
@@ -319,6 +418,7 @@
     state.resumeTimer = setTimeout(function(){
       expose();
       debug('resume check', reason || 'manual');
+      syncAuthState(false).catch(function(err){ debug('resume auth failed', err && err.message ? err.message : err); });
       if($('[data-fw-wx-buddy-modal].show, .fw-wx-modal.show')) reloadBuddyCenter();
       if($('[data-fw-stable-echo-modal].show, .fw-stable-echo-modal.show, [data-fw-mobile-echo-modal].show, .fw-mobile-echo-modal.show')) reloadEchoCenter();
     }, 80);
@@ -327,6 +427,15 @@
   function bind(){
     if(window.__FW_MOBILE_SOCIAL_RESUME_DATA_BOUND__) return;
     window.__FW_MOBILE_SOCIAL_RESUME_DATA_BOUND__ = true;
+
+    window.addEventListener('click', function(e){
+      var tab = e.target.closest && e.target.closest('[data-fw-mobile-tab]');
+      if(!tab) return;
+      var kind = tab.dataset.fwMobileTab || '';
+      if(kind === 'buddy') closeMobilePanels('buddy');
+      else if(kind === 'echo') closeMobilePanels('echo');
+      else if(kind === 'me') closeMobilePanels('auth');
+    }, true);
 
     document.addEventListener('click', function(e){
       var tab = e.target.closest && e.target.closest('[data-fw-wx-tab]');
@@ -339,7 +448,9 @@
       }
 
       if(e.target.closest && e.target.closest('[data-fw-stable-buddy]')){
-        $('[data-fw-stable-echo-modal], .fw-stable-echo-modal')?.classList.remove('show');
+        e.preventDefault();
+        e.stopPropagation();
+        if(e.stopImmediatePropagation) e.stopImmediatePropagation();
         openBuddyCenter();
       }
     }, true);
