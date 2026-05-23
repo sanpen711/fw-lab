@@ -13,7 +13,7 @@
   var mobileShellBound = false;
   var mobileShellObserver = null;
   var quickBadgeDelays = [300, 1000, 2500];
-  var entryRetryDelays = [180, 320];
+  var entryRetryDelays = [100, 300];
   var optimisticHiddenUntil = {echo:0, buddy:0};
 
   function $(s, root){ return (root || document).querySelector(s); }
@@ -21,6 +21,15 @@
 
   function isMobile(){
     return (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) || /Android|iPhone|iPad|iPod|Mobile|MicroMessenger|MQQBrowser|baiduboxapp|baidubrowser/i.test(navigator.userAgent || '');
+  }
+
+  function debug(){
+    if(!window.console || typeof window.console.debug !== 'function') return;
+    try{
+      var args = Array.prototype.slice.call(arguments);
+      args.unshift('[FWMobileActions]');
+      window.console.debug.apply(window.console, args);
+    }catch(e){}
   }
 
   function currentPage(){
@@ -425,38 +434,125 @@
     return true;
   }
 
-  function openWithExistingFunction(kind){
-    var names = kind === 'echo'
-      ? ['fwOpenStableEcho', 'fwOpenEcho', 'fwOpenEchoPanel']
-      : ['fwOpenBuddy', 'fwOpenBuddyWechat', 'fwOpenBuddyCenter'];
+  function isPanelOpen(kind){
+    if(kind === 'buddy') return !!$('[data-fw-wx-buddy-modal].show, .fw-wx-modal.show');
+    return !!$('[data-fw-stable-echo-modal].show, .fw-stable-echo-modal.show, [data-fw-mobile-echo-modal].show, .fw-mobile-echo-modal.show');
+  }
 
-    for(var i = 0; i < names.length; i += 1){
-      var fn = window[names[i]];
-      if(typeof fn !== 'function') continue;
-      try{
-        fn();
-        return true;
-      }catch(e){}
+  function openExistingBuddyPanel(){
+    var modal = $('[data-fw-wx-buddy-modal], .fw-wx-modal');
+    if(!modal || !modal.querySelector('[data-fw-wx-panel], .fw-wx-panel')) return false;
+    modal.classList.add('show');
+    modal.classList.remove('fw-wx-mobile-chatting');
+    if(document.body) document.body.classList.add('fw-wx-modal-open');
+    debug('openBuddy direct panel');
+    return true;
+  }
+
+  function openExistingEchoPanel(){
+    var modal = $('[data-fw-stable-echo-modal], .fw-stable-echo-modal, [data-fw-mobile-echo-modal], .fw-mobile-echo-modal');
+    if(!modal) return false;
+    modal.classList.add('show');
+    debug('openEcho direct panel');
+    return true;
+  }
+
+  function ensureActionNamespace(reason){
+    var api = window.FWMobileActions = window.FWMobileActions || {};
+
+    if(typeof api.openBuddy !== 'function' || api.openBuddy.__fwMobileNavFallback){
+      api.openBuddy = function(){
+        return openExistingBuddyPanel();
+      };
+      api.openBuddy.__fwMobileNavFallback = true;
     }
 
-    return false;
+    if(typeof api.openEcho !== 'function' || api.openEcho.__fwMobileNavFallback){
+      api.openEcho = function(){
+        if(openExistingEchoPanel()) return true;
+        if(typeof window.fwOpenStableEcho === 'function'){
+          debug('openEcho direct function fwOpenStableEcho');
+          window.fwOpenStableEcho();
+          return true;
+        }
+        return false;
+      };
+      api.openEcho.__fwMobileNavFallback = true;
+    }
+
+    debug('check openers', {
+      reason: reason || 'manual',
+      openBuddy: typeof api.openBuddy === 'function',
+      openEcho: typeof api.openEcho === 'function',
+      stableEcho: typeof window.fwOpenStableEcho === 'function'
+    });
+
+    return api;
+  }
+
+  function callDirectAction(kind){
+    var api = ensureActionNamespace('click-' + kind);
+    var fn = kind === 'buddy' ? api.openBuddy : api.openEcho;
+    if(typeof fn !== 'function') return false;
+
+    try{
+      debug(kind === 'buddy' ? 'openBuddy via direct function' : 'openEcho via direct function');
+      return fn() !== false;
+    }catch(e){
+      debug(kind === 'buddy' ? 'openBuddy direct failed' : 'openEcho direct failed', e && e.message ? e.message : e);
+      return false;
+    }
   }
 
   function triggerOriginal(kind){
-    if(openWithExistingFunction(kind)) return true;
-
     var selector = kind === 'buddy' ? '[data-fw-open-buddy]' : '[data-fw-open-echo]';
+    debug(kind === 'buddy' ? 'openBuddy via fallback click' : 'openEcho via fallback click');
     return clickEntry(findEntry(selector));
+  }
+
+  function markActiveWhenOpen(kind, message, source){
+    var tries = 0;
+    var delays = [80, 260, 700, 1400];
+
+    function check(){
+      if(isPanelOpen(kind)){
+        setActiveTab(kind);
+        debug(kind + ' opened', source || 'unknown');
+        return;
+      }
+
+      if(tries >= delays.length){
+        setActiveTab('');
+        showMobileHint(message);
+        debug(kind + ' open failed', source || 'unknown');
+        return;
+      }
+
+      setTimeout(check, delays[tries]);
+      tries += 1;
+    }
+
+    check();
   }
 
   function triggerOriginalWithRetry(kind, message){
     var attempt = 0;
 
     function run(){
-      if(triggerOriginal(kind)) return;
+      if(callDirectAction(kind)){
+        markActiveWhenOpen(kind, message, 'direct');
+        return;
+      }
+
+      if(triggerOriginal(kind)){
+        markActiveWhenOpen(kind, message, 'fallback-click');
+        return;
+      }
 
       if(attempt >= entryRetryDelays.length){
+        setActiveTab('');
         showMobileHint(message);
+        debug(kind + ' opener missing');
         return;
       }
 
@@ -614,7 +710,7 @@
 
   function openSocialFromTab(kind){
     closeNavMenu();
-    setActiveTab(kind);
+    setActiveTab('');
     scheduleQuickBadgeSync(kind);
 
     triggerOriginalWithRetry(
@@ -729,7 +825,7 @@
     mobileShellObserver.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
   }
 
-  function refreshMobileShell(){
+  function refreshMobileShell(reason){
     if(!document.body) return;
 
     injectStyle();
@@ -739,6 +835,7 @@
     ensureStrip();
     ensureTabbar();
     ensureNavMenu();
+    ensureActionNamespace(reason || 'refresh');
     closeNavMenu();
     clearStaleToast();
     bindMobileNavActions();
