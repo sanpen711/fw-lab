@@ -34,7 +34,19 @@
 
   function isMobile(){
     var ua = navigator.userAgent || '';
-    return (window.matchMedia && window.matchMedia('(max-width: 760px)').matches) || /android|iphone|ipad|ipod|mobile/i.test(ua);
+    var userAgentMobile = /android|iphone|ipad|ipod|mobile/i.test(ua);
+    var userAgentDataMobile = !!(navigator.userAgentData && navigator.userAgentData.mobile);
+    var narrowScreen = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+    return narrowScreen || userAgentMobile || userAgentDataMobile;
+  }
+
+  function isInAppBrowser(){
+    var ua = navigator.userAgent || '';
+    return /baiduboxapp|baidubrowser|baiduhd|MicroMessenger|QQ\/|MQQBrowser|WeiBo|Weibo|AlipayClient|DingTalk|UCBrowser|Quark|NewsArticle|ToutiaoMicroApp/i.test(ua);
+  }
+
+  function isMobileInstallContext(){
+    return isMobile() || isIosDevice() || isInAppBrowser();
   }
 
   function injectInstallStyle(){
@@ -51,7 +63,7 @@
       '.fw-pwa-mobile-install{margin:18px 0 0;max-width:430px;padding:12px 14px;border:1px solid rgba(246,246,240,.24);background:rgba(246,246,240,.09);backdrop-filter:blur(10px)}',
       '.fw-pwa-mobile-install-btn{width:100%;min-height:48px;border:0;border-radius:999px;background:var(--accent);color:var(--white);font-size:15px;font-weight:1000}',
       '.fw-pwa-install-hint{margin:0;color:var(--white);font-size:13px;line-height:1.45;font-weight:900;text-align:center}',
-      '@media(min-width:761px){.fw-pwa-mobile-install{display:none!important}}',
+      '@media(min-width:761px){.fw-pwa-mobile-install:not(.is-mobile-device){display:none!important}}',
       '@media(max-width:760px){.fw-pwa-install-nav{display:none!important}.fw-pwa-mobile-install:not([hidden]){display:block!important}}'
     ].join('\n');
     document.head.appendChild(style);
@@ -134,8 +146,8 @@
 
     var standalone = installed || isStandalone();
     var promptReady = !standalone && !!savedPrompt;
+    var mobile = !standalone && isMobileInstallContext();
     var iosGuide = !standalone && !promptReady && isIosDevice();
-    var mobile = isMobile();
     var mobileHint = !standalone && !promptReady && !iosGuide && mobile;
     var desktopHint = !standalone && !promptReady && !iosGuide && !mobile;
     var hintText = iosGuide ? IOS_GUIDE : (mobileHint ? MOBILE_HINT : (desktopHint ? DESKTOP_HINT : ''));
@@ -148,8 +160,8 @@
       var show = false;
 
       if(promptReady){
-        show = true;
-      }else if((iosGuide || desktopHint) && isNav){
+        show = mobile ? !isNav : isNav;
+      }else if((iosGuide || desktopHint) && isNav && !mobile){
         show = true;
       }
 
@@ -157,12 +169,13 @@
     });
 
     $$('[data-fw-pwa-mobile-install]').forEach(function(box){
-      setHidden(box, !(promptReady || iosGuide || mobileHint));
+      box.classList.toggle('is-mobile-device', mobile);
+      setHidden(box, !(mobile && (promptReady || iosGuide || mobileHint)));
     });
 
     $$('[data-fw-pwa-install-hint]').forEach(function(el){
       el.textContent = hintText;
-      setHidden(el, !(iosGuide || mobileHint));
+      setHidden(el, !(mobile && (iosGuide || mobileHint)));
     });
   }
 
