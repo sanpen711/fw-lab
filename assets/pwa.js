@@ -4,7 +4,7 @@
   var installInFlight = false;
   var installed = false;
 
-  var IOS_GUIDE = 'Safari 分享 → 添加到主屏幕';
+  var IOS_GUIDE = 'iPhone 用户：点下方分享按钮，再选‘添加到主屏幕’';
   var DESKTOP_HINT = '可使用 Microsoft Edge 打开本站，并点击地址栏安装图标';
   var MOBILE_HINT = '请用手机系统浏览器或 Edge 打开本站，在浏览器菜单中选择‘添加到桌面’。';
 
@@ -32,6 +32,12 @@
     return /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   }
 
+  function isIosSafari(){
+    var ua = navigator.userAgent || '';
+    var safari = /safari/i.test(ua) && !/crios|fxios|edgios|opios|duckduckgo|baiduboxapp|baidubrowser|MicroMessenger|MQQBrowser|QQ\/|WeiBo|Weibo|UCBrowser|Quark/i.test(ua);
+    return isIosDevice() && safari;
+  }
+
   function isMobile(){
     var ua = navigator.userAgent || '';
     var userAgentMobile = /android|iphone|ipad|ipod|mobile/i.test(ua);
@@ -49,6 +55,20 @@
     return isMobile() || isIosDevice() || isInAppBrowser();
   }
 
+  function iosShareIcon(){
+    return '<span class="fw-pwa-ios-share-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 15V4"></path><path d="M8 8l4-4 4 4"></path><path d="M6 11v8h12v-8"></path></svg></span>';
+  }
+
+  function renderInstallHint(el, mode, hintText){
+    if(!el) return;
+    el.classList.toggle('is-ios-guide', mode === 'ios');
+    if(mode === 'ios'){
+      el.innerHTML = 'iPhone 用户：点下方' + iosShareIcon() + '分享按钮，再选‘添加到主屏幕’';
+    }else{
+      el.textContent = hintText;
+    }
+  }
+
   function injectInstallStyle(){
     if(document.getElementById('fw-pwa-install-style')) return;
 
@@ -61,8 +81,12 @@
       '.fw-pwa-install-btn.is-install-hint{max-width:290px;min-height:38px;height:auto;padding:7px 14px;line-height:1.35;white-space:normal;text-align:left;cursor:default;background:rgba(246,246,240,.08);border-color:rgba(246,246,240,.28)}',
       '.fw-pwa-install-btn.is-ios-guide{max-width:230px;text-align:center}',
       '.fw-pwa-mobile-install{margin:18px 0 0;max-width:430px;padding:12px 14px;border:1px solid rgba(246,246,240,.24);background:rgba(246,246,240,.09);backdrop-filter:blur(10px)}',
+      '.fw-pwa-mobile-install.is-ios-guide{padding:12px 13px;border-color:rgba(10,132,255,.44);background:rgba(10,132,255,.12)}',
       '.fw-pwa-mobile-install-btn{width:100%;min-height:48px;border:0;border-radius:999px;background:var(--accent);color:var(--white);font-size:15px;font-weight:1000}',
       '.fw-pwa-install-hint{margin:0;color:var(--white);font-size:13px;line-height:1.45;font-weight:900;text-align:center}',
+      '.fw-pwa-install-hint.is-ios-guide{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;text-align:center}',
+      '.fw-pwa-ios-share-icon{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;margin:0 1px;border-radius:6px;background:#0a84ff;color:#fff;vertical-align:middle;flex:0 0 auto}',
+      '.fw-pwa-ios-share-icon svg{display:block;width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}',
       '@media(min-width:761px){.fw-pwa-mobile-install:not(.is-mobile-device){display:none!important}}',
       '@media(max-width:760px){.fw-pwa-install-nav{display:none!important}.fw-pwa-mobile-install:not([hidden]){display:block!important}}'
     ].join('\n');
@@ -147,7 +171,7 @@
     var standalone = installed || isStandalone();
     var promptReady = !standalone && !!savedPrompt;
     var mobile = !standalone && isMobileInstallContext();
-    var iosGuide = !standalone && !promptReady && isIosDevice();
+    var iosGuide = !standalone && !promptReady && isIosSafari();
     var mobileHint = !standalone && !promptReady && !iosGuide && mobile;
     var desktopHint = !standalone && !promptReady && !iosGuide && !mobile;
     var hintText = iosGuide ? IOS_GUIDE : (mobileHint ? MOBILE_HINT : (desktopHint ? DESKTOP_HINT : ''));
@@ -170,11 +194,12 @@
 
     $$('[data-fw-pwa-mobile-install]').forEach(function(box){
       box.classList.toggle('is-mobile-device', mobile);
+      box.classList.toggle('is-ios-guide', iosGuide);
       setHidden(box, !(mobile && (promptReady || iosGuide || mobileHint)));
     });
 
     $$('[data-fw-pwa-install-hint]').forEach(function(el){
-      el.textContent = hintText;
+      renderInstallHint(el, mode, hintText);
       setHidden(el, !(mobile && (iosGuide || mobileHint)));
     });
   }
