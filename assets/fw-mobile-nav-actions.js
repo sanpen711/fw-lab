@@ -439,20 +439,69 @@
     return !!$('[data-fw-stable-echo-modal].show, .fw-stable-echo-modal.show, [data-fw-mobile-echo-modal].show, .fw-mobile-echo-modal.show');
   }
 
-  function openExistingBuddyPanel(){
+  function ensureBuddyPanelShell(){
     var modal = $('[data-fw-wx-buddy-modal], .fw-wx-modal');
+    if(modal && modal.querySelector('[data-fw-wx-panel], .fw-wx-panel')) return modal;
+    if(!document.body) return null;
+
+    modal = document.createElement('div');
+    modal.className = 'fw-wx-modal';
+    modal.dataset.fwWxBuddyModal = '1';
+    modal.innerHTML = `
+      <div class="fw-wx-panel" data-fw-wx-panel>
+        <header class="fw-wx-head">
+          <div class="fw-wx-title"><small>BUDDY CENTER</small><h2>搭子中心</h2></div>
+          <div class="fw-wx-tools"><button class="fw-wx-tool" data-fw-wx-reset type="button">复位</button><button class="fw-wx-close" data-fw-wx-close type="button">×</button></div>
+        </header>
+        <div class="fw-wx-shell">
+          <aside class="fw-wx-left">
+            <div class="fw-wx-search"><form data-fw-wx-search><input name="q" placeholder="搜索实验品编号 / 昵称 / 完整邮箱"><button type="submit">搜索</button></form></div>
+            <div class="fw-wx-tabs"><button class="fw-wx-tab active" data-fw-wx-tab="friends">我的搭子</button><button class="fw-wx-tab" data-fw-wx-tab="incoming">收到申请</button><button class="fw-wx-tab" data-fw-wx-tab="outgoing">发出申请</button></div>
+            <div class="fw-wx-list" data-fw-wx-list><div class="fw-wx-empty">正在恢复搭子列表...</div></div>
+          </aside>
+          <section class="fw-wx-right">
+            <div class="fw-wx-chat-head"><div><button class="fw-wx-back-list" data-fw-wx-back-list type="button">← 返回搭子列表</button><h3 data-fw-wx-chat-title>选择一个搭子</h3><span data-fw-wx-chat-sub>左侧点一个搭子，右侧开始低功耗私聊。</span></div></div>
+            <div class="fw-wx-messages" data-fw-wx-messages><div class="fw-wx-empty">还没有选择聊天对象。</div></div>
+            <form class="fw-wx-compose" data-fw-wx-compose><input name="message" maxlength="300" autocomplete="off" placeholder="说一句只给搭子看的话，最多 300 字..."><button type="submit">发送</button></form>
+          </section>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  function ensureEchoPanelShell(){
+    var modal = $('[data-fw-stable-echo-modal], .fw-stable-echo-modal, [data-fw-mobile-echo-modal], .fw-mobile-echo-modal');
+    if(modal) return modal;
+    if(!document.body) return null;
+
+    modal = document.createElement('div');
+    modal.className = 'fw-stable-echo-modal';
+    modal.dataset.fwStableEchoModal = '1';
+    modal.innerHTML = '<section class="fw-stable-echo-panel" role="dialog" aria-modal="false" aria-label="回声"><header class="fw-stable-echo-head"><div><small>ECHO CENTER</small><h2>回声</h2></div><button class="fw-stable-echo-close" type="button" data-fw-stable-echo-close>×</button></header><div class="fw-stable-echo-body" data-fw-stable-echo-body><div class="fw-stable-echo-empty">正在读取回声...</div></div></section>';
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  function openExistingBuddyPanel(){
+    var modal = ensureBuddyPanelShell();
     if(!modal || !modal.querySelector('[data-fw-wx-panel], .fw-wx-panel')) return false;
     modal.classList.add('show');
     modal.classList.remove('fw-wx-mobile-chatting');
     if(document.body) document.body.classList.add('fw-wx-modal-open');
+    var list = $('[data-fw-wx-list]', modal);
+    if(list && !String(list.innerHTML || '').trim()) list.innerHTML = '<div class="fw-wx-empty">正在恢复搭子列表...</div>';
     debug('openBuddy direct panel');
     return true;
   }
 
   function openExistingEchoPanel(){
-    var modal = $('[data-fw-stable-echo-modal], .fw-stable-echo-modal, [data-fw-mobile-echo-modal], .fw-mobile-echo-modal');
+    var modal = ensureEchoPanelShell();
     if(!modal) return false;
     modal.classList.add('show');
+    var body = $('[data-fw-stable-echo-body], [data-fw-mobile-echo-body]', modal);
+    if(body && !String(body.innerHTML || '').trim()) body.innerHTML = '<div class="fw-stable-echo-empty">正在读取回声...</div>';
     debug('openEcho direct panel');
     return true;
   }
@@ -462,20 +511,25 @@
 
     if(typeof api.openBuddy !== 'function' || api.openBuddy.__fwMobileNavFallback){
       api.openBuddy = function(){
-        return openExistingBuddyPanel();
+        var opened = openExistingBuddyPanel();
+        setTimeout(function(){ triggerOriginal('buddy'); }, 0);
+        return opened;
       };
       api.openBuddy.__fwMobileNavFallback = true;
     }
 
     if(typeof api.openEcho !== 'function' || api.openEcho.__fwMobileNavFallback){
       api.openEcho = function(){
-        if(openExistingEchoPanel()) return true;
+        var opened = openExistingEchoPanel();
         if(typeof window.fwOpenStableEcho === 'function'){
-          debug('openEcho direct function fwOpenStableEcho');
-          window.fwOpenStableEcho();
+          setTimeout(function(){
+            debug('openEcho direct function fwOpenStableEcho');
+            window.fwOpenStableEcho();
+          }, 0);
           return true;
         }
-        return false;
+        setTimeout(function(){ triggerOriginal('echo'); }, 0);
+        return opened;
       };
       api.openEcho.__fwMobileNavFallback = true;
     }
