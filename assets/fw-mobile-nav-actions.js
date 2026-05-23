@@ -8,6 +8,10 @@
   window.__FW_MOBILE_NAV_ACTIONS_COMPACT__ = true;
 
   var badgeTimer = 0;
+  var shellRefreshTimer = 0;
+  var observerTimer = 0;
+  var mobileShellBound = false;
+  var mobileShellObserver = null;
   var quickBadgeDelays = [300, 1000, 2500];
   var entryRetryDelays = [180, 320];
   var optimisticHiddenUntil = {echo:0, buddy:0};
@@ -262,15 +266,22 @@
     document.head.appendChild(style);
   }
 
+  function firstById(id){
+    var nodes = $$('[id="' + id + '"]');
+    nodes.slice(1).forEach(function(node){ node.remove(); });
+    return nodes[0] || null;
+  }
+
   function findHeader(){
     return $('.header') || $('.site-header') || $('header');
   }
 
   function ensureStrip(){
-    if($('#fw-mobile-compact-strip')) return;
+    var current = firstById('fw-mobile-compact-strip');
+    if(current) return current;
 
     var header = findHeader();
-    if(!header || !header.parentNode) return;
+    if(!header || !header.parentNode) return null;
 
     var strip = document.createElement('div');
     strip.id = 'fw-mobile-compact-strip';
@@ -288,10 +299,13 @@
     `;
 
     header.insertAdjacentElement('afterend', strip);
+    return strip;
   }
 
   function ensureTabbar(){
-    if($('#fw-mobile-tabbar')) return;
+    var current = firstById('fw-mobile-tabbar');
+    if(current) return current;
+    if(!document.body) return null;
 
     var bar = document.createElement('nav');
     bar.id = 'fw-mobile-tabbar';
@@ -305,11 +319,13 @@
     `;
 
     document.body.appendChild(bar);
+    return bar;
   }
 
   function ensureNavMenu(){
-    var menu = $('#fw-mobile-nav-menu');
+    var menu = firstById('fw-mobile-nav-menu');
     if(menu) return menu;
+    if(!document.body) return null;
 
     var page = currentPage();
     var items = [
@@ -338,6 +354,7 @@
   function setNavMenu(open){
     var menu = ensureNavMenu();
     var btn = $('[data-fw-mobile-tab="nav"]');
+    if(!menu) return;
 
     if(open){
       menu.classList.add('show');
@@ -358,6 +375,7 @@
 
   function toggleNavMenu(){
     var menu = ensureNavMenu();
+    if(!menu) return;
     setNavMenu(!menu.classList.contains('show'));
   }
 
@@ -475,8 +493,20 @@
     run();
   }
 
+  function ensureToastNode(){
+    var nodes = $$('.fw-toast');
+    nodes.slice(1).forEach(function(node){ node.remove(); });
+    return nodes[0] || null;
+  }
+
+  function clearStaleToast(){
+    clearTimeout(window.__fwMobileNavToast);
+    var t = ensureToastNode();
+    if(t) t.classList.remove('show');
+  }
+
   function showMobileHint(message){
-    var t = $('.fw-toast');
+    var t = ensureToastNode();
     if(!t){
       t = document.createElement('div');
       t.className = 'fw-toast';
@@ -587,7 +617,10 @@
     );
   }
 
-  function bind(){
+  function bindMobileNavActions(){
+    if(mobileShellBound) return;
+    mobileShellBound = true;
+
     document.addEventListener('click', function(e){
       var menu = $('#fw-mobile-nav-menu');
       var menuLink = e.target.closest && e.target.closest('#fw-mobile-nav-menu a');
@@ -643,38 +676,32 @@
       }
     }, true);
 
-    window.addEventListener('resize', function(){
-      ensureStrip();
-      ensureTabbar();
-      ensureNavMenu();
-      closeNavMenu();
-      setTimeout(syncBadgesFromOriginal, 100);
-    });
+    window.addEventListener('resize', function(){ scheduleMobileShellRefresh('resize', 80); });
 
     window.addEventListener('scroll', function(){
       closeNavMenu();
     }, {passive:true});
 
+    window.addEventListener('pageshow', function(){ scheduleMobileShellRefresh('pageshow', 80); });
+    window.addEventListener('focus', function(){ scheduleMobileShellRefresh('focus', 120); });
+    window.addEventListener('online', function(){ scheduleMobileShellRefresh('online', 120); });
+
     document.addEventListener('visibilitychange', function(){
-      if(!document.hidden) setTimeout(syncBadgesFromOriginal, 200);
+      if(document.visibilityState === 'visible') scheduleMobileShellRefresh('visible', 80);
     });
   }
 
-  function boot(){
-    injectStyle();
-    ensureStrip();
-    ensureTabbar();
-    ensureNavMenu();
-    bind();
-    syncBadgesFromOriginal();
-
+  function startBadgeTimer(){
     clearInterval(badgeTimer);
     badgeTimer = setInterval(syncBadgesFromOriginal, 5000);
+  }
 
-    var timer = 0;
-    var observer = new MutationObserver(function(){
-      clearTimeout(timer);
-      timer = setTimeout(function(){
+  function startObserver(){
+    if(mobileShellObserver || !document.body) return;
+
+    mobileShellObserver = new MutationObserver(function(){
+      clearTimeout(observerTimer);
+      observerTimer = setTimeout(function(){
         ensureStrip();
         ensureTabbar();
         ensureNavMenu();
@@ -682,9 +709,38 @@
       }, 120);
     });
 
-    observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
+    mobileShellObserver.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
   }
 
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
+  function refreshMobileShell(){
+    if(!document.body) return;
+
+    injectStyle();
+    firstById('fw-mobile-compact-strip');
+    firstById('fw-mobile-tabbar');
+    firstById('fw-mobile-nav-menu');
+    ensureStrip();
+    ensureTabbar();
+    ensureNavMenu();
+    closeNavMenu();
+    clearStaleToast();
+    bindMobileNavActions();
+    startBadgeTimer();
+    startObserver();
+    setTimeout(syncBadgesFromOriginal, 80);
+  }
+
+  function scheduleMobileShellRefresh(reason, delay){
+    clearTimeout(shellRefreshTimer);
+    shellRefreshTimer = setTimeout(function(){
+      refreshMobileShell(reason);
+    }, delay || 60);
+  }
+
+  function initMobileShell(){
+    refreshMobileShell('boot');
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initMobileShell);
+  else initMobileShell();
 })();
