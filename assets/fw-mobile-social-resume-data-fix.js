@@ -19,6 +19,9 @@
     catch(e){ return window.innerWidth <= 760; }
   }
 
+  var AUTH_TIMEOUT_MS = 4500;
+  var QUERY_TIMEOUT_MS = 9000;
+
   var state = {
     buddyTab: 'friends',
     buddySeq: 0,
@@ -26,28 +29,29 @@
     resumeTimer: 0,
     authStatus: 'unknown',
     me: null,
-    authPromise: null
+    authPromise: null,
+    enrichTimer: 0
   };
 
   function withTimeout(promise, ms, message){
     var timer;
-    return Promise.race([
-      Promise.resolve(promise).finally(function(){ clearTimeout(timer); }),
-      new Promise(function(resolve, reject){
-        timer = setTimeout(function(){ reject(new Error(message || '读取超时，请稍后重试。')); }, ms || 9000);
-      })
-    ]);
+    var task = Promise.resolve().then(function(){
+      return typeof promise === 'function' ? promise() : promise;
+    });
+    var timeout = new Promise(function(resolve, reject){
+      timer = setTimeout(function(){ reject(new Error(message || '读取超时，请稍后重试。')); }, ms || QUERY_TIMEOUT_MS);
+    });
+    return Promise.race([task, timeout]).finally(function(){ clearTimeout(timer); });
   }
 
-  function waitDb(){
+  function waitDb(ms){
     return new Promise(function(resolve){
       if(window.fwDb && window.fwDb.enabled && window.fwDb.client){ resolve(true); return; }
-      var count = 0;
+      var started = Date.now();
       var timer = setInterval(function(){
-        count += 1;
-        if(window.fwDb && window.fwDb.enabled && window.fwDb.client){ clearInterval(timer); resolve(true); }
-        if(count > 80){ clearInterval(timer); resolve(false); }
-      }, 100);
+        if(window.fwDb && window.fwDb.enabled && window.fwDb.client){ clearInterval(timer); resolve(true); return; }
+        if(Date.now() - started > (ms || AUTH_TIMEOUT_MS)){ clearInterval(timer); resolve(false); }
+      }, 80);
     });
   }
 
@@ -77,65 +81,241 @@
     debug('close panels', {target:target || 'none'});
   }
 
-  async function syncAuthState(force){
-    if(state.authPromise && !force) return state.authPromise;
+  function textOf(selector){
+    var el = $(selector);
+    return el ? String(el.textContent || '').trim() : '';
+  }
 
-    state.authStatus = 'recovering';
-    state.authPromise = (async function(){
-      if(!(await waitDb())){
-        state.authStatus = 'unavailable';
-        state.me = null;
-        return {status:'unavailable', me:null};
+  function readDomProfile(){
+    var name = textOf('[data-fw-card-name]') || textOf('[data-fw-current]');
+    var status = textOf('[data-fw-card-status]');
+    var email = textOf('[data-fw-card-email]');
+    var labCode = textOf('[data-fw-card-code]');
+    var avatar = $('[data-fw-card-avatar] img, [data-fw-avatar-slot] img');
+    var logged = status.indexOf('已进入') >= 0 || (!!email && email !== '未绑定' && email.indexOf('@') > 0);
+
+    if(!logged) return null;
+
+    return {
+      nickname: (!name || name === '未登录' || name === '注册 / 登录') ? '临时研究员' : name,
+      email: email && email !== '未绑定' ? email : '',
+      lab_code: labCode && labCode !== '未设置' ? labCode : '',
+      avatar_url: avatar ? avatar.src : '',
+      source: 'userbar-dom'
+    };
+  }
+
+  function userFromObject(obj, depth){
+    if(!obj || typeof obj !== 'object' || depth > 4) return null;
+
+    var direct = obj.user || obj.currentUser || obj.current_user;
+    if(direct && direct.id) return direct;
+
+    var sessionUser = obj.session && obj.session.user || obj.currentSession && obj.currentSession.user || obj.data && obj.data.session && obj.data.session.user;
+    if(sessionUser && sessionUser.id) return sessionUser;
+
+    if(obj.id && (obj.email || obj.aud === 'authenticated' || obj.role || obj.app_metadata || obj.user_metadata)) return obj;
+
+    var keys = ['data', 'session', 'currentSession', 'value', 'state'];
+    for(var i = 0; i < keys.length; i += 1){
+      var found = userFromObject(obj[keys[i]], depth + 1);
+      if(found) return found;
+    }
+
+    return null;
+  }
+
+  function readStoredSessionUser(){
+    var stores = [];
+    try{ stores.push(window.localStorage); }catch(e){}
+    try{ stores.push(window.sessionStorage); }catch(e){}
+
+    for(var s = 0; s < stores.length; s += 1){
+      var store = stores[s];
+      if(!store) continue;
+      for(var i = 0; i < store.length; i += 1){
+        var key = '';
+        try{ key = store.key(i) || ''; }catch(e){ continue; }
+        if(key.indexOf('auth-token') < 0 && key.indexOf('supabase.auth') < 0 && key.indexOf('sb-') !== 0) continue;
+
+        try{
+          var raw = store.getItem(key);
+          if(!raw) continue;
+          var parsed = JSON.parse(raw);
+          var user = userFromObject(parsed, 0);
+          if(user && user.id){
+            return {
+              id:user.id,
+              email:user.email || '',
+              nickname:user.user_metadata && user.user_metadata.nickname || '',
+              source:'stored-session'
+            };
+          }
+        }catch(e){}
       }
+    }
 
-      var client = window.fwDb && window.fwDb.client;
-      var sessionUser = null;
+    return null;
+  }
 
-      try{
-        if(client && client.auth && typeof client.auth.getSession === 'function'){
-          var sessionResult = await withTimeout(client.auth.getSession(), 6000, '登录状态读取超时，请重新加载后再试。');
-          sessionUser = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.user;
-          if(sessionResult && sessionResult.error) debug('auth session warning', sessionResult.error.message || sessionResult.error);
+  function readGlobalUser(){
+    var fw = window.FW || {};
+    var candidates = [
+      window.fwCurrentUser,
+      window.currentUser,
+      fw.currentUser,
+      fw.currentProfile,
+      fw.me
+    ];
+
+    for(var i = 0; i < candidates.length; i += 1){
+      var user = candidates[i];
+      if(user && user.id) return Object.assign({source:'global-cache'}, user);
+    }
+
+    return null;
+  }
+
+  function mergeUser(base, extra){
+    var next = Object.assign({}, base || {}, extra || {});
+    var sources = [];
+    if(base && base.source) sources.push(base.source);
+    if(extra && extra.source) sources.push(extra.source);
+    next.source = sources.length ? Array.from(new Set(sources)).join('+') : (next.source || 'unknown');
+    return next;
+  }
+
+  function readCachedActiveUser(){
+    var user = state.me && state.me.id ? mergeUser(state.me, {source:'resume-cache'}) : null;
+    var globalUser = readGlobalUser();
+    var sessionUser = readStoredSessionUser();
+    var domProfile = readDomProfile();
+
+    if(globalUser) user = mergeUser(user, globalUser);
+    if(sessionUser) user = mergeUser(user, sessionUser);
+    if(user && domProfile) user = mergeUser(user, domProfile);
+
+    if(user && user.id){
+      state.me = user;
+      state.authStatus = 'logged-in';
+      return user;
+    }
+
+    return null;
+  }
+
+  function enrichActiveUser(base){
+    clearTimeout(state.enrichTimer);
+    state.enrichTimer = setTimeout(function(){
+      if(!window.fwDb || typeof window.fwDb.getCurrentUser !== 'function') return;
+      withTimeout(window.fwDb.getCurrentUser(), 3200, '个人资料读取超时').then(function(profile){
+        if(profile && profile.id){
+          state.me = mergeUser(base, Object.assign({source:'fwDb-profile'}, profile));
+          state.authStatus = 'logged-in';
+          debug('auth enrich success', {source:state.me.source});
         }
-      }catch(err){
-        debug('auth session failed', err && err.message ? err.message : err);
-      }
+      }).catch(function(err){
+        debug('auth enrich skipped', err && err.message ? err.message : err);
+      });
+    }, 0);
+  }
 
+  async function resolveActiveUser(){
+    var cached = readCachedActiveUser();
+    if(cached){
+      enrichActiveUser(cached);
+      debug('auth from cache', {source:cached.source});
+      return {status:'logged-in', me:cached, source:cached.source};
+    }
+
+    if(!(await waitDb(AUTH_TIMEOUT_MS))){
+      state.authStatus = 'unavailable';
+      state.me = null;
+      return {status:'unavailable', me:null, source:'db-unavailable'};
+    }
+
+    var client = window.fwDb && window.fwDb.client;
+    var sessionUser = null;
+
+    try{
+      if(client && client.auth && typeof client.auth.getSession === 'function'){
+        var sessionResult = await withTimeout(function(){ return client.auth.getSession(); }, AUTH_TIMEOUT_MS, '登录状态恢复超时');
+        sessionUser = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.user;
+        if(sessionResult && sessionResult.error) debug('auth session warning', sessionResult.error.message || sessionResult.error);
+      }
+    }catch(err){
+      debug('auth session failed', err && err.message ? err.message : err);
+    }
+
+    if(!sessionUser){
       try{
-        if(!sessionUser && client && client.auth && typeof client.auth.getUser === 'function'){
-          var userResult = await withTimeout(client.auth.getUser(), 6000, '登录状态读取超时，请重新加载后再试。');
+        if(client && client.auth && typeof client.auth.getUser === 'function'){
+          var userResult = await withTimeout(function(){ return client.auth.getUser(); }, AUTH_TIMEOUT_MS, '登录状态恢复超时');
           sessionUser = userResult && userResult.data && userResult.data.user;
           if(userResult && userResult.error) debug('auth user warning', userResult.error.message || userResult.error);
         }
       }catch(err){
         debug('auth user failed', err && err.message ? err.message : err);
       }
+    }
 
-      if(!sessionUser || !sessionUser.id){
-        state.authStatus = 'logged-out';
-        state.me = null;
-        return {status:'logged-out', me:null};
-      }
-
-      var me = {id:sessionUser.id, email:sessionUser.email || ''};
-
-      try{
-        if(window.fwDb && typeof window.fwDb.getCurrentUser === 'function'){
-          var profile = await withTimeout(window.fwDb.getCurrentUser(), 7000, '个人资料读取超时，已先恢复登录状态。');
-          if(profile && profile.id) me = Object.assign({}, me, profile);
-        }
-      }catch(err){
-        debug('profile enrich skipped', err && err.message ? err.message : err);
-      }
-
-      if(!me.id) me.id = sessionUser.id;
+    if(sessionUser && sessionUser.id){
+      var sessionMe = mergeUser({
+        id:sessionUser.id,
+        email:sessionUser.email || '',
+        nickname:sessionUser.user_metadata && sessionUser.user_metadata.nickname || '',
+        source:'supabase-session'
+      }, readDomProfile() || null);
+      state.me = sessionMe;
       state.authStatus = 'logged-in';
-      state.me = me;
-      return {status:'logged-in', me:me};
-    })();
+      enrichActiveUser(sessionMe);
+      debug('auth from session', {source:sessionMe.source});
+      return {status:'logged-in', me:sessionMe, source:sessionMe.source};
+    }
 
-    try{ return await state.authPromise; }
-    finally{ state.authPromise = null; }
+    try{
+      if(window.fwDb && typeof window.fwDb.getCurrentUser === 'function'){
+        var profile = await withTimeout(function(){ return window.fwDb.getCurrentUser(); }, AUTH_TIMEOUT_MS, '登录状态恢复超时');
+        if(profile && profile.id){
+          state.me = mergeUser(Object.assign({source:'fwDb-current-user'}, profile), readDomProfile() || null);
+          state.authStatus = 'logged-in';
+          debug('auth from fwDb', {source:state.me.source});
+          return {status:'logged-in', me:state.me, source:state.me.source};
+        }
+      }
+    }catch(err){
+      debug('auth fwDb failed', err && err.message ? err.message : err);
+    }
+
+    state.authStatus = 'logged-out';
+    state.me = null;
+    return {status:'logged-out', me:null, source:'none'};
+  }
+
+  async function ensureActiveUser(force){
+    var cached = readCachedActiveUser();
+    if(cached){
+      enrichActiveUser(cached);
+      return {status:'logged-in', me:cached, source:cached.source};
+    }
+
+    if(state.authPromise && !force) return state.authPromise;
+
+    state.authStatus = 'recovering';
+    state.authPromise = withTimeout(resolveActiveUser(), AUTH_TIMEOUT_MS + 700, '登录状态恢复失败，请重新加载后再试。')
+      .catch(function(err){
+        var fallback = readCachedActiveUser();
+        if(fallback){
+          debug('auth timeout fallback cache', {source:fallback.source});
+          return {status:'logged-in', me:fallback, source:fallback.source};
+        }
+        state.authStatus = 'unavailable';
+        state.me = null;
+        return {status:'unavailable', me:null, source:'timeout', message:err && err.message ? err.message : '登录状态恢复失败，请重新加载后再试。'};
+      })
+      .finally(function(){ state.authPromise = null; });
+
+    return state.authPromise;
   }
 
   function avatar(name, url, cls){
@@ -180,8 +360,8 @@
     var unique = Array.from(new Set((ids || []).filter(Boolean)));
     if(!unique.length) return {};
     var result = await withTimeout(
-      window.fwDb.client.from('profiles').select('id,nickname,avatar_url,lab_code').in('id', unique),
-      9000,
+      function(){ return window.fwDb.client.from('profiles').select('id,nickname,avatar_url,lab_code').in('id', unique); },
+      QUERY_TIMEOUT_MS,
       '资料读取超时，请稍后重试。'
     );
     if(result.error) throw result.error;
@@ -192,12 +372,14 @@
 
   async function getFriendships(meId){
     var result = await withTimeout(
-      window.fwDb.client
-        .from('friendships')
-        .select('id,requester_id,receiver_id,status,created_at,updated_at')
-        .or('requester_id.eq.' + meId + ',receiver_id.eq.' + meId)
-        .order('updated_at', {ascending:false}),
-      9000,
+      function(){
+        return window.fwDb.client
+          .from('friendships')
+          .select('id,requester_id,receiver_id,status,created_at,updated_at')
+          .or('requester_id.eq.' + meId + ',receiver_id.eq.' + meId)
+          .order('updated_at', {ascending:false});
+      },
+      QUERY_TIMEOUT_MS,
       '搭子列表读取超时，请稍后重试。'
     );
     if(result.error) throw result.error;
@@ -246,7 +428,7 @@
   }
 
   function authMessage(kind, auth){
-    if(auth && auth.status === 'unavailable') return '登录状态暂时读取失败，请稍后重试，或点“导航 → 重新加载”。';
+    if(auth && (auth.status === 'unavailable' || auth.source === 'timeout')) return '登录状态恢复失败，请点“导航 → 重新加载”后再试。';
     return kind === 'buddy' ? '请先点底部「我的」注册 / 登录后再查看搭子。' : '请先点底部「我的」注册 / 登录后再查看回声。';
   }
 
@@ -259,17 +441,17 @@
     if(list) list.innerHTML = '<div class="fw-wx-empty">正在恢复登录状态...</div>';
 
     try{
-      var auth = await syncAuthState(true);
+      var auth = await ensureActiveUser(true);
       if(seq !== state.buddySeq) return false;
       var me = auth && auth.me;
       if(!me || !me.id || me.disabled){
         if(list) list.innerHTML = '<div class="fw-wx-empty">' + esc(me && me.disabled ? '账号已停用，暂时无法查看搭子。' : authMessage('buddy', auth)) + '</div>';
-        debug('buddy auth blocked', {status:auth && auth.status});
+        debug('buddy auth blocked', {status:auth && auth.status, source:auth && auth.source});
         return false;
       }
 
       if(list) list.innerHTML = '<div class="fw-wx-empty">正在读取搭子列表...</div>';
-      debug('buddy load start', {tab:state.buddyTab, auth:state.authStatus});
+      debug('buddy load start', {tab:state.buddyTab, auth:state.authStatus, source:auth.source});
       var result = await getFriendships(me.id);
       if(seq !== state.buddySeq) return false;
       var accepted = result.rows.filter(function(row){ return row.status === 'accepted'; });
@@ -333,26 +515,28 @@
     if(body) body.innerHTML = '<div class="fw-stable-echo-empty">正在恢复登录状态...</div>';
 
     try{
-      var auth = await syncAuthState(true);
+      var auth = await ensureActiveUser(true);
       if(seq !== state.echoSeq) return false;
       var me = auth && auth.me;
       if(!me || !me.id){
         if(body) body.innerHTML = '<div class="fw-stable-echo-empty">' + esc(authMessage('echo', auth)) + '</div>';
-        debug('echo auth blocked', {status:auth && auth.status});
+        debug('echo auth blocked', {status:auth && auth.status, source:auth && auth.source});
         return false;
       }
 
       if(body) body.innerHTML = '<div class="fw-stable-echo-empty">正在读取回声...</div>';
-      debug('echo load start', {auth:state.authStatus});
+      debug('echo load start', {auth:state.authStatus, source:auth.source});
       var result = await withTimeout(
-        window.fwDb.client
-          .from('notifications')
-          .select('id,actor_id,type,target_type,target_id,content,is_read,created_at')
-          .eq('user_id', me.id)
-          .neq('type', 'private_message')
-          .order('created_at', {ascending:false})
-          .limit(80),
-        9000,
+        function(){
+          return window.fwDb.client
+            .from('notifications')
+            .select('id,actor_id,type,target_type,target_id,content,is_read,created_at')
+            .eq('user_id', me.id)
+            .neq('type', 'private_message')
+            .order('created_at', {ascending:false})
+            .limit(80);
+        },
+        QUERY_TIMEOUT_MS,
         '回声读取超时，请稍后重试。'
       );
       if(result.error) throw result.error;
@@ -405,7 +589,9 @@
     fw.openEchoCenter = openEchoCenter;
     fw.reloadEchoCenter = reloadEchoCenter;
     fw.closeMobilePanels = closeMobilePanels;
-    fw.syncMobileAuth = function(){ return syncAuthState(true); };
+    fw.getActiveUser = function(){ return readCachedActiveUser(); };
+    fw.ensureActiveUser = function(){ return ensureActiveUser(true); };
+    fw.syncMobileAuth = fw.ensureActiveUser;
     window.fwOpenStableEcho = openEchoCenter;
 
     var api = window.FWMobileActions = window.FWMobileActions || {};
@@ -418,7 +604,7 @@
     state.resumeTimer = setTimeout(function(){
       expose();
       debug('resume check', reason || 'manual');
-      syncAuthState(false).catch(function(err){ debug('resume auth failed', err && err.message ? err.message : err); });
+      ensureActiveUser(false).catch(function(err){ debug('resume auth failed', err && err.message ? err.message : err); });
       if($('[data-fw-wx-buddy-modal].show, .fw-wx-modal.show')) reloadBuddyCenter();
       if($('[data-fw-stable-echo-modal].show, .fw-stable-echo-modal.show, [data-fw-mobile-echo-modal].show, .fw-mobile-echo-modal.show')) reloadEchoCenter();
     }, 80);
