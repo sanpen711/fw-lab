@@ -229,6 +229,12 @@
           font-weight:1000!important;
         }
 
+        .fw-mobile-nav-menu a.fw-mobile-reload-link{
+          margin-top:4px!important;
+          border-top:1px solid rgba(246,246,240,.14)!important;
+          color:rgba(246,246,240,.72)!important;
+        }
+
         .fw-toast{
           position:fixed!important;
           left:50%!important;
@@ -345,7 +351,7 @@
     menu.innerHTML = items.map(function(item){
       var active = item[1] === page ? ' is-current' : '';
       return '<a class="' + active + '" href="' + item[1] + '">' + item[0] + '</a>';
-    }).join('');
+    }).join('') + '<a class="fw-mobile-reload-link" href="#" data-fw-mobile-reload>重新加载</a>';
 
     document.body.appendChild(menu);
     return menu;
@@ -623,6 +629,17 @@
 
     document.addEventListener('click', function(e){
       var menu = $('#fw-mobile-nav-menu');
+      var reloadLink = e.target.closest && e.target.closest('[data-fw-mobile-reload]');
+
+      if(reloadLink){
+        e.preventDefault();
+        e.stopPropagation();
+        if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+        closeNavMenu();
+        window.location.reload();
+        return;
+      }
+
       var menuLink = e.target.closest && e.target.closest('#fw-mobile-nav-menu a');
 
       if(menuLink){
