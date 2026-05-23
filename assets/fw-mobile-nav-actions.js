@@ -1,7 +1,7 @@
 // F.w 研究所：手机端 APP 化导航与安全区
 // 作用：
-// 1. 手机端为顶部 header / 底部内容增加 safe-area 适配。
-// 2. 保留原有压缩快捷导航，并新增底部固定导航栏。
+// 1. 手机端为顶部内容 / 底部内容增加 safe-area 适配。
+// 2. 隐藏旧顶部导航区域，并新增底部固定导航栏与小型导航浮层。
 // 3. 回声/搭子/我的复用原有功能入口，不重写业务逻辑。
 (function(){
   if(window.__FW_MOBILE_NAV_ACTIONS_COMPACT__) return;
@@ -16,6 +16,11 @@
 
   function isMobile(){
     return (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) || /Android|iPhone|iPad|iPod|Mobile|MicroMessenger|MQQBrowser|baiduboxapp|baidubrowser/i.test(navigator.userAgent || '');
+  }
+
+  function currentPage(){
+    var page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    return page || 'index.html';
   }
 
   function icon(name){
@@ -36,7 +41,8 @@
     style.id = 'fw-mobile-nav-actions-style';
     style.textContent = `
       .fw-mobile-compact-strip,
-      .fw-mobile-tabbar{display:none;}
+      .fw-mobile-tabbar,
+      .fw-mobile-nav-menu{display:none;}
 
       @media(max-width:768px){
         :root{
@@ -48,104 +54,27 @@
           padding-bottom:var(--fw-mobile-bottom-space)!important;
         }
 
-        .header{
-          padding-top:calc(env(safe-area-inset-top, 0px) + 12px)!important;
-          padding-right:24px!important;
-          padding-bottom:16px!important;
-          padding-left:24px!important;
-          align-items:center!important;
+        .header,
+        .fw-mobile-compact-strip,
+        .mobile-nav,
+        .mobile-nav.show{
+          display:none!important;
         }
 
-        .header .logo{
-          line-height:1.12!important;
-        }
-
-        .header .menu-btn,
-        .header .fw-login-pill,
-        .header [data-login-cta],
-        .header [data-fw-open],
-        .header [data-sb-open]{
-          margin-top:0!important;
+        .hero .hero-inner,
+        .page-hero .hero-inner{
+          padding-top:calc(env(safe-area-inset-top, 0px) + 24px)!important;
         }
 
         .footer{
           padding-bottom:calc(28px + var(--fw-mobile-bottom-space))!important;
         }
 
-        .fw-mobile-compact-strip{
-          display:flex!important;
-          align-items:stretch!important;
-          gap:10px!important;
-          width:calc(100% - 28px)!important;
-          margin:0 auto 12px!important;
-          position:relative!important;
-          z-index:45!important;
-        }
-
-        .fw-mobile-page-links{
-          flex:1 1 auto!important;
-          min-width:0!important;
-          display:grid!important;
-          grid-template-columns:repeat(3,minmax(0,1fr))!important;
-          gap:5px!important;
-          border:0!important;
-          padding:0!important;
-          background:transparent!important;
-          backdrop-filter:none!important;
-          -webkit-backdrop-filter:none!important;
-        }
-
-        .fw-mobile-page-link{
-          min-width:0!important;
-          height:30px!important;
-          display:flex!important;
-          align-items:center!important;
-          justify-content:center!important;
-          border:1px solid rgba(255,255,255,.22)!important;
-          border-radius:999px!important;
-          background:rgba(255,253,247,.055)!important;
-          color:#fffdf7!important;
-          text-decoration:none!important;
-          font-size:11px!important;
-          line-height:1!important;
-          font-weight:1000!important;
-          letter-spacing:-.05em!important;
-          white-space:nowrap!important;
-        }
-
         .fw-mobile-page-link:active,
         .fw-mobile-action-btn:active,
-        .fw-mobile-tab:active{
+        .fw-mobile-tab:active,
+        .fw-mobile-nav-menu a:active{
           transform:translateY(1px)!important;
-        }
-
-        .fw-mobile-right-actions{
-          flex:0 0 116px!important;
-          width:116px!important;
-          display:grid!important;
-          grid-template-columns:1fr 1fr!important;
-          gap:5px!important;
-          border:0!important;
-          padding:0!important;
-          background:transparent!important;
-          backdrop-filter:none!important;
-          -webkit-backdrop-filter:none!important;
-        }
-
-        .fw-mobile-action-btn{
-          position:relative!important;
-          appearance:none!important;
-          border:1px solid rgba(255,255,255,.32)!important;
-          border-radius:999px!important;
-          background:rgba(255,253,247,.07)!important;
-          color:#fffdf7!important;
-          height:30px!important;
-          padding:0!important;
-          font-size:11px!important;
-          line-height:1!important;
-          font-weight:1000!important;
-          letter-spacing:-.05em!important;
-          white-space:nowrap!important;
         }
 
         .fw-mobile-action-badge{
@@ -242,34 +171,62 @@
           border-color:#0b100a!important;
         }
 
-        /* 手机顶部太窄，原桌面回声/搭子按钮隐藏，统一用这条压缩栏和底部栏显示 */
-        .header [data-fw-open-echo],
-        .header [data-fw-open-buddy],
-        .top-actions [data-fw-open-echo],
-        .top-actions [data-fw-open-buddy],
-        .header-actions [data-fw-open-echo],
-        .header-actions [data-fw-open-buddy],
-        .user-area [data-fw-open-echo],
-        .user-area [data-fw-open-buddy],
-        .auth-area [data-fw-open-echo],
-        .auth-area [data-fw-open-buddy],
-        .nav-actions [data-fw-open-echo],
-        .nav-actions [data-fw-open-buddy]{
-          display:none!important;
+        .fw-mobile-nav-menu{
+          position:fixed!important;
+          left:12px!important;
+          bottom:calc(var(--fw-mobile-tab-height) + env(safe-area-inset-bottom, 0px) + 12px)!important;
+          z-index:981!important;
+          width:min(246px, calc(100vw - 24px))!important;
+          padding:8px!important;
+          border-radius:10px!important;
+          border:1px solid rgba(246,246,240,.18)!important;
+          background:rgba(11,16,10,.94)!important;
+          box-shadow:0 18px 48px rgba(0,0,0,.34)!important;
+          backdrop-filter:blur(18px)!important;
+          -webkit-backdrop-filter:blur(18px)!important;
+          opacity:0!important;
+          transform:translateY(8px)!important;
+          pointer-events:none!important;
+        }
+
+        .fw-mobile-nav-menu.show{
+          display:grid!important;
+          gap:4px!important;
+          opacity:1!important;
+          transform:translateY(0)!important;
+          pointer-events:auto!important;
+        }
+
+        .fw-mobile-nav-menu a{
+          min-height:42px!important;
+          display:flex!important;
+          align-items:center!important;
+          justify-content:space-between!important;
+          padding:0 12px!important;
+          border-radius:8px!important;
+          color:rgba(246,246,240,.78)!important;
+          font-size:14px!important;
+          line-height:1!important;
+          font-weight:900!important;
+          text-decoration:none!important;
+        }
+
+        .fw-mobile-nav-menu a.is-current{
+          color:#fffdf7!important;
+          background:rgba(217,121,121,.16)!important;
+        }
+
+        .fw-mobile-nav-menu a.is-current::after{
+          content:'当前'!important;
+          color:var(--accent)!important;
+          font-size:11px!important;
+          font-weight:1000!important;
         }
 
         @media(max-width:390px){
-          .fw-mobile-compact-strip{
-            gap:7px!important;
-            width:calc(100% - 22px)!important;
-          }
-          .fw-mobile-right-actions{
-            flex-basis:102px!important;
-            width:102px!important;
-          }
-          .fw-mobile-page-link,
-          .fw-mobile-action-btn{
-            font-size:10px!important;
+          .fw-mobile-nav-menu{
+            left:10px!important;
+            width:min(230px, calc(100vw - 20px))!important;
           }
           .fw-mobile-tab{
             font-size:10px!important;
@@ -317,13 +274,72 @@
     bar.className = 'fw-mobile-tabbar';
     bar.setAttribute('aria-label', '手机底部导航');
     bar.innerHTML = `
-      <button type="button" class="fw-mobile-tab is-active" data-fw-mobile-tab="nav">${icon('nav')}<span>导航</span></button>
+      <button type="button" class="fw-mobile-tab" data-fw-mobile-tab="nav" aria-controls="fw-mobile-nav-menu" aria-expanded="false">${icon('nav')}<span>导航</span></button>
       <button type="button" class="fw-mobile-tab" data-fw-mobile-tab="buddy" data-fw-mobile-open="buddy">${icon('buddy')}<span>搭子</span><span class="fw-mobile-action-badge" data-fw-mobile-badge="buddy"></span></button>
       <button type="button" class="fw-mobile-tab" data-fw-mobile-tab="echo" data-fw-mobile-open="echo">${icon('echo')}<span>回声</span><span class="fw-mobile-action-badge" data-fw-mobile-badge="echo"></span></button>
       <button type="button" class="fw-mobile-tab" data-fw-mobile-tab="me">${icon('me')}<span>我的</span></button>
     `;
 
     document.body.appendChild(bar);
+  }
+
+  function ensureNavMenu(){
+    var menu = $('#fw-mobile-nav-menu');
+    if(menu) return menu;
+
+    var page = currentPage();
+    var items = [
+      ['首页', 'index.html'],
+      ['精神广场', 'square.html'],
+      ['学术研讨', 'rooms.html'],
+      ['观鸟台', 'bird.html'],
+      ['废话档案', 'archive.html'],
+      ['入馆须知', 'rules.html'],
+      ['处理公告', 'admin.html']
+    ];
+
+    menu = document.createElement('nav');
+    menu.id = 'fw-mobile-nav-menu';
+    menu.className = 'fw-mobile-nav-menu';
+    menu.setAttribute('aria-label', '页面导航');
+    menu.innerHTML = items.map(function(item){
+      var active = item[1] === page ? ' is-current' : '';
+      return '<a class="' + active + '" href="' + item[1] + '">' + item[0] + '</a>';
+    }).join('');
+
+    document.body.appendChild(menu);
+    return menu;
+  }
+
+  function setNavMenu(open){
+    var menu = ensureNavMenu();
+    var btn = $('[data-fw-mobile-tab="nav"]');
+
+    if(open){
+      menu.classList.add('show');
+      if(btn){
+        btn.classList.add('is-active');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+      return;
+    }
+
+    menu.classList.remove('show');
+    if(btn){
+      btn.classList.remove('is-active');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.removeAttribute('aria-current');
+    }
+  }
+
+  function toggleNavMenu(){
+    var menu = ensureNavMenu();
+    setNavMenu(!menu.classList.contains('show'));
+  }
+
+  function closeNavMenu(){
+    var menu = $('#fw-mobile-nav-menu');
+    if(menu && menu.classList.contains('show')) setNavMenu(false);
   }
 
   function fireOriginal(kind){
@@ -344,18 +360,6 @@
     document.body.appendChild(tmp);
     tmp.click();
     setTimeout(function(){ tmp.remove(); }, 60);
-  }
-
-  function openMobileMenu(){
-    var btn = $('.menu-btn');
-
-    if(btn){
-      btn.click();
-      return;
-    }
-
-    var nav = $('.mobile-nav');
-    if(nav) nav.classList.toggle('show');
   }
 
   function openMine(){
@@ -462,12 +466,26 @@
 
   function bind(){
     document.addEventListener('click', function(e){
+      var menu = $('#fw-mobile-nav-menu');
+      var menuLink = e.target.closest && e.target.closest('#fw-mobile-nav-menu a');
+
+      if(menuLink){
+        closeNavMenu();
+        return;
+      }
+
+      var navTab = e.target.closest && e.target.closest('[data-fw-mobile-tab="nav"]');
+      if(menu && menu.classList.contains('show') && !menu.contains(e.target) && !navTab){
+        closeNavMenu();
+      }
+
       var openBtn = e.target.closest && e.target.closest('[data-fw-mobile-open]');
       if(openBtn){
         var openKind = openBtn.dataset.fwMobileOpen;
 
         e.preventDefault();
         e.stopPropagation();
+        closeNavMenu();
         setActiveTab(openKind);
         setBadge(openKind, 0);
         fireOriginal(openKind);
@@ -482,12 +500,14 @@
 
       e.preventDefault();
       e.stopPropagation();
-      setActiveTab(kind);
 
       if(kind === 'nav'){
-        openMobileMenu();
+        toggleNavMenu();
         return;
       }
+
+      closeNavMenu();
+      setActiveTab(kind);
 
       if(kind === 'me'){
         openMine();
@@ -497,8 +517,14 @@
     window.addEventListener('resize', function(){
       ensureStrip();
       ensureTabbar();
+      ensureNavMenu();
+      closeNavMenu();
       setTimeout(syncBadgesFromOriginal, 100);
     });
+
+    window.addEventListener('scroll', function(){
+      closeNavMenu();
+    }, {passive:true});
 
     document.addEventListener('visibilitychange', function(){
       if(!document.hidden) setTimeout(syncBadgesFromOriginal, 200);
@@ -509,6 +535,7 @@
     injectStyle();
     ensureStrip();
     ensureTabbar();
+    ensureNavMenu();
     bind();
     syncBadgesFromOriginal();
 
@@ -521,6 +548,7 @@
       timer = setTimeout(function(){
         ensureStrip();
         ensureTabbar();
+        ensureNavMenu();
         syncBadgesFromOriginal();
       }, 120);
     });
