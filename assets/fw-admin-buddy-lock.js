@@ -5,6 +5,7 @@
   window.__FW_ADMIN_BUDDY_LOCK__ = true;
 
   var adminProfile = null;
+  var started = false;
 
   function $(s){
     return document.querySelector(s);
@@ -191,12 +192,24 @@
     document.head.appendChild(style);
   }
 
-  async function boot(){
-    injectStyle();
+  function touchesBuddyItems(mutations){
+    return mutations.some(function(m){
+      return Array.from(m.addedNodes || []).some(function(node){
+        if(!node || node.nodeType !== 1) return false;
+        if(node.matches && node.matches('.fw-wx-modal,[data-fw-wx-buddy-modal],[data-fw-wx-list],.fw-wx-item,[data-fw-wx-chat-user]')) return true;
+        return !!(node.querySelector && node.querySelector('.fw-wx-modal,[data-fw-wx-buddy-modal],[data-fw-wx-list],.fw-wx-item,[data-fw-wx-chat-user]'));
+      });
+    });
+  }
+
+  async function start(){
+    if(started) return;
+    started = true;
     await loadAdmin();
     enhance();
 
-    var observer = new MutationObserver(function(){
+    var observer = new MutationObserver(function(mutations){
+      if(!touchesBuddyItems(mutations)) return;
       clearTimeout(window.__fwAdminBuddyEnhanceTimer);
       window.__fwAdminBuddyEnhanceTimer = setTimeout(enhance, 60);
     });
@@ -205,8 +218,17 @@
       childList:true,
       subtree:true
     });
+  }
 
+  function boot(){
+    injectStyle();
     window.addEventListener('click', interceptDanger, true);
+    document.addEventListener('click', function(e){
+      if(e.target.closest && e.target.closest('[data-fw-open-buddy], [data-fw-mobile-open="buddy"], [data-fw-start-chat], [data-fw-wx-chat-user], [data-fw-wx-chat-direct], [data-fw-wx-tab]')){
+        setTimeout(start, 0);
+      }
+    }, true);
+    if($('[data-fw-wx-buddy-modal].show, .fw-wx-modal.show')) start();
   }
 
   if(document.readyState === 'loading'){

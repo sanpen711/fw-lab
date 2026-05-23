@@ -217,11 +217,20 @@
     bringSocialModalToFront();
   }
 
+  function touchesBuddyItems(mutations){
+    return mutations.some(m => Array.from(m.addedNodes || []).some(node => {
+      if(!node || node.nodeType !== 1) return false;
+      if(node.matches && node.matches('.fw-wx-modal,[data-fw-wx-buddy-modal],[data-fw-wx-list],.fw-wx-item,[data-fw-wx-chat-user]')) return true;
+      return !!(node.querySelector && node.querySelector('.fw-wx-modal,[data-fw-wx-buddy-modal],[data-fw-wx-list],.fw-wx-item,[data-fw-wx-chat-user]'));
+    }));
+  }
+
   function boot(){
     injectStyle();
     enhance();
 
-    const observer = new MutationObserver(() => {
+    const observer = new MutationObserver(mutations => {
+      if(!touchesBuddyItems(mutations)) return;
       clearTimeout(window.__fwBuddyMenuEnhanceTimer);
       window.__fwBuddyMenuEnhanceTimer = setTimeout(enhance, 80);
     });

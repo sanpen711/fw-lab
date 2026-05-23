@@ -224,7 +224,7 @@ function initPublicTrialNav(){
       nav.appendChild(link);
     }
 
-    link.textContent = "处理公告";
+    link.textContent = "公开处刑";
     link.classList.toggle("active", active);
   }
 
@@ -291,6 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const page = (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
   const isHome = !page || page === "index.html";
+  const isRooms = page === "rooms.html";
   const isAdmin = page === "admin.html";
   const hasFeedSurface = Boolean(document.querySelector("[data-post-form], [data-feed]"));
 
@@ -301,11 +302,13 @@ loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
 if(isHome) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
 loadJs("assets/fw-login-submit-fix.js?v=login-submit-fix-20260515-1");
 loadJs("assets/fw-register-disclaimer-link.js?v=register-disclaimer-link-20260513-1");
-loadJs("assets/fw-mobile-nav-actions.js?v=mobile-nav-actions-20260523-pwa-resume-3");
+loadJs("assets/fw-mobile-nav-actions.js?v=mobile-nav-actions-20260514-2");
+if(isRooms) loadJs("assets/fw-room-stable-display-fix.js?v=room-stable-display-fix-20260514-1");
 loadJs("assets/fw-avatar-mobile-fix.js?v=avatar-mobile-fix-20260514-2");
 loadJs("assets/fw-avatar-upload-stage-fix.js?v=avatar-upload-stage-fix-20260514-1");
 loadJs("assets/fw-avatar-save-guard.js?v=avatar-save-guard-20260514-1");
-loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260521-copy-1");
+loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
+if(isRooms) loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
 
 /*
   重要顺序：
@@ -315,12 +318,11 @@ loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260521-copy-1");
 */
 loadJs("assets/fw-stable-core.js?v=stable-core-20260513-2");
 loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260521-mobile-chat-1");
-loadJs("assets/fw-mobile-social-open-fix.js?v=mobile-social-open-fix-20260522-compose-1");
-loadJs("assets/fw-mobile-social-resume-data-fix.js?v=mobile-social-resume-data-fix-20260523-4");
-loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260522-buddy-input-1");
+loadJs("assets/fw-mobile-social-open-fix.js?v=mobile-social-open-fix-20260521-buddy-steps-1");
+loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
 loadJs("assets/fw-sticker-direct-render.js?v=sticker-direct-render-20260514-1");
 loadJs("assets/fw-chat-media-upload.js?v=chat-media-upload-20260514-1");
-if(hasFeedSurface) loadJs("assets/fw-post-media-tools.js?v=fw-post-media-tools-20260521-1");
+if(hasFeedSurface) loadJs("assets/fw-post-media-tools.js?v=post-media-tools-20260518-4");
 
 loadJs("assets/fw-social.js?v=social-clean-private-chat-20260518-profile-trigger-1");
 loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
@@ -328,11 +330,11 @@ loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
 loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
 loadJs("assets/fw-admin-buddy-lock.js?v=admin-buddy-lock-20260513-1");
 loadJs("assets/fw-report-rpc.js?v=report-rpc-20260513-1");
-if(isAdmin) loadJs("assets/fw-admin-polish.js?v=admin-polish-20260521-copy-1");
+if(isAdmin) loadJs("assets/fw-admin-polish.js?v=admin-polish-20260513-1");
 loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
-loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260521-mobile-1");
+loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260513-1");
 
   if(document.querySelector("[data-weekly-grid]")){
-    loadJs("assets/fw-archive-enhance.js?v=archive-leaderboard-20260521-copy-1");
+    loadJs("assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1");
   }
 })();

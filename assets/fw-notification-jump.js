@@ -274,6 +274,14 @@
     }, 250);
   }
 
+  function touchesEchoList(mutations){
+    return mutations.some(m => Array.from(m.addedNodes || []).some(node => {
+      if(!node || node.nodeType !== 1) return false;
+      if(node.matches && node.matches('[data-fw-social-body],.fw-social-list,.fw-social-item')) return true;
+      return !!(node.querySelector && node.querySelector('[data-fw-social-body],.fw-social-list,.fw-social-item'));
+    }));
+  }
+
   function boot(){
     installStyle();
     handlePostQuery();
@@ -283,8 +291,8 @@
       handleNoticeClick(e);
     }, true);
 
-    const observer = new MutationObserver(() => {
-      if(isEchoOpen()) hydrateEchoItems(false);
+    const observer = new MutationObserver(mutations => {
+      if(isEchoOpen() && touchesEchoList(mutations)) hydrateEchoItems(false);
     });
     observer.observe(document.body, {childList:true, subtree:true});
   }

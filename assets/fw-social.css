@@ -833,3 +833,21 @@ button.fw-btn-loading{
     font-size:30px!important;
   }
 }
+
+@media(max-width:760px){
+  .fw-social-modal,
+  .fw-statement-modal{
+    background:rgba(6,8,6,.68);
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+  }
+  .fw-social-panel,
+  .fw-private-window,
+  .fw-statement-panel{
+    box-shadow:0 12px 38px rgba(0,0,0,.24);
+  }
+  .fw-private-messages{
+    background:#f7f2e8;
+    background-image:none;
+  }
+}

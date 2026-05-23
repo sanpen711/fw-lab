@@ -63,6 +63,10 @@
     }
   }
 
+  function hasVisibleMessageSurface(){
+    return !!$('.fw-wx-modal.show, [data-room-modal].show, .fw-social-modal.show, [data-fw-wx-compose], [data-room-form]');
+  }
+
   function schedule(ms){
     clearTimeout(scanTimer);
     scanTimer = setTimeout(function(){ scan(document); }, ms || 20);
@@ -110,7 +114,7 @@
     observe();
     bind();
     schedule(0);
-    setInterval(function(){ scan(document); }, 1000);
+    setInterval(function(){ if(hasVisibleMessageSurface()) scan(document); }, 1800);
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

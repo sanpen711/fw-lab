@@ -23,7 +23,6 @@
   var stickerCache = null;
   var loadingStickers = false;
   var uploadingSticker = false;
-  var stickerManageMode = false;
 
   function $(s, root){ return (root || document).querySelector(s); }
   function $$(s, root){ return Array.from((root || document).querySelectorAll(s)); }
@@ -232,25 +231,21 @@
       .fw-emoji-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
       .fw-emoji-item{height:42px;border:1px solid rgba(28,28,24,.1);background:#fffaf1;border-radius:12px;font-size:24px;display:grid;place-items:center;cursor:pointer;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;}
       .fw-emoji-item:hover{border-color:rgba(217,121,121,.5);background:#fff3ef;}
-      .fw-sticker-toolbar{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;margin-bottom:10px;}
+      .fw-sticker-toolbar{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:10px;}
       .fw-sticker-upload-btn{height:38px;border-radius:12px;border:1px dashed rgba(157,74,74,.45);background:#fff7ef;color:#9d4a4a;font-weight:1000;cursor:pointer;}
       .fw-sticker-upload-btn[disabled]{opacity:.55;cursor:not-allowed;}
-      .fw-sticker-manage-btn{height:38px;min-width:58px;border-radius:12px;border:1px solid rgba(28,28,24,.16);background:#fffdf7;color:#1b1b18;font-weight:1000;cursor:pointer;padding:0 12px;}
-      .fw-sticker-manage-btn.active{background:#1b1b18;border-color:#1b1b18;color:#fffdf7;}
       .fw-sticker-count{font-size:11px;color:#8d857b;font-weight:900;white-space:nowrap;}
       .fw-sticker-empty{min-height:160px;display:grid;place-items:center;text-align:center;border:1px dashed rgba(28,28,24,.16);background:#fffaf1;border-radius:16px;color:#8d857b;font-weight:900;line-height:1.7;padding:12px;}
       .fw-sticker-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;}
       .fw-sticker-item{position:relative;height:64px;border:1px solid rgba(28,28,24,.1);background:#fffaf1;border-radius:14px;cursor:pointer;padding:4px;display:grid;place-items:center;overflow:hidden;}
       .fw-sticker-item:hover{border-color:rgba(217,121,121,.55);background:#fff3ef;}
-      .fw-sticker-item.is-manage{border-color:rgba(157,74,74,.38);cursor:default;}
       .fw-sticker-item img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
-      .fw-sticker-del{position:absolute;right:4px;top:4px;width:28px;height:28px;border:0;border-radius:999px;background:rgba(157,74,74,.92);color:#fff;font-size:20px;font-weight:1000;line-height:1;cursor:pointer;display:none;place-items:center;box-shadow:0 6px 16px rgba(0,0,0,.22);touch-action:manipulation;}
-      .fw-sticker-del:hover{background:#8f3636;}
-      .fw-sticker-item.is-manage .fw-sticker-del{display:grid;}
+      .fw-sticker-del{position:absolute;right:3px;top:3px;width:18px;height:18px;border:0;border-radius:50%;background:rgba(27,27,24,.72);color:#fff;font-size:13px;line-height:18px;cursor:pointer;display:none;}
+      .fw-sticker-item:hover .fw-sticker-del{display:block;}
       .fw-sticker-message{display:inline-grid;place-items:center;max-width:132px;max-height:132px;background:transparent!important;padding:0!important;}
       .fw-sticker-message img{max-width:128px;max-height:128px;object-fit:contain;display:block;border-radius:10px;}
       .fw-wx-pm-bubble.fw-sticker-bubble,.fw-bubble p.fw-sticker-bubble{background:transparent!important;box-shadow:none!important;border:0!important;padding:0!important;}
-      @media(max-width:760px){.fw-emoji-panel{width:calc(100vw - 24px);left:12px!important;right:12px!important;}.fw-emoji-grid{grid-template-columns:repeat(6,1fr);}.fw-sticker-grid{grid-template-columns:repeat(4,1fr);}.fw-sticker-del{width:32px;height:32px;font-size:21px;right:4px;top:4px;}}
+      @media(max-width:760px){.fw-emoji-panel{width:calc(100vw - 24px);left:12px!important;right:12px!important;}.fw-emoji-grid{grid-template-columns:repeat(6,1fr);}.fw-sticker-grid{grid-template-columns:repeat(4,1fr);}}
     `;
     document.head.appendChild(style);
   }
@@ -296,17 +291,12 @@
     if(!body) return;
     var disabled = uploadingSticker ? ' disabled' : '';
     var btnText = uploadingSticker ? '正在添加...' : '+ 添加表情';
-    var manageText = stickerManageMode ? '完成' : '管理';
-    var manageActive = stickerManageMode ? ' active' : '';
-    var html = '<div class="fw-sticker-toolbar"><button type="button" class="fw-sticker-upload-btn" data-fw-sticker-upload' + disabled + '>' + btnText + '</button><button type="button" class="fw-sticker-manage-btn' + manageActive + '" data-fw-sticker-manage-toggle>' + manageText + '</button><span class="fw-sticker-count">' + rows.length + '/' + MAX_STICKERS + '</span></div>';
+    var html = '<div class="fw-sticker-toolbar"><button type="button" class="fw-sticker-upload-btn" data-fw-sticker-upload' + disabled + '>' + btnText + '</button><span class="fw-sticker-count">' + rows.length + '/' + MAX_STICKERS + '</span></div>';
     if(!rows.length){
       html += '<div class="fw-sticker-empty"><div>♥<br>还没有添加表情<br>点上方添加</div></div>';
     }else{
       html += '<div class="fw-sticker-grid">' + rows.map(function(s){
-        var manageClass = stickerManageMode ? ' is-manage' : '';
-        var title = stickerManageMode ? '管理表情' : '发送表情';
-        var deleteHtml = stickerManageMode ? '<span class="fw-sticker-del" data-fw-sticker-delete="' + esc(s.id) + '" title="删除" aria-label="删除表情">×</span>' : '';
-        return '<button type="button" class="fw-sticker-item' + manageClass + '" data-fw-sticker-url="' + esc(s.image_url) + '" title="' + title + '"><img src="' + esc(s.image_url) + '" alt="表情">' + deleteHtml + '</button>';
+        return '<button type="button" class="fw-sticker-item" data-fw-sticker-url="' + esc(s.image_url) + '" title="发送表情"><img src="' + esc(s.image_url) + '" alt="表情"><span class="fw-sticker-del" data-fw-sticker-delete="' + esc(s.id) + '" title="删除">×</span></button>';
       }).join('') + '</div>';
     }
     body.innerHTML = html;
@@ -345,31 +335,17 @@
     panel.style.top = Math.max(12, top) + 'px';
   }
 
-  function isBuddyCompose(form){
-    return !!(form && form.matches && form.matches('[data-fw-wx-compose]'));
-  }
-
   function openPanel(trigger, input, form){
     activeInput = input;
     activeForm = form;
     var panel = ensurePanel();
-    var buddy = isBuddyCompose(form);
-    document.body.classList.toggle('fw-buddy-emoji-open', buddy);
-    if(buddy && isMobile() && input && document.activeElement === input){
-      try{ input.blur(); }catch(e){}
-    }
     renderPanelBody(activeTab || 'emoji');
     panel.classList.add('show');
     panelOpen = true;
     requestAnimationFrame(function(){ positionPanel(trigger); });
   }
 
-  function closePanel(){
-    var panel = $('#fw-emoji-panel');
-    if(panel) panel.classList.remove('show');
-    document.body.classList.remove('fw-buddy-emoji-open');
-    panelOpen = false;
-  }
+  function closePanel(){ var panel = $('#fw-emoji-panel'); if(panel) panel.classList.remove('show'); panelOpen = false; }
 
   function insertAtCursor(input, text, options){
     if(!input) return;
@@ -466,7 +442,7 @@
       if(res.error) throw res.error;
       stickerCache = (stickerCache || []).filter(function(s){ return String(s.id) !== String(id); });
       renderStickerList(stickerCache);
-      toast('表情已删除');
+      toast('表情已删除。');
     }catch(e){ toast(friendlyError(e)); }
   }
 
@@ -491,6 +467,21 @@
 
   window.fwRenderStickerMessages = renderStickerMessages;
 
+  function hasEmojiSurface(){
+    return !!$('[data-room-form], [data-fw-wx-compose], .fw-bubble p, .fw-wx-pm-bubble');
+  }
+
+  function touchesEmojiSurface(mutations){
+    return mutations.some(function(m){
+      return Array.from(m.addedNodes || []).some(function(node){
+        if(!node || node.nodeType !== 1) return false;
+        if(String(node.textContent || '').indexOf('[[FW_USER_STICKER:') >= 0) return true;
+        if(node.matches && node.matches('[data-room-form],[data-fw-wx-compose],.fw-bubble,.fw-wx-pm-bubble')) return true;
+        return !!(node.querySelector && node.querySelector('[data-room-form],[data-fw-wx-compose],.fw-bubble,.fw-wx-pm-bubble'));
+      });
+    });
+  }
+
   function bind(){
     document.addEventListener('click', function(e){
       var trigger = e.target.closest && e.target.closest('[data-fw-emoji-trigger]');
@@ -509,30 +500,11 @@
       if(emoji){ e.preventDefault(); insertAtCursor(activeInput, emoji.dataset.fwEmojiInsert || ''); return; }
       var upload = e.target.closest && e.target.closest('[data-fw-sticker-upload]');
       if(upload){ e.preventDefault(); if(uploadingSticker) return; var input = $('[data-fw-sticker-file]'); if(input) input.click(); return; }
-      var manage = e.target.closest && e.target.closest('[data-fw-sticker-manage-toggle]');
-      if(manage){ e.preventDefault(); stickerManageMode = !stickerManageMode; renderStickerList(stickerCache || []); return; }
       var del = e.target.closest && e.target.closest('[data-fw-sticker-delete]');
-      if(del){
-        e.preventDefault();
-        e.stopPropagation();
-        if(!window.confirm('确定从我的表情包中移除这个表情吗？')) return;
-        deleteSticker(del.dataset.fwStickerDelete);
-        return;
-      }
+      if(del){ e.preventDefault(); e.stopPropagation(); deleteSticker(del.dataset.fwStickerDelete); return; }
       var sticker = e.target.closest && e.target.closest('[data-fw-sticker-url]');
-      if(sticker){
-        e.preventDefault();
-        if(stickerManageMode) return;
-        sendSticker(sticker.dataset.fwStickerUrl);
-        return;
-      }
+      if(sticker){ e.preventDefault(); sendSticker(sticker.dataset.fwStickerUrl); return; }
       if(panelOpen && !e.target.closest('#fw-emoji-panel')) closePanel();
-    }, true);
-
-    document.addEventListener('focusin', function(e){
-      var target = e.target;
-      if(!isMobile() || !target || !target.closest || !target.closest('[data-fw-wx-compose]')) return;
-      if(target.matches && target.matches('input, textarea, [contenteditable="true"]')) closePanel();
     }, true);
 
     document.addEventListener('change', function(e){
@@ -550,7 +522,8 @@
 
   function observe(){
     var timer = 0;
-    var observer = new MutationObserver(function(){
+    var observer = new MutationObserver(function(mutations){
+      if(!touchesEmojiSurface(mutations)) return;
       clearTimeout(timer);
       timer = setTimeout(function(){ enhanceForms(); renderStickerMessages(); }, 120);
     });
@@ -564,7 +537,7 @@
     renderStickerMessages();
     bind();
     observe();
-    setInterval(renderStickerMessages, 1800);
+    setInterval(function(){ if(hasEmojiSurface()) renderStickerMessages(); }, 2500);
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

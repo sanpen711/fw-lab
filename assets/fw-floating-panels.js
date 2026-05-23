@@ -387,8 +387,14 @@
     window.addEventListener('resize', () => schedulePrepare(120));
 
     const observer = new MutationObserver(mutations => {
+      if(window.innerWidth <= 760) return;
       for(const m of mutations){
-        if(m.addedNodes && m.addedNodes.length){
+        const relevant = Array.from(m.addedNodes || []).some(node => {
+          if(!node || node.nodeType !== 1) return false;
+          if(node.matches && node.matches('.fw-social-modal,.fw-social-panel,.fw-private-window,[data-fw-social-modal],[data-fw-private-modal]')) return true;
+          return !!(node.querySelector && node.querySelector('.fw-social-modal,.fw-social-panel,.fw-private-window,[data-fw-social-modal],[data-fw-private-modal]'));
+        });
+        if(relevant){
           schedulePrepare(80);
           return;
         }

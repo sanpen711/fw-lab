@@ -11,7 +11,6 @@
   var badgeTimer = 0;
   var buddyTimer = 0;
   var patchInnerHtmlInstalled = false;
-  var quickBadgeDelays = [300, 1000, 2500];
 
   function $(s){
     return document.querySelector(s);
@@ -165,14 +164,6 @@
     }
   }
 
-  function setKindBadge(kind, count){
-    var selector = kind === 'buddy' ? '[data-fw-open-buddy]' : '[data-fw-open-echo]';
-    $$(selector).forEach(function(btn){
-      if(btn.closest('#fw-mobile-compact-strip')) return;
-      setTopBadge(btn, count);
-    });
-  }
-
   function isEchoType(type){
     return ![
       'private_message',
@@ -193,8 +184,8 @@
     var me = await getMe();
 
     if(!me || !me.id){
-      setKindBadge('echo', 0);
-      setKindBadge('buddy', 0);
+      setTopBadge($('[data-fw-open-echo]'), 0);
+      setTopBadge($('[data-fw-open-buddy]'), 0);
       return;
     }
 
@@ -234,53 +225,12 @@
       // friend_request 通知和 pending 申请可能重复，所以这里取最大值，避免红点数字虚高。
       var buddyCount = privateCount + Math.max(friendNoticeCount, pendingCount);
 
-      setKindBadge('echo', echoCount);
-      setKindBadge('buddy', buddyCount);
+      setTopBadge($('[data-fw-open-echo]'), echoCount);
+      setTopBadge($('[data-fw-open-buddy]'), buddyCount);
 
     }catch(e){
       console.warn('[FW notification split] badge refresh failed', e);
     }
-  }
-
-  async function markEchoNotificationsRead(){
-    var me = await getMe();
-
-    if(!me || !me.id) return;
-
-    try{
-      var res = await window.fwDb.client
-        .from('notifications')
-        .select('id,type')
-        .eq('user_id', me.id)
-        .eq('is_read', false)
-        .limit(300);
-
-      if(res.error) throw res.error;
-
-      var ids = (res.data || []).filter(function(n){
-        return isEchoType(n.type);
-      }).map(function(n){
-        return n.id;
-      });
-
-      if(!ids.length) return;
-
-      await window.fwDb.client
-        .from('notifications')
-        .update({is_read:true})
-        .in('id', ids);
-    }catch(e){
-      console.warn('[FW notification split] echo mark read failed', e);
-    }
-  }
-
-  function queueSplitRefresh(kind){
-    quickBadgeDelays.forEach(function(ms){
-      setTimeout(function(){
-        refreshSplitBadges();
-        if(kind === 'buddy') enhanceBuddyUnreadDots();
-      }, ms);
-    });
   }
 
   async function getPrivateUnreadMap(){
@@ -411,17 +361,17 @@
       var echoBtn = e.target.closest && e.target.closest('[data-fw-open-echo]');
 
       if(echoBtn){
-        setKindBadge('echo', 0);
-        markEchoNotificationsRead().then(refreshSplitBadges).catch(refreshSplitBadges);
-        queueSplitRefresh('echo');
+        setTimeout(refreshSplitBadges, 500);
         return;
       }
 
       var buddyBtn = e.target.closest && e.target.closest('[data-fw-open-buddy], [data-fw-wx-tab], [data-fw-wx-reset]');
 
       if(buddyBtn){
-        setKindBadge('buddy', 0);
-        queueSplitRefresh('buddy');
+        setTimeout(function(){
+          refreshSplitBadges();
+          enhanceBuddyUnreadDots();
+        }, 550);
         return;
       }
 
@@ -446,8 +396,19 @@
     });
   }
 
+  function touchesBuddyList(mutations){
+    return mutations.some(function(m){
+      return Array.from(m.addedNodes || []).some(function(node){
+        if(!node || node.nodeType !== 1) return false;
+        if(node.matches && node.matches('.fw-wx-modal,[data-fw-wx-buddy-modal],[data-fw-wx-list],.fw-wx-item,[data-fw-wx-chat-user]')) return true;
+        return !!(node.querySelector && node.querySelector('.fw-wx-modal,[data-fw-wx-buddy-modal],[data-fw-wx-list],.fw-wx-item,[data-fw-wx-chat-user]'));
+      });
+    });
+  }
+
   function observeBuddy(){
-    var observer = new MutationObserver(function(){
+    var observer = new MutationObserver(function(mutations){
+      if(!touchesBuddyList(mutations)) return;
       clearTimeout(window.__fwNotificationSplitBuddyTimer);
       window.__fwNotificationSplitBuddyTimer = setTimeout(function(){
         enhanceBuddyUnreadDots();
@@ -459,9 +420,6 @@
       subtree:true
     });
   }
-
-  window.fwRefreshSplitBadges = refreshSplitBadges;
-  window.fwEnhanceBuddyUnreadDots = enhanceBuddyUnreadDots;
 
   function boot(){
     injectStyle();
@@ -476,7 +434,9 @@
     clearInterval(buddyTimer);
 
     badgeTimer = setInterval(refreshSplitBadges, 12000);
-    buddyTimer = setInterval(enhanceBuddyUnreadDots, 5000);
+    buddyTimer = setInterval(function(){
+      if($('[data-fw-wx-buddy-modal].show, .fw-wx-modal.show')) enhanceBuddyUnreadDots();
+    }, 7000);
   }
 
   if(document.readyState === 'loading'){

@@ -374,6 +374,17 @@
     }
   }
 
+  function hasMediaSurface(){
+    return !!$('[data-room-form], [data-fw-wx-compose], .fw-wx-modal.show, [data-room-modal].show, .fw-social-modal.show');
+  }
+
+  function touchesMediaSurface(node){
+    if(!node || node.nodeType !== 1) return false;
+    if(String(node.textContent || '').indexOf('[[FW_MEDIA_') >= 0) return true;
+    if(node.matches && node.matches('[data-room-form],[data-fw-wx-compose],.fw-wx-modal,[data-room-modal],.fw-social-modal')) return true;
+    return !!(node.querySelector && node.querySelector('[data-room-form],[data-fw-wx-compose],.fw-wx-modal,[data-room-modal],.fw-social-modal'));
+  }
+
   function scheduleRender(ms){
     clearTimeout(scanTimer);
     scanTimer = setTimeout(function(){ renderMedia(document); }, ms || 20);
@@ -422,7 +433,7 @@
       mutations.forEach(function(m){
         Array.from(m.addedNodes || []).forEach(function(node){
           if(node.nodeType !== 1) return;
-          enhanceForms();
+          if(touchesMediaSurface(node)) enhanceForms();
           if(String(node.textContent || '').indexOf('[[FW_MEDIA_') >= 0){
             hit = true;
             renderMedia(node);
@@ -441,7 +452,12 @@
     renderMedia(document);
     bind();
     observe();
-    setInterval(function(){ enhanceForms(); renderMedia(document); }, 1500);
+    setInterval(function(){
+      if(hasMediaSurface()){
+        enhanceForms();
+        renderMedia(document);
+      }
+    }, 2200);
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

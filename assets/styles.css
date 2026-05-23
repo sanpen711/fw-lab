@@ -563,18 +563,6 @@ input{height:52px;padding:0 16px}
   color:var(--muted);
   font-weight:800;
 }
-@media(max-width:760px){
-  .home-hero-clean .hero-actions{
-    display:flex;
-    flex-direction:column;
-    align-items:stretch;
-    gap:14px;
-  }
-  .home-hero-clean .hero-actions .btn{
-    width:100%;
-    justify-content:center;
-  }
-}
 @media(max-width:980px){
   .header{padding:24px}
   .nav{display:none}
@@ -594,4 +582,22 @@ input{height:52px;padding:0 16px}
   .footer{padding:28px 24px;display:block}
   .chat-line{grid-template-columns:1fr}
   .manifesto{margin:0 24px 60px}
+}
+
+@media(max-width:760px){
+  :root{
+    --shadow:0 14px 34px rgba(0,0,0,.14);
+  }
+  html{
+    scroll-behavior:auto;
+  }
+  .bg-night::before{
+    opacity:.34;
+    background-size:96px 96px;
+  }
+  .btn:hover,
+  .entry-card:hover,
+  .room-card:hover{
+    transform:none;
+  }
 }
