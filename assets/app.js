@@ -305,6 +305,7 @@ loadJs("assets/fw-register-disclaimer-link.js?v=register-disclaimer-link-2026051
 loadJs("assets/fw-mobile-social-page-routes.js?v=mobile-social-page-routes-20260524-1");
 loadJs("assets/fw-mobile-nav-actions.js?v=mobile-nav-actions-20260524-pages-1");
 loadJs("assets/fw-mobile-buddy-page-shell.js?v=mobile-buddy-page-shell-20260524-2");
+loadJs("assets/fw-mobile-echo-page-shell.js?v=mobile-echo-page-shell-20260524-1");
 loadJs("assets/fw-mobile-direct-social-entry.js?v=mobile-direct-social-entry-20260524-2");
 if(isRooms) loadJs("assets/fw-room-stable-display-fix.js?v=room-stable-display-fix-20260514-1");
 loadJs("assets/fw-avatar-mobile-fix.js?v=avatar-mobile-fix-20260514-2");

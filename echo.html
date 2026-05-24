@@ -14,6 +14,24 @@
   <link rel="stylesheet" href="assets/styles.css" />
   <link rel="stylesheet" href="assets/square-compact.css?v=square-compact-20260511-4" />
   <link rel="stylesheet" href="assets/auth.css" />
+  <style>
+    @media(max-width:768px){
+      html,
+      body{
+        background:#f3efe6!important;
+      }
+
+      html.fw-echo-direct-page .fw-mobile-social-placeholder,
+      .fw-mobile-social-placeholder{
+        display:none!important;
+      }
+
+      .hero.bg-night,
+      .page{
+        background:#f3efe6!important;
+      }
+    }
+  </style>
 </head>
 <body>
 <main class="page">
@@ -48,7 +66,11 @@
     </div>
   </section>
 </main>
-<script src="assets/app.js?v=mobile-social-pages-20260524-1"></script>
+<script>
+  document.documentElement.classList.add('fw-echo-direct-page');
+  window.__FW_ECHO_DIRECT_PAGE__ = true;
+</script>
+<script src="assets/app.js?v=mobile-social-pages-20260524-5"></script>
 <script src="assets/auth.js?v=site-final-tweaks-20260512-1"></script>
 <script src="assets/pwa.js?v=pwa-gh-pages-20260522-1"></script>
 </body>
