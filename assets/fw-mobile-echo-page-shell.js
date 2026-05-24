@@ -25,7 +25,7 @@
     style.textContent = [
       '@media(max-width:768px){',
       '  html.fw-echo-tab-page,html.fw-echo-tab-page body{background:#f3efe6!important;}',
-      '  html.fw-echo-tab-page body{overflow:hidden!important;}',
+      '  html.fw-echo-tab-page body{overflow:hidden!important;touch-action:auto!important;}',
       '  html.fw-echo-tab-page .page,html.fw-echo-tab-page .hero.bg-night{background:#f3efe6!important;}',
       '  html.fw-echo-tab-page .fw-mobile-social-placeholder{display:none!important;}',
       '  html.fw-echo-tab-page .fw-mobile-tab[data-fw-mobile-tab="echo"]{color:#fffdf7!important;background:rgba(217,121,121,.14)!important;}',
@@ -33,9 +33,10 @@
 
       '  html.fw-echo-tab-page .fw-stable-echo-modal{position:fixed!important;left:0!important;right:0!important;top:0!important;bottom:var(--fw-mobile-bottom-space)!important;z-index:930!important;background:#f3efe6!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;pointer-events:none!important;}',
       '  html.fw-echo-tab-page .fw-stable-echo-modal.show{display:block!important;pointer-events:auto!important;padding:0!important;}',
-      '  html.fw-echo-tab-page .fw-stable-echo-panel{position:absolute!important;inset:0!important;right:auto!important;top:auto!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;min-height:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fffdf7!important;overflow:hidden!important;}',
+      '  html.fw-echo-tab-page .fw-stable-echo-panel{position:absolute!important;inset:0!important;right:auto!important;top:auto!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;min-height:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fffdf7!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;}',
+      '  html.fw-echo-tab-page .fw-stable-echo-head{flex:0 0 auto!important;}',
       '  html.fw-echo-tab-page .fw-stable-echo-close,html.fw-echo-tab-page [data-fw-stable-echo-close],html.fw-echo-tab-page [data-fw-echo-close]{display:none!important;}',
-      '  html.fw-echo-tab-page .fw-stable-echo-body{scrollbar-width:none!important;-ms-overflow-style:none!important;}',
+      '  html.fw-echo-tab-page .fw-stable-echo-body{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;touch-action:pan-y!important;scrollbar-width:none!important;-ms-overflow-style:none!important;}',
       '  html.fw-echo-tab-page .fw-stable-echo-body::-webkit-scrollbar{width:0!important;height:0!important;display:none!important;}',
       '}'
     ].join('\n');
