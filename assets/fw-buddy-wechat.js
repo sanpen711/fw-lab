@@ -13,6 +13,12 @@
   let activeConversationId = null;
   let chatTimer = null;
   let drag = null;
+  let buddyLoadPromise = null;
+  let buddyLoadSeq = 0;
+  let buddyListCache = null;
+  const BUDDY_LOAD_TIMEOUT_MS = 9000;
+  const BUDDY_LOADING_TEXT = '\u6b63\u5728\u8bfb\u53d6\u642d\u5b50\u5217\u8868...';
+  const BUDDY_LOAD_ERROR_TEXT = '\u642d\u5b50\u5217\u8868\u8bfb\u53d6\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u6216\u70b9\u5bfc\u822a \u2192 \u91cd\u65b0\u52a0\u8f7d\u3002';
 
   function esc(v){
     return String(v ?? '').replace(/[&<>"']/g, c => ({
@@ -261,25 +267,121 @@
     }).join('');
   }
 
+  function isBuddyHubOpen(){
+    return !!$('.fw-wx-modal.show');
+  }
+
+  function rowsForActiveBuddyTab(snapshot){
+    if(!snapshot) return [];
+    if(activeTab === 'incoming') return snapshot.incoming || [];
+    if(activeTab === 'outgoing') return snapshot.outgoing || [];
+    return snapshot.accepted || [];
+  }
+
+  function renderBuddyCache(){
+    if(!buddyListCache) return false;
+    setTabs();
+    renderRows(rowsForActiveBuddyTab(buddyListCache), buddyListCache.profiles || {});
+    return true;
+  }
+
+  function setBuddyListMessage(message){
+    const list = $('[data-fw-wx-list]');
+    if(list) list.innerHTML = `<div class="fw-wx-empty">${esc(message)}</div>`;
+  }
+
+  function showBuddyLoading(){
+    if(renderBuddyCache()) return;
+    setBuddyListMessage(BUDDY_LOADING_TEXT);
+  }
+
+  function showBuddyLoadError(){
+    if(renderBuddyCache()){
+      toast(BUDDY_LOAD_ERROR_TEXT);
+      return;
+    }
+    setBuddyListMessage(BUDDY_LOAD_ERROR_TEXT);
+  }
+
+  function withBuddyTimeout(promise){
+    return new Promise((resolve, reject) => {
+      let done = false;
+      const timer = setTimeout(() => {
+        if(done) return;
+        done = true;
+        reject(new Error('buddy list timeout'));
+      }, BUDDY_LOAD_TIMEOUT_MS);
+
+      Promise.resolve(promise).then(value => {
+        if(done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve(value);
+      }, error => {
+        if(done) return;
+        done = true;
+        clearTimeout(timer);
+        reject(error);
+      });
+    });
+  }
+
+  function invalidateBuddyCache(){
+    buddyListCache = null;
+  }
+
+  async function fetchBuddySnapshot(){
+    if(!(await waitForDb())) throw new Error('db unavailable');
+    if(!(await needLogin())) throw new Error('login required');
+    const {rows, profiles} = await getFriendships();
+    return {
+      rows,
+      profiles,
+      accepted: rows.filter(f => f.status === 'accepted'),
+      incoming: rows.filter(f => f.status === 'pending' && f.receiver_id === me.id),
+      outgoing: rows.filter(f => f.status === 'pending' && f.requester_id === me.id),
+      loadedAt: Date.now()
+    };
+  }
+
   async function loadBuddyList(selectId){
-    if(!(await waitForDb()) || !(await needLogin())) return;
     openHub();
     setTabs();
-    const list = $('[data-fw-wx-list]');
-    if(list) list.innerHTML = '<div class="fw-wx-empty">正在读取搭子列表...</div>';
-    try{
-      const {rows, profiles} = await getFriendships();
-      const accepted = rows.filter(f => f.status === 'accepted');
-      const incoming = rows.filter(f => f.status === 'pending' && f.receiver_id === me.id);
-      const outgoing = rows.filter(f => f.status === 'pending' && f.requester_id === me.id);
-      let show = accepted;
-      if(activeTab === 'incoming') show = incoming;
-      if(activeTab === 'outgoing') show = outgoing;
-      renderRows(show, profiles);
-      if(selectId){ await selectChat(selectId); }
-    }catch(e){
-      if(list) list.innerHTML = `<div class="fw-wx-empty">搭子读取失败：${esc(e.message || '请稍后重试。')}</div>`;
+    showBuddyLoading();
+
+    if(buddyLoadPromise){
+      try{
+        await buddyLoadPromise;
+        if(isBuddyHubOpen()) renderBuddyCache();
+        if(selectId && isBuddyHubOpen()) await selectChat(selectId);
+      }catch(e){
+        if(isBuddyHubOpen()) showBuddyLoadError();
+      }
+      return;
     }
+
+    const seq = ++buddyLoadSeq;
+    const task = (async () => {
+      try{
+        const snapshot = await withBuddyTimeout(fetchBuddySnapshot());
+        buddyListCache = snapshot;
+        if(seq === buddyLoadSeq && isBuddyHubOpen()){
+          renderBuddyCache();
+          if(selectId) await selectChat(selectId);
+        }
+        return snapshot;
+      }catch(e){
+        if(seq === buddyLoadSeq && isBuddyHubOpen()) showBuddyLoadError();
+        throw e;
+      }finally{
+        if(buddyLoadPromise === task) buddyLoadPromise = null;
+      }
+    })();
+
+    buddyLoadPromise = task;
+    try{
+      await task;
+    }catch(e){}
   }
 
   async function selectChat(targetId){
@@ -450,9 +552,17 @@
   }
 
   async function openBuddyCenter(selectId){
-    if(!(await waitForDb()) || !(await needLogin())) return;
     openHub();
     await loadBuddyList(selectId || '');
+  }
+
+  function closeBuddyCenter(){
+    buddyLoadSeq += 1;
+    $('.fw-wx-modal')?.classList.remove('show');
+    $('.fw-wx-modal')?.classList.remove('fw-wx-mobile-chatting');
+    document.body.classList.remove('fw-wx-modal-open');
+    clearInterval(chatTimer);
+    chatTimer = null;
   }
 
   function intercept(e){
@@ -472,11 +582,7 @@
     window.addEventListener('click', async e => {
       const close = e.target.closest('[data-fw-wx-close]');
       if(close){
-        $('.fw-wx-modal')?.classList.remove('show');
-        $('.fw-wx-modal')?.classList.remove('fw-wx-mobile-chatting');
-        document.body.classList.remove('fw-wx-modal-open');
-        clearInterval(chatTimer);
-        chatTimer = null;
+        closeBuddyCenter();
         return;
       }
       const backList = e.target.closest('[data-fw-wx-back-list]');
@@ -505,13 +611,13 @@
       const direct = e.target.closest('[data-fw-wx-chat-direct]');
       if(direct){ selectChat(direct.dataset.fwWxChatDirect); return; }
       const add = e.target.closest('[data-fw-wx-add]');
-      if(add){ try{ await rpc('fw_send_friend_request', {target_user_id:add.dataset.fwWxAdd}); toast('搭子申请已发出。'); loadBuddyList(); }catch(err){ toast(err.message || '发送申请失败。'); } return; }
+      if(add){ try{ await rpc('fw_send_friend_request', {target_user_id:add.dataset.fwWxAdd}); toast('搭子申请已发出。'); invalidateBuddyCache(); loadBuddyList(); }catch(err){ toast(err.message || '发送申请失败。'); } return; }
       const accept = e.target.closest('[data-fw-wx-accept]');
-      if(accept){ try{ await rpc('fw_respond_friendship', {target_friendship_id:Number(accept.dataset.fwWxAccept), accept_request:true}); toast('已同意搭子申请。'); activeTab='friends'; loadBuddyList(); }catch(err){ toast(err.message || '处理失败。'); } return; }
+      if(accept){ try{ await rpc('fw_respond_friendship', {target_friendship_id:Number(accept.dataset.fwWxAccept), accept_request:true}); toast('已同意搭子申请。'); activeTab='friends'; invalidateBuddyCache(); loadBuddyList(); }catch(err){ toast(err.message || '处理失败。'); } return; }
       const reject = e.target.closest('[data-fw-wx-reject]');
-      if(reject){ try{ await rpc('fw_respond_friendship', {target_friendship_id:Number(reject.dataset.fwWxReject), accept_request:false}); toast('已拒绝搭子申请。'); activeTab='incoming'; loadBuddyList(); }catch(err){ toast(err.message || '处理失败。'); } return; }
+      if(reject){ try{ await rpc('fw_respond_friendship', {target_friendship_id:Number(reject.dataset.fwWxReject), accept_request:false}); toast('已拒绝搭子申请。'); activeTab='incoming'; invalidateBuddyCache(); loadBuddyList(); }catch(err){ toast(err.message || '处理失败。'); } return; }
       const remove = e.target.closest('[data-fw-wx-remove]');
-      if(remove){ try{ await rpc('fw_remove_friendship', {target_friendship_id:Number(remove.dataset.fwWxRemove)}); toast('已处理搭子关系。'); loadBuddyList(); }catch(err){ toast(err.message || '操作失败。'); } return; }
+      if(remove){ try{ await rpc('fw_remove_friendship', {target_friendship_id:Number(remove.dataset.fwWxRemove)}); toast('已处理搭子关系。'); invalidateBuddyCache(); loadBuddyList(); }catch(err){ toast(err.message || '操作失败。'); } return; }
     }, true);
 
     window.addEventListener('submit', e => {
