@@ -14,6 +14,14 @@
   <link rel="stylesheet" href="assets/styles.css" />
   <link rel="stylesheet" href="assets/square-compact.css?v=square-compact-20260511-4" />
   <link rel="stylesheet" href="assets/auth.css" />
+  <style>
+    @media(max-width:768px){
+      html,body{background:#f3efe6!important;}
+      .fw-mobile-social-placeholder{display:none!important;}
+      .hero.bg-night{min-height:100dvh!important;background:#f3efe6!important;}
+      .page{background:#f3efe6!important;}
+    }
+  </style>
 </head>
 <body>
 <main class="page">
@@ -39,7 +47,7 @@
       <a href="rules.html">入馆须知</a>
       <a href="admin.html">处理公告</a>
     </nav>
-    <div class="fw-mobile-social-placeholder">
+    <div class="fw-mobile-social-placeholder" hidden aria-hidden="true">
       <small>BUDDY CENTER</small>
       <h1>搭子</h1>
       <p>这里会打开你的搭子列表、申请和私聊。手机端先进入独立页面，再加载搭子中心，避免 PWA 首页弹窗失效。</p>
@@ -48,7 +56,11 @@
     </div>
   </section>
 </main>
-<script src="assets/app.js?v=mobile-social-pages-20260524-1"></script>
+<script>
+  document.documentElement.classList.add('fw-buddy-direct-page');
+  window.__FW_BUDDY_DIRECT_PAGE__ = true;
+</script>
+<script src="assets/app.js?v=mobile-social-pages-20260524-2"></script>
 <script src="assets/auth.js?v=site-final-tweaks-20260512-1"></script>
 <script src="assets/pwa.js?v=pwa-gh-pages-20260522-1"></script>
 </body>
