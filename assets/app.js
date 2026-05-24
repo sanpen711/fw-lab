@@ -318,7 +318,9 @@ if(isRooms) loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
 */
 loadJs("assets/fw-stable-core.js?v=stable-core-20260513-2");
 loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260521-mobile-chat-1");
-loadJs("assets/fw-mobile-social-open-fix.js?v=mobile-social-open-fix-20260521-buddy-steps-1");
+// 已停用：fw-mobile-social-open-fix 会重复接管手机端回声/搭子入口，导致搭子反复打开。
+// 当前手机端入口统一交给 fw-mobile-nav-actions；回声交给 fw-stable-core；搭子交给 fw-buddy-wechat。
+// loadJs("assets/fw-mobile-social-open-fix.js?v=mobile-social-open-fix-20260521-buddy-steps-1");
 loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
 loadJs("assets/fw-sticker-direct-render.js?v=sticker-direct-render-20260514-1");
 loadJs("assets/fw-chat-media-upload.js?v=chat-media-upload-20260514-1");

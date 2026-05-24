@@ -455,6 +455,12 @@
     await loadBuddyList(selectId || '');
   }
 
+  window.FWMobileActions = window.FWMobileActions || {};
+  window.FWMobileActions.openBuddy = function(){
+    openBuddyCenter('');
+    return true;
+  };
+
   function intercept(e){
     const buddyBtn = e.target.closest('[data-fw-open-buddy]');
     const startChat = e.target.closest('[data-fw-start-chat], [data-fw-dual-chat]');
