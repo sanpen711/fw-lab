@@ -16,34 +16,31 @@
   <link rel="stylesheet" href="assets/auth.css" />
   <style>
     @media(max-width:768px){
-      html,body{background:#f3efe6!important;}
-      body{padding-bottom:0!important;overscroll-behavior:none!important;}
+      html,
+      body{
+        background:#f3efe6!important;
+      }
+
       .fw-mobile-social-placeholder{display:none!important;}
-      .hero.bg-night{min-height:100dvh!important;height:100dvh!important;background:#f3efe6!important;overflow:hidden!important;}
+
+      .hero.bg-night{
+        background:#f3efe6!important;
+      }
+
       .page{background:#f3efe6!important;}
-      html.fw-buddy-direct-page.fw-buddy-tab-page .fw-mobile-tabbar{
-        border-top:0!important;
-        box-shadow:none!important;
-        background:#0b100a!important;
-        backdrop-filter:none!important;
-        -webkit-backdrop-filter:none!important;
-      }
-      html.fw-buddy-direct-page.fw-buddy-tab-page .fw-mobile-tabbar::before{
+
+      html.fw-buddy-direct-page.fw-buddy-tab-page .fw-wx-close{
         display:none!important;
-        content:none!important;
       }
-      html.fw-buddy-direct-page.fw-buddy-tab-page .fw-wx-modal{
-        bottom:calc(64px + env(safe-area-inset-bottom,0px))!important;
-      }
+
       html.fw-buddy-direct-page.fw-buddy-tab-page .fw-wx-list,
-      html.fw-buddy-direct-page.fw-buddy-tab-page .fw-wx-messages,
-      html.fw-buddy-direct-page.fw-buddy-tab-page body{
+      html.fw-buddy-direct-page.fw-buddy-tab-page .fw-wx-messages{
         scrollbar-width:none!important;
         -ms-overflow-style:none!important;
       }
+
       html.fw-buddy-direct-page.fw-buddy-tab-page .fw-wx-list::-webkit-scrollbar,
-      html.fw-buddy-direct-page.fw-buddy-tab-page .fw-wx-messages::-webkit-scrollbar,
-      html.fw-buddy-direct-page.fw-buddy-tab-page body::-webkit-scrollbar{
+      html.fw-buddy-direct-page.fw-buddy-tab-page .fw-wx-messages::-webkit-scrollbar{
         width:0!important;
         height:0!important;
         display:none!important;
@@ -88,7 +85,7 @@
   document.documentElement.classList.add('fw-buddy-direct-page');
   window.__FW_BUDDY_DIRECT_PAGE__ = true;
 </script>
-<script src="assets/app.js?v=mobile-social-pages-20260524-3"></script>
+<script src="assets/app.js?v=mobile-social-pages-20260524-4"></script>
 <script src="assets/auth.js?v=site-final-tweaks-20260512-1"></script>
 <script src="assets/pwa.js?v=pwa-gh-pages-20260522-1"></script>
 </body>
