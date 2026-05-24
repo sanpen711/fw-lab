@@ -302,8 +302,9 @@ loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
 if(isHome) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
 loadJs("assets/fw-login-submit-fix.js?v=login-submit-fix-20260515-1");
 loadJs("assets/fw-register-disclaimer-link.js?v=register-disclaimer-link-20260513-1");
-loadJs("assets/fw-mobile-nav-actions.js?v=mobile-nav-actions-20260524-direct-1");
-loadJs("assets/fw-mobile-direct-social-entry.js?v=mobile-direct-social-entry-20260524-1");
+loadJs("assets/fw-mobile-social-page-routes.js?v=mobile-social-page-routes-20260524-1");
+loadJs("assets/fw-mobile-nav-actions.js?v=mobile-nav-actions-20260524-pages-1");
+loadJs("assets/fw-mobile-direct-social-entry.js?v=mobile-direct-social-entry-20260524-2");
 if(isRooms) loadJs("assets/fw-room-stable-display-fix.js?v=room-stable-display-fix-20260514-1");
 loadJs("assets/fw-avatar-mobile-fix.js?v=avatar-mobile-fix-20260514-2");
 loadJs("assets/fw-avatar-upload-stage-fix.js?v=avatar-upload-stage-fix-20260514-1");
@@ -317,8 +318,8 @@ if(isRooms) loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
   2. buddy-wechat 先接管“搭子”点击，防止旧 fw-social 的旧搭子面板抢跑。
   3. fw-social 保留，只用它补老的基础结构，不让它优先处理点击。
 */
-loadJs("assets/fw-stable-core.js?v=stable-core-20260524-direct-1");
-loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260524-direct-open-1");
+loadJs("assets/fw-stable-core.js?v=stable-core-20260524-pages-1");
+loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260524-pages-1");
 // 已停用：fw-mobile-social-open-fix 会重复接管手机端回声/搭子入口，导致搭子反复打开。
 // 当前手机端入口统一交给 fw-mobile-nav-actions；回声交给 fw-stable-core；搭子交给 fw-buddy-wechat。
 // loadJs("assets/fw-mobile-social-open-fix.js?v=mobile-social-open-fix-20260521-buddy-steps-1");
