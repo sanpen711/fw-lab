@@ -33,10 +33,10 @@
 
       '  html.fw-echo-tab-page .fw-stable-echo-modal{position:fixed!important;left:0!important;right:0!important;top:0!important;bottom:var(--fw-mobile-bottom-space)!important;z-index:930!important;background:#f3efe6!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;pointer-events:none!important;}',
       '  html.fw-echo-tab-page .fw-stable-echo-modal.show{display:block!important;pointer-events:auto!important;padding:0!important;}',
-      '  html.fw-echo-tab-page .fw-stable-echo-panel{position:absolute!important;inset:0!important;right:auto!important;top:auto!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;min-height:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fffdf7!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;}',
-      '  html.fw-echo-tab-page .fw-stable-echo-head{flex:0 0 auto!important;}',
+      '  html.fw-echo-tab-page .fw-stable-echo-panel{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;min-height:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fffdf7!important;overflow:hidden!important;display:grid!important;grid-template-rows:auto minmax(0,1fr)!important;}',
+      '  html.fw-echo-tab-page .fw-stable-echo-head{min-height:0!important;}',
       '  html.fw-echo-tab-page .fw-stable-echo-close,html.fw-echo-tab-page [data-fw-stable-echo-close],html.fw-echo-tab-page [data-fw-echo-close]{display:none!important;}',
-      '  html.fw-echo-tab-page .fw-stable-echo-body{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;touch-action:pan-y!important;scrollbar-width:none!important;-ms-overflow-style:none!important;}',
+      '  html.fw-echo-tab-page .fw-stable-echo-body{min-height:0!important;height:100%!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;touch-action:pan-y!important;pointer-events:auto!important;scrollbar-width:none!important;-ms-overflow-style:none!important;display:grid!important;align-content:start!important;gap:12px!important;}',
       '  html.fw-echo-tab-page .fw-stable-echo-body::-webkit-scrollbar{width:0!important;height:0!important;display:none!important;}',
       '}'
     ].join('\n');
@@ -73,6 +73,12 @@
     return false;
   }
 
+  function hasUsableEchoUI(){
+    var modal = $('.fw-stable-echo-modal');
+    if(!modal || !modal.classList.contains('show')) return false;
+    return Boolean(modal.querySelector('.fw-stable-echo-panel') && modal.querySelector('.fw-stable-echo-body'));
+  }
+
   function ensureEchoOpen(){
     if(!isMobile() || !isEchoPage()) return;
     document.documentElement.classList.add('fw-echo-tab-page');
@@ -80,7 +86,7 @@
     injectStyle();
     activateEchoTab();
 
-    if($('.fw-stable-echo-modal.show')) return;
+    if(hasUsableEchoUI()) return;
     openEcho();
   }
 

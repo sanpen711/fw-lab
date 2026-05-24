@@ -107,6 +107,10 @@
     var target = routeMap[kind];
     if(!target) return false;
     if(pageName() === target){
+      if(kind === 'buddy' && window.FWMobileBuddyPageShell && typeof window.FWMobileBuddyPageShell.ensureOpen === 'function'){
+        window.FWMobileBuddyPageShell.ensureOpen();
+        return true;
+      }
       openWithRetry(kind);
       return true;
     }

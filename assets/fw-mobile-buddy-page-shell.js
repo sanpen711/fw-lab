@@ -106,6 +106,22 @@
     return false;
   }
 
+  function hasUsableBuddyUI(){
+    var modal = $('.fw-wx-modal');
+    if(!modal || !modal.classList.contains('show')) return false;
+
+    var panel = modal.querySelector('.fw-wx-panel');
+    var left = modal.querySelector('.fw-wx-left');
+    var list = modal.querySelector('.fw-wx-list');
+    if(!panel || !left || !list) return false;
+
+    var hasItem = Boolean(list.querySelector('.fw-wx-item'));
+    var hasEmpty = Boolean(list.querySelector('.fw-wx-empty'));
+    var hasLoading = /加载|读取|loading/i.test(list.textContent || '');
+
+    return hasItem || hasEmpty || hasLoading;
+  }
+
   function ensureBuddyOpen(){
     if(!isMobile() || !isBuddyPage()) return;
     injectStyle();
@@ -113,9 +129,20 @@
     document.documentElement.classList.add('fw-buddy-tab-page');
     document.body && document.body.classList.add('fw-buddy-tab-page');
 
-    if($('.fw-wx-modal.show')) return;
+    if(hasUsableBuddyUI()) return;
     openBuddy();
+
+    setTimeout(function(){
+      if(!hasUsableBuddyUI()) openBuddy();
+    }, 500);
+
+    setTimeout(function(){
+      if(!hasUsableBuddyUI()) openBuddy();
+    }, 1500);
   }
+
+  window.FWMobileBuddyPageShell = window.FWMobileBuddyPageShell || {};
+  window.FWMobileBuddyPageShell.ensureOpen = ensureBuddyOpen;
 
   function interceptClose(e){
     if(!isMobile() || !isBuddyPage()) return;
@@ -141,8 +168,10 @@
 
   window.addEventListener('click', interceptClose, true);
   window.addEventListener('pageshow', function(){ setTimeout(ensureBuddyOpen, 80); });
+  window.addEventListener('focus', function(){ setTimeout(ensureBuddyOpen, 120); });
+  window.addEventListener('popstate', function(){ setTimeout(ensureBuddyOpen, 120); });
   document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState === 'visible') setTimeout(ensureBuddyOpen, 80);
+    if(document.visibilityState === 'visible') setTimeout(ensureBuddyOpen, 120);
   });
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
