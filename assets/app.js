@@ -317,7 +317,7 @@ if(isRooms) loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
   3. fw-social 保留，只用它补老的基础结构，不让它优先处理点击。
 */
 loadJs("assets/fw-stable-core.js?v=stable-core-20260513-2");
-loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260524-repeat-open-1");
+loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260521-mobile-chat-1");
 loadJs("assets/fw-mobile-social-open-fix.js?v=mobile-social-open-fix-20260521-buddy-steps-1");
 loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
 loadJs("assets/fw-sticker-direct-render.js?v=sticker-direct-render-20260514-1");
