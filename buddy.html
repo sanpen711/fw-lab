@@ -16,24 +16,35 @@
   <link rel="stylesheet" href="assets/auth.css" />
   <style>
     @media(max-width:768px){
+      :root{
+        --fw-mobile-tab-height:64px!important;
+        --fw-mobile-tabbar-height:78px!important;
+      }
       html,body{background:#f3efe6!important;}
-      body{padding-bottom:0!important;overscroll-behavior:none!important;}
+      body{padding-bottom:var(--fw-mobile-bottom-space)!important;overscroll-behavior:none!important;}
       .fw-mobile-social-placeholder{display:none!important;}
       .hero.bg-night{min-height:100dvh!important;height:100dvh!important;background:#f3efe6!important;overflow:hidden!important;}
       .page{background:#f3efe6!important;}
       html.fw-buddy-direct-page.fw-buddy-tab-page .fw-mobile-tabbar{
-        border-top:0!important;
-        box-shadow:none!important;
-        background:#0b100a!important;
-        backdrop-filter:none!important;
-        -webkit-backdrop-filter:none!important;
+        position:fixed!important;
+        left:0!important;
+        right:0!important;
+        bottom:0!important;
+        z-index:980!important;
+        min-height:calc(var(--fw-mobile-tab-height) + env(safe-area-inset-bottom,0px))!important;
+        padding:6px 8px calc(env(safe-area-inset-bottom,0px) + 5px)!important;
+        border-top:1px solid rgba(246,246,240,.16)!important;
+        box-shadow:0 -12px 34px rgba(0,0,0,.26)!important;
+        background:rgba(11,16,10,.92)!important;
+        backdrop-filter:blur(18px)!important;
+        -webkit-backdrop-filter:blur(18px)!important;
       }
       html.fw-buddy-direct-page.fw-buddy-tab-page .fw-mobile-tabbar::before{
         display:none!important;
         content:none!important;
       }
       html.fw-buddy-direct-page.fw-buddy-tab-page .fw-wx-modal{
-        bottom:calc(64px + env(safe-area-inset-bottom,0px))!important;
+        bottom:calc(var(--fw-mobile-tabbar-height) + env(safe-area-inset-bottom,0px))!important;
       }
       html.fw-buddy-direct-page.fw-buddy-tab-page .fw-wx-list,
       html.fw-buddy-direct-page.fw-buddy-tab-page .fw-wx-messages,
@@ -88,7 +99,7 @@
   document.documentElement.classList.add('fw-buddy-direct-page');
   window.__FW_BUDDY_DIRECT_PAGE__ = true;
 </script>
-<script src="assets/app.js?v=mobile-social-pages-20260524-3"></script>
+<script src="assets/app.js?v=mobile-social-pages-20260524-4"></script>
 <script src="assets/auth.js?v=site-final-tweaks-20260512-1"></script>
 <script src="assets/pwa.js?v=pwa-gh-pages-20260522-1"></script>
 </body>
