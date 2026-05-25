@@ -180,40 +180,33 @@
     '</article>';
   }
 
-  function visiblePosts(kind){
+  function visiblePosts(){
     var posts = app().state.posts || [];
-    if(kind === 'home') return posts.slice(0, 20);
     var filter = app().state.filterStatus || '全部';
     if(filter !== '全部') posts = posts.filter(function(p){ return p.status === filter; });
     return posts;
   }
 
-  function renderList(kind){
-    var node = $('[data-feed-list="' + kind + '"]');
+  function renderList(){
+    var node = $('[data-feed-list="square"]');
     if(!node) return;
-    var posts = visiblePosts(kind);
+    var posts = visiblePosts();
     if(!posts.length){
-      node.innerHTML = '<div class="empty">暂时还没有内容。可以先去发布一条低功耗状态。</div>';
+      node.innerHTML = '<div class="empty">暂时还没有内容。可以先发布一条低功耗状态。</div>';
       return;
     }
     node.innerHTML = posts.map(renderPost).join('');
   }
 
-  function renderAll(){
-    renderList('home');
-    renderList('square');
-  }
-
   function setLoading(){
-    $$('[data-feed-list]').forEach(function(node){
-      node.innerHTML = '<div class="loading">正在整理废话流...</div>';
-    });
+    var node = $('[data-feed-list="square"]');
+    if(node) node.innerHTML = '<div class="loading">正在整理废话流...</div>';
   }
 
   async function load(force){
     if(loading) return;
     if(app().state.postsLoaded && !force){
-      renderAll();
+      renderList();
       return;
     }
 
@@ -224,12 +217,11 @@
       if(!(await app().waitForDb())) throw new Error('暂时无法连接数据服务。');
       app().state.posts = await loadPostsFromSupabase();
       app().state.postsLoaded = true;
-      renderAll();
+      renderList();
     }catch(e){
       console.warn('[FW mobile app] feed load failed', e);
-      $$('[data-feed-list]').forEach(function(node){
-        node.innerHTML = '<div class="error">帖子暂时读取失败，请稍后刷新。</div>';
-      });
+      var node = $('[data-feed-list="square"]');
+      if(node) node.innerHTML = '<div class="error">帖子暂时读取失败，请稍后刷新。</div>';
     }finally{
       loading = false;
     }
@@ -257,7 +249,7 @@
       if(filter){
         app().state.filterStatus = filter.dataset.filterStatus || '全部';
         $$('[data-filter-status]').forEach(function(btn){ btn.classList.toggle('active', btn === filter); });
-        renderList('square');
+        renderList();
         return;
       }
 
@@ -315,8 +307,7 @@
 
   function init(){
     bind();
-    load(false);
   }
 
-  window.FWAppFeed = {init:init, load:load, ensureLoaded:ensureLoaded, renderAll:renderAll};
+  window.FWAppFeed = {init:init, load:load, ensureLoaded:ensureLoaded, renderAll:renderList};
 })();
