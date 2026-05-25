@@ -8,6 +8,7 @@
     postsLoaded:false,
     filterStatus:'全部'
   };
+  var viewportSyncBound = false;
 
   function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.from((root || document).querySelectorAll(selector)); }
@@ -17,6 +18,43 @@
     });
   }
   function initials(name){ return String(name || 'FW').trim().slice(0, 2).toUpperCase() || 'FW'; }
+
+  function syncAppViewport(){
+    var height = 0;
+    if(window.visualViewport && window.visualViewport.height){
+      height = Math.round(window.visualViewport.height);
+    }
+    if(!height) height = window.innerHeight || document.documentElement.clientHeight || 0;
+    if(height > 0){
+      document.documentElement.style.setProperty('--app-viewport-height', height + 'px');
+    }
+    document.documentElement.classList.add('app-viewport-ready');
+  }
+
+  function scheduleViewportSync(){
+    syncAppViewport();
+    requestAnimationFrame(function(){
+      syncAppViewport();
+      requestAnimationFrame(syncAppViewport);
+    });
+  }
+
+  function bindViewportSync(){
+    if(viewportSyncBound) return;
+    viewportSyncBound = true;
+    scheduleViewportSync();
+    window.addEventListener('load', scheduleViewportSync, {passive:true});
+    window.addEventListener('pageshow', scheduleViewportSync, {passive:true});
+    window.addEventListener('orientationchange', function(){
+      setTimeout(scheduleViewportSync, 120);
+      setTimeout(scheduleViewportSync, 360);
+    }, {passive:true});
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', scheduleViewportSync, {passive:true});
+    }
+    setTimeout(scheduleViewportSync, 100);
+    setTimeout(scheduleViewportSync, 300);
+  }
 
   function avatarHtml(user){
     var name = user && (user.nickname || user.email) || 'F.w';
@@ -110,6 +148,7 @@
     });
     var main = $('#appMain');
     if(main) main.scrollTop = 0;
+    scheduleViewportSync();
 
     if(state.view === 'square' && window.FWAppFeed) window.FWAppFeed.ensureLoaded();
     if(state.view === 'buddy' && window.FWAppBuddy) window.FWAppBuddy.ensureLoaded();
@@ -155,6 +194,7 @@
   }
 
   async function start(){
+    bindViewportSync();
     registerServiceWorker();
     bindShell();
     setStatus('正在连接');
@@ -182,7 +222,8 @@
     setStatus:setStatus,
     setView:setView,
     refreshUser:refreshUser,
-    renderUser:renderUser
+    renderUser:renderUser,
+    syncAppViewport:syncAppViewport
   };
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
