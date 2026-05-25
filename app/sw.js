@@ -1,11 +1,14 @@
-const CACHE_NAME = 'fw-mobile-app-v1';
+const CACHE_NAME = 'fw-mobile-app-v2';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
   '/app/app.css',
   '/app/app.js',
+  '/app/nav.js',
   '/app/feed.js',
   '/app/publish.js',
+  '/app/buddy.js',
+  '/app/echo.js',
   '/app/profile.js',
   '/app/manifest.webmanifest'
 ];
