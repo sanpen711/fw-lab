@@ -155,14 +155,25 @@
     });
   }
 
+  function renderCommentAuthor(comment){
+    return '<div class="post-author">' + avatar(comment) + '<div class="post-name"><b>' + esc(comment.authorName || '匿名回声') + '</b><span>' + esc(comment.time || '') + '</span></div></div>';
+  }
+
   function renderComments(post){
     var rows = post.comments || [];
     if(!rows.length){
       return '<div class="empty">还没有评论，可以轻轻放下一句。</div>';
     }
     return rows.slice(-8).map(function(c){
-      return '<div class="comment"><b>' + esc(c.authorName || '匿名回声') + '</b> <span>' + esc(c.time || '') + '</span><br>' + esc(c.content || '') + '</div>';
+      return '<div class="comment">' + renderCommentAuthor(c) + '<p>' + esc(c.content || '') + '</p></div>';
     }).join('');
+  }
+
+  function renderCommentBox(){
+    if(!app().state.user){
+      return '<div class="empty">登录后才能评论。</div>';
+    }
+    return '<form class="comment-form" data-comment-form><input name="content" maxlength="180" placeholder="留一句回声"><button type="submit">发送</button></form>';
   }
 
   function renderPost(post){
@@ -173,10 +184,10 @@
       '<div class="post-actions">' +
         '<button class="' + (mine.resonance ? 'active' : '') + '" type="button" data-app-react="resonance">点赞 ' + Number(post.resonance || 0) + '</button>' +
         '<button type="button" data-app-comments>评论 ' + (post.comments || []).length + '</button>' +
-        '<button class="' + (mine.same ? 'active' : '') + '" type="button" data-app-react="same">一样 ' + Number(post.same || 0) + '</button>' +
-        '<button class="' + (mine.tissue ? 'active' : '') + '" type="button" data-app-react="tissue">纸巾 ' + Number(post.tissue || 0) + '</button>' +
+        '<button class="' + (mine.same ? 'active' : '') + '" type="button" data-app-react="same">俺也一样 ' + Number(post.same || 0) + '</button>' +
+        '<button class="' + (mine.tissue ? 'active' : '') + '" type="button" data-app-react="tissue">递纸巾 ' + Number(post.tissue || 0) + '</button>' +
       '</div>' +
-      '<div class="comments"><div>' + renderComments(post) + '</div><form class="comment-form" data-comment-form><input name="content" maxlength="180" placeholder="留一句回声"><button type="submit">发送</button></form></div>' +
+      '<div class="comments"><div>' + renderComments(post) + '</div>' + renderCommentBox() + '</div>' +
     '</article>';
   }
 
@@ -192,7 +203,7 @@
     if(!node) return;
     var posts = visiblePosts();
     if(!posts.length){
-      node.innerHTML = '<div class="empty">暂时还没有内容。可以先发布一条低功耗状态。</div>';
+      node.innerHTML = '<div class="empty">今天这里还很安静。</div>';
       return;
     }
     node.innerHTML = posts.map(renderPost).join('');
@@ -200,7 +211,7 @@
 
   function setLoading(){
     var node = $('[data-feed-list="square"]');
-    if(node) node.innerHTML = '<div class="loading">正在整理废话流...</div>';
+    if(node) node.innerHTML = '<div class="loading">正在读取精神广场...</div>';
   }
 
   async function load(force){
@@ -231,12 +242,11 @@
     load(false);
   }
 
-  async function requireUser(){
+  async function requireUser(message){
     if(app().state.user) return app().state.user;
     await app().refreshUser();
     if(app().state.user) return app().state.user;
-    app().toast('请先登录后再互动。');
-    app().setView('profile');
+    app().toast(message || '登录后才能互动。');
     return null;
   }
 
@@ -263,16 +273,18 @@
 
       var react = e.target.closest && e.target.closest('[data-app-react]');
       if(react){
-        var user = await requireUser();
+        var user = await requireUser('登录后才能互动。');
         if(!user) return;
         var postCard = react.closest('[data-post-id]');
+        if(!postCard || react.disabled) return;
         try{
           react.disabled = true;
-          await window.fwDb.react({postId:postCard.dataset.postId, type:react.dataset.appReact});
-          app().toast('已记录');
+          var result = await window.fwDb.react({postId:postCard.dataset.postId, type:react.dataset.appReact});
+          app().toast(result && result.already ? '已经记录过了。' : '已记录');
           await load(true);
         }catch(err){
-          app().toast(err.message || '互动失败，请稍后再试。');
+          console.warn('[FW mobile app] reaction failed', err);
+          app().toast('操作失败，请稍后再试。');
         }finally{
           react.disabled = false;
         }
@@ -283,14 +295,19 @@
       var form = e.target.closest && e.target.closest('[data-comment-form]');
       if(!form) return;
       e.preventDefault();
-      var user = await requireUser();
+      var user = await requireUser('登录后才能评论。');
       if(!user) return;
       var card = form.closest('[data-post-id]');
       var input = form.querySelector('input[name="content"]');
       var content = (input.value || '').trim();
-      if(!content){ input.focus(); return; }
+      if(!content){
+        input.focus();
+        app().toast('先写点评论内容。');
+        return;
+      }
+      var submit = form.querySelector('button');
       try{
-        form.querySelector('button').disabled = true;
+        submit.disabled = true;
         await window.fwDb.createComment({postId:card.dataset.postId, content:content});
         input.value = '';
         app().toast('评论已发送');
@@ -298,9 +315,10 @@
         var next = $('[data-post-id="' + card.dataset.postId + '"] .comments');
         if(next) next.classList.add('show');
       }catch(err){
-        app().toast(err.message || '评论失败，请稍后再试。');
+        console.warn('[FW mobile app] comment failed', err);
+        app().toast('评论失败，请稍后再试。');
       }finally{
-        form.querySelector('button').disabled = false;
+        submit.disabled = false;
       }
     });
   }
