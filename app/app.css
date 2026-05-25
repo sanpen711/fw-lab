@@ -14,7 +14,7 @@
   --accent-dark:#984d4d;
   --tab-h:68px;
   --app-bottom-safe:env(safe-area-inset-bottom,0px);
-  --app-tabbar-drop:10px;
+  --app-tabbar-drop:20px;
   --app-bottom-nav-total-height:calc(var(--tab-h) + var(--app-bottom-safe));
   --app-viewport-height:100dvh;
   --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
@@ -143,7 +143,7 @@ img,video,canvas,svg{max-width:100%;height:auto}
 .notice-time{color:var(--muted);font-size:11px;font-weight:850}
 .app-tabbar{position:absolute;left:0;right:0;bottom:0;top:auto;z-index:50;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;min-height:calc(var(--tab-h) + var(--app-bottom-safe));height:auto;margin:0;padding:10px 8px max(calc(var(--app-bottom-safe) - var(--app-tabbar-drop)),0px);background:var(--deep);border-top:1px solid rgba(248,245,236,.12);isolation:isolate}
 .app-tabbar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--app-bottom-safe) + 40px);background:var(--deep);pointer-events:none;z-index:0}
-.app-tabbar button{position:relative;z-index:1;min-width:0;border:0;background:transparent;color:rgba(248,245,236,.58);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:12px}
+.app-tabbar button{position:relative;z-index:1;min-width:0;border:0;background:transparent;color:rgba(248,245,236,.58);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:12px;transform:translateY(var(--app-tabbar-drop,20px))}
 .app-tabbar button span{font-size:22px;line-height:1}
 .app-tabbar button b{font-size:11px;line-height:1;font-weight:1000}
 .app-tabbar button.active{color:#fff;background:rgba(217,121,121,.18)}
