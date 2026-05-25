@@ -68,7 +68,7 @@
         app().state.postsLoaded = false;
         if(window.FWAppFeed) await window.FWAppFeed.load(true);
         app().toast('已发布');
-        app().setView('home');
+        app().setView('square');
       }catch(err){
         app().toast(err.message || '发布失败，请稍后再试。');
       }finally{
