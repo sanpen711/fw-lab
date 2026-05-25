@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>添加到桌面｜F.w 研究所</title>
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="F.w 研究所">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/app/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
+  <link rel="stylesheet" href="/app/app.css">
+</head>
+<body class="install-page">
+  <main class="install-shell">
+    <section class="install-card">
+      <p class="install-kicker">F.w MOBILE APP</p>
+      <h1>把 F.w 研究所添加到桌面</h1>
+      <p class="install-copy">这里更适合像一个小应用一样长期使用：打开桌面图标，直接看废话流、逛广场、发布一句今天的状态。</p>
+
+      <div class="install-steps" aria-label="添加到桌面步骤">
+        <div><b>iPhone / iPad</b><span>用 Safari 打开本页，点分享按钮，再选“添加到主屏幕”。</span></div>
+        <div><b>安卓手机</b><span>用系统浏览器或 Edge 打开本页，在浏览器菜单里选择“添加到桌面”。</span></div>
+      </div>
+
+      <div class="install-actions">
+        <a class="app-btn primary" href="/app/index.html">打开应用入口</a>
+        <a class="app-btn ghost" href="/index.html">访问电脑版</a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/app/sw.js', {scope:'/app/'}).catch(function(err){
+        console.warn('[FW mobile app] service worker register failed', err);
+      });
+    }
+  </script>
+</body>
+</html>
