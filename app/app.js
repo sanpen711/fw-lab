@@ -31,7 +31,6 @@
     if(height > 0){
       root.style.setProperty('--app-viewport-height', height + 'px');
     }
-    root.style.setProperty('--app-bottom-safe', 'env(safe-area-inset-bottom, 0px)');
     root.classList.add('app-viewport-ready');
   }
 
