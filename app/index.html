@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
   <title>F.w 研究所 App</title>
   <meta name="theme-color" content="#10170f">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="/app/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
-  <link rel="stylesheet" href="/app/app.css?v=mobile-app-shell-20260525-3">
+  <link rel="stylesheet" href="/app/app.css?v=mobile-app-shell-20260525-4">
 </head>
 <body>
   <div class="app-shell">
@@ -35,11 +35,8 @@
           <h1>F.w 研究所</h1>
           <span>一个临时放下情绪的地方</span>
         </div>
-        <div class="hero-actions-app">
+        <div class="hero-actions-app single-action">
           <button class="app-btn primary" type="button" data-app-login>加入研究所</button>
-          <button class="app-btn dark" type="button" data-app-open="square">去精神广场发牢骚</button>
-          <button class="app-btn" type="button" data-app-open="rooms">去学术研讨投票</button>
-          <button class="app-btn" type="button" data-app-open="bird">去观鸟台散心解忧</button>
         </div>
         <div class="nav-grid" aria-label="应用导航菜单">
           <button type="button" data-app-open="nav"><b>首页</b><span>回到低功耗入口</span></button>
@@ -48,8 +45,11 @@
           <button type="button" data-app-open="bird"><b>观鸟台</b><span>离谱样本观察</span></button>
           <button type="button" data-app-open="archive"><b>废话档案</b><span>低功耗榜单</span></button>
           <button type="button" data-app-open="rules"><b>入馆须知</b><span>边界与声明</span></button>
-          <button type="button" data-app-open="moderation"><b>处理公告</b><span>违规处理记录</span></button>
-          <button type="button" data-app-reload><b>重新加载</b><span>PWA 手动刷新</span></button>
+          <button type="button" data-app-open="moderation"><b>处理公告</b><span>违规处理说明</span></button>
+        </div>
+        <div class="nav-secondary" aria-label="辅助入口">
+          <button type="button" data-app-reload>重新加载</button>
+          <a href="/index.html">访问电脑版</a>
         </div>
       </section>
 
@@ -108,9 +108,20 @@
 
       <section class="app-view" data-app-view="rules" aria-label="入馆须知">
         <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>入馆须知</p><h1>欢迎来到 F.w 研究所</h1></div>
-        <div class="module-card"><h2>可以放松</h2><p>这里允许你低功耗运行，可以发牢骚，可以交流，也可以什么都不做。</p></div>
-        <div class="module-card"><h2>但要有边界</h2><p>不攻击真实个人，不泄露隐私，不把别人的痛苦当作消遣。</p></div>
-        <div class="split-actions"><button class="app-btn dark" type="button">查看入馆须知</button><button class="app-btn primary" type="button" data-app-open="nav">我知道了，进入研究所</button></div>
+        <div class="split-actions rules-actions"><a class="app-btn dark" href="#appRulesContent">查看入馆须知</a><button class="app-btn primary" type="button" data-app-open="nav">我知道了，进入研究所</button></div>
+        <div class="rules-card-stack" id="appRulesContent">
+          <div class="module-card rules-card"><h2>欢迎来到 F.w 研究所</h2><p>这里是轻量化表达、浏览和互动空间。你可以把日常牢骚、低功耗状态和一点点荒诞感暂时放在这里，但这里不是现实纠纷处理平台。</p></div>
+          <div class="module-card rules-card"><h2>可以放松</h2><p>可以发牢骚，可以围观，可以参与投票，也可以什么都不做。这里鼓励低压力表达，不要求每句话都像正式汇报。</p></div>
+          <div class="module-card rules-card"><h2>可以交流</h2><p>你可以评论、点赞、说“俺也一样”、递纸巾，或者和合适的人互加搭子。互动仅代表用户个人表达，不代表平台立场。</p></div>
+          <div class="module-card rules-card"><h2>但要有边界</h2><p>允许吐槽，不允许伤害他人。请不要点名攻击、辱骂、造谣、挂人、煽动围攻，或把别人的痛苦当作消遣。</p></div>
+          <div class="module-card rules-card"><h2>使用声明</h2><p>请不要把本站当成现实纠纷裁判场、曝光台或情绪审判台。现实中的劳动争议、人际冲突、安全问题，仍应通过现实渠道解决。</p></div>
+          <div class="module-card rules-card"><h2>不适合发布的内容</h2><p>不要发布真实隐私，包括姓名、电话、地址、证件、公司内部资料、聊天截图、邮箱、社交账号等可识别信息。禁止广告、引流、诈骗、赌博、色情、暴力、违法和其他风险内容。</p></div>
+          <div class="module-card rules-card"><h2>违规处理</h2><p>明显越界或被举报后确认不合适的内容，可能被隐藏、删除；相关账号可能被禁言、限制使用或采取其他必要处理。</p></div>
+          <div class="module-card rules-card"><h2>不是专业帮助</h2><p>如果你正在经历严重心理压力、现实冲突、人身安全风险或其他紧急情况，请优先联系身边可信任的人、当地紧急服务或专业机构。本站不替代专业帮助。</p></div>
+          <div class="module-card rules-card"><h2>关于本站 / 制作支持</h2><p>F.w 研究所由 YSP启元工作室发起并制作，提供内容策划、页面设计、功能维护与日常运营支持。我们希望它保持轻量、克制、相对安全。</p></div>
+          <div class="module-card rules-card"><h2>项目状态</h2><p>本项目仍处于持续完善阶段。功能、规则和管理机制会根据实际使用情况继续优化；也请大家在轻松使用的同时，保持尊重、克制与安全边界。</p></div>
+        </div>
+        <div class="split-actions rules-actions bottom-actions"><a class="app-btn dark" href="#appRulesContent">查看入馆须知</a><button class="app-btn primary" type="button" data-app-open="nav">我知道了，进入研究所</button></div>
       </section>
 
       <section class="app-view" data-app-view="moderation" aria-label="处理公告">
@@ -159,12 +170,12 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/assets/supabase-config.js"></script>
   <script src="/assets/supabase-db.js?v=mobile-app-v1"></script>
-  <script src="/app/app.js?v=mobile-app-shell-20260525-3"></script>
-  <script src="/app/nav.js?v=mobile-app-shell-20260525-3"></script>
-  <script src="/app/feed.js?v=mobile-app-shell-20260525-3"></script>
-  <script src="/app/publish.js?v=mobile-app-shell-20260525-3"></script>
-  <script src="/app/buddy.js?v=mobile-app-shell-20260525-3"></script>
-  <script src="/app/echo.js?v=mobile-app-shell-20260525-3"></script>
-  <script src="/app/profile.js?v=mobile-app-shell-20260525-3"></script>
+  <script src="/app/app.js?v=mobile-app-shell-20260525-4"></script>
+  <script src="/app/nav.js?v=mobile-app-shell-20260525-4"></script>
+  <script src="/app/feed.js?v=mobile-app-shell-20260525-4"></script>
+  <script src="/app/publish.js?v=mobile-app-shell-20260525-4"></script>
+  <script src="/app/buddy.js?v=mobile-app-shell-20260525-4"></script>
+  <script src="/app/echo.js?v=mobile-app-shell-20260525-4"></script>
+  <script src="/app/profile.js?v=mobile-app-shell-20260525-4"></script>
 </body>
 </html>
