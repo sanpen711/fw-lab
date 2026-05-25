@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-debug-3';
+const CACHE_NAME = 'fw-mobile-app-v13';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
