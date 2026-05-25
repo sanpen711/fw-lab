@@ -2,7 +2,7 @@
   if(window.FWApp) return;
 
   var state = {
-    view:'home',
+    view:'nav',
     user:null,
     posts:[],
     postsLoaded:false,
@@ -18,7 +18,7 @@
   }
   function initials(name){ return String(name || 'FW').trim().slice(0, 2).toUpperCase() || 'FW'; }
 
-  function avatarHtml(user, cls){
+  function avatarHtml(user){
     var name = user && (user.nickname || user.email) || 'F.w';
     var url = user && user.avatar_url || '';
     if(url) return '<img src="' + esc(url) + '" alt="' + esc(name) + '">';
@@ -74,7 +74,7 @@
 
     label.textContent = '未登录';
     avatar.textContent = 'F';
-    setStatus(db() ? '可浏览，登录后互动' : '连接失败');
+    setStatus(db() ? '可浏览，登录后互动' : '正在连接');
   }
 
   async function refreshUser(){
@@ -95,23 +95,26 @@
     return state.user;
   }
 
+  function tabForView(name){
+    if(name === 'buddy' || name === 'echo' || name === 'profile') return name;
+    return 'nav';
+  }
+
   function setView(name){
-    state.view = name || 'home';
+    state.view = name || 'nav';
     $$('[data-app-view]').forEach(function(view){
       view.classList.toggle('is-active', view.dataset.appView === state.view);
     });
     $$('[data-app-nav]').forEach(function(btn){
-      btn.classList.toggle('active', btn.dataset.appNav === state.view);
+      btn.classList.toggle('active', btn.dataset.appNav === tabForView(state.view));
     });
     var main = $('#appMain');
     if(main) main.scrollTop = 0;
 
-    if((state.view === 'home' || state.view === 'square') && window.FWAppFeed){
-      window.FWAppFeed.ensureLoaded();
-    }
-    if(state.view === 'profile' && window.FWAppProfile){
-      window.FWAppProfile.render();
-    }
+    if(state.view === 'square' && window.FWAppFeed) window.FWAppFeed.ensureLoaded();
+    if(state.view === 'buddy' && window.FWAppBuddy) window.FWAppBuddy.ensureLoaded();
+    if(state.view === 'echo' && window.FWAppEcho) window.FWAppEcho.ensureLoaded();
+    if(state.view === 'profile' && window.FWAppProfile) window.FWAppProfile.render();
   }
 
   function registerServiceWorker(){
@@ -126,7 +129,7 @@
       var nav = e.target.closest && e.target.closest('[data-app-nav]');
       if(nav){
         e.preventDefault();
-        setView(nav.dataset.appNav || 'home');
+        setView(nav.dataset.appNav || 'nav');
         return;
       }
 
@@ -144,6 +147,8 @@
       window.fwDb.onAuthChange(function(){
         refreshUser().then(function(){
           if(window.FWAppFeed) window.FWAppFeed.load(true);
+          if(window.FWAppBuddy) window.FWAppBuddy.load(true);
+          if(window.FWAppEcho) window.FWAppEcho.load(true);
         });
       });
     }catch(e){}
@@ -155,10 +160,13 @@
     setStatus('正在连接');
     await refreshUser();
     onAuthChange();
+    if(window.FWAppNav) window.FWAppNav.init();
     if(window.FWAppFeed) window.FWAppFeed.init();
     if(window.FWAppPublish) window.FWAppPublish.init();
+    if(window.FWAppBuddy) window.FWAppBuddy.init();
+    if(window.FWAppEcho) window.FWAppEcho.init();
     if(window.FWAppProfile) window.FWAppProfile.init();
-    setView('home');
+    setView('nav');
   }
 
   window.FWApp = {
