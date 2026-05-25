@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-safe-test-2';
+const CACHE_NAME = 'fw-mobile-app-tab-icons-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
