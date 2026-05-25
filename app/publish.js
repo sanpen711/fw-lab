@@ -12,8 +12,7 @@
     if(app().state.user) return app().state.user;
     await app().refreshUser();
     if(app().state.user) return app().state.user;
-    app().toast('请先登录后再发布。');
-    app().setView('profile');
+    app().toast('登录后才能发牢骚。');
     return null;
   }
 
@@ -23,11 +22,45 @@
     if(counter && textarea) counter.textContent = String((textarea.value || '').length) + '/500';
   }
 
+  function clearForm(){
+    var form = $('[data-publish-form]');
+    var textarea = form && form.querySelector('textarea[name="content"]');
+    if(textarea){
+      textarea.value = '';
+      textarea.blur();
+    }
+    selectedStatus = '已疲惫';
+    $$('[data-publish-status] [data-status]').forEach(function(item){
+      item.classList.toggle('active', item.dataset.status === selectedStatus);
+    });
+    updateCount();
+  }
+
+  function ensureCancelButton(){
+    var row = $('[data-publish-form] .form-row');
+    if(!row || row.querySelector('[data-publish-cancel]')) return;
+    var submit = row.querySelector('button[type="submit"]');
+    if(!submit) return;
+    var cancel = document.createElement('button');
+    cancel.className = 'app-btn';
+    cancel.type = 'button';
+    cancel.dataset.publishCancel = 'true';
+    cancel.textContent = '取消';
+    row.insertBefore(cancel, submit);
+  }
+
   function bind(){
     if(bound) return;
     bound = true;
 
     document.addEventListener('click', function(e){
+      var cancel = e.target.closest && e.target.closest('[data-publish-cancel]');
+      if(cancel){
+        e.preventDefault();
+        clearForm();
+        return;
+      }
+
       var btn = e.target.closest && e.target.closest('[data-status]');
       if(!btn || !btn.closest('[data-publish-status]')) return;
       selectedStatus = btn.dataset.status || '已疲惫';
@@ -52,7 +85,7 @@
       var content = (textarea.value || '').trim();
       if(!content){
         textarea.focus();
-        app().toast('先写一句再发布。');
+        app().toast('先写点什么再发布。');
         return;
       }
 
@@ -70,7 +103,8 @@
         app().toast('已发布');
         app().setView('square');
       }catch(err){
-        app().toast(err.message || '发布失败，请稍后再试。');
+        console.warn('[FW mobile app] publish failed', err);
+        app().toast('发布失败，请稍后再试。');
       }finally{
         submit.disabled = false;
         submit.textContent = oldText;
@@ -79,6 +113,7 @@
   }
 
   function init(){
+    ensureCancelButton();
     bind();
     updateCount();
   }
