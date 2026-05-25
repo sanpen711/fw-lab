@@ -14,6 +14,11 @@
   var debugContent = null;
   var debugSafeProbe = null;
   var debugTimers = [];
+  var debugListenersBound = false;
+  var debugGestureBound = false;
+  var debugGestureCount = 0;
+  var debugGestureStartedAt = 0;
+  var debugGestureTimer = null;
 
   function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.from((root || document).querySelectorAll(selector)); }
@@ -75,6 +80,32 @@
     }
   }
 
+  function setDebugStorage(enabled){
+    try{
+      if(!window.localStorage) return;
+      if(enabled) window.localStorage.setItem('fwAppDebug', '1');
+      else window.localStorage.removeItem('fwAppDebug');
+    }catch(e){}
+  }
+
+  function clearDebugUrlFlag(){
+    try{
+      var url = new URL(window.location.href);
+      var changed = false;
+      if(url.searchParams.get('debug') === '1'){
+        url.searchParams.delete('debug');
+        changed = true;
+      }
+      if(String(url.hash || '').toLowerCase() === '#debug'){
+        url.hash = '';
+        changed = true;
+      }
+      if(changed && window.history && window.history.replaceState){
+        window.history.replaceState(null, document.title, url.pathname + url.search + url.hash);
+      }
+    }catch(e){}
+  }
+
   function isDebugEnabled(){
     var enableFromUrl = false;
     var disableFromUrl = false;
@@ -88,16 +119,14 @@
     if(hash === 'debug') enableFromUrl = true;
     if(hash === 'debugoff') disableFromUrl = true;
 
-    try{
-      if(disableFromUrl && window.localStorage){
-        window.localStorage.removeItem('fwAppDebug');
-      }else if(enableFromUrl && window.localStorage){
-        window.localStorage.setItem('fwAppDebug', '1');
-      }
-    }catch(e){}
-
-    if(disableFromUrl) return false;
-    if(enableFromUrl) return true;
+    if(disableFromUrl){
+      setDebugStorage(false);
+      return false;
+    }
+    if(enableFromUrl){
+      setDebugStorage(true);
+      return true;
+    }
 
     try{
       return !!(window.localStorage && window.localStorage.getItem('fwAppDebug') === '1');
@@ -106,11 +135,21 @@
     }
   }
 
+  function removeDebugPanel(){
+    debugTimers.forEach(function(timer){ clearTimeout(timer); });
+    debugTimers = [];
+    if(debugPanel && debugPanel.parentNode) debugPanel.parentNode.removeChild(debugPanel);
+    if(debugSafeProbe && debugSafeProbe.parentNode) debugSafeProbe.parentNode.removeChild(debugSafeProbe);
+    debugPanel = null;
+    debugContent = null;
+    debugSafeProbe = null;
+  }
+
   function closeDebug(){
-    try{
-      if(window.localStorage) window.localStorage.removeItem('fwAppDebug');
-    }catch(e){}
-    window.location.reload();
+    setDebugStorage(false);
+    clearDebugUrlFlag();
+    removeDebugPanel();
+    toast('\u8c03\u8bd5\u9762\u677f\u5df2\u5173\u95ed');
   }
 
   function round(value){
@@ -225,9 +264,12 @@
 
   function initDebugPanel(){
     if(!isDebugEnabled() || debugPanel) return;
-    var style = document.createElement('style');
-    style.textContent = '.fw-app-debug-panel{position:fixed;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:99999;max-width:min(360px,calc(100vw - 16px));max-height:72vh;overflow:auto;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.78);color:#fff;box-shadow:0 12px 32px rgba(0,0,0,.3);touch-action:manipulation}.fw-app-debug-content{margin:8px 0 0;color:#fff;font:11px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap}.fw-app-debug-close{min-height:28px;border:1px solid rgba(255,255,255,.34);border-radius:999px;background:rgba(255,255,255,.16);color:#fff;padding:0 10px;font:12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.fw-app-debug-safe-probe{position:fixed;left:0;bottom:0;width:1px;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none;z-index:-1}';
-    document.head.appendChild(style);
+    if(!$('#fwAppDebugStyle')){
+      var style = document.createElement('style');
+      style.id = 'fwAppDebugStyle';
+      style.textContent = '.fw-app-debug-panel{position:fixed;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:99999;max-width:min(360px,calc(100vw - 16px));max-height:72vh;overflow:auto;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.78);color:#fff;box-shadow:0 12px 32px rgba(0,0,0,.3);touch-action:manipulation}.fw-app-debug-content{margin:8px 0 0;color:#fff;font:11px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap}.fw-app-debug-close{min-height:28px;border:1px solid rgba(255,255,255,.34);border-radius:999px;background:rgba(255,255,255,.16);color:#fff;padding:0 10px;font:12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.fw-app-debug-safe-probe{position:fixed;left:0;bottom:0;width:1px;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none;z-index:-1}';
+      document.head.appendChild(style);
+    }
 
     debugSafeProbe = document.createElement('div');
     debugSafeProbe.className = 'fw-app-debug-safe-probe';
@@ -245,7 +287,7 @@
     var closeButton = document.createElement('button');
     closeButton.className = 'fw-app-debug-close';
     closeButton.type = 'button';
-    closeButton.textContent = '关闭 debug';
+    closeButton.textContent = '\u5173\u95ed debug';
     closeButton.addEventListener('click', function(e){
       e.preventDefault();
       e.stopPropagation();
@@ -259,15 +301,65 @@
     document.body.appendChild(debugPanel);
 
     scheduleDebugRefresh();
-    window.addEventListener('resize', scheduleDebugRefresh, {passive:true});
-    window.addEventListener('orientationchange', function(){
-      setTimeout(scheduleDebugRefresh, 120);
-      setTimeout(scheduleDebugRefresh, 500);
-    }, {passive:true});
-    window.addEventListener('pageshow', scheduleDebugRefresh, {passive:true});
-    if(window.visualViewport){
-      window.visualViewport.addEventListener('resize', scheduleDebugRefresh, {passive:true});
+    if(!debugListenersBound){
+      debugListenersBound = true;
+      window.addEventListener('resize', scheduleDebugRefresh, {passive:true});
+      window.addEventListener('orientationchange', function(){
+        setTimeout(scheduleDebugRefresh, 120);
+        setTimeout(scheduleDebugRefresh, 500);
+      }, {passive:true});
+      window.addEventListener('pageshow', scheduleDebugRefresh, {passive:true});
+      if(window.visualViewport){
+        window.visualViewport.addEventListener('resize', scheduleDebugRefresh, {passive:true});
+      }
     }
+  }
+
+  function resetDebugGesture(){
+    debugGestureCount = 0;
+    debugGestureStartedAt = 0;
+    if(debugGestureTimer){
+      clearTimeout(debugGestureTimer);
+      debugGestureTimer = null;
+    }
+  }
+
+  function toggleDebugFromGesture(){
+    var enable = !isDebugEnabled();
+    setDebugStorage(enable);
+    if(enable){
+      initDebugPanel();
+      scheduleDebugRefresh();
+      toast('\u8c03\u8bd5\u9762\u677f\u5df2\u5f00\u542f');
+      return;
+    }
+    clearDebugUrlFlag();
+    removeDebugPanel();
+    toast('\u8c03\u8bd5\u9762\u677f\u5df2\u5173\u95ed');
+  }
+
+  function bindDebugGesture(){
+    if(debugGestureBound) return;
+    debugGestureBound = true;
+    document.addEventListener('click', function(e){
+      var target = e.target;
+      if(!target || !target.closest) return;
+      if(!target.closest('.app-logo, .app-brand strong')) return;
+
+      var now = Date.now();
+      if(!debugGestureStartedAt || now - debugGestureStartedAt > 5000){
+        debugGestureStartedAt = now;
+        debugGestureCount = 0;
+      }
+      debugGestureCount += 1;
+      if(debugGestureTimer) clearTimeout(debugGestureTimer);
+      debugGestureTimer = setTimeout(resetDebugGesture, 5000);
+
+      if(debugGestureCount >= 7){
+        resetDebugGesture();
+        toggleDebugFromGesture();
+      }
+    }, false);
   }
 
   scheduleViewportSync();
@@ -413,6 +505,7 @@
   async function start(){
     bindViewportSync();
     initDebugPanel();
+    bindDebugGesture();
     registerServiceWorker();
     bindShell();
     setStatus('正在连接');
