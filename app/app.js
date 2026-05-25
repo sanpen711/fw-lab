@@ -11,6 +11,7 @@
   var viewportSyncBound = false;
   var viewportTimers = [];
   var debugPanel = null;
+  var debugContent = null;
   var debugSafeProbe = null;
   var debugTimers = [];
 
@@ -75,15 +76,41 @@
   }
 
   function isDebugEnabled(){
-    var enabled = false;
+    var enableFromUrl = false;
+    var disableFromUrl = false;
     try{
-      enabled = new URLSearchParams(window.location.search).get('debug') === '1';
+      var params = new URLSearchParams(window.location.search);
+      enableFromUrl = params.get('debug') === '1';
+      disableFromUrl = params.get('debug') === '0' || params.get('clearDebug') === '1';
     }catch(e){}
-    if(window.location.hash && window.location.hash.indexOf('debug') >= 0) enabled = true;
+
+    var hash = String(window.location.hash || '').replace(/^#/, '').toLowerCase();
+    if(hash === 'debug') enableFromUrl = true;
+    if(hash === 'debugoff') disableFromUrl = true;
+
     try{
-      if(window.localStorage && window.localStorage.getItem('fwAppDebug') === '1') enabled = true;
+      if(disableFromUrl && window.localStorage){
+        window.localStorage.removeItem('fwAppDebug');
+      }else if(enableFromUrl && window.localStorage){
+        window.localStorage.setItem('fwAppDebug', '1');
+      }
     }catch(e){}
-    return enabled;
+
+    if(disableFromUrl) return false;
+    if(enableFromUrl) return true;
+
+    try{
+      return !!(window.localStorage && window.localStorage.getItem('fwAppDebug') === '1');
+    }catch(e){
+      return false;
+    }
+  }
+
+  function closeDebug(){
+    try{
+      if(window.localStorage) window.localStorage.removeItem('fwAppDebug');
+    }catch(e){}
+    window.location.reload();
   }
 
   function round(value){
@@ -134,7 +161,7 @@
   }
 
   function refreshDebugPanel(){
-    if(!debugPanel) return;
+    if(!debugContent) return;
     var root = document.documentElement;
     var body = document.body;
     var visual = window.visualViewport;
@@ -184,11 +211,11 @@
       'main.bottom - tabbar.top: ' + (mainRect && tabbarRect ? round(mainRect.bottom - tabbarRect.top) : 'n/a'),
       'shell.bottom - innerHeight: ' + (shellRect ? round(shellRect.bottom - window.innerHeight) : 'n/a')
     ];
-    debugPanel.textContent = lines.join('\n');
+    debugContent.textContent = lines.join('\n');
   }
 
   function scheduleDebugRefresh(){
-    if(!debugPanel) return;
+    if(!debugContent) return;
     refreshDebugPanel();
     debugTimers.forEach(function(timer){ clearTimeout(timer); });
     debugTimers = [500, 1500].map(function(delay){
@@ -199,14 +226,14 @@
   function initDebugPanel(){
     if(!isDebugEnabled() || debugPanel) return;
     var style = document.createElement('style');
-    style.textContent = '.fw-app-debug-panel{position:fixed;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:99999;max-width:min(360px,calc(100vw - 16px));max-height:72vh;overflow:auto;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.78);color:#fff;font:11px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;box-shadow:0 12px 32px rgba(0,0,0,.3);touch-action:manipulation}.fw-app-debug-safe-probe{position:fixed;left:0;bottom:0;width:1px;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none;z-index:-1}';
+    style.textContent = '.fw-app-debug-panel{position:fixed;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:99999;max-width:min(360px,calc(100vw - 16px));max-height:72vh;overflow:auto;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.78);color:#fff;box-shadow:0 12px 32px rgba(0,0,0,.3);touch-action:manipulation}.fw-app-debug-content{margin:8px 0 0;color:#fff;font:11px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap}.fw-app-debug-close{min-height:28px;border:1px solid rgba(255,255,255,.34);border-radius:999px;background:rgba(255,255,255,.16);color:#fff;padding:0 10px;font:12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.fw-app-debug-safe-probe{position:fixed;left:0;bottom:0;width:1px;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none;z-index:-1}';
     document.head.appendChild(style);
 
     debugSafeProbe = document.createElement('div');
     debugSafeProbe.className = 'fw-app-debug-safe-probe';
     document.body.appendChild(debugSafeProbe);
 
-    debugPanel = document.createElement('pre');
+    debugPanel = document.createElement('div');
     debugPanel.className = 'fw-app-debug-panel';
     debugPanel.setAttribute('aria-label', 'FW App debug panel');
     debugPanel.addEventListener('click', function(e){
@@ -214,6 +241,21 @@
       e.stopPropagation();
       scheduleDebugRefresh();
     });
+
+    var closeButton = document.createElement('button');
+    closeButton.className = 'fw-app-debug-close';
+    closeButton.type = 'button';
+    closeButton.textContent = '关闭 debug';
+    closeButton.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      closeDebug();
+    });
+    debugPanel.appendChild(closeButton);
+
+    debugContent = document.createElement('pre');
+    debugContent.className = 'fw-app-debug-content';
+    debugPanel.appendChild(debugContent);
     document.body.appendChild(debugPanel);
 
     scheduleDebugRefresh();
