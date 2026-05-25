@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>F.w 研究所 App</title>
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#10170f">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="F.w 研究所">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="/app/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
-  <link rel="stylesheet" href="/app/app.css?v=mobile-app-style-20260525-1">
+  <link rel="stylesheet" href="/app/app.css?v=mobile-app-shell-20260525-2">
 </head>
 <body>
   <div class="app-shell">
@@ -29,19 +29,49 @@
     </header>
 
     <main class="app-main" id="appMain">
-      <section class="app-view is-active" data-app-view="home" aria-label="首页">
-        <div class="view-head compact">
-          <p>今日废话流</p>
-          <h1>先把今天放一会儿</h1>
+      <section class="app-view is-active" data-app-view="nav" aria-label="导航">
+        <div class="app-hero">
+          <p>FW LAB / LOW POWER MODE</p>
+          <h1>F.w 研究所</h1>
+          <span>一个临时放下情绪的地方</span>
         </div>
-        <div class="feed-list" data-feed-list="home"></div>
+        <div class="hero-actions-app">
+          <button class="app-btn primary" type="button" data-app-login>加入研究所</button>
+          <button class="app-btn dark" type="button" data-app-open="square">去精神广场发牢骚</button>
+          <button class="app-btn" type="button" data-app-open="rooms">去学术研讨投票</button>
+          <button class="app-btn" type="button" data-app-open="bird">去观鸟台散心解忧</button>
+        </div>
+        <div class="nav-grid" aria-label="应用导航菜单">
+          <button type="button" data-app-open="nav"><b>首页</b><span>回到低功耗入口</span></button>
+          <button type="button" data-app-open="square"><b>精神广场</b><span>发牢骚、评论、互动</span></button>
+          <button type="button" data-app-open="rooms"><b>学术研讨</b><span>投票与课题</span></button>
+          <button type="button" data-app-open="bird"><b>观鸟台</b><span>离谱样本观察</span></button>
+          <button type="button" data-app-open="archive"><b>废话档案</b><span>低功耗榜单</span></button>
+          <button type="button" data-app-open="rules"><b>入馆须知</b><span>边界与声明</span></button>
+          <button type="button" data-app-open="moderation"><b>处理公告</b><span>违规处理记录</span></button>
+          <button type="button" data-app-reload><b>重新加载</b><span>PWA 手动刷新</span></button>
+        </div>
       </section>
 
-      <section class="app-view" data-app-view="square" aria-label="广场">
+      <section class="app-view" data-app-view="square" aria-label="精神广场">
         <div class="view-head">
+          <button class="back-btn" type="button" data-app-open="nav">‹ 导航</button>
           <p>精神广场</p>
-          <h1>大家都在低功耗运行</h1>
+          <h1>发牢骚，然后低功耗互动</h1>
         </div>
+        <form class="publish-card" data-publish-form>
+          <label>今天的精神状态</label>
+          <div class="status-picks" data-publish-status>
+            <button class="active" type="button" data-status="已疲惫">已疲惫</button>
+            <button type="button" data-status="摸鱼现场">摸鱼现场</button>
+            <button type="button" data-status="精神离岗">精神离岗</button>
+            <button type="button" data-status="今日无效">今日无效</button>
+            <button type="button" data-status="今日崩溃">今日崩溃</button>
+          </div>
+          <label for="postContent">发一句牢骚</label>
+          <textarea id="postContent" name="content" maxlength="500" placeholder="例如：今天开了三个会，最后决定下次再讨论。"></textarea>
+          <div class="form-row"><span data-publish-count>0/500</span><button class="app-btn primary" type="submit">发布</button></div>
+        </form>
         <div class="status-filter" data-status-filter>
           <button class="active" type="button" data-filter-status="全部">全部</button>
           <button type="button" data-filter-status="已疲惫">已疲惫</button>
@@ -53,40 +83,73 @@
         <div class="feed-list" data-feed-list="square"></div>
       </section>
 
-      <section class="app-view" data-app-view="publish" aria-label="发布">
-        <div class="view-head">
-          <p>发布</p>
-          <h1>发一句低功耗状态</h1>
+      <section class="app-view" data-app-view="rooms" aria-label="学术研讨">
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>学术研讨</p><h1>课题与投票</h1></div>
+        <div class="module-card"><h2>课题列表</h2><p>这里会继续迁移电脑端投票课题。第一版先保留可浏览入口，不改投票数据库逻辑。</p></div>
+        <div class="module-card"><h2>发起投票</h2><p>发起投票入口会单独接入；今日发起次数会沿用现有规则。</p><button class="app-btn dark" type="button">发起投票稍后接入</button></div>
+        <div class="module-card"><h2>研讨规则</h2><p>可以发起轻量课题、参与投票、查看结果。不要把这里当成严肃论文答辩现场。</p></div>
+      </section>
+
+      <section class="app-view" data-app-view="bird" aria-label="观鸟台">
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>观鸟台</p><h1>离谱样本观察</h1></div>
+        <div class="module-card"><h2>最新品种</h2><p>观鸟台手机端列表正在迁移中，后续会展示最新观察样本。</p></div>
+        <div class="module-card"><h2>发布观察记录</h2><p>图片发布会继续使用现有规则。发布前会自动处理图片，请耐心等待。</p><button class="app-btn dark" type="button">发布入口稍后接入</button></div>
+        <div class="module-card"><h2>观鸟守则</h2><p>围观可以，别对号入座；记录可以，别泄露隐私。</p></div>
+      </section>
+
+      <section class="app-view" data-app-view="archive" aria-label="废话档案">
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>废话档案</p><h1>低功耗荣誉榜</h1></div>
+        <div class="rank-grid">
+          <div class="module-card"><h2>上周低功耗荣誉榜</h2><p>正在整理榜单。</p></div>
+          <div class="module-card"><h2>昨日情绪残留榜</h2><p>正在整理榜单。</p></div>
+          <div class="module-card"><h2>点赞榜 / 共鸣榜 / 纸巾榜</h2><p>后续会继续完善展示。</p></div>
         </div>
-        <form class="publish-card" data-publish-form>
-          <label>今天的精神状态</label>
-          <div class="status-picks" data-publish-status>
-            <button class="active" type="button" data-status="已疲惫">已疲惫</button>
-            <button type="button" data-status="摸鱼现场">摸鱼现场</button>
-            <button type="button" data-status="精神离岗">精神离岗</button>
-            <button type="button" data-status="今日无效">今日无效</button>
-            <button type="button" data-status="今日崩溃">今日崩溃</button>
-          </div>
-          <label for="postContent">想说点什么</label>
-          <textarea id="postContent" name="content" maxlength="500" placeholder="例如：今天开了三个会，最后决定下次再讨论。"></textarea>
-          <div class="form-row"><span data-publish-count>0/500</span><button class="app-btn primary" type="submit">发布</button></div>
-          <p class="form-note">发布、评论和互动继续使用现有 F.w 研究所账号。</p>
+      </section>
+
+      <section class="app-view" data-app-view="rules" aria-label="入馆须知">
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>入馆须知</p><h1>欢迎来到 F.w 研究所</h1></div>
+        <div class="module-card"><h2>可以放松</h2><p>这里允许你低功耗运行，可以发牢骚，可以交流，也可以什么都不做。</p></div>
+        <div class="module-card"><h2>但要有边界</h2><p>不攻击真实个人，不泄露隐私，不把别人的痛苦当作消遣。</p></div>
+        <div class="split-actions"><button class="app-btn dark" type="button">查看入馆须知</button><button class="app-btn primary" type="button" data-app-open="nav">我知道了，进入研究所</button></div>
+      </section>
+
+      <section class="app-view" data-app-view="moderation" aria-label="处理公告">
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>处理公告</p><h1>违规处理公告</h1></div>
+        <div class="module-card"><h2>近期处理</h2><p>手机端先提供公告展示入口。站长处理面板后续再迁移，不在这里重写管理后台。</p></div>
+        <div class="module-card"><h2>查看说明</h2><p>处理公告用于告知明显越界内容的处理结果，让边界保持清楚。</p></div>
+      </section>
+
+      <section class="app-view" data-app-view="buddy" aria-label="搭子中心">
+        <div class="view-head"><p>搭子</p><h1>搭子中心</h1></div>
+        <form class="search-card" data-buddy-search>
+          <input name="q" autocomplete="off" placeholder="搜索实验品编号 / 昵称 / 完整邮箱">
+          <button type="submit">搜索</button>
         </form>
+        <div class="search-result" data-buddy-search-result></div>
+        <div class="tabs" data-buddy-tabs>
+          <button class="active" type="button" data-buddy-tab="friends">我的搭子</button>
+          <button type="button" data-buddy-tab="incoming">收到申请</button>
+          <button type="button" data-buddy-tab="outgoing">发出申请</button>
+        </div>
+        <div class="list-stack" data-buddy-list></div>
+      </section>
+
+      <section class="app-view" data-app-view="echo" aria-label="回声">
+        <div class="view-head"><p>回声</p><h1>通知中心</h1></div>
+        <div class="module-card muted-card"><p>这里显示评论、点赞、递纸巾、俺也一样、搭子申请等互动通知。精神广场帖子列表不放在这里。</p></div>
+        <div class="list-stack" data-echo-list></div>
       </section>
 
       <section class="app-view" data-app-view="profile" aria-label="我的">
-        <div class="view-head">
-          <p>我的</p>
-          <h1>账号与资料</h1>
-        </div>
+        <div class="view-head"><p>我的</p><h1>账号与资料</h1></div>
         <div data-profile-panel></div>
       </section>
     </main>
 
     <nav class="app-tabbar" aria-label="应用导航">
-      <button class="active" type="button" data-app-nav="home"><span>⌂</span><b>首页</b></button>
-      <button type="button" data-app-nav="square"><span>◎</span><b>广场</b></button>
-      <button type="button" data-app-nav="publish"><span>＋</span><b>发布</b></button>
+      <button class="active" type="button" data-app-nav="nav"><span>☰</span><b>导航</b></button>
+      <button type="button" data-app-nav="buddy"><span>◇</span><b>搭子</b></button>
+      <button type="button" data-app-nav="echo"><span>◌</span><b>回声</b></button>
       <button type="button" data-app-nav="profile"><span>○</span><b>我的</b></button>
     </nav>
 
@@ -96,9 +159,12 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/assets/supabase-config.js"></script>
   <script src="/assets/supabase-db.js?v=mobile-app-v1"></script>
-  <script src="/app/app.js?v=mobile-app-20260525-1"></script>
-  <script src="/app/feed.js?v=mobile-app-feed-20260525-1"></script>
-  <script src="/app/publish.js?v=mobile-app-20260525-1"></script>
-  <script src="/app/profile.js?v=mobile-app-20260525-1"></script>
+  <script src="/app/app.js?v=mobile-app-shell-20260525-2"></script>
+  <script src="/app/nav.js?v=mobile-app-shell-20260525-2"></script>
+  <script src="/app/feed.js?v=mobile-app-shell-20260525-2"></script>
+  <script src="/app/publish.js?v=mobile-app-shell-20260525-2"></script>
+  <script src="/app/buddy.js?v=mobile-app-shell-20260525-2"></script>
+  <script src="/app/echo.js?v=mobile-app-shell-20260525-2"></script>
+  <script src="/app/profile.js?v=mobile-app-shell-20260525-2"></script>
 </body>
 </html>
