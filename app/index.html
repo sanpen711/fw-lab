@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>F.w 研究所 App</title>
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="F.w 研究所">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/app/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
+  <link rel="stylesheet" href="/app/app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="app-brand" aria-label="F.w 研究所">
+        <span class="app-logo">F.w</span>
+        <div>
+          <strong>F.w 研究所</strong>
+          <small data-app-status>正在连接</small>
+        </div>
+      </div>
+      <button class="user-pill" type="button" data-app-profile-trigger aria-label="打开我的">
+        <span class="user-avatar" data-app-avatar>F</span>
+        <span data-app-user-label>未登录</span>
+      </button>
+    </header>
+
+    <main class="app-main" id="appMain">
+      <section class="app-view is-active" data-app-view="home" aria-label="首页">
+        <div class="view-head compact">
+          <p>今日废话流</p>
+          <h1>先把今天放一会儿</h1>
+        </div>
+        <div class="feed-list" data-feed-list="home"></div>
+      </section>
+
+      <section class="app-view" data-app-view="square" aria-label="广场">
+        <div class="view-head">
+          <p>精神广场</p>
+          <h1>大家都在低功耗运行</h1>
+        </div>
+        <div class="status-filter" data-status-filter>
+          <button class="active" type="button" data-filter-status="全部">全部</button>
+          <button type="button" data-filter-status="已疲惫">已疲惫</button>
+          <button type="button" data-filter-status="摸鱼现场">摸鱼现场</button>
+          <button type="button" data-filter-status="精神离岗">精神离岗</button>
+          <button type="button" data-filter-status="今日无效">今日无效</button>
+          <button type="button" data-filter-status="今日崩溃">今日崩溃</button>
+        </div>
+        <div class="feed-list" data-feed-list="square"></div>
+      </section>
+
+      <section class="app-view" data-app-view="publish" aria-label="发布">
+        <div class="view-head">
+          <p>发布</p>
+          <h1>发一句低功耗状态</h1>
+        </div>
+        <form class="publish-card" data-publish-form>
+          <label>今天的精神状态</label>
+          <div class="status-picks" data-publish-status>
+            <button class="active" type="button" data-status="已疲惫">已疲惫</button>
+            <button type="button" data-status="摸鱼现场">摸鱼现场</button>
+            <button type="button" data-status="精神离岗">精神离岗</button>
+            <button type="button" data-status="今日无效">今日无效</button>
+            <button type="button" data-status="今日崩溃">今日崩溃</button>
+          </div>
+          <label for="postContent">想说点什么</label>
+          <textarea id="postContent" name="content" maxlength="500" placeholder="例如：今天开了三个会，最后决定下次再讨论。"></textarea>
+          <div class="form-row"><span data-publish-count>0/500</span><button class="app-btn primary" type="submit">发布</button></div>
+          <p class="form-note">发布、评论和互动继续使用现有 F.w 研究所账号。</p>
+        </form>
+      </section>
+
+      <section class="app-view" data-app-view="profile" aria-label="我的">
+        <div class="view-head">
+          <p>我的</p>
+          <h1>账号与资料</h1>
+        </div>
+        <div data-profile-panel></div>
+      </section>
+    </main>
+
+    <nav class="app-tabbar" aria-label="应用导航">
+      <button class="active" type="button" data-app-nav="home"><span>⌂</span><b>首页</b></button>
+      <button type="button" data-app-nav="square"><span>◎</span><b>广场</b></button>
+      <button type="button" data-app-nav="publish"><span>＋</span><b>发布</b></button>
+      <button type="button" data-app-nav="profile"><span>○</span><b>我的</b></button>
+    </nav>
+
+    <div class="app-toast" data-app-toast role="status" aria-live="polite"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/supabase-config.js"></script>
+  <script src="/assets/supabase-db.js?v=mobile-app-v1"></script>
+  <script src="/app/app.js"></script>
+  <script src="/app/feed.js"></script>
+  <script src="/app/publish.js"></script>
+  <script src="/app/profile.js"></script>
+</body>
+</html>
