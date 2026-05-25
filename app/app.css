@@ -14,7 +14,7 @@
   --accent-dark:#984d4d;
   --tab-h:68px;
   --app-bottom-safe:env(safe-area-inset-bottom,0px);
-  --app-tabbar-drop:20px;
+  --app-tabbar-drop:100px;
   --app-bottom-nav-total-height:calc(var(--tab-h) + var(--app-bottom-safe));
   --app-viewport-height:100dvh;
   --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
