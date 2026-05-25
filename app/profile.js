@@ -12,6 +12,8 @@
       '<div class="profile-head"><span class="profile-avatar">' + app().avatarHtml(user) + '</span><div><h2>' + esc(user.nickname || '临时研究员') + '</h2><p>' + esc(user.email || '') + '</p><p>' + (user.lab_code ? '实验品编号：' + esc(user.lab_code) : '实验品编号：未设置') + '</p></div></div>' +
       '<div class="subtle-line"></div>' +
       '<form class="stack" data-profile-form>' +
+        '<label for="profileLabCode">实验品编号</label>' +
+        '<input id="profileLabCode" value="' + esc(user.lab_code || '未设置') + '" readonly>' +
         '<label for="profileNickname">昵称</label>' +
         '<input id="profileNickname" name="nickname" maxlength="24" value="' + esc(user.nickname || '') + '" placeholder="给自己取个低功耗昵称">' +
         '<label for="profileAvatar">头像</label>' +
@@ -19,6 +21,7 @@
         '<button class="app-btn dark" type="submit">保存资料</button>' +
       '</form>' +
       '<div class="subtle-line"></div>' +
+      '<div class="module-note">修改密码稍后单独处理。</div>' +
       '<button class="app-btn" type="button" data-app-signout>退出登录</button>' +
     '</section>';
   }
@@ -65,6 +68,12 @@
     }
   }
 
+  function safeMessage(err, fallback){
+    var msg = err && err.message ? err.message : '';
+    if(/Could not|relationship|schema|duplicate key|violates/i.test(msg)) return fallback;
+    return msg || fallback;
+  }
+
   function bind(){
     if(bound) return;
     bound = true;
@@ -80,9 +89,9 @@
           await app().refreshUser();
           if(window.FWAppFeed) await window.FWAppFeed.load(true);
           app().toast('已登录');
-          app().setView('home');
+          app().setView('nav');
         }catch(err){
-          app().toast(err.message || '登录失败，请检查邮箱和密码。');
+          app().toast(safeMessage(err, '登录失败，请检查邮箱和密码。'));
         }finally{
           setBusy(btn, false);
         }
@@ -103,9 +112,9 @@
           await app().refreshUser();
           if(window.FWAppFeed) await window.FWAppFeed.load(true);
           app().toast('已进入研究所');
-          app().setView('home');
+          app().setView('nav');
         }catch(err){
-          app().toast(err.message || '验证码验证失败。');
+          app().toast(safeMessage(err, '验证码验证失败。'));
         }finally{
           setBusy(otpBtn, false);
         }
@@ -123,7 +132,7 @@
           await app().refreshUser();
           app().toast('资料已保存');
         }catch(err){
-          app().toast(err.message || '资料保存失败。');
+          app().toast(safeMessage(err, '资料保存失败。'));
         }finally{
           setBusy(save, false);
         }
@@ -144,7 +153,7 @@
           await window.fwDb.sendEmailOtp({email:form.email.value, nickname:form.nickname.value});
           app().toast('验证码已发送，请查收邮箱。');
         }catch(err){
-          app().toast(err.message || '验证码发送失败。');
+          app().toast(safeMessage(err, '验证码发送失败。'));
         }finally{
           setBusy(send, false);
         }
@@ -160,7 +169,7 @@
           if(window.FWAppFeed) await window.FWAppFeed.load(true);
           app().toast('已退出');
         }catch(err){
-          app().toast(err.message || '退出失败。');
+          app().toast(safeMessage(err, '退出失败。'));
         }finally{
           setBusy(signout, false);
         }
