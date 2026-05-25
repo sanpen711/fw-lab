@@ -5,6 +5,15 @@
 
   function app(){ return window.FWApp; }
 
+  function polishSquareCopy(){
+    var square = document.querySelector('[data-app-view="square"]');
+    if(!square) return;
+    var back = square.querySelector('[data-app-open="nav"]');
+    var subtitle = square.querySelector('.view-head h1');
+    if(back) back.textContent = '‹ 首页';
+    if(subtitle) subtitle.textContent = '发牢骚、评论、互动';
+  }
+
   function bind(){
     if(bound) return;
     bound = true;
@@ -33,6 +42,7 @@
   }
 
   function init(){
+    polishSquareCopy();
     bind();
   }
 
