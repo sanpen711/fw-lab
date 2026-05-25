@@ -9,6 +9,7 @@
     filterStatus:'全部'
   };
   var viewportSyncBound = false;
+  var viewportTimers = [];
 
   function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.from((root || document).querySelectorAll(selector)); }
@@ -20,22 +21,34 @@
   function initials(name){ return String(name || 'FW').trim().slice(0, 2).toUpperCase() || 'FW'; }
 
   function syncAppViewport(){
-    var height = 0;
-    if(window.visualViewport && window.visualViewport.height){
-      height = Math.round(window.visualViewport.height);
-    }
-    if(!height) height = window.innerHeight || document.documentElement.clientHeight || 0;
+    var root = document.documentElement;
+    var height = Math.round(
+      (window.visualViewport && window.visualViewport.height) ||
+      window.innerHeight ||
+      root.clientHeight ||
+      0
+    );
     if(height > 0){
-      document.documentElement.style.setProperty('--app-viewport-height', height + 'px');
+      root.style.setProperty('--app-viewport-height', height + 'px');
     }
-    document.documentElement.classList.add('app-viewport-ready');
+    root.style.setProperty('--app-bottom-safe', 'env(safe-area-inset-bottom, 0px)');
+    root.classList.add('app-viewport-ready');
+  }
+
+  function clearViewportTimers(){
+    viewportTimers.forEach(function(timer){ clearTimeout(timer); });
+    viewportTimers = [];
   }
 
   function scheduleViewportSync(){
+    clearViewportTimers();
     syncAppViewport();
     requestAnimationFrame(function(){
       syncAppViewport();
       requestAnimationFrame(syncAppViewport);
+    });
+    [50, 150, 350, 700].forEach(function(delay){
+      viewportTimers.push(setTimeout(syncAppViewport, delay));
     });
   }
 
@@ -45,16 +58,21 @@
     scheduleViewportSync();
     window.addEventListener('load', scheduleViewportSync, {passive:true});
     window.addEventListener('pageshow', scheduleViewportSync, {passive:true});
+    window.addEventListener('resize', scheduleViewportSync, {passive:true});
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'visible') scheduleViewportSync();
+    }, {passive:true});
     window.addEventListener('orientationchange', function(){
-      setTimeout(scheduleViewportSync, 120);
-      setTimeout(scheduleViewportSync, 360);
+      setTimeout(scheduleViewportSync, 80);
+      setTimeout(scheduleViewportSync, 240);
+      setTimeout(scheduleViewportSync, 600);
     }, {passive:true});
     if(window.visualViewport){
       window.visualViewport.addEventListener('resize', scheduleViewportSync, {passive:true});
     }
-    setTimeout(scheduleViewportSync, 100);
-    setTimeout(scheduleViewportSync, 300);
   }
+
+  scheduleViewportSync();
 
   function avatarHtml(user){
     var name = user && (user.nickname || user.email) || 'F.w';
@@ -223,7 +241,8 @@
     setView:setView,
     refreshUser:refreshUser,
     renderUser:renderUser,
-    syncAppViewport:syncAppViewport
+    syncAppViewport:syncAppViewport,
+    scheduleViewportSync:scheduleViewportSync
   };
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
