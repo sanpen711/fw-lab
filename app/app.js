@@ -149,7 +149,7 @@
     setDebugStorage(false);
     clearDebugUrlFlag();
     removeDebugPanel();
-    toast('\u8c03\u8bd5\u9762\u677f\u5df2\u5173\u95ed');
+    toast('调试面板已关闭');
   }
 
   function round(value){
@@ -287,7 +287,7 @@
     var closeButton = document.createElement('button');
     closeButton.className = 'fw-app-debug-close';
     closeButton.type = 'button';
-    closeButton.textContent = '\u5173\u95ed debug';
+    closeButton.textContent = '关闭 debug';
     closeButton.addEventListener('click', function(e){
       e.preventDefault();
       e.stopPropagation();
@@ -330,12 +330,12 @@
     if(enable){
       initDebugPanel();
       scheduleDebugRefresh();
-      toast('\u8c03\u8bd5\u9762\u677f\u5df2\u5f00\u542f');
+      toast('调试面板已开启');
       return;
     }
     clearDebugUrlFlag();
     removeDebugPanel();
-    toast('\u8c03\u8bd5\u9762\u677f\u5df2\u5173\u95ed');
+    toast('调试面板已关闭');
   }
 
   function bindDebugGesture(){
@@ -360,6 +360,24 @@
         toggleDebugFromGesture();
       }
     }, false);
+  }
+
+  function applyTabbarVisuals(){
+    var home = $('[data-app-nav="nav"]');
+    if(home){
+      var homeLabel = $('b', home);
+      if(homeLabel) homeLabel.textContent = '首页';
+    }
+
+    var buddyIcon = $('[data-app-nav="buddy"] span');
+    if(buddyIcon){
+      buddyIcon.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="display:block"><circle cx="9" cy="8" r="3.5"></circle><path d="M3.5 20a5.5 5.5 0 0 1 11 0"></path><circle cx="16.5" cy="9.5" r="3"></circle><path d="M14 16.5a5 5 0 0 1 6.5 3.5"></path></svg>';
+    }
+
+    var profileIcon = $('[data-app-nav="profile"] span');
+    if(profileIcon){
+      profileIcon.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="display:block"><circle cx="12" cy="7.5" r="4"></circle><path d="M4.5 21a7.5 7.5 0 0 1 15 0"></path></svg>';
+    }
   }
 
   scheduleViewportSync();
@@ -506,6 +524,7 @@
     bindViewportSync();
     initDebugPanel();
     bindDebugGesture();
+    applyTabbarVisuals();
     registerServiceWorker();
     bindShell();
     setStatus('正在连接');
