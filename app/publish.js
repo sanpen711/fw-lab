@@ -425,7 +425,7 @@
         .from('user_stickers')
         .select('id,image_url,file_name,file_size,mime_type,storage_path,created_at')
         .eq('user_id', user.id)
-        .eq('is_deleted', false)
+        .or('is_deleted.eq.false,is_deleted.is.null')
         .order('created_at', {ascending:false})
         .limit(30);
       if(res.error) throw res.error;
@@ -466,8 +466,6 @@
           app().toast('图片还在上传，请稍后。');
           return;
         }
-        var userForImage = await requireUser();
-        if(!userForImage) return;
         var fileInput = $('[data-publish-image-file]');
         if(fileInput) fileInput.click();
         return;
@@ -578,7 +576,10 @@
       renderImagePreview();
       try{
         var uploaded = await uploadImage(file);
-        if(!uploaded) return;
+        if(!uploaded){
+          if(pendingImage) pendingImage.error = '登录后才能上传图片';
+          return;
+        }
         if(!pendingImage) return;
         pendingImage.url = uploaded.url;
         pendingImage.marker = uploaded.marker;
