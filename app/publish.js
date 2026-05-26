@@ -8,6 +8,25 @@
   function $(selector, root){ return app().$(selector, root); }
   function $$(selector, root){ return app().$$(selector, root); }
 
+  function injectStyle(){
+    if(document.getElementById('fwAppSquarePublishStyle')) return;
+    var style = document.createElement('style');
+    style.id = 'fwAppSquarePublishStyle';
+    style.textContent = [
+      '.view-head.square-head{position:relative;padding-right:58px}',
+      '.square-publish-trigger{position:absolute;right:4px;bottom:12px;width:44px;height:44px;border:0;border-radius:16px;background:var(--accent);color:#fff;font-size:27px;font-weight:1000;line-height:1;box-shadow:0 10px 24px rgba(152,77,77,.22)}',
+      '.publish-sheet-backdrop{display:none;position:fixed;left:0;right:0;top:0;bottom:var(--tabbar-total-h);z-index:68;background:rgba(16,23,15,.34)}',
+      '.publish-sheet-backdrop.show{display:block}',
+      '.publish-card[data-publish-form]{display:none}',
+      '.publish-card[data-publish-form].is-open{display:block;position:fixed;left:50%;right:auto;bottom:calc(var(--tabbar-total-h) + 12px);z-index:70;width:min(406px,calc(100vw - 24px));max-height:calc(100dvh - var(--tabbar-total-h) - env(safe-area-inset-top,0px) - 100px);overflow:auto;transform:translateX(-50%);box-shadow:0 22px 58px rgba(16,23,15,.24)}',
+      '.publish-card[data-publish-form].is-open textarea{min-height:148px}',
+      '.publish-card[data-publish-form] .form-row{gap:8px}',
+      '.publish-card[data-publish-form] .form-row .app-btn{padding:0 14px;min-width:74px}',
+      '.app-shell.publish-open .app-tabbar{z-index:50}'
+    ].join('\n');
+    document.head.appendChild(style);
+  }
+
   async function requireUser(){
     if(app().state.user) return app().state.user;
     await app().refreshUser();
@@ -36,6 +55,31 @@
     updateCount();
   }
 
+  function backdrop(){
+    var node = $('[data-publish-backdrop]');
+    if(node) return node;
+    node = document.createElement('div');
+    node.className = 'publish-sheet-backdrop';
+    node.dataset.publishBackdrop = 'true';
+    document.body.appendChild(node);
+    return node;
+  }
+
+  function ensurePublishTrigger(){
+    var square = $('[data-app-view="square"]');
+    var head = square && $('.view-head', square);
+    if(!head) return;
+    head.classList.add('square-head');
+    if(head.querySelector('[data-publish-open]')) return;
+    var trigger = document.createElement('button');
+    trigger.className = 'square-publish-trigger';
+    trigger.type = 'button';
+    trigger.dataset.publishOpen = 'true';
+    trigger.setAttribute('aria-label', '发牢骚');
+    trigger.textContent = '+';
+    head.appendChild(trigger);
+  }
+
   function ensureCancelButton(){
     var row = $('[data-publish-form] .form-row');
     if(!row || row.querySelector('[data-publish-cancel]')) return;
@@ -49,15 +93,50 @@
     row.insertBefore(cancel, submit);
   }
 
+  async function openSheet(){
+    var user = await requireUser();
+    if(!user) return;
+    var form = $('[data-publish-form]');
+    if(!form) return;
+    form.classList.add('is-open');
+    backdrop().classList.add('show');
+    var shell = $('.app-shell');
+    if(shell) shell.classList.add('publish-open');
+  }
+
+  function closeSheet(){
+    var form = $('[data-publish-form]');
+    if(form) form.classList.remove('is-open');
+    var shade = $('[data-publish-backdrop]');
+    if(shade) shade.classList.remove('show');
+    var shell = $('.app-shell');
+    if(shell) shell.classList.remove('publish-open');
+  }
+
   function bind(){
     if(bound) return;
     bound = true;
 
-    document.addEventListener('click', function(e){
+    document.addEventListener('click', async function(e){
+      var open = e.target.closest && e.target.closest('[data-publish-open]');
+      if(open){
+        e.preventDefault();
+        await openSheet();
+        return;
+      }
+
+      var shade = e.target.closest && e.target.closest('[data-publish-backdrop]');
+      if(shade){
+        e.preventDefault();
+        closeSheet();
+        return;
+      }
+
       var cancel = e.target.closest && e.target.closest('[data-publish-cancel]');
       if(cancel){
         e.preventDefault();
         clearForm();
+        closeSheet();
         return;
       }
 
@@ -98,8 +177,11 @@
         await window.fwDb.createPost({content:content, status:selectedStatus});
         textarea.value = '';
         updateCount();
+        closeSheet();
         app().state.postsLoaded = false;
         if(window.FWAppFeed) await window.FWAppFeed.load(true);
+        var main = $('#appMain');
+        if(main) main.scrollTop = 0;
         app().toast('已发布');
         app().setView('square');
       }catch(err){
@@ -113,10 +195,13 @@
   }
 
   function init(){
+    injectStyle();
+    ensurePublishTrigger();
     ensureCancelButton();
+    backdrop();
     bind();
     updateCount();
   }
 
-  window.FWAppPublish = {init:init};
+  window.FWAppPublish = {init:init, open:openSheet, close:closeSheet};
 })();
