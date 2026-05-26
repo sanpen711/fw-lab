@@ -3,6 +3,7 @@
 
   var selectedStatus = '已疲惫';
   var bound = false;
+  var squareScrollTop = 0;
 
   function app(){ return window.FWApp; }
   function $(selector, root){ return app().$(selector, root); }
@@ -15,16 +16,14 @@
     style.textContent = [
       '.view-head.square-head{position:relative;padding-right:58px}',
       '.square-publish-trigger{position:absolute;right:4px;bottom:12px;width:44px;height:44px;border:0;border-radius:16px;background:var(--accent);color:#fff;font-size:27px;font-weight:1000;line-height:1;box-shadow:0 10px 24px rgba(152,77,77,.22)}',
-      '.publish-sheet-backdrop{display:none;position:fixed;left:0;right:0;top:0;bottom:var(--tabbar-total-h);z-index:1000;background:rgba(16,23,15,.34);pointer-events:auto}',
-      '.publish-sheet-backdrop.show{display:block}',
-      '.publish-card[data-publish-form]{display:none;pointer-events:auto}',
-      '.publish-card[data-publish-form].is-open{display:block;position:fixed;left:50%;right:auto;bottom:calc(var(--tabbar-total-h) + 12px);z-index:1001;width:min(406px,calc(100vw - 24px));max-height:calc(100dvh - var(--tabbar-total-h) - env(safe-area-inset-top,0px) - 100px);overflow:auto;transform:translateX(-50%);padding-top:50px;box-shadow:0 22px 58px rgba(16,23,15,.24);touch-action:auto}',
-      '.publish-sheet-title{position:absolute;left:16px;top:15px;color:var(--deep);font-size:15px;font-weight:1000;line-height:1.2}',
-      '.publish-sheet-close{position:absolute;right:12px;top:9px;width:34px;height:34px;border:1px solid rgba(30,30,28,.12);border-radius:999px;background:var(--panel-2);color:var(--deep);font-size:22px;font-weight:1000;line-height:1}',
-      '.publish-card[data-publish-form].is-open textarea{min-height:148px}',
-      '.publish-card[data-publish-form] .form-row{gap:8px}',
-      '.publish-card[data-publish-form] .form-row .app-btn{padding:0 14px;min-width:74px}',
-      '.app-shell.publish-open .app-tabbar{z-index:50}'
+      '.square-publish-view .view-head{padding-bottom:14px}',
+      '.square-publish-subtitle{display:block;margin-top:10px;color:var(--muted);font-size:14px;line-height:1.55;font-weight:850}',
+      '.square-publish-view .publish-card[data-publish-form]{display:grid;gap:12px;margin:0 0 18px;padding:15px;border-radius:16px}',
+      '.square-publish-view .publish-card[data-publish-form] label{color:var(--deep);font-size:13px;font-weight:1000}',
+      '.square-publish-view .publish-card[data-publish-form] textarea{min-height:240px;font-size:16px;line-height:1.6;resize:none}',
+      '.square-publish-view .publish-card[data-publish-form] .form-row{gap:8px;align-items:center}',
+      '.square-publish-view .publish-card[data-publish-form] .form-row .app-btn{padding:0 14px;min-width:74px}',
+      '.square-publish-view .publish-card[data-publish-form] .form-row span{margin-right:auto;color:var(--muted);font-size:12px;font-weight:900}'
     ].join('\n');
     document.head.appendChild(style);
   }
@@ -41,12 +40,50 @@
     return $('[data-publish-form]');
   }
 
-  function mountSheetToBody(){
+  function getMain(){
+    return $('#appMain') || $('.app-main');
+  }
+
+  function cleanupLegacySheet(){
+    $$('[data-publish-backdrop]').forEach(function(node){
+      if(node.parentNode) node.parentNode.removeChild(node);
+    });
+    var shell = $('.app-shell');
+    if(shell) shell.classList.remove('publish-open');
     var form = publishForm();
-    if(form && form.parentNode !== document.body){
-      document.body.appendChild(form);
+    if(!form) return;
+    form.classList.remove('is-open');
+    $$('[data-publish-sheet-title],[data-publish-close]', form).forEach(function(node){
+      if(node.parentNode) node.parentNode.removeChild(node);
+    });
+  }
+
+  function ensurePublishView(){
+    var main = getMain();
+    var form = publishForm();
+    if(!main || !form) return null;
+
+    var view = $('[data-app-view="square-publish"]');
+    if(!view){
+      view = document.createElement('section');
+      view.className = 'app-view square-publish-view';
+      view.dataset.appView = 'square-publish';
+      view.setAttribute('aria-label', '发布牢骚');
+      view.innerHTML = [
+        '<div class="view-head compact">',
+          '<button class="back-btn" type="button" data-publish-back-square>‹ 精神广场</button>',
+          '<p>精神广场</p>',
+          '<h1>发一句牢骚</h1>',
+          '<span class="square-publish-subtitle">把今天不想处理的情绪先放在这里</span>',
+        '</div>',
+        '<div data-publish-page-slot></div>'
+      ].join('');
+      main.appendChild(view);
     }
-    return form;
+
+    var slot = $('[data-publish-page-slot]', view);
+    if(slot && form.parentNode !== slot) slot.appendChild(form);
+    return view;
   }
 
   function updateCount(){
@@ -69,16 +106,6 @@
     updateCount();
   }
 
-  function backdrop(){
-    var node = $('[data-publish-backdrop]');
-    if(node) return node;
-    node = document.createElement('div');
-    node.className = 'publish-sheet-backdrop';
-    node.dataset.publishBackdrop = 'true';
-    document.body.appendChild(node);
-    return node;
-  }
-
   function ensurePublishTrigger(){
     var square = $('[data-app-view="square"]');
     var head = square && $('.view-head', square);
@@ -95,7 +122,7 @@
   }
 
   function ensureCancelButton(){
-    var form = mountSheetToBody();
+    var form = publishForm();
     var row = form && form.querySelector('.form-row');
     if(!row || row.querySelector('[data-publish-cancel]')) return;
     var submit = row.querySelector('button[type="submit"]');
@@ -108,73 +135,57 @@
     row.insertBefore(cancel, submit);
   }
 
-  function ensureSheetChrome(){
-    var form = mountSheetToBody();
-    if(!form) return;
-    if(!form.querySelector('[data-publish-sheet-title]')){
-      var title = document.createElement('div');
-      title.className = 'publish-sheet-title';
-      title.dataset.publishSheetTitle = 'true';
-      title.textContent = '发一句牢骚';
-      form.insertBefore(title, form.firstChild);
-    }
-    if(!form.querySelector('[data-publish-close]')){
-      var close = document.createElement('button');
-      close.className = 'publish-sheet-close';
-      close.type = 'button';
-      close.dataset.publishClose = 'true';
-      close.setAttribute('aria-label', '关闭发布框');
-      close.textContent = '×';
-      form.insertBefore(close, form.firstChild);
-    }
+  function rememberSquareScroll(){
+    var main = getMain();
+    if(app().state.view === 'square' && main) squareScrollTop = main.scrollTop || 0;
   }
 
-  async function openSheet(){
-    var user = await requireUser();
-    if(!user) return;
-    var form = mountSheetToBody();
-    if(!form) return;
-    ensureSheetChrome();
-    form.classList.add('is-open');
-    backdrop().classList.add('show');
-    var shell = $('.app-shell');
-    if(shell) shell.classList.add('publish-open');
+  function restoreSquareScroll(){
+    var main = getMain();
+    if(!main) return;
+    requestAnimationFrame(function(){
+      main.scrollTop = squareScrollTop || 0;
+      requestAnimationFrame(function(){ main.scrollTop = squareScrollTop || 0; });
+    });
   }
 
-  function closeSheet(){
-    var form = publishForm();
-    if(form) form.classList.remove('is-open');
-    var shade = $('[data-publish-backdrop]');
-    if(shade) shade.classList.remove('show');
-    var shell = $('.app-shell');
-    if(shell) shell.classList.remove('publish-open');
+  function returnToSquare(options){
+    options = options || {};
+    cleanupLegacySheet();
+    app().setView('square');
+    if(options.restoreScroll) restoreSquareScroll();
+  }
+
+  function openPublishPage(){
+    cleanupLegacySheet();
+    rememberSquareScroll();
+    ensurePublishView();
+    ensureCancelButton();
+    updateCount();
+    app().setView('square-publish');
+    if(!app().state.user){
+      app().refreshUser().then(function(user){
+        if(!user) app().toast('登录后才能发牢骚。');
+      });
+    }
   }
 
   function bind(){
     if(bound) return;
     bound = true;
 
-    document.addEventListener('click', async function(e){
+    document.addEventListener('click', function(e){
       var open = e.target.closest && e.target.closest('[data-publish-open]');
       if(open){
         e.preventDefault();
-        await openSheet();
+        openPublishPage();
         return;
       }
 
-      var insideSheet = e.target.closest && e.target.closest('[data-publish-form]');
-      if(insideSheet) e.stopPropagation();
-
-      var shade = e.target.closest && e.target.closest('[data-publish-backdrop]');
-      if(shade){
+      var back = e.target.closest && e.target.closest('[data-publish-back-square]');
+      if(back){
         e.preventDefault();
-        return;
-      }
-
-      var close = e.target.closest && e.target.closest('[data-publish-close]');
-      if(close){
-        e.preventDefault();
-        closeSheet();
+        returnToSquare({restoreScroll:true});
         return;
       }
 
@@ -182,7 +193,7 @@
       if(cancel){
         e.preventDefault();
         clearForm();
-        closeSheet();
+        returnToSquare({restoreScroll:true});
         return;
       }
 
@@ -223,13 +234,13 @@
         await window.fwDb.createPost({content:content, status:selectedStatus});
         textarea.value = '';
         updateCount();
-        closeSheet();
+        clearForm();
         app().state.postsLoaded = false;
         if(window.FWAppFeed) await window.FWAppFeed.load(true);
-        var main = $('#appMain');
-        if(main) main.scrollTop = 0;
-        app().toast('已发布');
+        app().toast('已记录');
         app().setView('square');
+        var main = getMain();
+        if(main) main.scrollTop = 0;
       }catch(err){
         console.warn('[FW mobile app] publish failed', err);
         app().toast('发布失败，请稍后再试。');
@@ -242,14 +253,13 @@
 
   function init(){
     injectStyle();
+    cleanupLegacySheet();
     ensurePublishTrigger();
-    mountSheetToBody();
+    ensurePublishView();
     ensureCancelButton();
-    ensureSheetChrome();
-    backdrop();
     bind();
     updateCount();
   }
 
-  window.FWAppPublish = {init:init, open:openSheet, close:closeSheet};
+  window.FWAppPublish = {init:init, open:openPublishPage, close:returnToSquare};
 })();
