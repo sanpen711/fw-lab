@@ -15,10 +15,10 @@
     style.textContent = [
       '.view-head.square-head{position:relative;padding-right:58px}',
       '.square-publish-trigger{position:absolute;right:4px;bottom:12px;width:44px;height:44px;border:0;border-radius:16px;background:var(--accent);color:#fff;font-size:27px;font-weight:1000;line-height:1;box-shadow:0 10px 24px rgba(152,77,77,.22)}',
-      '.publish-sheet-backdrop{display:none;position:fixed;left:0;right:0;top:0;bottom:var(--tabbar-total-h);z-index:68;background:rgba(16,23,15,.34)}',
+      '.publish-sheet-backdrop{display:none;position:fixed;left:0;right:0;top:0;bottom:var(--tabbar-total-h);z-index:1000;background:rgba(16,23,15,.34);pointer-events:auto}',
       '.publish-sheet-backdrop.show{display:block}',
-      '.publish-card[data-publish-form]{display:none}',
-      '.publish-card[data-publish-form].is-open{display:block;position:fixed;left:50%;right:auto;bottom:calc(var(--tabbar-total-h) + 12px);z-index:70;width:min(406px,calc(100vw - 24px));max-height:calc(100dvh - var(--tabbar-total-h) - env(safe-area-inset-top,0px) - 100px);overflow:auto;transform:translateX(-50%);padding-top:50px;box-shadow:0 22px 58px rgba(16,23,15,.24)}',
+      '.publish-card[data-publish-form]{display:none;pointer-events:auto}',
+      '.publish-card[data-publish-form].is-open{display:block;position:fixed;left:50%;right:auto;bottom:calc(var(--tabbar-total-h) + 12px);z-index:1001;width:min(406px,calc(100vw - 24px));max-height:calc(100dvh - var(--tabbar-total-h) - env(safe-area-inset-top,0px) - 100px);overflow:auto;transform:translateX(-50%);padding-top:50px;box-shadow:0 22px 58px rgba(16,23,15,.24);touch-action:auto}',
       '.publish-sheet-title{position:absolute;left:16px;top:15px;color:var(--deep);font-size:15px;font-weight:1000;line-height:1.2}',
       '.publish-sheet-close{position:absolute;right:12px;top:9px;width:34px;height:34px;border:1px solid rgba(30,30,28,.12);border-radius:999px;background:var(--panel-2);color:var(--deep);font-size:22px;font-weight:1000;line-height:1}',
       '.publish-card[data-publish-form].is-open textarea{min-height:148px}',
@@ -37,6 +37,18 @@
     return null;
   }
 
+  function publishForm(){
+    return $('[data-publish-form]');
+  }
+
+  function mountSheetToBody(){
+    var form = publishForm();
+    if(form && form.parentNode !== document.body){
+      document.body.appendChild(form);
+    }
+    return form;
+  }
+
   function updateCount(){
     var textarea = $('[data-publish-form] textarea[name="content"]');
     var counter = $('[data-publish-count]');
@@ -44,7 +56,7 @@
   }
 
   function clearForm(){
-    var form = $('[data-publish-form]');
+    var form = publishForm();
     var textarea = form && form.querySelector('textarea[name="content"]');
     if(textarea){
       textarea.value = '';
@@ -83,7 +95,8 @@
   }
 
   function ensureCancelButton(){
-    var row = $('[data-publish-form] .form-row');
+    var form = mountSheetToBody();
+    var row = form && form.querySelector('.form-row');
     if(!row || row.querySelector('[data-publish-cancel]')) return;
     var submit = row.querySelector('button[type="submit"]');
     if(!submit) return;
@@ -96,7 +109,7 @@
   }
 
   function ensureSheetChrome(){
-    var form = $('[data-publish-form]');
+    var form = mountSheetToBody();
     if(!form) return;
     if(!form.querySelector('[data-publish-sheet-title]')){
       var title = document.createElement('div');
@@ -119,7 +132,7 @@
   async function openSheet(){
     var user = await requireUser();
     if(!user) return;
-    var form = $('[data-publish-form]');
+    var form = mountSheetToBody();
     if(!form) return;
     ensureSheetChrome();
     form.classList.add('is-open');
@@ -129,7 +142,7 @@
   }
 
   function closeSheet(){
-    var form = $('[data-publish-form]');
+    var form = publishForm();
     if(form) form.classList.remove('is-open');
     var shade = $('[data-publish-backdrop]');
     if(shade) shade.classList.remove('show');
@@ -230,6 +243,7 @@
   function init(){
     injectStyle();
     ensurePublishTrigger();
+    mountSheetToBody();
     ensureCancelButton();
     ensureSheetChrome();
     backdrop();
