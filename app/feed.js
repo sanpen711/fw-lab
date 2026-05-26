@@ -31,11 +31,12 @@
       '.comment{position:relative;padding-right:42px}',
       '.comment p{margin:7px 0 0;color:var(--text);font-size:14px;line-height:1.55;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}',
       '.comment-delete{position:absolute;right:0;top:7px;min-width:34px;min-height:30px;border:1px solid rgba(217,121,121,.28);border-radius:999px;background:#fff7f4;color:var(--accent-dark);font-size:11px;font-weight:1000}',
-      '.comment-form{grid-template-columns:minmax(0,1fr) 34px 34px 54px;align-items:center;gap:6px;padding-top:8px}',
+      '.comment-form{grid-template-columns:minmax(0,1fr) 34px 34px 54px;align-items:center;gap:6px;padding:8px 0 10px;margin-top:0;margin-bottom:8px;border-bottom:1px solid rgba(30,30,28,.08)}',
       '.comment-form input[name="content"]{height:38px;border-radius:999px;font-size:16px;padding:0 13px}',
       '.comment-form button[type="submit"]{height:38px;min-height:38px;border-radius:999px;padding:0 10px;font-size:12px;font-weight:1000}',
       '.comment-form button[type="submit"]:disabled{background:rgba(30,30,28,.08);color:var(--muted);box-shadow:none;opacity:.72}',
-      '.comment-tool{width:34px;height:38px;min-height:38px;border:1px solid rgba(30,30,28,.12);border-radius:999px;background:#fffaf1;color:var(--green);font-size:12px;font-weight:1000}',
+      '.comment-tool{width:34px;height:38px;min-height:38px;border:1px solid rgba(30,30,28,.12);border-radius:999px;background:#fffaf1;color:var(--green);display:grid;place-items:center;padding:0}',
+      '.comment-tool svg{width:23px;height:23px;display:block}',
       '.comment-tool:disabled{opacity:.55}',
       '.comment-media-preview,.comment-selected-stickers,.comment-sticker-panel{grid-column:1/-1}',
       '.comment-media-preview:empty,.comment-selected-stickers:empty{display:none}',
@@ -419,6 +420,14 @@
     }).join('');
   }
 
+  function stickerButtonIcon(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9.8" cy="9.8" r="6.3"></circle><path d="M7.5 8.7h.01"></path><path d="M12 8.7h.01"></path><path d="M7.7 12.5c1.1 1 3.1 1 4.2 0"></path><path d="M18 14.5v6"></path><path d="M15 17.5h6"></path></svg>';
+  }
+
+  function imageButtonIcon(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="13.5" height="12.5" rx="2.4"></rect><path d="M6.3 14.2l3-3 2.1 2.1 1.5-1.6 2.9 3.3"></path><path d="M7.8 8.4h.01"></path><path d="M19 14.5v6"></path><path d="M16 17.5h6"></path></svg>';
+  }
+
   function renderCommentBox(post){
     if(!app().state.user){
       return '<div class="empty">登录后才能评论。</div>';
@@ -427,8 +436,8 @@
     var disabled = !hasDraftContent(draft) ? ' disabled' : '';
     return '<form class="comment-form" data-comment-form data-post-id="' + esc(post.id) + '">' +
       '<input name="content" maxlength="180" placeholder="留一句回声">' +
-      '<button class="comment-tool" type="button" data-comment-sticker-toggle aria-label="我的表情">表</button>' +
-      '<button class="comment-tool" type="button" data-comment-image-pick aria-label="添加图片">图</button>' +
+      '<button class="comment-tool" type="button" data-comment-sticker-toggle aria-label="选择表情">' + stickerButtonIcon() + '</button>' +
+      '<button class="comment-tool" type="button" data-comment-image-pick aria-label="添加图片">' + imageButtonIcon() + '</button>' +
       '<button type="submit"' + disabled + '>发送</button>' +
       '<input type="file" accept="image/*" data-comment-image-file hidden>' +
       '<div class="comment-media-preview" data-comment-media-preview></div>' +
@@ -459,7 +468,7 @@
         '<button class="' + (mine.same ? 'active' : '') + '" type="button" data-app-react="same" aria-pressed="' + (mine.same ? 'true' : 'false') + '">俺也一样 ' + Number(post.same || 0) + '</button>' +
         '<button class="' + (mine.tissue ? 'active' : '') + '" type="button" data-app-react="tissue" aria-pressed="' + (mine.tissue ? 'true' : 'false') + '">递纸巾 ' + Number(post.tissue || 0) + '</button>' +
       '</div>' +
-      '<div class="comments"><div>' + renderComments(post) + '</div>' + renderCommentBox(post) + '</div>' +
+      '<div class="comments">' + renderCommentBox(post) + '<div>' + renderComments(post) + '</div></div>' +
     '</article>';
   }
 
