@@ -6,6 +6,14 @@
   var swipeTracking = false;
   var swipeStartX = 0;
   var swipeStartY = 0;
+  var commentDrafts = {};
+  var stickerCache = null;
+  var loadingStickers = false;
+
+  var MAX_IMAGE_SIZE = 800 * 1024;
+  var MAX_GIF_SIZE = 3 * 1024 * 1024;
+  var MAX_IMAGE_EDGE = 1280;
+  var MAX_SELECTED_STICKERS = 6;
 
   function app(){ return window.FWApp; }
   function $(selector, root){ return app().$(selector, root); }
@@ -18,13 +26,33 @@
     style.id = 'fwAppSquareFeedStyle';
     style.textContent = [
       '.post-actions button{display:flex;align-items:center;justify-content:center;gap:3px;white-space:nowrap;padding:0 4px;font-size:11.5px;line-height:1.1;overflow:hidden;text-overflow:clip}',
+      '.post-tools{display:flex;align-items:center;gap:6px;flex:0 0 auto}',
+      '.post-delete{min-height:30px;border:1px solid rgba(217,121,121,.28);border-radius:999px;background:#fff7f4;color:var(--accent-dark);padding:0 10px;font-size:11px;font-weight:1000}',
       '.comment{position:relative;padding-right:42px}',
       '.comment p{margin:7px 0 0;color:var(--text);font-size:14px;line-height:1.55;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}',
       '.comment-delete{position:absolute;right:0;top:7px;min-width:34px;min-height:30px;border:1px solid rgba(217,121,121,.28);border-radius:999px;background:#fff7f4;color:var(--accent-dark);font-size:11px;font-weight:1000}',
-      '.comment-form{grid-template-columns:minmax(0,1fr) 58px;align-items:center;gap:6px;padding-top:8px}',
-      '.comment-form input{height:38px;border-radius:999px;font-size:16px;padding:0 13px}',
-      '.comment-form button[type="submit"]{height:38px;min-height:38px;border-radius:999px;padding:0 12px;font-size:12px;font-weight:1000}',
+      '.comment-form{grid-template-columns:minmax(0,1fr) 34px 34px 54px;align-items:center;gap:6px;padding-top:8px}',
+      '.comment-form input[name="content"]{height:38px;border-radius:999px;font-size:16px;padding:0 13px}',
+      '.comment-form button[type="submit"]{height:38px;min-height:38px;border-radius:999px;padding:0 10px;font-size:12px;font-weight:1000}',
       '.comment-form button[type="submit"]:disabled{background:rgba(30,30,28,.08);color:var(--muted);box-shadow:none;opacity:.72}',
+      '.comment-tool{width:34px;height:38px;min-height:38px;border:1px solid rgba(30,30,28,.12);border-radius:999px;background:#fffaf1;color:var(--green);font-size:12px;font-weight:1000}',
+      '.comment-tool:disabled{opacity:.55}',
+      '.comment-media-preview,.comment-selected-stickers,.comment-sticker-panel{grid-column:1/-1}',
+      '.comment-media-preview:empty,.comment-selected-stickers:empty{display:none}',
+      '.comment-image-card{display:flex;align-items:center;gap:8px;margin-top:3px;border:1px solid rgba(30,30,28,.1);border-radius:12px;background:#fffaf1;padding:7px}',
+      '.comment-image-card img{width:54px;height:54px;object-fit:cover;border-radius:10px;background:#fffdf7}',
+      '.comment-image-card span{min-width:0;flex:1;color:var(--muted);font-size:12px;font-weight:900}',
+      '.comment-media-remove{min-width:34px;min-height:30px;border:1px solid rgba(217,121,121,.28);border-radius:999px;background:#fff7f4;color:var(--accent-dark);font-size:12px;font-weight:1000}',
+      '.comment-selected-stickers{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}',
+      '.comment-sticker-chip{position:relative;width:46px;height:46px;border:1px solid rgba(30,30,28,.1);border-radius:12px;background:#fffaf1;display:grid;place-items:center}',
+      '.comment-sticker-chip img{max-width:38px;max-height:38px;object-fit:contain}',
+      '.comment-sticker-chip button{position:absolute;right:-5px;top:-5px;width:22px;height:22px;border:0;border-radius:999px;background:var(--accent);color:#fff;font-size:15px;line-height:1;font-weight:1000}',
+      '.comment-sticker-panel{margin-top:3px;border:1px solid rgba(30,30,28,.1);border-radius:12px;background:#fffaf1;padding:8px;max-height:180px;overflow:auto}',
+      '.comment-sticker-panel[hidden]{display:none!important}',
+      '.comment-sticker-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}',
+      '.comment-sticker-grid button{height:48px;border:1px solid rgba(30,30,28,.08);border-radius:11px;background:#fffdf7;display:grid;place-items:center;padding:4px}',
+      '.comment-sticker-grid img{max-width:38px;max-height:38px;object-fit:contain}',
+      '.comment-panel-note{margin:0;color:var(--muted);font-size:12px;line-height:1.55;font-weight:900}',
       '.post-content.fw-rich-content,.comment p.fw-rich-content{white-space:pre-wrap}',
       '.fw-inline-sticker{display:block;margin:8px 0;max-width:132px;max-height:132px}',
       '.fw-inline-sticker img{max-width:128px;max-height:128px;object-fit:contain;display:block;border-radius:10px;background:transparent}',
@@ -33,7 +61,7 @@
       '.comment .fw-inline-sticker{max-width:104px;max-height:104px}',
       '.comment .fw-inline-sticker img{max-width:100px;max-height:100px}',
       '.comment .fw-inline-media img{max-height:220px;border-radius:12px}',
-      '.post-actions button:disabled,.comment-form button:disabled,.comment-delete:disabled{opacity:.56}'
+      '.post-actions button:disabled,.comment-form button:disabled,.comment-delete:disabled,.post-delete:disabled{opacity:.56}'
     ].join('\n');
     document.head.appendChild(style);
   }
@@ -63,6 +91,18 @@
 
   function dbType(type){
     return type === 'resonance' ? 'like' : type;
+  }
+
+  function encodeMarker(prefix, url){
+    return '[[' + prefix + ':' + btoa(String(url || '')) + ']]';
+  }
+
+  function encodeImage(url){
+    return encodeMarker('FW_MEDIA_IMAGE', url);
+  }
+
+  function encodeSticker(url){
+    return encodeMarker('FW_USER_STICKER', url);
   }
 
   function getMarkerInfo(text, index){
@@ -157,6 +197,90 @@
     var openIds = captureOpenCommentIds(extraOpenId);
     renderList({openIds:openIds});
     restoreScroll(scroll);
+  }
+
+  function ensureDraft(postId){
+    postId = String(postId || '');
+    if(!commentDrafts[postId]){
+      commentDrafts[postId] = {pendingImage:null, uploadingImage:false, selectedStickers:[], stickersOpen:false, stickerMessage:'', stickerRows:null};
+    }
+    return commentDrafts[postId];
+  }
+
+  function revokeDraftImage(draft){
+    if(draft && draft.pendingImage && draft.pendingImage.localUrl){
+      try{ URL.revokeObjectURL(draft.pendingImage.localUrl); }catch(e){}
+    }
+  }
+
+  function clearDraft(postId){
+    var draft = commentDrafts[String(postId || '')];
+    revokeDraftImage(draft);
+    delete commentDrafts[String(postId || '')];
+  }
+
+  function hasDraftContent(draft){
+    return !!(draft && ((draft.pendingImage && draft.pendingImage.marker) || (draft.selectedStickers && draft.selectedStickers.length)));
+  }
+
+  function composeCommentContent(input, draft){
+    var parts = [];
+    var text = String(input && input.value || '').trim();
+    if(text) parts.push(text);
+    (draft.selectedStickers || []).forEach(function(sticker){
+      if(sticker.marker) parts.push(sticker.marker);
+    });
+    if(draft.pendingImage && draft.pendingImage.marker) parts.push(draft.pendingImage.marker);
+    return parts.join('\n').trim();
+  }
+
+  function renderDraftAreas(form){
+    if(!form) return;
+    var postId = form.dataset.postId || (form.closest('[data-post-id]') || {}).dataset.postId;
+    var draft = ensureDraft(postId);
+    var preview = $('[data-comment-media-preview]', form);
+    var selected = $('[data-comment-selected-stickers]', form);
+    var panel = $('[data-comment-sticker-panel]', form);
+
+    if(preview){
+      if(draft.pendingImage){
+        var src = draft.pendingImage.localUrl || draft.pendingImage.url || '';
+        var note = draft.pendingImage.uploading ? '正在上传图片...' : '图片已准备好';
+        if(draft.pendingImage.error) note = draft.pendingImage.error;
+        preview.innerHTML = '<div class="comment-image-card">' +
+          (src ? '<img src="' + esc(src) + '" alt="已选择的图片">' : '') +
+          '<span>' + esc(note) + '</span><button class="comment-media-remove" type="button" data-comment-image-remove>删除</button>' +
+        '</div>';
+      }else{
+        preview.innerHTML = '';
+      }
+    }
+
+    if(selected){
+      selected.innerHTML = (draft.selectedStickers || []).map(function(sticker, index){
+        return '<span class="comment-sticker-chip"><img src="' + esc(sticker.url) + '" alt="已选表情"><button type="button" aria-label="移除表情" data-comment-sticker-remove="' + index + '">×</button></span>';
+      }).join('');
+    }
+
+    if(panel){
+      panel.hidden = !draft.stickersOpen;
+      if(draft.stickersOpen){
+        if(draft.stickerMessage){
+          panel.innerHTML = '<p class="comment-panel-note">' + esc(draft.stickerMessage) + '</p>';
+        }else if(draft.stickerRows && draft.stickerRows.length){
+          panel.innerHTML = '<div class="comment-sticker-grid">' + draft.stickerRows.map(function(row){
+            var url = row.image_url || row.url || '';
+            return '<button type="button" data-comment-sticker-url="' + esc(url) + '" aria-label="选择表情"><img src="' + esc(url) + '" alt="表情"></button>';
+          }).join('') + '</div>';
+        }else{
+          panel.innerHTML = '<p class="comment-panel-note">暂时没有可用表情。</p>';
+        }
+      }else{
+        panel.innerHTML = '';
+      }
+    }
+
+    updateCommentSubmitState(form);
   }
 
   async function currentUserId(client){
@@ -288,22 +412,28 @@
 
   function renderComments(post){
     var rows = post.comments || [];
-    if(!rows.length){
-      return '<div class="empty">还没有评论，可以轻轻放下一句。</div>';
-    }
+    if(!rows.length) return '';
     return rows.slice(-8).map(function(c){
       var del = c.canDelete ? '<button class="comment-delete" type="button" data-comment-delete data-comment-id="' + esc(c.id) + '">删除</button>' : '';
       return '<div class="comment" data-comment-id="' + esc(c.id) + '">' + renderCommentAuthor(c) + del + '<p class="fw-rich-content">' + richHtml(c.content || '') + '</p></div>';
     }).join('');
   }
 
-  function renderCommentBox(){
+  function renderCommentBox(post){
     if(!app().state.user){
       return '<div class="empty">登录后才能评论。</div>';
     }
-    return '<form class="comment-form" data-comment-form>' +
+    var draft = ensureDraft(post.id);
+    var disabled = !hasDraftContent(draft) ? ' disabled' : '';
+    return '<form class="comment-form" data-comment-form data-post-id="' + esc(post.id) + '">' +
       '<input name="content" maxlength="180" placeholder="留一句回声">' +
-      '<button type="submit" disabled>发送</button>' +
+      '<button class="comment-tool" type="button" data-comment-sticker-toggle aria-label="我的表情">表</button>' +
+      '<button class="comment-tool" type="button" data-comment-image-pick aria-label="添加图片">图</button>' +
+      '<button type="submit"' + disabled + '>发送</button>' +
+      '<input type="file" accept="image/*" data-comment-image-file hidden>' +
+      '<div class="comment-media-preview" data-comment-media-preview></div>' +
+      '<div class="comment-selected-stickers" data-comment-selected-stickers></div>' +
+      '<div class="comment-sticker-panel" data-comment-sticker-panel hidden></div>' +
     '</form>';
   }
 
@@ -311,13 +441,17 @@
     if(!form) return;
     var input = form.querySelector('input[name="content"]');
     var submit = form.querySelector('button[type="submit"]');
-    if(input && submit) submit.disabled = !(input.value || '').trim();
+    var draft = ensureDraft(form.dataset.postId || (form.closest('[data-post-id]') || {}).dataset.postId);
+    var hasText = !!(input && (input.value || '').trim());
+    var blocked = !!(draft && draft.uploadingImage);
+    if(input && submit) submit.disabled = blocked || !(hasText || hasDraftContent(draft));
   }
 
   function renderPost(post){
     var mine = post.myReactions || {};
+    var deleteButton = post.canDelete ? '<button class="post-delete" type="button" data-post-delete data-post-id="' + esc(post.id) + '">删除</button>' : '';
     return '<article class="post-card" data-post-id="' + esc(post.id) + '">' +
-      '<div class="post-top"><div class="post-author">' + avatar(post) + '<div class="post-name"><b>' + esc(post.authorName || '匿名研究员') + '</b><span>' + esc(post.time || '刚刚') + '</span></div></div><span class="status-tag">' + esc(post.status || '今日无效') + '</span></div>' +
+      '<div class="post-top"><div class="post-author">' + avatar(post) + '<div class="post-name"><b>' + esc(post.authorName || '匿名研究员') + '</b><span>' + esc(post.time || '刚刚') + '</span></div></div><div class="post-tools"><span class="status-tag">' + esc(post.status || '今日无效') + '</span>' + deleteButton + '</div></div>' +
       '<div class="post-content fw-rich-content">' + richHtml(post.content || '') + '</div>' +
       '<div class="post-actions">' +
         '<button class="' + (mine.resonance ? 'active' : '') + '" type="button" data-app-react="resonance" aria-pressed="' + (mine.resonance ? 'true' : 'false') + '">点赞 ' + Number(post.resonance || 0) + '</button>' +
@@ -325,7 +459,7 @@
         '<button class="' + (mine.same ? 'active' : '') + '" type="button" data-app-react="same" aria-pressed="' + (mine.same ? 'true' : 'false') + '">俺也一样 ' + Number(post.same || 0) + '</button>' +
         '<button class="' + (mine.tissue ? 'active' : '') + '" type="button" data-app-react="tissue" aria-pressed="' + (mine.tissue ? 'true' : 'false') + '">递纸巾 ' + Number(post.tissue || 0) + '</button>' +
       '</div>' +
-      '<div class="comments"><div>' + renderComments(post) + '</div>' + renderCommentBox() + '</div>' +
+      '<div class="comments"><div>' + renderComments(post) + '</div>' + renderCommentBox(post) + '</div>' +
     '</article>';
   }
 
@@ -347,6 +481,7 @@
     }
     node.innerHTML = posts.map(renderPost).join('');
     reopenComments(options.openIds);
+    $$('[data-comment-form]', node).forEach(renderDraftAreas);
   }
 
   function setLoading(){
@@ -458,6 +593,27 @@
     if(result.error) throw new Error('delete');
   }
 
+  async function deleteOwnPost(postId, user){
+    if(window.fwDb && window.fwDb.deleteOwnPost){
+      try{
+        await window.fwDb.deleteOwnPost({postId:postId});
+        return;
+      }catch(e){
+        console.warn('[FW mobile app] delete post rpc failed', e);
+      }
+    }
+
+    var db = app().db();
+    var client = db && db.client;
+    if(!client) throw new Error('db');
+    var result = await client
+      .from('posts')
+      .update({is_deleted:true})
+      .eq('id', postId)
+      .eq('user_id', user.id);
+    if(result.error) throw new Error('delete');
+  }
+
   function removeCommentFromState(commentId){
     var posts = app().state.posts || [];
     for(var i = 0; i < posts.length; i++){
@@ -466,6 +622,144 @@
       if(posts[i].comments.length !== before) return posts[i].id;
     }
     return null;
+  }
+
+  function removePostFromState(postId){
+    clearDraft(postId);
+    app().state.posts = (app().state.posts || []).filter(function(post){ return String(post.id) !== String(postId); });
+  }
+
+  function fileExt(file, fallback){
+    var name = file && file.name || '';
+    var match = name.match(/\.([a-z0-9]+)$/i);
+    if(match) return match[1].toLowerCase();
+    var type = file && file.type || '';
+    if(type.indexOf('png') >= 0) return 'png';
+    if(type.indexOf('webp') >= 0) return 'webp';
+    if(type.indexOf('gif') >= 0) return 'gif';
+    return fallback || 'jpg';
+  }
+
+  function makeImagePath(userId, ext){
+    var random = Math.random().toString(36).slice(2, 8);
+    return String(userId || 'anonymous') + '/comment/image/' + Date.now().toString(36) + '_' + random + '.' + (ext || 'jpg');
+  }
+
+  function withTimeout(promise, ms, message){
+    return new Promise(function(resolve, reject){
+      var timer = setTimeout(function(){ reject(new Error(message || 'timeout')); }, ms);
+      promise.then(function(value){
+        clearTimeout(timer);
+        resolve(value);
+      }).catch(function(error){
+        clearTimeout(timer);
+        reject(error);
+      });
+    });
+  }
+
+  function loadImage(file){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = function(){
+        URL.revokeObjectURL(url);
+        reject(new Error('image-load'));
+      };
+      img.src = url;
+    });
+  }
+
+  function canvasToBlob(canvas, type, quality){
+    return new Promise(function(resolve){
+      canvas.toBlob(function(blob){ resolve(blob); }, type, quality);
+    });
+  }
+
+  function makeFile(blob, name, type){
+    try{
+      return new File([blob], name, {type:type || blob.type || 'image/jpeg'});
+    }catch(e){
+      blob.name = name;
+      return blob;
+    }
+  }
+
+  async function compressImage(file){
+    if(!file || !/^image\//i.test(file.type || '')) throw new Error('not-image');
+    var isGif = /gif/i.test(file.type || '') || /\.gif$/i.test(file.name || '');
+    if(isGif){
+      if(file.size > MAX_GIF_SIZE) throw new Error('image-too-large');
+      return file;
+    }
+    if(file.size <= MAX_IMAGE_SIZE) return file;
+
+    var img = await loadImage(file);
+    var scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+    var width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+    var height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+    var canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+    var blob = await canvasToBlob(canvas, 'image/jpeg', 0.82);
+    if(!blob) return file;
+    return makeFile(blob, (file.name || 'image').replace(/\.[^.]+$/, '') + '.jpg', 'image/jpeg');
+  }
+
+  async function uploadCommentImage(file, user){
+    var db = app().db();
+    var client = db && db.client;
+    if(!client || !client.storage) throw new Error('storage-missing');
+
+    var uploadFile = await compressImage(file);
+    var ext = fileExt(uploadFile, 'jpg');
+    var path = makeImagePath(user.id, ext);
+    var result = await withTimeout(
+      client.storage.from('chat-media').upload(path, uploadFile, {
+        cacheControl:'31536000',
+        upsert:false,
+        contentType:uploadFile.type || 'image/jpeg'
+      }),
+      35000,
+      'upload-timeout'
+    );
+    if(result.error) throw result.error;
+
+    var publicData = client.storage.from('chat-media').getPublicUrl(path);
+    var publicUrl = publicData && publicData.data && publicData.data.publicUrl;
+    if(!publicUrl) throw new Error('public-url-missing');
+    return {url:publicUrl, marker:encodeImage(publicUrl)};
+  }
+
+  async function fetchStickers(force){
+    if(stickerCache && !force) return stickerCache;
+    if(loadingStickers) return stickerCache || [];
+    var user = await requireUser('登录后才能使用我的表情。');
+    if(!user) return [];
+    var db = app().db();
+    var client = db && db.client;
+    if(!client) throw new Error('db');
+
+    loadingStickers = true;
+    try{
+      var res = await client
+        .from('user_stickers')
+        .select('id,image_url,file_name,file_size,mime_type,storage_path,created_at')
+        .eq('user_id', user.id)
+        .or('is_deleted.eq.false,is_deleted.is.null')
+        .order('created_at', {ascending:false})
+        .limit(30);
+      if(res.error) throw res.error;
+      stickerCache = (res.data || []).filter(function(row){ return row && row.image_url; });
+      return stickerCache;
+    }finally{
+      loadingStickers = false;
+    }
   }
 
   function isSquareView(){
@@ -518,6 +812,34 @@
     document.addEventListener('touchcancel', resetSwipe, {passive:true});
 
     document.addEventListener('click', async function(e){
+      var postDelete = e.target.closest && e.target.closest('[data-post-delete]');
+      if(postDelete){
+        e.preventDefault();
+        e.stopPropagation();
+        var userForPostDelete = await requireUser('登录后才能删除牢骚。');
+        if(!userForPostDelete || postDelete.disabled) return;
+        var deletePostId = postDelete.dataset.postId || (postDelete.closest('[data-post-id]') || {}).dataset.postId;
+        var post = findPost(deletePostId);
+        if(!post || String(post.userId) !== String(userForPostDelete.id)){
+          app().toast('只能删除自己发布的牢骚。');
+          return;
+        }
+        if(!window.confirm('确定删除这条牢骚吗？')) return;
+        try{
+          postDelete.disabled = true;
+          await deleteOwnPost(deletePostId, userForPostDelete);
+          removePostFromState(deletePostId);
+          app().toast('已删除');
+          renderPreservingScroll();
+        }catch(err){
+          console.warn('[FW mobile app] delete post failed', err);
+          app().toast('删除失败，请稍后再试。');
+        }finally{
+          postDelete.disabled = false;
+        }
+        return;
+      }
+
       var deleteBtn = e.target.closest && e.target.closest('[data-comment-delete]');
       if(deleteBtn){
         e.preventDefault();
@@ -539,6 +861,85 @@
         }finally{
           deleteBtn.disabled = false;
         }
+        return;
+      }
+
+      var imagePick = e.target.closest && e.target.closest('[data-comment-image-pick]');
+      if(imagePick){
+        e.preventDefault();
+        var imageForm = imagePick.closest('[data-comment-form]');
+        var imageDraft = ensureDraft(imageForm && imageForm.dataset.postId);
+        if(imageDraft.uploadingImage){
+          app().toast('图片还在上传，请稍后。');
+          return;
+        }
+        var fileInput = imageForm && imageForm.querySelector('[data-comment-image-file]');
+        if(fileInput) fileInput.click();
+        return;
+      }
+
+      var imageRemove = e.target.closest && e.target.closest('[data-comment-image-remove]');
+      if(imageRemove){
+        e.preventDefault();
+        var imageRemoveForm = imageRemove.closest('[data-comment-form]');
+        var removeDraft = ensureDraft(imageRemoveForm && imageRemoveForm.dataset.postId);
+        revokeDraftImage(removeDraft);
+        removeDraft.pendingImage = null;
+        removeDraft.uploadingImage = false;
+        renderDraftAreas(imageRemoveForm);
+        return;
+      }
+
+      var stickerToggle = e.target.closest && e.target.closest('[data-comment-sticker-toggle]');
+      if(stickerToggle){
+        e.preventDefault();
+        var stickerForm = stickerToggle.closest('[data-comment-form]');
+        var stickerDraft = ensureDraft(stickerForm && stickerForm.dataset.postId);
+        stickerDraft.stickersOpen = !stickerDraft.stickersOpen;
+        if(!stickerDraft.stickersOpen){
+          renderDraftAreas(stickerForm);
+          return;
+        }
+        stickerDraft.stickerMessage = '正在读取我的表情...';
+        stickerDraft.stickerRows = null;
+        renderDraftAreas(stickerForm);
+        try{
+          var rows = await fetchStickers(false);
+          stickerDraft.stickerRows = rows;
+          stickerDraft.stickerMessage = '';
+        }catch(err){
+          console.warn('[FW mobile app] comment sticker load failed', err);
+          stickerDraft.stickerRows = [];
+          stickerDraft.stickerMessage = '表情暂时读取失败，请稍后再试。';
+        }
+        renderDraftAreas(stickerForm);
+        return;
+      }
+
+      var stickerPick = e.target.closest && e.target.closest('[data-comment-sticker-url]');
+      if(stickerPick){
+        e.preventDefault();
+        var stickerPickForm = stickerPick.closest('[data-comment-form]');
+        var pickDraft = ensureDraft(stickerPickForm && stickerPickForm.dataset.postId);
+        var url = stickerPick.dataset.commentStickerUrl || '';
+        if(!url) return;
+        if(pickDraft.selectedStickers.length >= MAX_SELECTED_STICKERS){
+          app().toast('这次先放这么多表情吧。');
+          return;
+        }
+        pickDraft.selectedStickers.push({url:url, marker:encodeSticker(url)});
+        renderDraftAreas(stickerPickForm);
+        return;
+      }
+
+      var stickerRemove = e.target.closest && e.target.closest('[data-comment-sticker-remove]');
+      if(stickerRemove){
+        e.preventDefault();
+        var stickerRemoveForm = stickerRemove.closest('[data-comment-form]');
+        var removeStickerDraft = ensureDraft(stickerRemoveForm && stickerRemoveForm.dataset.postId);
+        var index = Number(stickerRemove.dataset.commentStickerRemove);
+        if(index >= 0) removeStickerDraft.selectedStickers.splice(index, 1);
+        renderDraftAreas(stickerRemoveForm);
         return;
       }
 
@@ -590,6 +991,45 @@
       if(form) updateCommentSubmitState(form);
     });
 
+    document.addEventListener('change', async function(e){
+      var fileInput = e.target.closest && e.target.closest('[data-comment-image-file]');
+      if(!fileInput) return;
+      var form = fileInput.closest('[data-comment-form]');
+      var postId = form && form.dataset.postId;
+      var draft = ensureDraft(postId);
+      var file = fileInput.files && fileInput.files[0];
+      fileInput.value = '';
+      if(!file) return;
+      if(!/^image\//i.test(file.type || '')){
+        app().toast('请选择图片文件。');
+        return;
+      }
+
+      var user = await requireUser('登录后才能评论。');
+      if(!user) return;
+
+      revokeDraftImage(draft);
+      draft.pendingImage = {name:file.name || 'image', localUrl:URL.createObjectURL(file), url:'', marker:'', uploading:true, error:''};
+      draft.uploadingImage = true;
+      renderDraftAreas(form);
+      try{
+        var uploaded = await uploadCommentImage(file, user);
+        if(!draft.pendingImage) return;
+        draft.pendingImage.url = uploaded.url;
+        draft.pendingImage.marker = uploaded.marker;
+        draft.pendingImage.uploading = false;
+        app().toast('图片已准备好');
+      }catch(err){
+        console.warn('[FW mobile app] comment image upload failed', err);
+        if(draft.pendingImage) draft.pendingImage.error = '图片上传失败';
+        app().toast('图片上传失败，请稍后再试。');
+      }finally{
+        draft.uploadingImage = false;
+        if(draft.pendingImage) draft.pendingImage.uploading = false;
+        renderDraftAreas(form);
+      }
+    });
+
     document.addEventListener('submit', async function(e){
       var form = e.target.closest && e.target.closest('[data-comment-form]');
       if(!form) return;
@@ -598,7 +1038,12 @@
       if(!user) return;
       var card = form.closest('[data-post-id]');
       var input = form.querySelector('input[name="content"]');
-      var content = (input.value || '').trim();
+      var draft = ensureDraft(card.dataset.postId);
+      if(draft.uploadingImage || (draft.pendingImage && draft.pendingImage.uploading)){
+        app().toast('图片还在上传，请稍后再发送。');
+        return;
+      }
+      var content = composeCommentContent(input, draft);
       if(!content){
         input.focus();
         updateCommentSubmitState(form);
@@ -610,7 +1055,7 @@
         submit.disabled = true;
         await window.fwDb.createComment({postId:card.dataset.postId, content:content});
         input.value = '';
-        updateCommentSubmitState(form);
+        clearDraft(card.dataset.postId);
         app().toast('评论已发送');
         await load(true, {preserveScroll:true, reopenPostId:card.dataset.postId, silent:true});
       }catch(err){
