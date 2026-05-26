@@ -6,7 +6,6 @@
   var swipeTracking = false;
   var swipeStartX = 0;
   var swipeStartY = 0;
-  var EMOJIS = ['😭','😵','😡','🫠','😮‍💨','🤡','🐟','🧻','👍','🫂'];
 
   function app(){ return window.FWApp; }
   function $(selector, root){ return app().$(selector, root); }
@@ -22,14 +21,18 @@
       '.comment{position:relative;padding-right:42px}',
       '.comment p{margin:7px 0 0;color:var(--text);font-size:14px;line-height:1.55;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}',
       '.comment-delete{position:absolute;right:0;top:7px;min-width:34px;min-height:30px;border:1px solid rgba(217,121,121,.28);border-radius:999px;background:#fff7f4;color:var(--accent-dark);font-size:11px;font-weight:1000}',
-      '.comment-form{grid-template-columns:minmax(0,1fr) 38px 58px;align-items:center;gap:6px;padding-top:8px}',
+      '.comment-form{grid-template-columns:minmax(0,1fr) 58px;align-items:center;gap:6px;padding-top:8px}',
       '.comment-form input{height:38px;border-radius:999px;font-size:16px;padding:0 13px}',
-      '.comment-form .comment-emoji-toggle{width:38px;height:38px;min-height:38px;border:1px solid rgba(30,30,28,.13);border-radius:999px;background:var(--panel-2);color:var(--green);font-size:18px;font-weight:1000;line-height:1}',
       '.comment-form button[type="submit"]{height:38px;min-height:38px;border-radius:999px;padding:0 12px;font-size:12px;font-weight:1000}',
       '.comment-form button[type="submit"]:disabled{background:rgba(30,30,28,.08);color:var(--muted);box-shadow:none;opacity:.72}',
-      '.comment-emoji-panel{grid-column:1/-1;display:none;gap:6px;flex-wrap:wrap;margin-top:2px;padding:8px;border:1px solid rgba(30,30,28,.1);border-radius:12px;background:rgba(255,250,241,.96)}',
-      '.comment-form.emoji-open .comment-emoji-panel{display:flex}',
-      '.comment-emoji-panel button{width:36px;height:36px;min-height:36px;border:1px solid rgba(30,30,28,.1);border-radius:10px;background:#fffdf7;color:var(--text);font-size:19px;line-height:1}',
+      '.post-content.fw-rich-content,.comment p.fw-rich-content{white-space:pre-wrap}',
+      '.fw-inline-sticker{display:block;margin:8px 0;max-width:132px;max-height:132px}',
+      '.fw-inline-sticker img{max-width:128px;max-height:128px;object-fit:contain;display:block;border-radius:10px;background:transparent}',
+      '.fw-inline-media{display:block;margin:10px 0;max-width:100%;text-decoration:none}',
+      '.fw-inline-media img{width:auto;max-width:100%;max-height:360px;object-fit:contain;display:block;border-radius:14px;border:1px solid rgba(30,30,28,.1);background:#fffdf7}',
+      '.comment .fw-inline-sticker{max-width:104px;max-height:104px}',
+      '.comment .fw-inline-sticker img{max-width:100px;max-height:100px}',
+      '.comment .fw-inline-media img{max-height:220px;border-radius:12px}',
       '.post-actions button:disabled,.comment-form button:disabled,.comment-delete:disabled{opacity:.56}'
     ].join('\n');
     document.head.appendChild(style);
@@ -60,6 +63,53 @@
 
   function dbType(type){
     return type === 'resonance' ? 'like' : type;
+  }
+
+  function getMarkerInfo(text, index){
+    var specs = [
+      {prefix:'[[FW_USER_STICKER:', end:']]', kind:'sticker'},
+      {prefix:'[[FW_MEDIA_IMAGE:', end:']]', kind:'image'}
+    ];
+    for(var i = 0; i < specs.length; i += 1){
+      var spec = specs[i];
+      if(String(text || '').indexOf(spec.prefix, index) === index){
+        var end = String(text || '').indexOf(spec.end, index + spec.prefix.length);
+        if(end > index){
+          try{
+            var url = atob(String(text || '').slice(index + spec.prefix.length, end));
+            if(/^https?:\/\//i.test(url)) return {kind:spec.kind, url:url, end:end + spec.end.length};
+          }catch(e){}
+        }
+      }
+    }
+    return null;
+  }
+
+  function richHtml(text){
+    text = String(text || '');
+    var out = '';
+    var i = 0;
+    while(i < text.length){
+      var next = text.indexOf('[[FW_', i);
+      if(next < 0){
+        out += esc(text.slice(i));
+        break;
+      }
+      out += esc(text.slice(i, next));
+      var marker = getMarkerInfo(text, next);
+      if(!marker){
+        out += esc(text.slice(next, next + 5));
+        i = next + 5;
+        continue;
+      }
+      if(marker.kind === 'sticker'){
+        out += '<span class="fw-inline-sticker"><img src="' + esc(marker.url) + '" alt="表情"></span>';
+      }else{
+        out += '<a class="fw-inline-media" href="' + esc(marker.url) + '" target="_blank" rel="noopener"><img src="' + esc(marker.url) + '" alt="图片"></a>';
+      }
+      i = marker.end;
+    }
+    return out;
   }
 
   function getScroller(){
@@ -243,14 +293,8 @@
     }
     return rows.slice(-8).map(function(c){
       var del = c.canDelete ? '<button class="comment-delete" type="button" data-comment-delete data-comment-id="' + esc(c.id) + '">删除</button>' : '';
-      return '<div class="comment" data-comment-id="' + esc(c.id) + '">' + renderCommentAuthor(c) + del + '<p>' + esc(c.content || '') + '</p></div>';
+      return '<div class="comment" data-comment-id="' + esc(c.id) + '">' + renderCommentAuthor(c) + del + '<p class="fw-rich-content">' + richHtml(c.content || '') + '</p></div>';
     }).join('');
-  }
-
-  function renderEmojiPanel(){
-    return '<div class="comment-emoji-panel" data-comment-emoji-panel>' + EMOJIS.map(function(emoji){
-      return '<button type="button" data-comment-emoji="' + esc(emoji) + '">' + esc(emoji) + '</button>';
-    }).join('') + '</div>';
   }
 
   function renderCommentBox(){
@@ -259,9 +303,7 @@
     }
     return '<form class="comment-form" data-comment-form>' +
       '<input name="content" maxlength="180" placeholder="留一句回声">' +
-      '<button class="comment-emoji-toggle" type="button" data-comment-emoji-toggle aria-label="表情">☺</button>' +
       '<button type="submit" disabled>发送</button>' +
-      renderEmojiPanel() +
     '</form>';
   }
 
@@ -276,7 +318,7 @@
     var mine = post.myReactions || {};
     return '<article class="post-card" data-post-id="' + esc(post.id) + '">' +
       '<div class="post-top"><div class="post-author">' + avatar(post) + '<div class="post-name"><b>' + esc(post.authorName || '匿名研究员') + '</b><span>' + esc(post.time || '刚刚') + '</span></div></div><span class="status-tag">' + esc(post.status || '今日无效') + '</span></div>' +
-      '<div class="post-content">' + esc(post.content || '') + '</div>' +
+      '<div class="post-content fw-rich-content">' + richHtml(post.content || '') + '</div>' +
       '<div class="post-actions">' +
         '<button class="' + (mine.resonance ? 'active' : '') + '" type="button" data-app-react="resonance" aria-pressed="' + (mine.resonance ? 'true' : 'false') + '">点赞 ' + Number(post.resonance || 0) + '</button>' +
         '<button type="button" data-app-comments>评论 ' + (post.comments || []).length + '</button>' +
@@ -426,33 +468,12 @@
     return null;
   }
 
-  function insertAtCursor(input, text){
-    var value = input.value || '';
-    var start = typeof input.selectionStart === 'number' ? input.selectionStart : value.length;
-    var end = typeof input.selectionEnd === 'number' ? input.selectionEnd : start;
-    input.value = value.slice(0, start) + text + value.slice(end);
-    var next = start + text.length;
-    input.focus();
-    if(input.setSelectionRange) input.setSelectionRange(next, next);
-    input.dispatchEvent(new Event('input', {bubbles:true}));
-    if(input.closest) updateCommentSubmitState(input.closest('[data-comment-form]'));
-  }
-
   function isSquareView(){
     return !!(app() && app().state && app().state.view === 'square');
   }
 
   function isEditableTarget(target){
     return !!(target && target.closest && target.closest('input,textarea,select,[contenteditable="true"]'));
-  }
-
-  function isPublishOpen(){
-    var form = $('[data-publish-form]');
-    return !!(form && form.classList.contains('is-open'));
-  }
-
-  function isEmojiOpen(){
-    return !!$('.comment-form.emoji-open');
   }
 
   function resetSwipe(){
@@ -464,7 +485,7 @@
   function handleSwipeStart(e){
     if(!isSquareView() || !e.touches || e.touches.length !== 1) return;
     var target = e.target;
-    if(isEditableTarget(target) || isPublishOpen() || isEmojiOpen()) return;
+    if(isEditableTarget(target)) return;
     if(target && target.closest && target.closest('[data-filter-status],.status-filter,.status-picks')) return;
     var touch = e.touches[0];
     if(!touch || touch.clientX > 32) return;
@@ -478,7 +499,7 @@
     var startX = swipeStartX;
     var startY = swipeStartY;
     resetSwipe();
-    if(!isSquareView() || isPublishOpen() || isEmojiOpen()) return;
+    if(!isSquareView()) return;
     var touch = e.changedTouches && e.changedTouches[0];
     if(!touch) return;
     var dx = touch.clientX - startX;
@@ -518,23 +539,6 @@
         }finally{
           deleteBtn.disabled = false;
         }
-        return;
-      }
-
-      var emojiToggle = e.target.closest && e.target.closest('[data-comment-emoji-toggle]');
-      if(emojiToggle){
-        e.preventDefault();
-        var emojiForm = emojiToggle.closest('[data-comment-form]');
-        if(emojiForm) emojiForm.classList.toggle('emoji-open');
-        return;
-      }
-
-      var emoji = e.target.closest && e.target.closest('[data-comment-emoji]');
-      if(emoji){
-        e.preventDefault();
-        var form = emoji.closest('[data-comment-form]');
-        var input = form && form.querySelector('input[name="content"]');
-        if(input) insertAtCursor(input, emoji.dataset.commentEmoji || emoji.textContent || '');
         return;
       }
 
@@ -607,7 +611,6 @@
         await window.fwDb.createComment({postId:card.dataset.postId, content:content});
         input.value = '';
         updateCommentSubmitState(form);
-        form.classList.remove('emoji-open');
         app().toast('评论已发送');
         await load(true, {preserveScroll:true, reopenPostId:card.dataset.postId, silent:true});
       }catch(err){
