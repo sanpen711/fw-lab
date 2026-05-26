@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-square-fix-2';
+const CACHE_NAME = 'fw-mobile-app-publish-sheet-fix-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
