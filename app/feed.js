@@ -105,6 +105,15 @@
     return out;
   }
 
+  function richCommentHtml(text){
+    text = String(text || '');
+    var match = text.match(/^回复\s+([^：\n]{1,40})：/);
+    if(!match) return richHtml(text);
+    var prefix = match[0];
+    var rest = text.slice(prefix.length);
+    return '<span class="comment-reply-prefix">' + esc(prefix) + '</span>' + richHtml(rest);
+  }
+
   function getScroller(){ return $('#appMain') || $('.app-main'); }
 
   function saveScroll(){
@@ -125,26 +134,37 @@
     return (app().state.posts || []).find(function(post){ return String(post.id) === String(postId); }) || null;
   }
 
-  function ensureDraft(postId){
-    postId = String(postId || '');
-    if(!commentDrafts[postId]){
-      commentDrafts[postId] = {
-        pendingImage:null,
-        uploadingImage:false,
-        selectedStickers:[],
-        stickersOpen:false,
-        stickerMessage:'',
-        stickerRows:null,
-        reply:null,
-        addingSticker:false
-      };
-    }
-    return commentDrafts[postId];
+  function draftKey(postId, kind){
+    return String(postId || '') + '::' + (kind || 'main');
+  }
+
+  function newDraft(){
+    return {
+      pendingImage:null,
+      uploadingImage:false,
+      selectedStickers:[],
+      stickersOpen:false,
+      stickerMessage:'',
+      stickerRows:null,
+      reply:null,
+      addingSticker:false
+    };
+  }
+
+  function ensureDraft(postId, kind){
+    var key = draftKey(postId, kind || 'main');
+    if(!commentDrafts[key]) commentDrafts[key] = newDraft();
+    return commentDrafts[key];
+  }
+
+  function getFormDraft(form){
+    return ensureDraft(form && form.dataset.postId, form && form.dataset.commentKind || 'main');
   }
 
   function clearReplyExcept(postId){
-    Object.keys(commentDrafts).forEach(function(id){
-      if(String(id) !== String(postId)) commentDrafts[id].reply = null;
+    Object.keys(commentDrafts).forEach(function(key){
+      if(key.indexOf('::reply') < 0) return;
+      if(key !== draftKey(postId, 'reply')) clearDraftByKey(key);
     });
   }
 
@@ -154,15 +174,23 @@
     }
   }
 
-  function clearDraft(postId){
-    var key = String(postId || '');
+  function clearDraftByKey(key){
     var draft = commentDrafts[key];
     revokeDraftImage(draft);
     delete commentDrafts[key];
   }
 
-  function resetDraftAfterSend(postId){
-    clearDraft(postId);
+  function clearDraft(postId, kind){
+    if(kind){
+      clearDraftByKey(draftKey(postId, kind));
+      return;
+    }
+    clearDraftByKey(draftKey(postId, 'main'));
+    clearDraftByKey(draftKey(postId, 'reply'));
+  }
+
+  function resetDraftAfterSend(postId, kind){
+    clearDraft(postId, kind || 'main');
   }
 
   function hasDraftContent(draft){
@@ -201,19 +229,19 @@
 
   function renderDraftAreas(form){
     if(!form) return;
-    var postId = form.dataset.postId || (form.closest('[data-post-id]') || {}).dataset.postId;
-    var draft = ensureDraft(postId);
+    var draft = getFormDraft(form);
     var input = form.querySelector('input[name="content"]');
     var replyState = $('[data-comment-reply-state]', form);
     var preview = $('[data-comment-media-preview]', form);
     var selected = $('[data-comment-selected-stickers]', form);
     var panel = $('[data-comment-sticker-panel]', form);
+    var isReply = (form.dataset.commentKind || 'main') === 'reply';
 
     if(replyState){
-      if(draft.reply && draft.reply.name){
+      if(isReply && draft.reply && draft.reply.name){
         replyState.hidden = false;
-        replyState.innerHTML = '<span>正在回复：<b>' + esc(draft.reply.name) + '</b></span><button class="comment-reply-cancel" type="button" aria-label="取消回复" data-comment-reply-cancel>×</button>';
-        if(input) input.placeholder = '回复 ' + draft.reply.name;
+        replyState.innerHTML = '<span>回复 <b>' + esc(draft.reply.name) + '</b></span><button class="comment-reply-cancel" type="button" aria-label="取消回复" data-comment-reply-cancel>×</button>';
+        if(input) input.placeholder = '回复 ' + draft.reply.name + '：';
       }else{
         replyState.hidden = true;
         replyState.innerHTML = '';
@@ -370,35 +398,17 @@
     });
   }
 
-  function renderCommentAuthor(comment){
-    return '<div class="post-author">' + avatar(comment) + '<div class="post-name"><b>' + esc(comment.authorName || '匿名回声') + '</b><span>' + esc(comment.time || '') + '</span></div></div>';
-  }
-
-  function renderComments(post){
-    var rows = post.comments || [];
-    if(!rows.length) return '';
-    return rows.map(function(c){
-      var del = c.canDelete ? '<button class="comment-delete" type="button" data-comment-delete data-comment-id="' + esc(c.id) + '">删除</button>' : '';
-      var reply = '<button class="comment-reply" type="button" data-comment-reply data-comment-id="' + esc(c.id) + '" data-comment-author="' + esc(c.authorName || '匿名回声') + '">回复</button>';
-      return '<div class="comment" data-comment-id="' + esc(c.id) + '">' + renderCommentAuthor(c) + del + '<div class="comment-meta-actions">' + reply + '</div><p class="fw-rich-content">' + richHtml(c.content || '') + '</p></div>';
-    }).join('');
-  }
-
-  function stickerButtonIcon(){
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="7.4"></circle><path d="M9.2 10.4h.01"></path><path d="M14.8 10.4h.01"></path><path d="M8.8 14.4c1.5 1.4 4.9 1.4 6.4 0"></path></svg>';
-  }
-
-  function imageButtonIcon(){
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="5" width="16" height="14" rx="2.6"></rect><path d="M7.2 15.5l3.3-3.3 2.4 2.4 1.6-1.8 3.2 3.7"></path><path d="M8.7 8.8h.01"></path></svg>';
-  }
-
-  function renderCommentBox(post){
+  function renderCommentBox(post, options){
+    options = options || {};
+    var kind = options.kind || 'main';
     if(!app().state.user){
-      return '<div class="empty">登录后才能评论。</div>';
+      return kind === 'reply' ? '' : '<div class="empty">登录后才能评论。</div>';
     }
-    var draft = ensureDraft(post.id);
+    var draft = ensureDraft(post.id, kind);
+    if(kind === 'reply' && options.reply) draft.reply = options.reply;
     var disabled = !hasDraftContent(draft) ? ' disabled' : '';
-    return '<form class="comment-form" data-comment-form data-post-id="' + esc(post.id) + '">' +
+    var extraClass = kind === 'reply' ? ' comment-reply-form' : ' comment-main-form';
+    return '<form class="comment-form' + extraClass + '" data-comment-form data-comment-kind="' + esc(kind) + '" data-post-id="' + esc(post.id) + '">' +
       '<div class="comment-reply-state" data-comment-reply-state hidden></div>' +
       '<input name="content" maxlength="180" placeholder="留一句回声">' +
       '<button class="comment-tool" type="button" data-comment-sticker-toggle aria-label="选择表情">' + stickerButtonIcon() + '</button>' +
@@ -412,11 +422,41 @@
     '</form>';
   }
 
+  function renderComments(post){
+    var rows = post.comments || [];
+    if(!rows.length) return '';
+    var replyDraft = ensureDraft(post.id, 'reply');
+    var activeReplyId = replyDraft.reply && replyDraft.reply.id ? String(replyDraft.reply.id) : '';
+    return rows.map(function(c){
+      var isAuthor = c.userId && post.userId && String(c.userId) === String(post.userId);
+      var del = c.canDelete ? '<button class="comment-delete" type="button" data-comment-delete data-comment-id="' + esc(c.id) + '">删除</button>' : '';
+      var reply = '<button class="comment-reply" type="button" data-comment-reply data-comment-id="' + esc(c.id) + '" data-comment-author="' + esc(c.authorName || '匿名回声') + '">回复</button>';
+      var replyForm = activeReplyId === String(c.id) ? '<div class="comment-inline-reply">' + renderCommentBox(post, {kind:'reply', reply:replyDraft.reply}) + '</div>' : '';
+      return '<div class="comment comment-flow-item" data-comment-id="' + esc(c.id) + '">' +
+        '<div class="comment-avatar-col">' + avatar(c) + '</div>' +
+        '<div class="comment-body">' +
+          '<div class="comment-info-line"><b class="comment-author-name">' + esc(c.authorName || '匿名回声') + '</b>' + (isAuthor ? '<span class="comment-author-badge">作者</span>' : '') + '<span class="comment-time">' + esc(c.time || '') + '</span></div>' +
+          '<div class="comment-meta-actions">' + reply + del + '</div>' +
+          '<p class="fw-rich-content">' + richCommentHtml(c.content || '') + '</p>' +
+          replyForm +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function stickerButtonIcon(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="7.4"></circle><path d="M9.2 10.4h.01"></path><path d="M14.8 10.4h.01"></path><path d="M8.8 14.4c1.5 1.4 4.9 1.4 6.4 0"></path></svg>';
+  }
+
+  function imageButtonIcon(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="5" width="16" height="14" rx="2.6"></rect><path d="M7.2 15.5l3.3-3.3 2.4 2.4 1.6-1.8 3.2 3.7"></path><path d="M8.7 8.8h.01"></path></svg>';
+  }
+
   function updateCommentSubmitState(form){
     if(!form) return;
     var input = form.querySelector('input[name="content"]');
     var submit = form.querySelector('button[type="submit"]');
-    var draft = ensureDraft(form.dataset.postId || (form.closest('[data-post-id]') || {}).dataset.postId);
+    var draft = getFormDraft(form);
     var hasText = !!(input && (input.value || '').trim());
     var blocked = !!(draft && (draft.uploadingImage || draft.addingSticker));
     if(input && submit) submit.disabled = blocked || !(hasText || hasDraftContent(draft));
@@ -467,7 +507,7 @@
     body.innerHTML = renderPost(post, 'detail') +
       '<section class="module-card detail-comments-card" data-post-id="' + esc(post.id) + '">' +
         '<div class="detail-comments-head"><b>全部评论</b><span>' + (post.comments || []).length + '</span></div>' +
-        renderCommentBox(post) +
+        renderCommentBox(post, {kind:'main'}) +
         '<div class="comment-list detail-comment-list">' + renderComments(post) + '</div>' +
       '</section>';
     $$('[data-comment-form]', body).forEach(renderDraftAreas);
@@ -514,7 +554,7 @@
   }
 
   function backToSquare(){
-    if(detailPostId) clearDraft(detailPostId);
+    if(detailPostId) clearDraft(detailPostId, 'reply');
     detailPostId = null;
     app().setView('square');
     renderList();
@@ -937,14 +977,17 @@
         var replyUser = await requireUser('登录后才能回复。');
         if(!replyUser) return;
         var replyCard = replyBtn.closest('[data-post-id]');
-        var replyForm = replyCard && replyCard.querySelector('[data-comment-form]');
-        if(!replyCard || !replyForm) return;
+        if(!replyCard) return;
         var replyPostId = String(replyCard.dataset.postId || '');
-        clearReplyExcept(replyPostId);
-        var replyDraft = ensureDraft(replyPostId);
+        var oldDraft = ensureDraft(replyPostId, 'reply');
+        if(oldDraft.reply && String(oldDraft.reply.id || '') !== String(replyBtn.dataset.commentId || '')){
+          clearDraft(replyPostId, 'reply');
+        }
+        var replyDraft = ensureDraft(replyPostId, 'reply');
         replyDraft.reply = {id:replyBtn.dataset.commentId || '', name:replyBtn.dataset.commentAuthor || '匿名回声'};
-        renderDraftAreas(replyForm);
-        var replyInput = replyForm.querySelector('input[name="content"]');
+        clearReplyExcept(replyPostId);
+        renderDetailPreservingScroll(replyPostId);
+        var replyInput = $('[data-comment-form][data-comment-kind="reply"] input[name="content"]');
         if(replyInput) replyInput.focus();
         return;
       }
@@ -954,9 +997,8 @@
         e.preventDefault();
         e.stopPropagation();
         var cancelForm = replyCancel.closest('[data-comment-form]');
-        var cancelDraft = ensureDraft(cancelForm && cancelForm.dataset.postId);
-        cancelDraft.reply = null;
-        renderDraftAreas(cancelForm);
+        clearDraft(cancelForm && cancelForm.dataset.postId, cancelForm && cancelForm.dataset.commentKind || 'reply');
+        renderDetailPreservingScroll(cancelForm && cancelForm.dataset.postId);
         return;
       }
 
@@ -964,7 +1006,7 @@
       if(imagePick){
         e.preventDefault();
         var imageForm = imagePick.closest('[data-comment-form]');
-        var imageDraft = ensureDraft(imageForm && imageForm.dataset.postId);
+        var imageDraft = getFormDraft(imageForm);
         if(imageDraft.uploadingImage){
           app().toast('图片还在上传，请稍后。');
           return;
@@ -978,7 +1020,7 @@
       if(imageRemove){
         e.preventDefault();
         var imageRemoveForm = imageRemove.closest('[data-comment-form]');
-        var removeDraft = ensureDraft(imageRemoveForm && imageRemoveForm.dataset.postId);
+        var removeDraft = getFormDraft(imageRemoveForm);
         revokeDraftImage(removeDraft);
         removeDraft.pendingImage = null;
         removeDraft.uploadingImage = false;
@@ -990,7 +1032,7 @@
       if(stickerToggle){
         e.preventDefault();
         var stickerForm = stickerToggle.closest('[data-comment-form]');
-        var stickerDraft = ensureDraft(stickerForm && stickerForm.dataset.postId);
+        var stickerDraft = getFormDraft(stickerForm);
         stickerDraft.stickersOpen = !stickerDraft.stickersOpen;
         if(!stickerDraft.stickersOpen){
           renderDraftAreas(stickerForm);
@@ -1028,7 +1070,7 @@
       if(stickerPick){
         e.preventDefault();
         var stickerPickForm = stickerPick.closest('[data-comment-form]');
-        var pickDraft = ensureDraft(stickerPickForm && stickerPickForm.dataset.postId);
+        var pickDraft = getFormDraft(stickerPickForm);
         var url = stickerPick.dataset.commentStickerUrl || '';
         if(!url) return;
         if(pickDraft.selectedStickers.length >= MAX_SELECTED_STICKERS){
@@ -1044,7 +1086,7 @@
       if(stickerRemove){
         e.preventDefault();
         var stickerRemoveForm = stickerRemove.closest('[data-comment-form]');
-        var removeStickerDraft = ensureDraft(stickerRemoveForm && stickerRemoveForm.dataset.postId);
+        var removeStickerDraft = getFormDraft(stickerRemoveForm);
         var index = Number(stickerRemove.dataset.commentStickerRemove);
         if(index >= 0) removeStickerDraft.selectedStickers.splice(index, 1);
         renderDraftAreas(stickerRemoveForm);
@@ -1103,7 +1145,7 @@
       var stickerFileInput = e.target.closest && e.target.closest('[data-comment-sticker-file]');
       if(stickerFileInput){
         var stickerForm = stickerFileInput.closest('[data-comment-form]');
-        var stickerDraft = ensureDraft(stickerForm && stickerForm.dataset.postId);
+        var stickerDraft = getFormDraft(stickerForm);
         var stickerFile = stickerFileInput.files && stickerFileInput.files[0];
         stickerFileInput.value = '';
         if(!stickerFile) return;
@@ -1138,7 +1180,7 @@
       if(!fileInput) return;
       var form = fileInput.closest('[data-comment-form]');
       var postId = form && form.dataset.postId;
-      var draft = ensureDraft(postId);
+      var draft = getFormDraft(form);
       var file = fileInput.files && fileInput.files[0];
       fileInput.value = '';
       if(!file) return;
@@ -1178,7 +1220,8 @@
       if(!user) return;
       var card = form.closest('[data-post-id]');
       var input = form.querySelector('input[name="content"]');
-      var draft = ensureDraft(card.dataset.postId);
+      var kind = form.dataset.commentKind || 'main';
+      var draft = getFormDraft(form);
       if(draft.uploadingImage || (draft.pendingImage && draft.pendingImage.uploading)){
         app().toast('图片还在上传，请稍后再发送。');
         return;
@@ -1199,8 +1242,8 @@
         submit.disabled = true;
         await window.fwDb.createComment({postId:card.dataset.postId, content:content});
         input.value = '';
-        resetDraftAfterSend(card.dataset.postId);
-        app().toast('评论已发送');
+        resetDraftAfterSend(card.dataset.postId, kind);
+        app().toast(kind === 'reply' ? '回复已发送' : '评论已发送');
         await load(true, {preserveScroll:true, detailPostId:card.dataset.postId, silent:true});
       }catch(err){
         console.warn('[FW mobile app] comment failed', err);
