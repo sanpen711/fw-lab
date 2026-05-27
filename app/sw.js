@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-square-detail-comments-1';
+const CACHE_NAME = 'fw-mobile-app-square-comment-layout-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
