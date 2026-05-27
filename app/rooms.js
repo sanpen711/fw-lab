@@ -7,6 +7,7 @@
   var loading = false;
   var polls = [];
   var renderTimer = null;
+  var syncTimer = null;
 
   function app(){ return window.FWApp; }
   function $(selector, root){ return app().$(selector, root); }
@@ -68,6 +69,59 @@
   }
   function canDeleteOption(poll, option){ return !!app().state.user && !isEnded(poll) && option.source === 'user' && String(option.user_id) === String(app().state.user.id); }
   function canPromotePoll(poll){ return !!(app().state.user && app().state.user.isAdmin) && !poll.is_official && !isEnded(poll); }
+  function findPoll(id){
+    id = String(id);
+    for(var i = 0; i < polls.length; i += 1){
+      if(String(polls[i].id) === id) return polls[i];
+    }
+    return null;
+  }
+  function clonePollForRollback(poll){
+    if(!poll) return null;
+    return {
+      id:poll.id,
+      stats:Object.assign({}, poll.stats || {}),
+      participantCount:poll.participantCount,
+      myVote:poll.myVote ? Object.assign({}, poll.myVote) : null
+    };
+  }
+  function rollbackPoll(snapshot, scroll){
+    if(!snapshot) return;
+    var poll = findPoll(snapshot.id);
+    if(!poll) return;
+    poll.stats = Object.assign({}, snapshot.stats || {});
+    poll.participantCount = snapshot.participantCount;
+    poll.myVote = snapshot.myVote ? Object.assign({}, snapshot.myVote) : null;
+    render();
+    restoreScroll(scroll);
+  }
+  function applyOptimisticVote(pollId, optionId, scroll){
+    var poll = findPoll(pollId);
+    if(!poll || isEnded(poll)) return {changed:false, snapshot:null};
+    var snapshot = clonePollForRollback(poll);
+    var oldOptionId = poll.myVote && poll.myVote.option_id != null ? String(poll.myVote.option_id) : '';
+    var newOptionId = String(optionId || '');
+    if(!newOptionId || oldOptionId === newOptionId) return {changed:false, snapshot:snapshot};
+
+    poll.stats = Object.assign({}, poll.stats || {});
+    if(oldOptionId){
+      poll.stats[oldOptionId] = Math.max(0, Number(poll.stats[oldOptionId] || 0) - 1);
+    }else{
+      poll.participantCount = participantCount(poll) + 1;
+    }
+    poll.stats[newOptionId] = Number(poll.stats[newOptionId] || 0) + 1;
+    poll.myVote = {poll_id:poll.id, option_id:optionId};
+    render();
+    restoreScroll(scroll);
+    return {changed:true, snapshot:snapshot};
+  }
+  function scheduleQuietSync(scroll){
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(function(){
+      loaded = false;
+      load(true, {preserveScroll:scroll, quiet:true});
+    }, 260);
+  }
 
   function renderOptions(poll, options){
     var total = participantCount(poll);
@@ -139,13 +193,14 @@
   async function load(force, options){
     options = options || {};
     var scrollSnapshot = options.preserveScroll || null;
+    var quiet = !!options.quiet;
     if(loading) return;
     if(loaded && !force){ render(); if(scrollSnapshot) restoreScroll(scrollSnapshot); return; }
     loading = true;
     var status = $('[data-mobile-polls-status]');
     var list = $('[data-mobile-polls-list]');
-    var shouldShowLoadingPlaceholder = !polls.length;
-    if(status) status.textContent = '正在读取学术研讨课题...';
+    var shouldShowLoadingPlaceholder = !quiet && !polls.length;
+    if(status) status.textContent = quiet ? '' : '正在读取学术研讨课题...';
     if(list && shouldShowLoadingPlaceholder) list.innerHTML = '<div class="mobile-poll-empty">正在读取学术研讨课题...</div>';
     try{
       await app().refreshUser();
@@ -181,7 +236,7 @@
     }catch(e){
       console.warn('[FW mobile app] rooms load failed', e);
       if(!polls.length) render();
-      if(status) status.textContent = '课题暂时读取失败，请稍后刷新';
+      if(status) status.textContent = quiet ? '' : '课题暂时读取失败，请稍后刷新';
       if(scrollSnapshot) restoreScroll(scrollSnapshot);
     }finally{ loading = false; }
   }
@@ -238,14 +293,23 @@
     var scroll = snapshotScroll();
     await app().refreshUser();
     if(!app().state.user){ toast('登录后才能投票。'); app().setView('profile'); return; }
+    var pollId = Number(button.dataset.pollId);
+    var optionId = Number(button.dataset.optionId);
+    var optimistic = applyOptimisticVote(pollId, optionId, scroll);
+    if(!optimistic.changed){
+      toast('你已经投过这个选项。');
+      return;
+    }
     button.disabled = true;
     try{
-      fail(await client().rpc('fw_vote_poll', {p_poll_id:Number(button.dataset.pollId), p_option_id:Number(button.dataset.optionId)}), '投票失败');
+      fail(await client().rpc('fw_vote_poll', {p_poll_id:pollId, p_option_id:optionId}), '投票失败');
       toast('投票已记录，截止前可以改票。');
       loaded = false;
-      await load(true, {preserveScroll:scroll});
-    }catch(e){ toast(e.message || '投票失败，请稍后再试。'); restoreScroll(scroll); }
-    finally{ button.disabled = false; }
+      scheduleQuietSync(scroll);
+    }catch(e){
+      rollbackPoll(optimistic.snapshot, scroll);
+      toast(e.message || '投票失败，请稍后再试。');
+    }finally{ button.disabled = false; }
   }
 
   async function addOption(form){
