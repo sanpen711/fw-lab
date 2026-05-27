@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-rooms-bird-1';
+const CACHE_NAME = 'fw-mobile-app-rooms-scroll-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
