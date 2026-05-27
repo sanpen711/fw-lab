@@ -9,6 +9,8 @@
   var commentDrafts = {};
   var stickerCache = null;
   var loadingStickers = false;
+  var detailPostId = null;
+  var squareScrollTop = 0;
 
   var MAX_IMAGE_SIZE = 800 * 1024;
   var MAX_GIF_SIZE = 3 * 1024 * 1024;
@@ -114,38 +116,13 @@
     var scroller = getScroller();
     if(!scroller) return;
     requestAnimationFrame(function(){
-      scroller.scrollTop = value;
-      requestAnimationFrame(function(){ scroller.scrollTop = value; });
+      scroller.scrollTop = value || 0;
+      requestAnimationFrame(function(){ scroller.scrollTop = value || 0; });
     });
   }
 
-  function captureOpenCommentIds(extraId){
-    var ids = [];
-    $$('[data-post-id] .comments.show').forEach(function(node){
-      var card = node.closest('[data-post-id]');
-      if(card && card.dataset.postId) ids.push(card.dataset.postId);
-    });
-    if(extraId) ids.push(extraId);
-    return Array.from(new Set(ids));
-  }
-
-  function cardById(postId){
-    return $$('[data-post-id]').find(function(card){ return card.dataset.postId === postId; }) || null;
-  }
-
-  function reopenComments(ids){
-    (ids || []).forEach(function(id){
-      var card = cardById(id);
-      var comments = card && $('.comments', card);
-      if(comments) comments.classList.add('show');
-    });
-  }
-
-  function renderPreservingScroll(extraOpenId){
-    var scroll = saveScroll();
-    var openIds = captureOpenCommentIds(extraOpenId);
-    renderList({openIds:openIds});
-    restoreScroll(scroll);
+  function findPost(postId){
+    return (app().state.posts || []).find(function(post){ return String(post.id) === String(postId); }) || null;
   }
 
   function ensureDraft(postId){
@@ -178,9 +155,10 @@
   }
 
   function clearDraft(postId){
-    var draft = commentDrafts[String(postId || '')];
+    var key = String(postId || '');
+    var draft = commentDrafts[key];
     revokeDraftImage(draft);
-    delete commentDrafts[String(postId || '')];
+    delete commentDrafts[key];
   }
 
   function resetDraftAfterSend(postId){
@@ -194,9 +172,9 @@
   function composeCommentContent(input, draft){
     var parts = [];
     var text = String(input && input.value || '').trim();
-    if(draft && draft.reply && draft.reply.name){
-      var prefix = '回复 ' + draft.reply.name + '：';
-      parts.push(prefix + text);
+    var hasMedia = hasDraftContent(draft);
+    if(draft && draft.reply && draft.reply.name && (text || hasMedia)){
+      parts.push('回复 ' + draft.reply.name + '：' + text);
     }else if(text){
       parts.push(text);
     }
@@ -399,7 +377,7 @@
   function renderComments(post){
     var rows = post.comments || [];
     if(!rows.length) return '';
-    return rows.slice(-8).map(function(c){
+    return rows.map(function(c){
       var del = c.canDelete ? '<button class="comment-delete" type="button" data-comment-delete data-comment-id="' + esc(c.id) + '">删除</button>' : '';
       var reply = '<button class="comment-reply" type="button" data-comment-reply data-comment-id="' + esc(c.id) + '" data-comment-author="' + esc(c.authorName || '匿名回声') + '">回复</button>';
       return '<div class="comment" data-comment-id="' + esc(c.id) + '">' + renderCommentAuthor(c) + del + '<div class="comment-meta-actions">' + reply + '</div><p class="fw-rich-content">' + richHtml(c.content || '') + '</p></div>';
@@ -441,27 +419,67 @@
     var draft = ensureDraft(form.dataset.postId || (form.closest('[data-post-id]') || {}).dataset.postId);
     var hasText = !!(input && (input.value || '').trim());
     var blocked = !!(draft && (draft.uploadingImage || draft.addingSticker));
-    if(input && submit) submit.disabled = blocked || !(hasText || hasDraftContent(draft) || (draft.reply && draft.reply.name));
+    if(input && submit) submit.disabled = blocked || !(hasText || hasDraftContent(draft));
   }
 
-  function renderPost(post){
+  function renderPost(post, mode){
+    mode = mode || 'list';
     var mine = post.myReactions || {};
     var deleteButton = post.canDelete ? '<button class="post-delete" type="button" data-post-delete data-post-id="' + esc(post.id) + '">删除</button>' : '';
-    return '<article class="post-card" data-post-id="' + esc(post.id) + '">' +
+    var commentControl = mode === 'detail'
+      ? '<button class="post-action-count" type="button" disabled>评论 ' + (post.comments || []).length + '</button>'
+      : '<button type="button" data-app-comments data-post-id="' + esc(post.id) + '">评论 ' + (post.comments || []).length + '</button>';
+    return '<article class="post-card' + (mode === 'detail' ? ' detail-post-card' : '') + '" data-post-id="' + esc(post.id) + '">' +
       '<div class="post-top"><div class="post-author">' + avatar(post) + '<div class="post-name"><b>' + esc(post.authorName || '匿名研究员') + '</b><span>' + esc(post.time || '刚刚') + '</span></div></div><div class="post-tools"><span class="status-tag">' + esc(post.status || '今日无效') + '</span>' + deleteButton + '</div></div>' +
       '<div class="post-content fw-rich-content">' + richHtml(post.content || '') + '</div>' +
       '<div class="post-actions">' +
         '<button class="' + (mine.resonance ? 'active' : '') + '" type="button" data-app-react="resonance" aria-pressed="' + (mine.resonance ? 'true' : 'false') + '">点赞 ' + Number(post.resonance || 0) + '</button>' +
-        '<button type="button" data-app-comments>评论 ' + (post.comments || []).length + '</button>' +
+        commentControl +
         '<button class="' + (mine.same ? 'active' : '') + '" type="button" data-app-react="same" aria-pressed="' + (mine.same ? 'true' : 'false') + '">俺也一样 ' + Number(post.same || 0) + '</button>' +
         '<button class="' + (mine.tissue ? 'active' : '') + '" type="button" data-app-react="tissue" aria-pressed="' + (mine.tissue ? 'true' : 'false') + '">递纸巾 ' + Number(post.tissue || 0) + '</button>' +
       '</div>' +
-      '<div class="comments">' + renderCommentBox(post) + '<div class="comment-list">' + renderComments(post) + '</div></div>' +
     '</article>';
   }
 
-  function renderList(options){
-    options = options || {};
+  function ensureDetailView(){
+    var main = getScroller();
+    var view = $('[data-app-view="square-detail"]');
+    if(view) return view;
+    view = document.createElement('section');
+    view.className = 'app-view square-detail-view';
+    view.dataset.appView = 'square-detail';
+    view.setAttribute('aria-label', '帖子评论详情');
+    view.innerHTML = '<div class="view-head compact square-detail-head"><button class="back-btn" type="button" data-square-detail-back>‹ 精神广场</button><p>精神广场</p><h1>评论</h1></div><div class="square-detail-body" data-square-detail-body></div>';
+    if(main) main.appendChild(view);
+    return view;
+  }
+
+  function renderDetail(postId){
+    var view = ensureDetailView();
+    var body = $('[data-square-detail-body]', view);
+    var post = findPost(postId);
+    if(!body) return;
+    if(!post){
+      body.innerHTML = '<div class="error">这条牢骚暂时读取失败，请返回后再试。</div>';
+      return;
+    }
+    detailPostId = String(post.id);
+    body.innerHTML = renderPost(post, 'detail') +
+      '<section class="module-card detail-comments-card" data-post-id="' + esc(post.id) + '">' +
+        '<div class="detail-comments-head"><b>全部评论</b><span>' + (post.comments || []).length + '</span></div>' +
+        renderCommentBox(post) +
+        '<div class="comment-list detail-comment-list">' + renderComments(post) + '</div>' +
+      '</section>';
+    $$('[data-comment-form]', body).forEach(renderDraftAreas);
+  }
+
+  function renderDetailPreservingScroll(postId){
+    var scroll = saveScroll();
+    renderDetail(postId || detailPostId);
+    restoreScroll(scroll);
+  }
+
+  function renderList(){
     var node = $('[data-feed-list="square"]');
     if(!node) return;
     var posts = app().state.posts || [];
@@ -471,9 +489,36 @@
       node.innerHTML = '<div class="empty">今天这里还很安静。</div>';
       return;
     }
-    node.innerHTML = rows.map(renderPost).join('');
-    reopenComments(options.openIds);
-    $$('[data-comment-form]', node).forEach(renderDraftAreas);
+    node.innerHTML = rows.map(function(post){ return renderPost(post, 'list'); }).join('');
+  }
+
+  function renderCurrentPreservingScroll(extraPostId){
+    if(app().state.view === 'square-detail'){
+      renderDetailPreservingScroll(extraPostId || detailPostId);
+      return;
+    }
+    var scroll = saveScroll();
+    renderList();
+    restoreScroll(scroll);
+  }
+
+  function openDetail(postId){
+    if(!postId) return;
+    var nextId = String(postId);
+    if(detailPostId && detailPostId !== nextId) clearDraft(detailPostId);
+    squareScrollTop = saveScroll();
+    detailPostId = nextId;
+    clearReplyExcept(nextId);
+    renderDetail(nextId);
+    app().setView('square-detail');
+  }
+
+  function backToSquare(){
+    if(detailPostId) clearDraft(detailPostId);
+    detailPostId = null;
+    app().setView('square');
+    renderList();
+    restoreScroll(squareScrollTop);
   }
 
   function setLoading(){
@@ -485,25 +530,33 @@
     options = options || {};
     if(loading) return;
     if(app().state.postsLoaded && !force){
-      renderList({openIds:captureOpenCommentIds(options.reopenPostId)});
+      if(app().state.view === 'square-detail' && detailPostId) renderDetail(detailPostId);
+      else renderList();
       return;
     }
 
     loading = true;
     var scroll = options.preserveScroll ? saveScroll() : 0;
-    var openIds = options.preserveScroll ? captureOpenCommentIds(options.reopenPostId) : [];
-    if(!options.silent) setLoading();
+    if(options.detailPostId) detailPostId = String(options.detailPostId);
+    if(!options.silent && app().state.view !== 'square-detail') setLoading();
 
     try{
       if(!(await app().waitForDb())) throw new Error('暂时无法连接数据服务。');
       app().state.posts = await loadPostsFromSupabase();
       app().state.postsLoaded = true;
-      renderList({openIds:openIds});
+      if(app().state.view === 'square-detail' && detailPostId) renderDetail(detailPostId);
+      else renderList();
       if(options.preserveScroll) restoreScroll(scroll);
     }catch(e){
       console.warn('[FW mobile app] feed load failed', e);
-      var node = $('[data-feed-list="square"]');
-      if(node) node.innerHTML = '<div class="error">帖子暂时读取失败，请稍后刷新。</div>';
+      if(app().state.view === 'square-detail'){
+        var view = ensureDetailView();
+        var body = $('[data-square-detail-body]', view);
+        if(body) body.innerHTML = '<div class="error">帖子暂时读取失败，请稍后刷新。</div>';
+      }else{
+        var node = $('[data-feed-list="square"]');
+        if(node) node.innerHTML = '<div class="error">帖子暂时读取失败，请稍后刷新。</div>';
+      }
     }finally{
       loading = false;
     }
@@ -517,10 +570,6 @@
     if(app().state.user) return app().state.user;
     app().toast(message || '登录后才能互动。');
     return null;
-  }
-
-  function findPost(postId){
-    return (app().state.posts || []).find(function(post){ return String(post.id) === String(postId); }) || null;
   }
 
   async function toggleReaction(post, type, user){
@@ -771,7 +820,9 @@
     }
   }
 
-  function isSquareView(){ return !!(app() && app().state && app().state.view === 'square'); }
+  function isSquareRelatedView(){
+    return !!(app() && app().state && (app().state.view === 'square' || app().state.view === 'square-detail'));
+  }
 
   function isEditableTarget(target){
     return !!(target && target.closest && target.closest('input,textarea,select,[contenteditable="true"]'));
@@ -784,7 +835,7 @@
   }
 
   function handleSwipeStart(e){
-    if(!isSquareView() || !e.touches || e.touches.length !== 1) return;
+    if(!isSquareRelatedView() || !e.touches || e.touches.length !== 1) return;
     var target = e.target;
     if(isEditableTarget(target)) return;
     if(target && target.closest && target.closest('[data-filter-status],.status-filter,.status-picks')) return;
@@ -800,12 +851,15 @@
     var startX = swipeStartX;
     var startY = swipeStartY;
     resetSwipe();
-    if(!isSquareView()) return;
+    if(!isSquareRelatedView()) return;
     var touch = e.changedTouches && e.changedTouches[0];
     if(!touch) return;
     var dx = touch.clientX - startX;
     var dy = touch.clientY - startY;
-    if(dx >= 70 && Math.abs(dy) <= 40){ app().setView('nav'); }
+    if(dx >= 70 && Math.abs(dy) <= 40){
+      if(app().state.view === 'square-detail') backToSquare();
+      else app().setView('nav');
+    }
   }
 
   function bind(){
@@ -816,6 +870,14 @@
     document.addEventListener('touchcancel', resetSwipe, {passive:true});
 
     document.addEventListener('click', async function(e){
+      var detailBack = e.target.closest && e.target.closest('[data-square-detail-back]');
+      if(detailBack){
+        e.preventDefault();
+        e.stopPropagation();
+        backToSquare();
+        return;
+      }
+
       var postDelete = e.target.closest && e.target.closest('[data-post-delete]');
       if(postDelete){
         e.preventDefault();
@@ -834,7 +896,8 @@
           await deleteOwnPost(deletePostId, userForPostDelete);
           removePostFromState(deletePostId);
           app().toast('已删除');
-          renderPreservingScroll();
+          if(app().state.view === 'square-detail') backToSquare();
+          else renderCurrentPreservingScroll();
         }catch(err){
           console.warn('[FW mobile app] delete post failed', err);
           app().toast('删除失败，请稍后再试。');
@@ -857,7 +920,7 @@
           await deleteOwnComment(commentId, userForDelete);
           var postId = removeCommentFromState(commentId);
           app().toast('评论已删除');
-          renderPreservingScroll(postId);
+          renderCurrentPreservingScroll(postId);
         }catch(err){
           console.warn('[FW mobile app] delete comment failed', err);
           app().toast('删除失败，请稍后再试。');
@@ -880,8 +943,6 @@
         clearReplyExcept(replyPostId);
         var replyDraft = ensureDraft(replyPostId);
         replyDraft.reply = {id:replyBtn.dataset.commentId || '', name:replyBtn.dataset.commentAuthor || '匿名回声'};
-        var replyComments = replyCard.querySelector('.comments');
-        if(replyComments) replyComments.classList.add('show');
         renderDraftAreas(replyForm);
         var replyInput = replyForm.querySelector('input[name="content"]');
         if(replyInput) replyInput.focus();
@@ -998,17 +1059,11 @@
         return;
       }
 
-      var toggle = e.target.closest && e.target.closest('[data-app-comments]');
-      if(toggle){
-        var card = toggle.closest('[data-post-id]');
-        var comments = $('.comments', card);
-        if(comments){
-          comments.classList.toggle('show');
-          if(!comments.classList.contains('show')){
-            var draft = ensureDraft(card && card.dataset.postId);
-            draft.reply = null;
-          }
-        }
+      var commentOpen = e.target.closest && e.target.closest('[data-app-comments]');
+      if(commentOpen){
+        e.preventDefault();
+        var targetPostId = commentOpen.dataset.postId || (commentOpen.closest('[data-post-id]') || {}).dataset.postId;
+        openDetail(targetPostId);
         return;
       }
 
@@ -1029,7 +1084,7 @@
           react.disabled = true;
           var result = await toggleReaction(post, type, user);
           app().toast(result.removed ? '已取消' : (result.already ? '已经记录过了。' : '已记录'));
-          renderPreservingScroll();
+          renderCurrentPreservingScroll();
         }catch(err){
           console.warn('[FW mobile app] reaction failed', err);
           app().toast(wasActive ? '取消失败，请稍后再试。' : '操作失败，请稍后再试。');
@@ -1146,7 +1201,7 @@
         input.value = '';
         resetDraftAfterSend(card.dataset.postId);
         app().toast('评论已发送');
-        await load(true, {preserveScroll:true, reopenPostId:card.dataset.postId, silent:true});
+        await load(true, {preserveScroll:true, detailPostId:card.dataset.postId, silent:true});
       }catch(err){
         console.warn('[FW mobile app] comment failed', err);
         app().toast('评论失败，请稍后再试。');
@@ -1162,5 +1217,5 @@
     bind();
   }
 
-  window.FWAppFeed = {init:init, load:load, ensureLoaded:ensureLoaded, renderAll:renderList};
+  window.FWAppFeed = {init:init, load:load, ensureLoaded:ensureLoaded, renderAll:renderList, openDetail:openDetail};
 })();
