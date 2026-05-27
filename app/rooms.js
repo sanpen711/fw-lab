@@ -8,21 +8,21 @@
   var polls = [];
   var renderTimer = null;
   var syncTimer = null;
+  var currentFilter = 'all';
+  var touchState = null;
+  var touchBound = false;
 
   function app(){ return window.FWApp; }
   function $(selector, root){ return app().$(selector, root); }
   function $$(selector, root){ return app().$$(selector, root); }
   function esc(value){ return app().esc(value); }
   function db(){ return app().db(); }
-
   function toast(message){ app().toast(message); }
   function client(){ return db() && db().client; }
   function fail(result, message){ if(result && result.error) throw new Error(message || result.error.message || '操作失败'); return result ? result.data : null; }
+
   function scrollNode(){ return $('#appMain') || $('.app-main') || document.scrollingElement || document.documentElement; }
-  function snapshotScroll(){
-    var node = scrollNode();
-    return node ? {node:node, top:node.scrollTop || 0} : null;
-  }
+  function snapshotScroll(){ var node = scrollNode(); return node ? {node:node, top:node.scrollTop || 0} : null; }
   function restoreScroll(snapshot){
     if(!snapshot || !snapshot.node) return;
     var node = snapshot.node;
@@ -71,19 +71,12 @@
   function canPromotePoll(poll){ return !!(app().state.user && app().state.user.isAdmin) && !poll.is_official && !isEnded(poll); }
   function findPoll(id){
     id = String(id);
-    for(var i = 0; i < polls.length; i += 1){
-      if(String(polls[i].id) === id) return polls[i];
-    }
+    for(var i = 0; i < polls.length; i += 1){ if(String(polls[i].id) === id) return polls[i]; }
     return null;
   }
   function clonePollForRollback(poll){
     if(!poll) return null;
-    return {
-      id:poll.id,
-      stats:Object.assign({}, poll.stats || {}),
-      participantCount:poll.participantCount,
-      myVote:poll.myVote ? Object.assign({}, poll.myVote) : null
-    };
+    return {id:poll.id, stats:Object.assign({}, poll.stats || {}), participantCount:poll.participantCount, myVote:poll.myVote ? Object.assign({}, poll.myVote) : null};
   }
   function rollbackPoll(snapshot, scroll){
     if(!snapshot) return;
@@ -102,13 +95,9 @@
     var oldOptionId = poll.myVote && poll.myVote.option_id != null ? String(poll.myVote.option_id) : '';
     var newOptionId = String(optionId || '');
     if(!newOptionId || oldOptionId === newOptionId) return {changed:false, snapshot:snapshot};
-
     poll.stats = Object.assign({}, poll.stats || {});
-    if(oldOptionId){
-      poll.stats[oldOptionId] = Math.max(0, Number(poll.stats[oldOptionId] || 0) - 1);
-    }else{
-      poll.participantCount = participantCount(poll) + 1;
-    }
+    if(oldOptionId) poll.stats[oldOptionId] = Math.max(0, Number(poll.stats[oldOptionId] || 0) - 1);
+    else poll.participantCount = participantCount(poll) + 1;
     poll.stats[newOptionId] = Number(poll.stats[newOptionId] || 0) + 1;
     poll.myVote = {poll_id:poll.id, option_id:optionId};
     render();
@@ -117,10 +106,24 @@
   }
   function scheduleQuietSync(scroll){
     clearTimeout(syncTimer);
-    syncTimer = setTimeout(function(){
-      loaded = false;
-      load(true, {preserveScroll:scroll, quiet:true});
-    }, 260);
+    syncTimer = setTimeout(function(){ loaded = false; load(true, {preserveScroll:scroll, quiet:true}); }, 260);
+  }
+
+  function filterLabel(){
+    return {all:'全部', official:'官方课题', user:'用户课题', ended:'结束课题'}[currentFilter] || '全部';
+  }
+  function pollMatchesFilter(poll){
+    var ended = isEnded(poll);
+    if(currentFilter === 'ended') return ended;
+    if(ended) return false;
+    if(currentFilter === 'official') return !!poll.is_official;
+    if(currentFilter === 'user') return !poll.is_official;
+    return true;
+  }
+  function updateFilterButtons(){
+    $$('[data-mobile-poll-filter] [data-poll-filter]').forEach(function(button){
+      button.classList.toggle('active', (button.dataset.pollFilter || 'all') === currentFilter);
+    });
   }
 
   function renderOptions(poll, options){
@@ -167,27 +170,24 @@
 
   function render(){
     var list = $('[data-mobile-polls-list]');
-    var count = $('[data-mobile-poll-count]');
-    var active = $('[data-mobile-active-poll-count]');
     if(!list) return;
-    var rows = polls.slice().sort(function(a, b){
-      var official = Number(b.is_official) - Number(a.is_official); if(official) return official;
-      var live = Number(!isEnded(b)) - Number(!isEnded(a)); if(live) return live;
+    updateFilterButtons();
+    var rows = polls.filter(pollMatchesFilter).sort(function(a, b){
+      if(currentFilter !== 'ended'){
+        var official = Number(b.is_official) - Number(a.is_official); if(official) return official;
+      }
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-    if(count) count.textContent = String(rows.length);
-    if(active) active.textContent = String(rows.filter(function(poll){ return !isEnded(poll); }).length);
-    list.innerHTML = rows.length ? rows.map(renderCard).join('') : '<div class="mobile-poll-empty">还没有投票课题。可以先发起一个 7 天研究。</div>';
+    var message = currentFilter === 'ended' ? '还没有结束的课题。' : '这个分类下暂时没有课题。';
+    list.innerHTML = rows.length ? rows.map(renderCard).join('') : '<div class="mobile-poll-empty">' + esc(message) + '</div>';
   }
 
   async function updateTodayCount(){
     var node = $('[data-mobile-today-count]');
     if(!node) return;
     if(!app().state.user || !client()){ node.textContent = '登录后可见'; return; }
-    try{
-      var data = fail(await client().rpc('fw_my_poll_daily_count'), '今日次数读取失败');
-      node.textContent = String(data || 0) + '/3';
-    }catch(e){ node.textContent = '读取失败'; }
+    try{ node.textContent = String(fail(await client().rpc('fw_my_poll_daily_count'), '今日次数读取失败') || 0) + '/3'; }
+    catch(e){ node.textContent = '读取失败'; }
   }
 
   async function load(force, options){
@@ -241,16 +241,14 @@
     }finally{ loading = false; }
   }
 
-  function toggleCreate(show){
-    var panel = $('[data-mobile-poll-create-panel]');
-    if(!panel) return;
-    panel.hidden = !show;
-    if(show){
+  function openCreate(){
+    app().refreshUser().then(function(){
+      if(!app().state.user){ toast('请先登录后再发起投票。'); app().setView('profile'); return; }
       var official = $('[data-mobile-official-wrap]');
       if(official) official.hidden = !(app().state.user && app().state.user.isAdmin);
-      var title = $('[data-mobile-poll-form] input[name="title"]');
-      if(title) setTimeout(function(){ title.focus(); }, 0);
-    }
+      app().setView('rooms-compose');
+      setTimeout(function(){ var title = $('[data-mobile-poll-form] input[name="title"]'); if(title) title.focus(); }, 120);
+    });
   }
 
   function validate(form){
@@ -260,8 +258,7 @@
     if(!title) return {error:'请先填写课题标题。'};
     if(title.length > 120) return {error:'课题标题最多 120 个字。'};
     if(options.some(function(option){ return !option; })) return {error:'创建投票必须填写 4 个初始选项。'};
-    var normalized = options.map(function(option){ return option.toLowerCase(); });
-    if((new Set(normalized)).size !== INITIAL_OPTION_COUNT) return {error:'初始选项不能重复。'};
+    if((new Set(options.map(function(option){ return option.toLowerCase(); }))).size !== INITIAL_OPTION_COUNT) return {error:'初始选项不能重复。'};
     return {title:title, options:options};
   }
 
@@ -281,10 +278,12 @@
       fail(await client().rpc('fw_create_poll', {p_title:data.title, p_options:data.options, p_is_official:isOfficial}), '发布失败');
       form.reset();
       if(notice) notice.textContent = '';
-      toggleCreate(false);
       toast(isOfficial ? '官方课题已置顶发布。' : '投票课题已发布。');
+      currentFilter = isOfficial ? 'official' : 'user';
       loaded = false;
       await load(true);
+      app().setView('rooms');
+      var main = scrollNode(); if(main) main.scrollTop = 0;
     }catch(e){ if(notice) notice.textContent = e.message || '发布失败'; toast(e.message || '发布失败，请稍后再试。'); }
     finally{ button.disabled = false; button.textContent = old; }
   }
@@ -296,20 +295,15 @@
     var pollId = Number(button.dataset.pollId);
     var optionId = Number(button.dataset.optionId);
     var optimistic = applyOptimisticVote(pollId, optionId, scroll);
-    if(!optimistic.changed){
-      toast('你已经投过这个选项。');
-      return;
-    }
+    if(!optimistic.changed){ toast('你已经投过这个选项。'); return; }
     button.disabled = true;
     try{
       fail(await client().rpc('fw_vote_poll', {p_poll_id:pollId, p_option_id:optionId}), '投票失败');
       toast('投票已记录，截止前可以改票。');
       loaded = false;
       scheduleQuietSync(scroll);
-    }catch(e){
-      rollbackPoll(optimistic.snapshot, scroll);
-      toast(e.message || '投票失败，请稍后再试。');
-    }finally{ button.disabled = false; }
+    }catch(e){ rollbackPoll(optimistic.snapshot, scroll); toast(e.message || '投票失败，请稍后再试。'); }
+    finally{ button.disabled = false; }
   }
 
   async function addOption(form){
@@ -357,18 +351,46 @@
     try{
       fail(await client().rpc('fw_promote_poll_to_official', {p_poll_id:Number(button.dataset.pollId)}), '设置失败');
       toast('已设为官方课题并置顶。');
+      currentFilter = 'official';
       loaded = false;
       await load(true, {preserveScroll:scroll});
     }catch(e){ toast(e.message || '设为官方课题失败，请稍后再试。'); restoreScroll(scroll); }
     finally{ button.disabled = false; }
   }
 
+  function bindSwipe(){
+    if(touchBound) return;
+    touchBound = true;
+    var main = $('#appMain');
+    if(!main) return;
+    main.addEventListener('touchstart', function(e){
+      var touch = e.touches && e.touches[0];
+      if(!touch) return;
+      var view = app().state && app().state.view;
+      if(view !== 'rooms' && view !== 'rooms-compose') return;
+      if(touch.clientX > 38) return;
+      touchState = {x:touch.clientX, y:touch.clientY, view:view};
+    }, {passive:true});
+    main.addEventListener('touchend', function(e){
+      if(!touchState) return;
+      var touch = e.changedTouches && e.changedTouches[0];
+      if(!touch){ touchState = null; return; }
+      var dx = touch.clientX - touchState.x;
+      var dy = Math.abs(touch.clientY - touchState.y);
+      var view = touchState.view;
+      touchState = null;
+      if(dx < 72 || dy > 55) return;
+      if(view === 'rooms-compose') app().setView('rooms');
+      else app().setView('nav');
+    }, {passive:true});
+  }
+
   function bind(){
     document.addEventListener('click', function(e){
       var open = e.target.closest && e.target.closest('[data-mobile-poll-open-create]');
-      if(open){ e.preventDefault(); app().refreshUser().then(function(){ if(!app().state.user){ toast('请先登录后再发起投票。'); app().setView('profile'); return; } toggleCreate(true); }); return; }
-      var close = e.target.closest && e.target.closest('[data-mobile-poll-close-create]');
-      if(close){ e.preventDefault(); toggleCreate(false); return; }
+      if(open){ e.preventDefault(); openCreate(); return; }
+      var filter = e.target.closest && e.target.closest('[data-mobile-poll-filter] [data-poll-filter]');
+      if(filter){ e.preventDefault(); currentFilter = filter.dataset.pollFilter || 'all'; render(); var main = scrollNode(); if(main) main.scrollTop = 0; return; }
       var refresh = e.target.closest && e.target.closest('[data-mobile-poll-refresh]');
       if(refresh){ e.preventDefault(); loaded = false; load(true, {preserveScroll:snapshotScroll()}); return; }
       var voteBtn = e.target.closest && e.target.closest('[data-room-vote]');
@@ -384,13 +406,10 @@
       var add = e.target.closest && e.target.closest('[data-room-add-option]');
       if(add){ e.preventDefault(); addOption(add); }
     });
+    bindSwipe();
   }
 
-  function init(){
-    bind();
-    clearInterval(renderTimer);
-    renderTimer = setInterval(render, 60000);
-  }
+  function init(){ bind(); clearInterval(renderTimer); renderTimer = setInterval(render, 60000); }
   function ensureLoaded(){ load(false); }
 
   window.FWAppRooms = {init:init, load:load, ensureLoaded:ensureLoaded};
