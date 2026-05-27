@@ -17,6 +17,21 @@
   function toast(message){ app().toast(message); }
   function client(){ return db() && db().client; }
   function fail(result, message){ if(result && result.error) throw new Error(message || result.error.message || '操作失败'); return result ? result.data : null; }
+  function scrollNode(){ return $('#appMain') || $('.app-main') || document.scrollingElement || document.documentElement; }
+  function snapshotScroll(){
+    var node = scrollNode();
+    return node ? {node:node, top:node.scrollTop || 0} : null;
+  }
+  function restoreScroll(snapshot){
+    if(!snapshot || !snapshot.node) return;
+    var node = snapshot.node;
+    var top = snapshot.top || 0;
+    requestAnimationFrame(function(){
+      node.scrollTop = top;
+      setTimeout(function(){ node.scrollTop = top; }, 0);
+      setTimeout(function(){ node.scrollTop = top; }, 80);
+    });
+  }
 
   function isEnded(poll){ return !!poll.closed_at || new Date(poll.ends_at).getTime() <= Date.now(); }
   function dateText(value){ if(!value) return ''; return new Date(value).toLocaleDateString('zh-CN', {month:'2-digit', day:'2-digit'}); }
@@ -121,21 +136,24 @@
     }catch(e){ node.textContent = '读取失败'; }
   }
 
-  async function load(force){
+  async function load(force, options){
+    options = options || {};
+    var scrollSnapshot = options.preserveScroll || null;
     if(loading) return;
-    if(loaded && !force){ render(); return; }
+    if(loaded && !force){ render(); if(scrollSnapshot) restoreScroll(scrollSnapshot); return; }
     loading = true;
     var status = $('[data-mobile-polls-status]');
     var list = $('[data-mobile-polls-list]');
+    var shouldShowLoadingPlaceholder = !polls.length;
     if(status) status.textContent = '正在读取学术研讨课题...';
-    if(list) list.innerHTML = '<div class="mobile-poll-empty">正在读取学术研讨课题...</div>';
+    if(list && shouldShowLoadingPlaceholder) list.innerHTML = '<div class="mobile-poll-empty">正在读取学术研讨课题...</div>';
     try{
       await app().refreshUser();
       if(!(await app().waitForDb())) throw new Error('暂时无法连接数据服务。');
       var c = client();
       var pollRows = fail(await c.from('polls').select('id,user_id,title,is_official,created_at,ends_at,closed_at,conclusion,is_deleted,profiles(nickname,avatar_url)').eq('is_deleted', false).order('is_official', {ascending:false}).order('created_at', {ascending:false}).limit(80), '课题读取失败') || [];
       var ids = pollRows.map(function(p){ return p.id; });
-      if(!ids.length){ polls = []; loaded = true; render(); if(status) status.textContent = ''; await updateTodayCount(); return; }
+      if(!ids.length){ polls = []; loaded = true; render(); if(status) status.textContent = ''; await updateTodayCount(); if(scrollSnapshot) restoreScroll(scrollSnapshot); return; }
       var optionRows = fail(await c.from('poll_options').select('id,poll_id,user_id,label,source,created_at').in('poll_id', ids).order('created_at', {ascending:true}), '选项读取失败') || [];
       var statsRows = fail(await c.rpc('fw_poll_vote_stats'), '投票统计读取失败') || [];
       var myVoteRows = [];
@@ -159,12 +177,12 @@
       render();
       await updateTodayCount();
       if(status) status.textContent = '';
+      if(scrollSnapshot) restoreScroll(scrollSnapshot);
     }catch(e){
       console.warn('[FW mobile app] rooms load failed', e);
-      polls = [];
-      loaded = false;
-      render();
+      if(!polls.length) render();
       if(status) status.textContent = '课题暂时读取失败，请稍后刷新';
+      if(scrollSnapshot) restoreScroll(scrollSnapshot);
     }finally{ loading = false; }
   }
 
@@ -217,6 +235,7 @@
   }
 
   async function vote(button){
+    var scroll = snapshotScroll();
     await app().refreshUser();
     if(!app().state.user){ toast('登录后才能投票。'); app().setView('profile'); return; }
     button.disabled = true;
@@ -224,12 +243,13 @@
       fail(await client().rpc('fw_vote_poll', {p_poll_id:Number(button.dataset.pollId), p_option_id:Number(button.dataset.optionId)}), '投票失败');
       toast('投票已记录，截止前可以改票。');
       loaded = false;
-      await load(true);
-    }catch(e){ toast(e.message || '投票失败，请稍后再试。'); }
+      await load(true, {preserveScroll:scroll});
+    }catch(e){ toast(e.message || '投票失败，请稍后再试。'); restoreScroll(scroll); }
     finally{ button.disabled = false; }
   }
 
   async function addOption(form){
+    var scroll = snapshotScroll();
     await app().refreshUser();
     if(!app().state.user){ toast('登录后才能新增选项。'); app().setView('profile'); return; }
     var input = form.querySelector('input[name="option"]');
@@ -244,12 +264,13 @@
       if(optionId) fail(await client().rpc('fw_vote_poll', {p_poll_id:Number(form.dataset.pollId), p_option_id:Number(optionId)}), '投票失败');
       toast('新选项已加入研究样本。');
       loaded = false;
-      await load(true);
-    }catch(e){ toast(e.message || '新增选项失败，请稍后再试。'); }
+      await load(true, {preserveScroll:scroll});
+    }catch(e){ toast(e.message || '新增选项失败，请稍后再试。'); restoreScroll(scroll); }
     finally{ button.disabled = false; button.textContent = old; }
   }
 
   async function deleteOption(button){
+    var scroll = snapshotScroll();
     await app().refreshUser();
     if(!app().state.user){ toast('登录后才能删除补充选项。'); return; }
     if(!window.confirm('确定删除这个补充选项吗？已有投票的选项不能删除。')) return;
@@ -258,12 +279,13 @@
       fail(await client().rpc('fw_delete_my_poll_option', {p_option_id:Number(button.dataset.optionId)}), '删除失败');
       toast('补充选项已删除。');
       loaded = false;
-      await load(true);
-    }catch(e){ toast(e.message || '删除失败，请稍后再试。'); }
+      await load(true, {preserveScroll:scroll});
+    }catch(e){ toast(e.message || '删除失败，请稍后再试。'); restoreScroll(scroll); }
     finally{ button.disabled = false; }
   }
 
   async function promotePoll(button){
+    var scroll = snapshotScroll();
     await app().refreshUser();
     if(!(app().state.user && app().state.user.isAdmin)){ toast('只有管理员可以设置官方课题。'); return; }
     if(!window.confirm('确定将这个课题设为官方课题并置顶吗？')) return;
@@ -272,8 +294,8 @@
       fail(await client().rpc('fw_promote_poll_to_official', {p_poll_id:Number(button.dataset.pollId)}), '设置失败');
       toast('已设为官方课题并置顶。');
       loaded = false;
-      await load(true);
-    }catch(e){ toast(e.message || '设为官方课题失败，请稍后再试。'); }
+      await load(true, {preserveScroll:scroll});
+    }catch(e){ toast(e.message || '设为官方课题失败，请稍后再试。'); restoreScroll(scroll); }
     finally{ button.disabled = false; }
   }
 
@@ -284,7 +306,7 @@
       var close = e.target.closest && e.target.closest('[data-mobile-poll-close-create]');
       if(close){ e.preventDefault(); toggleCreate(false); return; }
       var refresh = e.target.closest && e.target.closest('[data-mobile-poll-refresh]');
-      if(refresh){ e.preventDefault(); loaded = false; load(true); return; }
+      if(refresh){ e.preventDefault(); loaded = false; load(true, {preserveScroll:snapshotScroll()}); return; }
       var voteBtn = e.target.closest && e.target.closest('[data-room-vote]');
       if(voteBtn){ e.preventDefault(); vote(voteBtn); return; }
       var del = e.target.closest && e.target.closest('[data-room-delete-option]');
