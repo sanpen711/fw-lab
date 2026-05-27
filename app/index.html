@@ -11,7 +11,7 @@
   <link rel="manifest" href="/app/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
   <link rel="stylesheet" href="/app/app.css?v=mobile-app-shell-20260525-6">
-  <link rel="stylesheet" href="/app/rooms.css?v=mobile-app-modules-20260527-1">
+  <link rel="stylesheet" href="/app/rooms.css?v=mobile-app-rooms-layout-20260527-1">
   <link rel="stylesheet" href="/app/bird.css?v=mobile-app-modules-20260527-1">
 </head>
 <body>
@@ -84,22 +84,31 @@
       </section>
 
       <section class="app-view" data-app-view="rooms" aria-label="学术研讨">
-        <div class="view-head">
+        <div class="view-head rooms-view-head">
           <button class="back-btn" type="button" data-app-open="nav">‹ 首页</button>
-          <p>学术研讨</p>
-          <h1>课题与投票</h1>
+          <button class="rooms-compose-entry" type="button" data-mobile-poll-open-create>发起投票</button>
+          <p>课题与投票</p>
+          <h1>学术研讨</h1>
         </div>
-        <div class="rooms-summary">
-          <div class="rooms-stat"><b data-mobile-poll-count>0</b><span>全部课题</span></div>
-          <div class="rooms-stat"><b data-mobile-active-poll-count>0</b><span>研究中</span></div>
+        <div class="rooms-filter" data-mobile-poll-filter>
+          <button class="active" type="button" data-poll-filter="all">全部</button>
+          <button type="button" data-poll-filter="official">官方课题</button>
+          <button type="button" data-poll-filter="user">用户课题</button>
+          <button type="button" data-poll-filter="ended">结束课题</button>
         </div>
-        <div class="module-card"><h2>每个课题默认观察 7 天</h2><p>显示票数、百分比、参与人数和剩余时间；截止后自动展示研究结论。截止前可以改票，也可以补充一个新选项。</p></div>
-        <div class="rooms-tools">
-          <button class="app-btn primary" type="button" data-mobile-poll-open-create>发起投票</button>
-          <button class="app-btn" type="button" data-mobile-poll-refresh>刷新课题</button>
+        <p class="rooms-status" data-mobile-polls-status></p>
+        <div class="mobile-polls-list" data-mobile-polls-list><div class="mobile-poll-empty">正在读取学术研讨课题...</div></div>
+      </section>
+
+      <section class="app-view" data-app-view="rooms-compose" aria-label="发起投票">
+        <div class="view-head rooms-view-head">
+          <button class="back-btn" type="button" data-app-open="rooms">‹ 学术研讨</button>
+          <p>课题发布</p>
+          <h1>发起投票</h1>
         </div>
-        <div class="rooms-create-panel" data-mobile-poll-create-panel hidden>
-          <form class="rooms-create-form" data-mobile-poll-form>
+        <form class="rooms-create-form" data-mobile-poll-form>
+          <div class="module-card"><h2>每个课题默认观察 7 天</h2><p>发布后会显示票数、百分比、参与人数和剩余时间；截止后自动展示研究结论。截止前用户可以改票，也可以补充一个新选项。</p></div>
+          <div class="rooms-create-card">
             <h2>发起投票研究</h2>
             <p>每人每天最多发起 3 次投票；创建时必须填写标题和 4 个初始选项。</p>
             <label for="mobilePollTitle">课题标题</label>
@@ -112,13 +121,10 @@
               <input data-mobile-option-input maxlength="80" autocomplete="off" placeholder="选项 4">
             </div>
             <label class="rooms-official-row" data-mobile-official-wrap hidden><input type="checkbox" name="is_official"><span>作为本周官方课题发布并置顶</span></label>
-            <div class="rooms-form-actions"><button class="app-btn" type="button" data-mobile-poll-close-create>取消</button><button class="app-btn dark" type="submit">发布 7 天投票</button></div>
+            <div class="rooms-form-actions"><button class="app-btn" type="button" data-app-open="rooms">取消</button><button class="app-btn dark" type="submit">发布 7 天投票</button></div>
             <p class="rooms-form-notice" data-mobile-poll-form-notice></p>
-          </form>
-        </div>
-        <p class="rooms-status" data-mobile-polls-status></p>
-        <div class="mobile-polls-list" data-mobile-polls-list><div class="mobile-poll-empty">正在读取学术研讨课题...</div></div>
-        <div class="module-card"><h2>研讨规则</h2><p>每个投票最多 20 个选项；每人可为同一个投票新增 1 个选项；截止前可以改票；自己补充且无人投票的选项可以删除。今日发起次数：<strong data-mobile-today-count>登录后可见</strong></p></div>
+          </div>
+        </form>
       </section>
 
       <section class="app-view" data-app-view="bird" aria-label="观鸟台">
@@ -243,7 +249,7 @@
   <script src="/app/buddy.js?v=mobile-app-shell-20260525-6"></script>
   <script src="/app/echo.js?v=mobile-app-shell-20260525-6"></script>
   <script src="/app/profile.js?v=mobile-app-shell-20260525-6"></script>
-  <script src="/app/rooms.js?v=mobile-app-modules-20260527-1"></script>
+  <script src="/app/rooms.js?v=mobile-app-rooms-layout-20260527-1"></script>
   <script src="/app/bird.js?v=mobile-app-modules-20260527-1"></script>
   <script src="/app/modules-init.js?v=mobile-app-modules-20260527-1"></script>
 </body>
