@@ -3,6 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <script>
+    (function(){
+      var params = new URLSearchParams(window.location.search || '');
+      if(params.get('desktop') === '1' || params.get('app') === '0') return;
+      var ua = navigator.userAgent || '';
+      var isMobileUa = /Android|iPhone|iPod|Mobile|Windows Phone/i.test(ua);
+      var isSmallTouch = false;
+      try{
+        isSmallTouch = window.matchMedia('(max-width: 820px)').matches && navigator.maxTouchPoints > 0;
+      }catch(e){}
+      if(!isMobileUa && !isSmallTouch) return;
+      var path = window.location.pathname || '/';
+      var base = path.replace(/(?:index\.html)?$/, '');
+      var target = base + 'app/index.html';
+      if(path !== target){
+        window.location.replace(target + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f172a">
   <meta name="apple-mobile-web-app-capable" content="yes">
