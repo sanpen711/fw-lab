@@ -1,8 +1,10 @@
-const CACHE_NAME = 'fw-mobile-app-square-comment-actions-1';
+const CACHE_NAME = 'fw-mobile-app-rooms-bird-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
   '/app/app.css',
+  '/app/rooms.css',
+  '/app/bird.css',
   '/app/app.js',
   '/app/nav.js',
   '/app/feed.js',
@@ -10,6 +12,9 @@ const APP_SHELL = [
   '/app/buddy.js',
   '/app/echo.js',
   '/app/profile.js',
+  '/app/rooms.js',
+  '/app/bird.js',
+  '/app/modules-init.js',
   '/app/manifest.webmanifest'
 ];
 
