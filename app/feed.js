@@ -11,6 +11,7 @@
   var loadingStickers = false;
   var detailPostId = null;
   var squareScrollTop = 0;
+  var openCommentMenuId = null;
 
   var MAX_IMAGE_SIZE = 800 * 1024;
   var MAX_GIF_SIZE = 3 * 1024 * 1024;
@@ -134,6 +135,28 @@
     return (app().state.posts || []).find(function(post){ return String(post.id) === String(postId); }) || null;
   }
 
+  function isAdminUser(user){
+    return !!(user && (user.isAdmin || user.is_admin || user.role === 'admin'));
+  }
+
+  function findComment(commentId){
+    var posts = app().state.posts || [];
+    for(var i = 0; i < posts.length; i += 1){
+      var comments = posts[i].comments || [];
+      for(var j = 0; j < comments.length; j += 1){
+        if(String(comments[j].id) === String(commentId)){
+          return {post:posts[i], comment:comments[j]};
+        }
+      }
+    }
+    return null;
+  }
+
+  function canDeleteComment(comment, user){
+    if(!comment || !user) return false;
+    return isAdminUser(user) || String(comment.userId) === String(user.id);
+  }
+
   function draftKey(postId, kind){
     return String(postId || '') + '::' + (kind || 'main');
   }
@@ -238,15 +261,9 @@
     var isReply = (form.dataset.commentKind || 'main') === 'reply';
 
     if(replyState){
-      if(isReply && draft.reply && draft.reply.name){
-        replyState.hidden = false;
-        replyState.innerHTML = '<span>回复 <b>' + esc(draft.reply.name) + '</b></span><button class="comment-reply-cancel" type="button" aria-label="取消回复" data-comment-reply-cancel>×</button>';
-        if(input) input.placeholder = '回复 ' + draft.reply.name + '：';
-      }else{
-        replyState.hidden = true;
-        replyState.innerHTML = '';
-        if(input) input.placeholder = '留一句回声';
-      }
+      replyState.hidden = true;
+      replyState.innerHTML = '';
+      if(input) input.placeholder = isReply && draft.reply && draft.reply.name ? '回复 ' + draft.reply.name : '留一句回声';
     }
 
     if(preview){
@@ -309,6 +326,7 @@
     if(!client) throw new Error('暂时无法连接数据服务。');
 
     var meId = await currentUserId(client);
+    var isAdmin = isAdminUser(app().state.user);
     var posts = fail(
       await client
         .from('posts')
@@ -357,7 +375,7 @@
         content:comment.content || '',
         time:timeText(comment.created_at),
         createdAt:comment.created_at,
-        canDelete:!!meId && comment.user_id === meId
+        canDelete:!!meId && (comment.user_id === meId || isAdmin)
       });
     });
 
@@ -429,19 +447,31 @@
     var activeReplyId = replyDraft.reply && replyDraft.reply.id ? String(replyDraft.reply.id) : '';
     return rows.map(function(c){
       var isAuthor = c.userId && post.userId && String(c.userId) === String(post.userId);
-      var del = c.canDelete ? '<button class="comment-delete" type="button" data-comment-delete data-comment-id="' + esc(c.id) + '">删除</button>' : '';
-      var reply = '<button class="comment-reply" type="button" data-comment-reply data-comment-id="' + esc(c.id) + '" data-comment-author="' + esc(c.authorName || '匿名回声') + '">回复</button>';
-      var replyForm = activeReplyId === String(c.id) ? '<div class="comment-inline-reply">' + renderCommentBox(post, {kind:'reply', reply:replyDraft.reply}) + '</div>' : '';
+      var isReplying = activeReplyId === String(c.id);
+      var menuOpen = openCommentMenuId === String(c.id);
+      var reply = '<button class="comment-action-icon comment-reply-toggle' + (isReplying ? ' active' : '') + '" type="button" data-comment-reply data-comment-id="' + esc(c.id) + '" data-comment-author="' + esc(c.authorName || '匿名回声') + '" aria-label="回复评论" aria-pressed="' + (isReplying ? 'true' : 'false') + '">' + chatIcon() + '</button>';
+      var menu = '<button class="comment-action-icon comment-more-toggle' + (menuOpen ? ' active' : '') + '" type="button" data-comment-menu-toggle data-comment-id="' + esc(c.id) + '" aria-label="更多操作" aria-expanded="' + (menuOpen ? 'true' : 'false') + '">' + moreIcon() + '</button>';
+      var del = c.canDelete ? '<button class="comment-menu-item danger" type="button" data-comment-delete data-comment-id="' + esc(c.id) + '">删除</button>' : '';
+      var menuPanel = menuOpen ? '<div class="comment-action-menu" data-comment-menu><button class="comment-menu-item" type="button" data-comment-report data-comment-id="' + esc(c.id) + '">举报</button>' + del + '</div>' : '';
+      var actions = '<div class="comment-actions">' + reply + '<span class="comment-menu-wrap">' + menu + menuPanel + '</span></div>';
+      var replyForm = isReplying ? '<div class="comment-inline-reply">' + renderCommentBox(post, {kind:'reply', reply:replyDraft.reply}) + '</div>' : '';
       return '<div class="comment comment-flow-item" data-comment-id="' + esc(c.id) + '">' +
         '<div class="comment-avatar-col">' + avatar(c) + '</div>' +
         '<div class="comment-body">' +
-          '<div class="comment-info-line"><b class="comment-author-name">' + esc(c.authorName || '匿名回声') + '</b>' + (isAuthor ? '<span class="comment-author-badge">作者</span>' : '') + '<span class="comment-time">' + esc(c.time || '') + '</span></div>' +
-          '<div class="comment-meta-actions">' + reply + del + '</div>' +
+          '<div class="comment-info-line"><b class="comment-author-name">' + esc(c.authorName || '匿名回声') + '</b>' + (isAuthor ? '<span class="comment-author-badge">作者</span>' : '') + '<span class="comment-time">' + esc(c.time || '') + '</span>' + actions + '</div>' +
           '<p class="fw-rich-content">' + richCommentHtml(c.content || '') + '</p>' +
           replyForm +
         '</div>' +
       '</div>';
     }).join('');
+  }
+
+  function chatIcon(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.5 6.4A7.4 7.4 0 0 1 12 3.5c4.1 0 7.4 2.8 7.4 6.3s-3.3 6.3-7.4 6.3c-.8 0-1.6-.1-2.3-.3L5 18.5l1.2-4.2a5.7 5.7 0 0 1-1.7-4.5z"></path></svg>';
+  }
+
+  function moreIcon(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6.5 12h.01"></path><path d="M12 12h.01"></path><path d="M17.5 12h.01"></path></svg>';
   }
 
   function stickerButtonIcon(){
@@ -643,6 +673,23 @@
   }
 
   async function deleteOwnComment(commentId, user){
+    if(isAdminUser(user)){
+      if(window.fwDb && window.fwDb.deleteComment){
+        try{
+          await window.fwDb.deleteComment(commentId);
+          return;
+        }catch(e){
+          console.warn('[FW mobile app] admin delete comment failed', e);
+        }
+      }
+      var adminDb = app().db();
+      var adminClient = adminDb && adminDb.client;
+      if(!adminClient) throw new Error('db');
+      var adminResult = await adminClient.from('comments').update({is_deleted:true}).eq('id', commentId);
+      if(adminResult.error) throw new Error('delete');
+      return;
+    }
+
     if(window.fwDb && window.fwDb.deleteOwnComment){
       try{
         await window.fwDb.deleteOwnComment({commentId:commentId});
@@ -682,6 +729,11 @@
       if(posts[i].comments.length !== before) return posts[i].id;
     }
     return null;
+  }
+
+  function setOpenCommentMenu(commentId){
+    openCommentMenuId = commentId ? String(commentId) : null;
+    if(app().state.view === 'square-detail') renderDetailPreservingScroll(detailPostId);
   }
 
   function removePostFromState(postId){
@@ -947,18 +999,45 @@
         return;
       }
 
+      var menuToggle = e.target.closest && e.target.closest('[data-comment-menu-toggle]');
+      if(menuToggle){
+        e.preventDefault();
+        e.stopPropagation();
+        var menuId = menuToggle.dataset.commentId || '';
+        setOpenCommentMenu(openCommentMenuId === String(menuId) ? null : menuId);
+        return;
+      }
+
+      var reportBtn = e.target.closest && e.target.closest('[data-comment-report]');
+      if(reportBtn){
+        e.preventDefault();
+        e.stopPropagation();
+        openCommentMenuId = null;
+        renderDetailPreservingScroll(detailPostId);
+        app().toast('举报入口暂未接入。');
+        return;
+      }
+
       var deleteBtn = e.target.closest && e.target.closest('[data-comment-delete]');
       if(deleteBtn){
         e.preventDefault();
         e.stopPropagation();
         var userForDelete = await requireUser('登录后才能删除评论。');
         if(!userForDelete || deleteBtn.disabled) return;
+        var commentRecord = findComment(deleteBtn.dataset.commentId);
+        if(!commentRecord || !canDeleteComment(commentRecord.comment, userForDelete)){
+          openCommentMenuId = null;
+          renderDetailPreservingScroll(detailPostId);
+          app().toast('没有权限删除这条评论。');
+          return;
+        }
         if(!window.confirm('确定删除这条评论吗？')) return;
         var commentId = deleteBtn.dataset.commentId;
         try{
           deleteBtn.disabled = true;
           await deleteOwnComment(commentId, userForDelete);
           var postId = removeCommentFromState(commentId);
+          openCommentMenuId = null;
           app().toast('评论已删除');
           renderCurrentPreservingScroll(postId);
         }catch(err){
@@ -980,6 +1059,12 @@
         if(!replyCard) return;
         var replyPostId = String(replyCard.dataset.postId || '');
         var oldDraft = ensureDraft(replyPostId, 'reply');
+        openCommentMenuId = null;
+        if(oldDraft.reply && String(oldDraft.reply.id || '') === String(replyBtn.dataset.commentId || '')){
+          clearDraft(replyPostId, 'reply');
+          renderDetailPreservingScroll(replyPostId);
+          return;
+        }
         if(oldDraft.reply && String(oldDraft.reply.id || '') !== String(replyBtn.dataset.commentId || '')){
           clearDraft(replyPostId, 'reply');
         }
@@ -1133,6 +1218,11 @@
         }finally{
           react.disabled = false;
         }
+        return;
+      }
+
+      if(openCommentMenuId && !(e.target.closest && e.target.closest('[data-comment-menu]'))){
+        setOpenCommentMenu(null);
       }
     });
 
