@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-chat-polish-1';
+const CACHE_NAME = 'fw-mobile-app-buddy-chat-bottom-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
@@ -13,6 +13,7 @@ const APP_SHELL = [
   '/app/buddy-read-tweaks.js',
   '/app/buddy-chat-tweaks.js',
   '/app/buddy-chat-polish.js',
+  '/app/buddy-chat-bottom-fix.js',
   '/assets/fw-emoji-panel.js',
   '/app/echo.js',
   '/app/profile.js',
@@ -39,6 +40,9 @@ function injectAppTweaks(html){
   }
   if(next.indexOf('/app/buddy-chat-polish.js') < 0){
     next = next.replace('</body>', '  <script src="/app/buddy-chat-polish.js?v=mobile-buddy-chat-polish-20260528-1"></script>\n</body>');
+  }
+  if(next.indexOf('/app/buddy-chat-bottom-fix.js') < 0){
+    next = next.replace('</body>', '  <script src="/app/buddy-chat-bottom-fix.js?v=mobile-buddy-chat-bottom-20260528-1"></script>\n</body>');
   }
   return next;
 }
