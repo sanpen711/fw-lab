@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-bird-guide-1';
+const CACHE_NAME = 'fw-mobile-app-bird-toggle-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
@@ -21,7 +21,7 @@ const APP_SHELL = [
 
 function injectBirdTweaks(html){
   if(String(html || '').indexOf('/app/bird-tweaks.js') >= 0) return html;
-  return String(html || '').replace('</body>', '  <script src="/app/bird-tweaks.js?v=mobile-bird-guide-20260528-1"></script>\n</body>');
+  return String(html || '').replace('</body>', '  <script src="/app/bird-tweaks.js?v=mobile-bird-toggle-20260528-1"></script>\n</body>');
 }
 
 function htmlResponse(html, response){
