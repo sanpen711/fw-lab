@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-read-1';
+const CACHE_NAME = 'fw-mobile-app-buddy-chat-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
@@ -11,6 +11,8 @@ const APP_SHELL = [
   '/app/publish.js',
   '/app/buddy.js',
   '/app/buddy-read-tweaks.js',
+  '/app/buddy-chat-tweaks.js',
+  '/assets/fw-emoji-panel.js',
   '/app/echo.js',
   '/app/profile.js',
   '/app/rooms.js',
@@ -22,11 +24,17 @@ const APP_SHELL = [
 
 function injectAppTweaks(html){
   let next = String(html || '');
+  if(next.indexOf('/assets/fw-emoji-panel.js') < 0){
+    next = next.replace('</body>', '  <script src="/assets/fw-emoji-panel.js?v=mobile-buddy-chat-20260528-1"></script>\n</body>');
+  }
   if(next.indexOf('/app/bird-tweaks.js') < 0){
     next = next.replace('</body>', '  <script src="/app/bird-tweaks.js?v=mobile-bird-toggle-20260528-1"></script>\n</body>');
   }
   if(next.indexOf('/app/buddy-read-tweaks.js') < 0){
     next = next.replace('</body>', '  <script src="/app/buddy-read-tweaks.js?v=mobile-buddy-read-20260528-1"></script>\n</body>');
+  }
+  if(next.indexOf('/app/buddy-chat-tweaks.js') < 0){
+    next = next.replace('</body>', '  <script src="/app/buddy-chat-tweaks.js?v=mobile-buddy-chat-20260528-1"></script>\n</body>');
   }
   return next;
 }
@@ -66,7 +74,7 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(request.url);
   if(url.origin !== self.location.origin) return;
-  if(!url.pathname.startsWith('/app/')) return;
+  if(!url.pathname.startsWith('/app/') && !url.pathname.startsWith('/assets/')) return;
 
   if(url.pathname === '/app/' || url.pathname === '/app/index.html'){
     event.respondWith(
