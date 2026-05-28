@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-rooms-layout-1';
+const CACHE_NAME = 'fw-mobile-app-bird-guide-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
@@ -14,9 +14,30 @@ const APP_SHELL = [
   '/app/profile.js',
   '/app/rooms.js',
   '/app/bird.js',
+  '/app/bird-tweaks.js',
   '/app/modules-init.js',
   '/app/manifest.webmanifest'
 ];
+
+function injectBirdTweaks(html){
+  if(String(html || '').indexOf('/app/bird-tweaks.js') >= 0) return html;
+  return String(html || '').replace('</body>', '  <script src="/app/bird-tweaks.js?v=mobile-bird-guide-20260528-1"></script>\n</body>');
+}
+
+function htmlResponse(html, response){
+  const headers = new Headers(response && response.headers || {});
+  headers.set('content-type', 'text/html; charset=utf-8');
+  return new Response(injectBirdTweaks(html), {
+    status: response && response.status || 200,
+    statusText: response && response.statusText || 'OK',
+    headers
+  });
+}
+
+async function transformIndexResponse(response){
+  const html = await response.clone().text();
+  return htmlResponse(html, response);
+}
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -39,6 +60,21 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if(url.origin !== self.location.origin) return;
   if(!url.pathname.startsWith('/app/')) return;
+
+  if(url.pathname === '/app/' || url.pathname === '/app/index.html'){
+    event.respondWith(
+      fetch(request).then(async response => {
+        if(!response || !response.ok) return response;
+        const transformed = await transformIndexResponse(response);
+        caches.open(CACHE_NAME).then(cache => cache.put('/app/index.html', transformed.clone()));
+        return transformed;
+      }).catch(async () => {
+        const cached = await caches.match('/app/index.html');
+        return cached ? transformIndexResponse(cached) : caches.match('/app/index.html');
+      })
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(request).then(cached => {
