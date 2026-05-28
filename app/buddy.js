@@ -46,13 +46,15 @@
 
   function timeText(value){
     if(!value) return '刚刚';
-    var minutes = Math.floor(Math.max(0, Date.now() - new Date(value).getTime()) / 60000);
+    var date = new Date(value);
+    if(isNaN(date.getTime())) return '刚刚';
+    var minutes = Math.floor(Math.max(0, Date.now() - date.getTime()) / 60000);
     if(minutes < 1) return '刚刚';
     if(minutes < 60) return minutes + '分钟前';
     var hours = Math.floor(minutes / 60);
     if(hours < 24) return hours + '小时前';
     var days = Math.floor(hours / 24);
-    return days < 7 ? days + '天前' : new Date(value).toLocaleDateString('zh-CN');
+    return days < 7 ? days + '天前' : date.toLocaleDateString('zh-CN');
   }
 
   function injectStyle(){
@@ -60,10 +62,12 @@
     var style = document.createElement('style');
     style.id = 'fwAppBuddyStyle';
     style.textContent = [
+      '[data-app-view="buddy"]{padding-top:72px!important}',
       '[data-app-view="buddy"] > .view-head,[data-app-view="buddy"] > [data-buddy-search],[data-app-view="buddy"] > [data-buddy-search-result]{display:none!important}',
-      '[data-app-view="buddy"] > .tabs{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);z-index:8;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 -2px 10px;padding:6px 0 8px;background:linear-gradient(180deg,rgba(248,244,235,.98),rgba(238,232,220,.9))}',
-      '[data-app-view="buddy"] > .tabs button{min-height:50px;border:1px solid rgba(30,30,28,.12);border-radius:16px;background:rgba(255,253,247,.88);color:var(--muted);font-size:15px;font-weight:1000;box-shadow:0 8px 22px rgba(16,23,15,.05)}',
+      '[data-app-view="buddy"] > .tabs{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 72px);z-index:80;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0;padding:8px 0 10px;background:linear-gradient(180deg,rgba(248,244,235,.98),rgba(238,232,220,.94));box-shadow:0 10px 24px rgba(16,23,15,.08)}',
+      '[data-app-view="buddy"] > .tabs button{min-height:48px;border:1px solid rgba(30,30,28,.12);border-radius:16px;background:rgba(255,253,247,.94);color:var(--muted);font-size:15px;font-weight:1000;box-shadow:0 8px 22px rgba(16,23,15,.05)}',
       '[data-app-view="buddy"] > .tabs button.active{background:var(--deep);border-color:var(--deep);color:#fff}',
+      '[data-app-view="buddy"].is-chatting,[data-app-view="buddy"].is-profile{padding-top:0!important}',
       '.buddy-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px}',
       '.buddy-mini-btn{min-height:32px;border:1px solid rgba(30,30,28,.14);border-radius:999px;background:#fffdf7;color:var(--text);padding:0 12px;font-size:12px;font-weight:1000}',
       '.buddy-mini-btn.dark{background:var(--deep);border-color:var(--deep);color:#fff}',
@@ -76,7 +80,7 @@
       '.buddy-row.is-clickable:active{transform:scale(.995)}',
       '.buddy-section{display:grid;gap:10px;margin:0 0 14px}',
       '.buddy-section-title{margin:6px 2px 0;color:var(--accent-dark);font-size:13px;font-weight:1000;letter-spacing:.08em}',
-      '.buddy-letter{position:sticky;top:calc(env(safe-area-inset-top,0px) + 124px);z-index:5;margin:8px 2px 0;padding:5px 8px;border-radius:999px;background:rgba(16,23,15,.08);color:var(--green);font-size:12px;font-weight:1000;width:max-content}',
+      '.buddy-letter{position:sticky;top:calc(env(safe-area-inset-top,0px) + 132px);z-index:5;margin:8px 2px 0;padding:5px 8px;border-radius:999px;background:rgba(16,23,15,.08);color:var(--green);font-size:12px;font-weight:1000;width:max-content}',
       '.buddy-inline-search{display:grid!important;grid-template-columns:minmax(0,1fr) 74px;gap:8px;padding:10px;margin:0 0 10px;border-radius:16px;background:var(--panel);box-shadow:0 8px 22px rgba(16,23,15,.05)}',
       '.buddy-inline-search input{height:42px;border:1px solid rgba(30,30,28,.13);border-radius:999px;background:#fffdf7;padding:0 13px;font-weight:900;min-width:0}',
       '.buddy-inline-search button{height:42px;border:0;border-radius:999px;background:var(--deep);color:#fff;font-weight:1000}',
@@ -88,8 +92,29 @@
       '.buddy-dot{position:absolute;right:1px;top:1px;width:10px;height:10px;border-radius:999px;background:#e64b4b;border:2px solid #fffdf7;box-shadow:0 0 0 1px rgba(230,75,75,.25)}',
       '.buddy-message-snippet{display:block;margin-top:3px;color:var(--muted);font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.buddy-message-time{display:block;margin-top:5px;color:var(--accent-dark);font-size:11px;font-weight:1000}',
+      '.buddy-contact-list{display:grid;gap:0;border-radius:14px;background:rgba(255,253,247,.72);overflow:hidden;border:1px solid rgba(30,30,28,.08)}',
+      '.buddy-contact-row{display:grid;grid-template-columns:48px minmax(0,1fr);align-items:center;gap:12px;min-height:68px;padding:10px 12px;border:0;border-bottom:1px solid rgba(30,30,28,.08);background:#fffdf7;text-align:left;color:var(--text)}',
+      '.buddy-contact-row:last-child{border-bottom:0}',
+      '.buddy-contact-row .list-avatar{width:44px;height:44px;border-radius:10px}',
+      '.buddy-contact-name{font-size:17px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.buddy-profile-panel{display:none;min-height:100%;padding-bottom:8px}',
+      '[data-app-view="buddy"].is-profile > .tabs,[data-app-view="buddy"].is-profile > [data-buddy-list]{display:none!important}',
+      '[data-app-view="buddy"].is-profile > .buddy-profile-panel{display:block}',
+      '.buddy-profile-card{margin-top:8px;border-radius:0;background:#fffdf7;border:0;box-shadow:none;overflow:hidden}',
+      '.buddy-profile-top{display:grid;grid-template-columns:82px minmax(0,1fr);gap:18px;align-items:center;padding:34px 8px 30px}',
+      '.buddy-profile-top .list-avatar{width:82px;height:82px;border-radius:12px;font-size:22px}',
+      '.buddy-profile-name{font-size:30px;line-height:1.15;font-weight:1000;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.buddy-profile-meta{margin-top:8px;color:var(--muted);font-size:15px;line-height:1.65;font-weight:850}',
+      '.buddy-profile-section{border-top:10px solid #f0f0f0;background:#fffdf7}',
+      '.buddy-profile-line{display:grid;grid-template-columns:96px minmax(0,1fr) 20px;gap:12px;align-items:start;padding:17px 2px;border-bottom:1px solid rgba(30,30,28,.08);font-size:16px}',
+      '.buddy-profile-line b{font-weight:1000}',
+      '.buddy-profile-line span{color:var(--muted);font-size:14px;line-height:1.6;font-weight:850}',
+      '.buddy-profile-arrow{color:#bbb;text-align:right;font-size:24px;line-height:1}',
+      '.buddy-profile-actions{display:grid;gap:0;margin-top:0;border-top:10px solid #f0f0f0;background:#fffdf7}',
+      '.buddy-profile-action{height:64px;border:0;border-bottom:1px solid rgba(30,30,28,.08);background:#fffdf7;color:#586986;font-size:18px;font-weight:1000}',
+      '.buddy-profile-action.danger{color:var(--accent-dark)}',
       '.buddy-chat-panel{display:none;min-height:100%;padding-bottom:8px}',
-      '[data-app-view="buddy"].is-chatting > .tabs,[data-app-view="buddy"].is-chatting > [data-buddy-list]{display:none!important}',
+      '[data-app-view="buddy"].is-chatting > .tabs,[data-app-view="buddy"].is-chatting > [data-buddy-list],[data-app-view="buddy"].is-chatting > .buddy-profile-panel{display:none!important}',
       '[data-app-view="buddy"].is-chatting > .buddy-chat-panel{display:grid;grid-template-rows:auto minmax(280px,1fr) auto;gap:10px}',
       '.buddy-chat-title-wrap h1{font-size:24px;line-height:1.12}',
       '.buddy-chat-title-wrap span{display:block;margin-top:6px;color:var(--muted);font-size:12px;font-weight:900}',
@@ -129,7 +154,7 @@
     panel.dataset.buddyChatPanel = 'true';
     panel.innerHTML = [
       '<div class="view-head compact buddy-chat-title-wrap">',
-        '<button class="back-btn" type="button" data-buddy-chat-back>‹ 搭子列表</button>',
+        '<button class="back-btn" type="button" data-buddy-chat-back>‹ 搭子资料</button>',
         '<p>低功耗私聊</p>',
         '<h1 data-buddy-chat-title>选择一个搭子</h1>',
         '<span data-buddy-chat-sub>先从搭子列表打开一个私聊。</span>',
@@ -140,6 +165,18 @@
         '<button type="submit">发送</button>',
       '</form>'
     ].join('');
+    view.appendChild(panel);
+    return panel;
+  }
+
+  function ensureProfilePanel(){
+    var view = $('[data-app-view="buddy"]');
+    if(!view) return null;
+    var panel = $('[data-buddy-profile-panel]', view);
+    if(panel) return panel;
+    panel = document.createElement('section');
+    panel.className = 'buddy-profile-panel';
+    panel.dataset.buddyProfilePanel = 'true';
     view.appendChild(panel);
     return panel;
   }
@@ -177,25 +214,18 @@
     if(row.status === 'pending' && row.requester_id === me.id){
       return '<div class="buddy-actions"><button class="buddy-mini-btn danger" type="button" data-buddy-remove="' + esc(row.id) + '">撤回申请</button></div>';
     }
-    if(row.status === 'accepted'){
-      var id = otherId(row, me.id);
-      return '<div class="buddy-actions"><button class="buddy-mini-btn dark" type="button" data-buddy-open-chat="' + esc(id) + '">私聊</button><button class="buddy-mini-btn danger" type="button" data-buddy-remove="' + esc(row.id) + '">解除搭子</button></div>';
-    }
     return '';
   }
 
-  function rowHtml(row, options){
-    options = options || {};
+  function requestRowHtml(row){
     var me = app().state.user;
     var id = otherId(row, me.id);
     var profile = profileMap[id] || {};
     var name = profile.nickname || '低功耗研究员';
     var sub = profile.lab_code ? '实验品编号：' + profile.lab_code : '实验品编号：未设置';
-    var clickable = row.status === 'accepted';
     if(row.status === 'pending' && row.receiver_id === me.id) sub += ' · 对方想加你为搭子';
     if(row.status === 'pending' && row.requester_id === me.id) sub += ' · 等待对方处理';
-    if(row.status === 'accepted') sub += options.shortSub ? '' : ' · 点击进入私聊';
-    return '<article class="list-item buddy-row' + (clickable ? ' is-clickable' : '') + '" data-buddy-user="' + esc(id) + '" data-buddy-friendship="' + esc(row.id) + '">' + avatar(profile) + '<div class="list-main"><b>' + esc(name) + '</b><span>' + esc(sub) + '</span>' + rowActions(row) + '</div></article>';
+    return '<article class="list-item buddy-row" data-buddy-user="' + esc(id) + '" data-buddy-friendship="' + esc(row.id) + '">' + avatar(profile) + '<div class="list-main"><b>' + esc(name) + '</b><span>' + esc(sub) + '</span>' + rowActions(row) + '</div></article>';
   }
 
   var pinyinCollator = null;
@@ -217,9 +247,7 @@
     if(latin) return latin[0].toUpperCase();
     var digit = first.match(/[0-9]/);
     if(digit) return '#';
-    var bounds = [
-      ['A','阿'],['B','八'],['C','嚓'],['D','哒'],['E','妸'],['F','发'],['G','旮'],['H','哈'],['J','讥'],['K','咔'],['L','垃'],['M','妈'],['N','拿'],['O','噢'],['P','啪'],['Q','七'],['R','蚺'],['S','仨'],['T','他'],['W','哇'],['X','夕'],['Y','丫'],['Z','匝']
-    ];
+    var bounds = [['A','阿'],['B','八'],['C','嚓'],['D','哒'],['E','妸'],['F','发'],['G','旮'],['H','哈'],['J','讥'],['K','咔'],['L','垃'],['M','妈'],['N','拿'],['O','噢'],['P','啪'],['Q','七'],['R','蚺'],['S','仨'],['T','他'],['W','哇'],['X','夕'],['Y','丫'],['Z','匝']];
     var c = collator();
     var letter = '#';
     for(var i = 0; i < bounds.length; i++){
@@ -242,12 +270,20 @@
     });
     var html = [];
     var last = '';
+    var inGroup = false;
     rows.forEach(function(row){
-      var p = profileMap[otherId(row, me.id)] || {};
+      var id = otherId(row, me.id);
+      var p = profileMap[id] || {};
       var letter = initialForName(sortName(p));
-      if(letter !== last){ html.push('<div class="buddy-letter">' + esc(letter) + '</div>'); last = letter; }
-      html.push(rowHtml(row, {shortSub:true}));
+      if(letter !== last){
+        if(inGroup) html.push('</div>');
+        html.push('<div class="buddy-letter">' + esc(letter) + '</div><div class="buddy-contact-list">');
+        inGroup = true;
+        last = letter;
+      }
+      html.push('<button class="buddy-contact-row" type="button" data-buddy-profile="' + esc(id) + '">' + avatar(p) + '<span class="buddy-contact-name">' + esc(p.nickname || '低功耗研究员') + '</span></button>');
     });
+    if(inGroup) html.push('</div>');
     list.innerHTML = html.join('');
   }
 
@@ -264,10 +300,10 @@
       '<div class="search-result buddy-search-result" data-buddy-search-result></div>'
     ];
     html.push('<section class="buddy-section"><h2 class="buddy-section-title">收到申请</h2>');
-    html.push(incoming.length ? incoming.map(rowHtml).join('') : '<div class="empty">暂时没有收到新的搭子申请。</div>');
+    html.push(incoming.length ? incoming.map(requestRowHtml).join('') : '<div class="empty">暂时没有收到新的搭子申请。</div>');
     html.push('</section>');
     html.push('<section class="buddy-section"><h2 class="buddy-section-title">发出申请</h2>');
-    html.push(outgoing.length ? outgoing.map(rowHtml).join('') : '<div class="empty">暂时没有发出的搭子申请。</div>');
+    html.push(outgoing.length ? outgoing.map(requestRowHtml).join('') : '<div class="empty">暂时没有发出的搭子申请。</div>');
     html.push('</section>');
     list.innerHTML = html.join('');
   }
@@ -288,13 +324,7 @@
     list.innerHTML = '<div class="loading">正在读取搭子消息...</div>';
     messageLoading = true;
     try{
-      var messages = fail(await client()
-        .from('private_messages')
-        .select('id,conversation_id,sender_id,content,is_deleted,created_at')
-        .in('sender_id', buddyIds)
-        .eq('is_deleted', false)
-        .order('created_at', {ascending:false})
-        .limit(120), '消息读取失败') || [];
+      var messages = fail(await client().from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').in('sender_id', buddyIds).eq('is_deleted', false).order('created_at', {ascending:false}).limit(120), '消息读取失败') || [];
       var seen = {};
       var latest = [];
       messages.forEach(function(msg){
@@ -315,6 +345,8 @@
   function render(){
     ensureTabs();
     ensureChatPanel();
+    ensureProfilePanel();
+    closeProfile(false);
     var list = $('[data-buddy-list]');
     if(!list) return;
     $$('[data-buddy-tab]').forEach(function(tab){ tab.classList.toggle('active', tab.dataset.buddyTab === activeTab); });
@@ -356,7 +388,7 @@
     if(!me) return '';
     if(String(profile.id) === String(me.id)) return '<div class="buddy-actions"><button class="buddy-mini-btn" type="button" disabled>这是你自己</button></div>';
     if(!friendship) return '<div class="buddy-actions"><button class="buddy-mini-btn dark" type="button" data-buddy-add="' + esc(profile.id) + '">加为搭子</button></div>';
-    if(friendship.status === 'accepted') return '<div class="buddy-actions"><button class="buddy-mini-btn dark" type="button" data-buddy-open-chat="' + esc(profile.id) + '">打开私聊</button><button class="buddy-mini-btn danger" type="button" data-buddy-remove="' + esc(friendship.id) + '">解除搭子</button></div>';
+    if(friendship.status === 'accepted') return '<div class="buddy-actions"><button class="buddy-mini-btn dark" type="button" data-buddy-profile="' + esc(profile.id) + '">查看资料</button><button class="buddy-mini-btn danger" type="button" data-buddy-remove="' + esc(friendship.id) + '">解除搭子</button></div>';
     if(friendship.status === 'pending' && friendship.requester_id === me.id) return '<div class="buddy-actions"><button class="buddy-mini-btn" type="button" disabled>等待处理</button><button class="buddy-mini-btn danger" type="button" data-buddy-remove="' + esc(friendship.id) + '">撤回申请</button></div>';
     if(friendship.status === 'pending' && friendship.receiver_id === me.id) return '<div class="buddy-actions"><button class="buddy-mini-btn dark" type="button" data-buddy-accept="' + esc(friendship.id) + '">同意</button><button class="buddy-mini-btn danger" type="button" data-buddy-reject="' + esc(friendship.id) + '">拒绝</button></div>';
     return '<div class="buddy-actions"><button class="buddy-mini-btn dark" type="button" data-buddy-add="' + esc(profile.id) + '">重新申请</button></div>';
@@ -417,12 +449,52 @@
     var ok = true;
     if(/解除/.test(label)) ok = window.confirm('确定解除这个搭子关系吗？');
     if(!ok) return;
-    await handleAction(button, async function(){ await rpc('fw_remove_friendship', {target_friendship_id:id}, '操作失败'); toast(/撤回/.test(label) ? '已撤回搭子申请。' : '已处理搭子关系。'); closeChat(false); });
+    await handleAction(button, async function(){ await rpc('fw_remove_friendship', {target_friendship_id:id}, '操作失败'); toast(/撤回/.test(label) ? '已撤回搭子申请。' : '已处理搭子关系。'); closeChat(false); closeProfile(false); });
+  }
+
+  function openProfile(targetId){
+    targetId = String(targetId || '');
+    if(!targetId) return;
+    var profile = profileMap[targetId] || {};
+    var relation = friendshipBetween(targetId);
+    var panel = ensureProfilePanel();
+    var view = $('[data-app-view="buddy"]');
+    activeTargetId = targetId;
+    activeProfile = profile;
+    closeChat(false);
+    if(view) view.classList.add('is-profile');
+    var remove = relation && relation.status === 'accepted' ? '<button class="buddy-profile-action danger" type="button" data-buddy-remove="' + esc(relation.id) + '">解除搭子</button>' : '';
+    panel.innerHTML = [
+      '<div class="view-head compact">',
+        '<button class="back-btn" type="button" data-buddy-profile-back>‹ 通讯录</button>',
+      '</div>',
+      '<div class="buddy-profile-card">',
+        '<div class="buddy-profile-top">',
+          avatar(profile),
+          '<div><div class="buddy-profile-name">' + esc(profile.nickname || '低功耗研究员') + '</div><div class="buddy-profile-meta">实验品编号：' + esc(profile.lab_code || '未设置') + '<br>身份：F.w 研究所搭子</div></div>',
+        '</div>',
+        '<div class="buddy-profile-section">',
+          '<div class="buddy-profile-line"><b>搭子资料</b><span>这里显示对方公开昵称、头像和实验品编号。手机号、真实姓名等隐私信息不会展示。</span><i class="buddy-profile-arrow">›</i></div>',
+          '<div class="buddy-profile-line"><b>动态</b><span>后续可接入对方公开发布内容。</span><i class="buddy-profile-arrow">›</i></div>',
+        '</div>',
+        '<div class="buddy-profile-actions">',
+          '<button class="buddy-profile-action" type="button" data-buddy-open-chat="' + esc(targetId) + '">💬 发消息</button>',
+          remove,
+        '</div>',
+      '</div>'
+    ].join('');
+  }
+
+  function closeProfile(resetTarget){
+    var view = $('[data-app-view="buddy"]');
+    if(view) view.classList.remove('is-profile');
+    if(resetTarget){ activeTargetId = ''; activeProfile = null; }
   }
 
   function openChatShell(){
     var view = $('[data-app-view="buddy"]');
     ensureChatPanel();
+    closeProfile(false);
     if(view) view.classList.add('is-chatting');
     var input = $('[data-buddy-chat-form] input');
     setTimeout(function(){ if(input) input.focus(); }, 80);
@@ -512,10 +584,10 @@
     if(!main) return;
     main.addEventListener('touchstart', function(e){
       var view = $('[data-app-view="buddy"]');
-      if(!view || !view.classList.contains('is-chatting')) return;
+      if(!view || (!view.classList.contains('is-chatting') && !view.classList.contains('is-profile'))) return;
       var touch = e.touches && e.touches[0];
       if(!touch || touch.clientX > 42) return;
-      touchState = {x:touch.clientX, y:touch.clientY};
+      touchState = {x:touch.clientX, y:touch.clientY, mode:view.classList.contains('is-chatting') ? 'chat' : 'profile'};
     }, {passive:true});
     main.addEventListener('touchend', function(e){
       if(!touchState) return;
@@ -523,8 +595,12 @@
       if(!touch){ touchState = null; return; }
       var dx = touch.clientX - touchState.x;
       var dy = Math.abs(touch.clientY - touchState.y);
+      var mode = touchState.mode;
       touchState = null;
-      if(dx >= 72 && dy <= 55) closeChat(true);
+      if(dx >= 72 && dy <= 55){
+        if(mode === 'chat' && activeTargetId) openProfile(activeTargetId);
+        else closeProfile(true);
+      }
     }, {passive:true});
   }
 
@@ -533,13 +609,15 @@
     bound = true;
     document.addEventListener('click', function(e){
       var nav = e.target.closest && e.target.closest('[data-app-nav]');
-      if(nav && nav.dataset.appNav !== 'buddy') closeChat(true);
+      if(nav && nav.dataset.appNav !== 'buddy'){ closeChat(true); closeProfile(true); }
       var clear = e.target.closest && e.target.closest('[data-buddy-clear-search]');
       if(clear){ e.preventDefault(); clearSearch(); return; }
+      var profileBack = e.target.closest && e.target.closest('[data-buddy-profile-back]');
+      if(profileBack){ e.preventDefault(); closeProfile(true); return; }
       var back = e.target.closest && e.target.closest('[data-buddy-chat-back]');
-      if(back){ e.preventDefault(); closeChat(true); if(activeTab === 'messages') renderMessages(); return; }
+      if(back){ e.preventDefault(); if(activeTargetId) openProfile(activeTargetId); else closeChat(true); return; }
       var tab = e.target.closest && e.target.closest('[data-buddy-tab]');
-      if(tab){ e.preventDefault(); activeTab = tab.dataset.buddyTab || 'messages'; closeChat(true); render(); return; }
+      if(tab){ e.preventDefault(); activeTab = tab.dataset.buddyTab || 'messages'; closeChat(true); closeProfile(true); render(); return; }
       var add = e.target.closest && e.target.closest('[data-buddy-add]');
       if(add){ e.preventDefault(); addBuddy(add); return; }
       var accept = e.target.closest && e.target.closest('[data-buddy-accept]');
@@ -548,14 +626,10 @@
       if(reject){ e.preventDefault(); rejectBuddy(reject); return; }
       var remove = e.target.closest && e.target.closest('[data-buddy-remove]');
       if(remove){ e.preventDefault(); removeBuddy(remove); return; }
+      var profileBtn = e.target.closest && e.target.closest('[data-buddy-profile]');
+      if(profileBtn){ e.preventDefault(); openProfile(profileBtn.dataset.buddyProfile); return; }
       var chat = e.target.closest && e.target.closest('[data-buddy-open-chat]');
       if(chat){ e.preventDefault(); openChat(chat.dataset.buddyOpenChat); return; }
-      var row = e.target.closest && e.target.closest('[data-buddy-user]');
-      if(row && !e.target.closest('button')){
-        var friendshipId = row.dataset.buddyFriendship || '';
-        var f = friendshipRows.find(function(item){ return String(item.id) === String(friendshipId); });
-        if(f && f.status === 'accepted') openChat(row.dataset.buddyUser);
-      }
     });
     document.addEventListener('submit', function(e){
       var form = e.target.closest && e.target.closest('[data-buddy-search]');
@@ -566,8 +640,8 @@
     bindSwipeBack();
   }
 
-  function init(){ injectStyle(); ensureTabs(); ensureChatPanel(); bind(); }
+  function init(){ injectStyle(); ensureTabs(); ensureChatPanel(); ensureProfilePanel(); bind(); }
   function ensureLoaded(){ load(false); }
 
-  window.FWAppBuddy = {init:init, load:load, ensureLoaded:ensureLoaded, openChat:openChat, closeChat:closeChat};
+  window.FWAppBuddy = {init:init, load:load, ensureLoaded:ensureLoaded, openChat:openChat, closeChat:closeChat, openProfile:openProfile};
 })();
