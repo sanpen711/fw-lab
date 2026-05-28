@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-complete-1';
+const CACHE_NAME = 'fw-mobile-app-buddy-tabs-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
