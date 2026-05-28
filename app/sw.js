@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-profile-1';
+const CACHE_NAME = 'fw-mobile-app-buddy-read-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
@@ -10,6 +10,7 @@ const APP_SHELL = [
   '/app/feed.js',
   '/app/publish.js',
   '/app/buddy.js',
+  '/app/buddy-read-tweaks.js',
   '/app/echo.js',
   '/app/profile.js',
   '/app/rooms.js',
@@ -19,15 +20,21 @@ const APP_SHELL = [
   '/app/manifest.webmanifest'
 ];
 
-function injectBirdTweaks(html){
-  if(String(html || '').indexOf('/app/bird-tweaks.js') >= 0) return html;
-  return String(html || '').replace('</body>', '  <script src="/app/bird-tweaks.js?v=mobile-bird-toggle-20260528-1"></script>\n</body>');
+function injectAppTweaks(html){
+  let next = String(html || '');
+  if(next.indexOf('/app/bird-tweaks.js') < 0){
+    next = next.replace('</body>', '  <script src="/app/bird-tweaks.js?v=mobile-bird-toggle-20260528-1"></script>\n</body>');
+  }
+  if(next.indexOf('/app/buddy-read-tweaks.js') < 0){
+    next = next.replace('</body>', '  <script src="/app/buddy-read-tweaks.js?v=mobile-buddy-read-20260528-1"></script>\n</body>');
+  }
+  return next;
 }
 
 function htmlResponse(html, response){
   const headers = new Headers(response && response.headers || {});
   headers.set('content-type', 'text/html; charset=utf-8');
-  return new Response(injectBirdTweaks(html), {
+  return new Response(injectAppTweaks(html), {
     status: response && response.status || 200,
     statusText: response && response.statusText || 'OK',
     headers
