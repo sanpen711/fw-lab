@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-contact-actions-1';
+const CACHE_NAME = 'fw-mobile-app-buddy-chat-entry-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
@@ -16,6 +16,7 @@ const APP_SHELL = [
   '/app/buddy-chat-bottom-fix.js',
   '/app/buddy-chat-scroll-fix.js',
   '/app/buddy-contacts-actions.js',
+  '/app/buddy-chat-entry-fix.js',
   '/assets/fw-emoji-panel.js',
   '/app/echo.js',
   '/app/profile.js',
@@ -51,6 +52,9 @@ function injectAppTweaks(html){
   }
   if(next.indexOf('/app/buddy-contacts-actions.js') < 0){
     next = next.replace('</body>', '  <script src="/app/buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260528-1"></script>\n</body>');
+  }
+  if(next.indexOf('/app/buddy-chat-entry-fix.js') < 0){
+    next = next.replace('</body>', '  <script src="/app/buddy-chat-entry-fix.js?v=mobile-buddy-chat-entry-20260528-1"></script>\n</body>');
   }
   return next;
 }
