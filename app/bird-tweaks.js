@@ -1,11 +1,15 @@
-// F.w 研究所：观鸟台移动端文案、指南入口与手势返回补丁
+// F.w 研究所：观鸟台移动端文案、指南入口、手势返回与互动取消补丁
 (function(){
   var bound = false;
   var swipeBound = false;
+  var reactionBound = false;
   var touchState = null;
 
   function $(selector, root){ return (root || document).querySelector(selector); }
+  function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
   function app(){ return window.FWApp || null; }
+  function client(){ var fw = app(); var db = fw && fw.db && fw.db(); return db && db.client; }
+  function toast(message){ var fw = app(); if(fw && fw.toast) fw.toast(message); }
 
   function injectStyle(){
     if(document.getElementById('fwMobileBirdTweaksStyle')) return;
@@ -139,12 +143,105 @@
     });
   }
 
+  function reactionLabel(type){
+    return {valid:'标本有效', seen:'我也见过', tissue:'递纸巾'}[type] || type;
+  }
+
+  function countFromButton(button){
+    var match = String(button && button.textContent || '').match(/(\d+)\s*$/);
+    return match ? Number(match[1]) || 0 : 0;
+  }
+
+  function setReactionButton(button, type, active, count){
+    if(!button) return;
+    button.classList.toggle('active', !!active);
+    button.textContent = reactionLabel(type) + ' ' + Math.max(0, Number(count || 0));
+  }
+
+  async function currentUser(){
+    var fw = app();
+    if(!fw || !fw.waitForDb) return null;
+    if(!(await fw.waitForDb())) return null;
+    try{ return await window.fwDb.getCurrentUser(); }
+    catch(e){ return null; }
+  }
+
+  async function toggleReaction(button){
+    var type = String(button.dataset.mobileBirdReact || '');
+    var postId = String(button.dataset.postId || '');
+    if(!/^(valid|seen|tissue)$/.test(type) || !postId) return;
+
+    var user = await currentUser();
+    if(!user){
+      toast('请先登录再互动。');
+      var fw = app();
+      if(fw && fw.setView) fw.setView('profile');
+      return;
+    }
+
+    var c = client();
+    if(!c) return;
+
+    var wasActive = button.classList.contains('active');
+    var oldCount = countFromButton(button);
+    var newActive = !wasActive;
+    var newCount = oldCount + (newActive ? 1 : -1);
+    var sameButtons = $$('[data-mobile-bird-react="' + type + '"][data-post-id="' + postId.replace(/"/g, '\\"') + '"]');
+
+    button.disabled = true;
+    sameButtons.forEach(function(item){ setReactionButton(item, type, newActive, newCount); });
+
+    try{
+      var result;
+      if(wasActive){
+        result = await c.from('bird_reactions').delete().eq('post_id', postId).eq('user_id', user.id).eq('type', type);
+        if(result && result.error) throw result.error;
+        toast('已取消：' + reactionLabel(type) + '。');
+      }else{
+        result = await c.from('bird_reactions').insert({post_id:postId, user_id:user.id, type:type}).select('id').single();
+        if(result && result.error){
+          if(result.error.code === '23505' || /duplicate|unique/i.test(String(result.error.message || ''))){
+            sameButtons.forEach(function(item){ setReactionButton(item, type, true, Math.max(oldCount, newCount)); });
+            toast('你已经标记过这个品种了。');
+            return;
+          }
+          throw result.error;
+        }
+        toast('已标记：' + reactionLabel(type) + '。');
+      }
+      if(window.FWAppBird && window.FWAppBird.load){
+        setTimeout(function(){ window.FWAppBird.load(true); }, 120);
+      }
+    }catch(err){
+      sameButtons.forEach(function(item){ setReactionButton(item, type, wasActive, oldCount); });
+      toast((wasActive ? '取消失败。' : '互动失败。'));
+      console.warn('[FW mobile app] bird reaction toggle failed', err);
+    }finally{
+      button.disabled = false;
+    }
+  }
+
+  function bindReactionToggle(){
+    if(reactionBound) return;
+    reactionBound = true;
+    document.addEventListener('click', function(e){
+      var button = e.target.closest && e.target.closest('[data-mobile-bird-react]');
+      if(!button) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+      if(button.disabled) return;
+      toggleReaction(button);
+    }, true);
+  }
+
   function run(){
     injectStyle();
     ensureGuideView();
     applyBirdCopy();
     bindGuideButton();
     bindSwipeBack();
+    bindReactionToggle();
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
