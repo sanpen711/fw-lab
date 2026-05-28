@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-chat-entry-1';
+const CACHE_NAME = 'fw-mobile-app-direct-tweaks-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
