@@ -198,8 +198,14 @@
 
       <section class="app-view" data-app-view="moderation" aria-label="处理公告">
         <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>处理公告</p><h1>违规处理公告</h1></div>
-        <div class="module-card"><h2>近期处理</h2><p>手机端先提供公告展示入口。站长处理面板后续再迁移，不在这里重写管理后台。</p></div>
-        <div class="module-card"><h2>查看说明</h2><p>处理公告用于告知明显越界内容的处理结果，让边界保持清楚。</p></div>
+        <div class="module-card"><h2>近期违规处理公告</h2><p>公开展示被封号、禁言、删帖、删评论、删除房间消息等处理结果，让边界保持清楚。</p><div class="mobile-admin-public" data-mobile-admin-public-list><div class="mobile-admin-empty">正在读取违规处理公告...</div></div></div>
+        <div class="module-card"><h2>处理说明</h2><p>可以吐槽，但不要人身攻击、隐私曝光、恶意引战、广告引流或持续骚扰。违规内容可能被删除，账号可能被禁言或封禁。</p></div>
+        <p class="mobile-admin-gate" data-mobile-admin-gate>管理员登录后显示站长处理面板。</p>
+        <article class="mobile-admin-card" data-mobile-admin-panel hidden>
+          <div class="mobile-admin-head"><div><h2>站长处理面板</h2><p>仅管理员可见。处理结果可选择是否公开到处理公告。</p></div><button class="mobile-admin-refresh" type="button" data-mobile-admin-refresh>刷新记录</button></div>
+          <div class="mobile-admin-tabs"><button class="active" type="button" data-mobile-admin-tab="users">用户</button><button type="button" data-mobile-admin-tab="posts">帖子</button><button type="button" data-mobile-admin-tab="comments">评论</button><button type="button" data-mobile-admin-tab="reports">举报</button><button type="button" data-mobile-admin-tab="chats">房间消息</button><button type="button" data-mobile-admin-tab="logs">记录</button></div>
+          <div class="mobile-admin-body" data-mobile-admin-body><div class="mobile-admin-empty">正在确认处理权限...</div></div>
+        </article>
       </section>
 
       <section class="app-view" data-app-view="buddy" aria-label="搭子中心">
@@ -252,6 +258,7 @@
   <script src="/app/rooms.js?v=mobile-app-rooms-layout-20260527-1"></script>
   <script src="/app/bird.js?v=mobile-app-modules-20260527-1"></script>
   <script src="/app/modules-init.js?v=mobile-app-modules-20260527-1"></script>
+  <script src="/app/admin.js?v=mobile-admin-20260529-1"></script>
   <script src="/assets/fw-emoji-panel.js?v=mobile-direct-tweaks-20260528-1"></script>
   <script src="/app/bird-tweaks.js?v=mobile-direct-tweaks-20260528-1"></script>
   <script src="/app/buddy-read-tweaks.js?v=mobile-direct-tweaks-20260528-1"></script>
