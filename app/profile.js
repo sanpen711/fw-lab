@@ -340,6 +340,7 @@
       if(!e.touches || e.touches.length !== 1) return;
       if(e.target && e.target.closest && e.target.closest('input, textarea, select, button, label, a')) return;
       var touch = e.touches[0];
+      if(touch.clientX > 44) return;
       swipeStartX = touch.clientX;
       swipeStartY = touch.clientY;
       swipeStartAt = Date.now();
@@ -356,7 +357,7 @@
       var dx = touch.clientX - swipeStartX;
       var dy = touch.clientY - swipeStartY;
       var elapsed = Date.now() - swipeStartAt;
-      if(dx <= -68 && Math.abs(dx) > Math.abs(dy) * 1.45 && elapsed <= 700){
+      if(dx >= 68 && Math.abs(dx) > Math.abs(dy) * 1.35 && elapsed <= 900){
         mode = 'home';
         render();
       }
