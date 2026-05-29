@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-icon-1';
+const CACHE_NAME = 'fw-mobile-app-icon-png-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
@@ -18,6 +18,10 @@ const APP_SHELL = [
   '/app/buddy-contacts-actions.js',
   '/app/buddy-chat-entry-fix.js',
   '/assets/fw-emoji-panel.js',
+  '/assets/icons/apple-touch-icon.png',
+  '/assets/icons/icon-192.png',
+  '/assets/icons/icon-512.png',
+  '/assets/icons/icon-maskable-512.png',
   '/assets/icons/fw-lab-icon.svg',
   '/app/echo.js',
   '/app/echo-enhance.js',
