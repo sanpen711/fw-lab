@@ -324,6 +324,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const page = (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
   const isHome = !page || page === "index.html";
   const isRooms = page === "rooms.html";
+  const isAdmin = page === "admin.html";
+  const hasFeedSurface = Boolean(document.querySelector("[data-post-form], [data-feed]"));
 
   loadCss("assets/fw-social.css?v=wechat-buddy-center-20260511-4");
 
@@ -351,4 +353,19 @@ loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260524-pages-1");
 loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
 loadJs("assets/fw-sticker-direct-render.js?v=sticker-direct-render-20260514-1");
 loadJs("assets/fw-chat-media-upload.js?v=chat-media-upload-20260514-1");
+
+if(hasFeedSurface) loadJs("assets/fw-post-media-tools.js?v=post-media-tools-20260518-4");
+
+loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
+loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
+loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
+loadJs("assets/fw-admin-buddy-lock.js?v=admin-buddy-lock-20260513-1");
+loadJs("assets/fw-report-rpc.js?v=report-rpc-20260513-1");
+if(isAdmin) loadJs("assets/fw-admin-polish.js?v=admin-polish-20260513-1");
+loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
+loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260513-1");
+
+if(document.querySelector("[data-weekly-grid]")){
+  loadJs("assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1");
+}
 })();
