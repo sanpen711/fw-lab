@@ -327,6 +327,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadCss("assets/fw-social.css?v=wechat-buddy-center-20260511-4");
 
+loadJs("assets/fw-social.js?v=social-clean-private-chat-20260529-1");
 loadJs("assets/fw-logout-home-fix.js?v=logout-home-fix-20260513-1");
 loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
 if(isHome) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
