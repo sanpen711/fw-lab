@@ -80,6 +80,7 @@
       '.fw-pwa-install-btn:not([aria-disabled="true"]):hover{background:var(--accent);border-color:var(--accent)}',
       '.fw-pwa-install-btn.is-install-hint{max-width:290px;min-height:38px;height:auto;padding:7px 14px;line-height:1.35;white-space:normal;text-align:left;cursor:default;background:rgba(246,246,240,.08);border-color:rgba(246,246,240,.28)}',
       '.fw-pwa-install-btn.is-ios-guide{max-width:230px;text-align:center}',
+      '.fw-pwa-install-nav{flex:0 0 auto;margin-left:10px;margin-right:10px}',
       '.fw-pwa-mobile-install{margin:18px 0 0;max-width:430px;padding:12px 14px;border:1px solid rgba(246,246,240,.24);background:rgba(246,246,240,.09);backdrop-filter:blur(10px)}',
       '.fw-pwa-mobile-install.is-ios-guide{padding:12px 13px;border-color:rgba(10,132,255,.44);background:rgba(10,132,255,.12)}',
       '.fw-pwa-mobile-install-btn{width:100%;min-height:48px;border:0;border-radius:999px;background:var(--accent);color:var(--white);font-size:15px;font-weight:1000}',
@@ -109,8 +110,13 @@
       navBtn.setAttribute('hidden', '');
 
       var userbar = header.querySelector('.fw-userbar');
+      var actions = header.querySelector('.fw-social-actions');
       var menu = header.querySelector('.menu-btn');
-      header.insertBefore(navBtn, userbar || menu || null);
+
+      if(userbar) header.insertBefore(navBtn, userbar);
+      else if(actions && actions.nextSibling) header.insertBefore(navBtn, actions.nextSibling);
+      else if(menu) header.insertBefore(navBtn, menu);
+      else header.appendChild(navBtn);
     }
 
     placeNavButton();
@@ -137,11 +143,16 @@
     if(!header) return;
 
     var userbar = header.querySelector('.fw-userbar');
+    var actions = header.querySelector('.fw-social-actions');
     var menu = header.querySelector('.menu-btn');
 
-    if(userbar && btn.nextElementSibling !== userbar){
+    if(actions && userbar && (actions.nextElementSibling !== btn || btn.nextElementSibling !== userbar)){
       header.insertBefore(btn, userbar);
-    }else if(!userbar && menu && btn.nextElementSibling !== menu){
+    }else if(userbar && btn.nextElementSibling !== userbar){
+      header.insertBefore(btn, userbar);
+    }else if(actions && !userbar && actions.nextElementSibling !== btn){
+      header.insertBefore(btn, actions.nextSibling);
+    }else if(!actions && !userbar && menu && btn.nextElementSibling !== menu){
       header.insertBefore(btn, menu);
     }
   }
