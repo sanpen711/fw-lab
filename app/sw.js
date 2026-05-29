@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-direct-tweaks-1';
+const CACHE_NAME = 'fw-mobile-app-admin-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
@@ -24,6 +24,7 @@ const APP_SHELL = [
   '/app/bird.js',
   '/app/bird-tweaks.js',
   '/app/modules-init.js',
+  '/app/admin.js',
   '/app/manifest.webmanifest'
 ];
 
