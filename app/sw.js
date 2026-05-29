@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-admin-1';
+const CACHE_NAME = 'fw-mobile-app-pwa-cleanup-1';
 const APP_SHELL = [
   '/app/install.html',
   '/app/index.html',
@@ -19,43 +19,52 @@ const APP_SHELL = [
   '/app/buddy-chat-entry-fix.js',
   '/assets/fw-emoji-panel.js',
   '/app/echo.js',
+  '/app/echo-enhance.js',
   '/app/profile.js',
   '/app/rooms.js',
   '/app/bird.js',
   '/app/bird-tweaks.js',
+  '/app/archive.js',
   '/app/modules-init.js',
   '/app/admin.js',
   '/app/manifest.webmanifest'
 ];
 
+function tweakTag(src){
+  return '  <scr' + 'ipt src="' + src + '"></scr' + 'ipt>\n</body>';
+}
+
 function injectAppTweaks(html){
   let next = String(html || '');
+  if(next.indexOf('/app/echo-enhance.js') < 0){
+    next = next.replace('</body>', tweakTag('/app/echo-enhance.js?v=mobile-echo-enhance-20260529-2'));
+  }
   if(next.indexOf('/assets/fw-emoji-panel.js') < 0){
-    next = next.replace('</body>', '  <script src="/assets/fw-emoji-panel.js?v=mobile-buddy-chat-20260528-1"></script>\n</body>');
+    next = next.replace('</body>', tweakTag('/assets/fw-emoji-panel.js?v=mobile-buddy-chat-20260528-1'));
   }
   if(next.indexOf('/app/bird-tweaks.js') < 0){
-    next = next.replace('</body>', '  <script src="/app/bird-tweaks.js?v=mobile-bird-toggle-20260528-1"></script>\n</body>');
+    next = next.replace('</body>', tweakTag('/app/bird-tweaks.js?v=mobile-bird-toggle-20260528-1'));
   }
   if(next.indexOf('/app/buddy-read-tweaks.js') < 0){
-    next = next.replace('</body>', '  <script src="/app/buddy-read-tweaks.js?v=mobile-buddy-read-20260528-1"></script>\n</body>');
+    next = next.replace('</body>', tweakTag('/app/buddy-read-tweaks.js?v=mobile-buddy-read-20260528-1'));
   }
   if(next.indexOf('/app/buddy-chat-tweaks.js') < 0){
-    next = next.replace('</body>', '  <script src="/app/buddy-chat-tweaks.js?v=mobile-buddy-chat-20260528-1"></script>\n</body>');
+    next = next.replace('</body>', tweakTag('/app/buddy-chat-tweaks.js?v=mobile-buddy-chat-20260528-1'));
   }
   if(next.indexOf('/app/buddy-chat-polish.js') < 0){
-    next = next.replace('</body>', '  <script src="/app/buddy-chat-polish.js?v=mobile-buddy-chat-polish-20260528-1"></script>\n</body>');
+    next = next.replace('</body>', tweakTag('/app/buddy-chat-polish.js?v=mobile-buddy-chat-polish-20260528-1'));
   }
   if(next.indexOf('/app/buddy-chat-bottom-fix.js') < 0){
-    next = next.replace('</body>', '  <script src="/app/buddy-chat-bottom-fix.js?v=mobile-buddy-chat-bottom-20260528-1"></script>\n</body>');
+    next = next.replace('</body>', tweakTag('/app/buddy-chat-bottom-fix.js?v=mobile-buddy-chat-bottom-20260528-1'));
   }
   if(next.indexOf('/app/buddy-chat-scroll-fix.js') < 0){
-    next = next.replace('</body>', '  <script src="/app/buddy-chat-scroll-fix.js?v=mobile-buddy-chat-scroll-20260528-1"></script>\n</body>');
+    next = next.replace('</body>', tweakTag('/app/buddy-chat-scroll-fix.js?v=mobile-buddy-chat-scroll-20260528-1'));
   }
   if(next.indexOf('/app/buddy-contacts-actions.js') < 0){
-    next = next.replace('</body>', '  <script src="/app/buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260528-1"></script>\n</body>');
+    next = next.replace('</body>', tweakTag('/app/buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260528-1'));
   }
   if(next.indexOf('/app/buddy-chat-entry-fix.js') < 0){
-    next = next.replace('</body>', '  <script src="/app/buddy-chat-entry-fix.js?v=mobile-buddy-chat-entry-20260528-1"></script>\n</body>');
+    next = next.replace('</body>', tweakTag('/app/buddy-chat-entry-fix.js?v=mobile-buddy-chat-entry-20260528-1'));
   }
   return next;
 }
@@ -113,16 +122,12 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    caches.match(request).then(cached => {
-      const network = fetch(request).then(response => {
-        if(response && response.ok){
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-        }
-        return response;
-      }).catch(() => cached || caches.match('/app/index.html'));
-
-      return cached || network;
-    })
+    fetch(request).then(response => {
+      if(response && response.ok){
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+      }
+      return response;
+    }).catch(() => caches.match(request).then(cached => cached || caches.match('/app/index.html')))
   );
 });
