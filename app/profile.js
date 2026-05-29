@@ -29,10 +29,16 @@
       '.profile-top-main p{margin:0;color:var(--muted);font-size:14px;line-height:1.35;font-weight:900;word-break:break-word}',
       '.profile-top-main .login-title{font-size:24px;color:var(--deep)}',
       '.profile-menu{display:grid;gap:8px}',
-      '.profile-menu-item{min-height:56px;width:100%;border:1px solid rgba(16,23,15,.10);border-radius:10px;background:#fffdf7;color:var(--deep);box-shadow:0 6px 16px rgba(16,23,15,.04);display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 14px;text-align:left}',
-      '.profile-menu-item b{font-size:20px;line-height:1;font-weight:1000;letter-spacing:-.03em}',
-      '.profile-menu-item span{color:var(--muted);font-size:13px;font-weight:900;line-height:1.35;text-align:right}',
-      '.profile-menu-item:after{content:"›";color:rgba(16,23,15,.35);font-size:28px;font-weight:500;line-height:1}',
+      '.profile-menu-item{min-height:56px;width:100%;border:1px solid rgba(16,23,15,.10);border-radius:10px;background:#fffdf7;color:var(--deep);box-shadow:0 6px 16px rgba(16,23,15,.04);display:flex;align-items:center;gap:14px;padding:0 14px;text-align:left}',
+      '.profile-menu-icon{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;flex:0 0 auto;font-size:18px;line-height:1;background:rgba(16,23,15,.045);color:var(--accent-dark)}',
+      '.profile-menu-icon.green{color:#2aa875;background:rgba(42,168,117,.10)}',
+      '.profile-menu-icon.blue{color:#2b8fc8;background:rgba(43,143,200,.10)}',
+      '.profile-menu-icon.orange{color:#d18428;background:rgba(209,132,40,.12)}',
+      '.profile-menu-icon.red{color:#d86d6d;background:rgba(216,109,109,.12)}',
+      '.profile-menu-icon.yellow{color:#d0a925;background:rgba(208,169,37,.13)}',
+      '.profile-menu-icon.cyan{color:#3aa4bd;background:rgba(58,164,189,.12)}',
+      '.profile-menu-item b{font-size:17px;line-height:1;font-weight:900;letter-spacing:-.02em;flex:1}',
+      '.profile-menu-item:after{content:"›";color:rgba(16,23,15,.32);font-size:26px;font-weight:500;line-height:1;margin-left:auto}',
       '.profile-detail-card{border:1px solid rgba(16,23,15,.10);border-radius:14px;background:#fffdf7;box-shadow:0 8px 22px rgba(16,23,15,.05);padding:14px;display:grid;gap:14px}',
       '.profile-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px}',
       '.profile-detail-head h2{margin:0;color:var(--deep);font-size:24px;letter-spacing:-.05em;line-height:1.1;font-weight:1000}',
@@ -62,6 +68,10 @@
     return '<span class="' + cls + '">' + app().avatarHtml(user) + '</span>';
   }
 
+  function menuButton(modeName, iconClass, icon, text){
+    return '<button class="profile-menu-item" type="button" data-profile-mode="' + esc(modeName) + '"><span class="profile-menu-icon ' + esc(iconClass || '') + '">' + esc(icon) + '</span><b>' + esc(text) + '</b></button>';
+  }
+
   function loggedInHomeHtml(user){
     return '<div class="profile-hub">' +
       '<button class="profile-top-card clickable" type="button" data-profile-mode="info">' +
@@ -69,9 +79,11 @@
         '<div class="profile-top-main"><h2>' + esc(user.nickname || '临时研究员') + '</h2><p>实验品编号：' + esc(user.lab_code || '未设置') + '</p></div>' +
       '</button>' +
       '<div class="profile-menu">' +
-        '<button class="profile-menu-item" type="button" data-profile-mode="member"><b>会员中心</b><span>功能规划中</span></button>' +
-        '<button class="profile-menu-item" type="button" data-profile-mode="stickers"><b>表情管理</b><span>我的表情包</span></button>' +
-        '<button class="profile-menu-item" type="button" data-profile-mode="info"><b>个人信息</b><span>资料与账号</span></button>' +
+        menuButton('center', 'green', '✓', '个人中心') +
+        menuButton('member', 'blue', '◇', '会员中心') +
+        menuButton('shop', 'orange', '▣', '周边商城') +
+        menuButton('stickers', 'yellow', '☺', '表情管理') +
+        menuButton('info', 'cyan', '⚙', '设置') +
       '</div>' +
     '</div>';
   }
@@ -83,16 +95,18 @@
         '<div class="profile-top-main"><h2 class="login-title">注册 / 登录</h2><p>登录后可保存资料、添加表情和接收回声。</p></div>' +
       '</button>' +
       '<div class="profile-menu">' +
-        '<button class="profile-menu-item" type="button" data-profile-mode="member"><b>会员中心</b><span>功能规划中</span></button>' +
-        '<button class="profile-menu-item" type="button" data-profile-mode="login"><b>表情管理</b><span>登录后使用</span></button>' +
-        '<button class="profile-menu-item" type="button" data-profile-mode="login"><b>个人信息</b><span>注册 / 登录</span></button>' +
+        menuButton('login', 'green', '✓', '个人中心') +
+        menuButton('member', 'blue', '◇', '会员中心') +
+        menuButton('shop', 'orange', '▣', '周边商城') +
+        menuButton('login', 'yellow', '☺', '表情管理') +
+        menuButton('login', 'cyan', '⚙', '设置') +
       '</div>' +
     '</div>';
   }
 
   function loggedInInfoHtml(user){
     return '<section class="profile-detail-card">' +
-      '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>个人信息</h2></div>' +
+      '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>设置</h2></div>' +
       '<section class="profile-card">' +
         '<div class="profile-head"><span class="profile-avatar">' + app().avatarHtml(user) + '</span><div><h2>' + esc(user.nickname || '临时研究员') + '</h2><p>' + esc(user.email || '') + '</p><p>' + (user.lab_code ? '实验品编号：' + esc(user.lab_code) : '实验品编号：未设置') + '</p></div></div>' +
         '<div class="subtle-line"></div>' +
@@ -139,10 +153,24 @@
     '</section>';
   }
 
+  function centerHtml(){
+    return '<section class="profile-detail-card">' +
+      '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>个人中心</h2></div>' +
+      '<div class="profile-member-placeholder">个人中心先保留入口。后续可以放个人主页、成长记录、账号概览或其他个人相关功能。</div>' +
+    '</section>';
+  }
+
   function memberHtml(){
     return '<section class="profile-detail-card">' +
       '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>会员中心</h2></div>' +
       '<div class="profile-member-placeholder">会员中心先保留入口。后续可以放会员身份、专属标识、功能权益或其他设置；目前只展示文字，不接具体功能。</div>' +
+    '</section>';
+  }
+
+  function shopHtml(){
+    return '<section class="profile-detail-card">' +
+      '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>周边商城</h2></div>' +
+      '<div class="profile-member-placeholder">周边商城先保留入口。后续可以放研究所周边、虚拟纪念品或其它展示内容。</div>' +
     '</section>';
   }
 
@@ -266,9 +294,11 @@
     var panel = $('[data-profile-panel]');
     if(!panel) return;
     var user = app().state.user;
-    if(!user && (mode === 'info' || mode === 'stickers')) mode = 'login';
+    if(!user && (mode === 'info' || mode === 'stickers' || mode === 'center')) mode = 'login';
     if(mode === 'login') panel.innerHTML = loginHtml();
+    else if(mode === 'center') panel.innerHTML = centerHtml();
     else if(mode === 'member') panel.innerHTML = memberHtml();
+    else if(mode === 'shop') panel.innerHTML = shopHtml();
     else if(mode === 'info' && user) panel.innerHTML = loggedInInfoHtml(user);
     else if(mode === 'stickers' && user){
       panel.innerHTML = stickersHtml(user);
