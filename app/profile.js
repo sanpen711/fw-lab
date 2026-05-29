@@ -2,6 +2,11 @@
   if(window.FWAppProfile) return;
 
   var bound = false;
+  var swipeBound = false;
+  var swipeTracking = false;
+  var swipeStartX = 0;
+  var swipeStartY = 0;
+  var swipeStartAt = 0;
   var mode = 'home';
   var stickers = [];
   var stickersLoaded = false;
@@ -326,6 +331,38 @@
     return msg || fallback;
   }
 
+  function bindSwipeBack(){
+    if(swipeBound) return;
+    swipeBound = true;
+    document.addEventListener('touchstart', function(e){
+      var profileView = document.querySelector('[data-app-view="profile"].is-active');
+      if(!profileView || !profileView.querySelector('[data-profile-back]')) return;
+      if(!e.touches || e.touches.length !== 1) return;
+      if(e.target && e.target.closest && e.target.closest('input, textarea, select, button, label, a')) return;
+      var touch = e.touches[0];
+      swipeStartX = touch.clientX;
+      swipeStartY = touch.clientY;
+      swipeStartAt = Date.now();
+      swipeTracking = true;
+    }, {passive:true});
+
+    document.addEventListener('touchend', function(e){
+      if(!swipeTracking) return;
+      swipeTracking = false;
+      var profileView = document.querySelector('[data-app-view="profile"].is-active');
+      if(!profileView || !profileView.querySelector('[data-profile-back]')) return;
+      if(!e.changedTouches || e.changedTouches.length !== 1) return;
+      var touch = e.changedTouches[0];
+      var dx = touch.clientX - swipeStartX;
+      var dy = touch.clientY - swipeStartY;
+      var elapsed = Date.now() - swipeStartAt;
+      if(dx <= -68 && Math.abs(dx) > Math.abs(dy) * 1.45 && elapsed <= 700){
+        mode = 'home';
+        render();
+      }
+    }, {passive:true});
+  }
+
   function bind(){
     if(bound) return;
     bound = true;
@@ -482,6 +519,7 @@
   function init(){
     injectStyle();
     bind();
+    bindSwipeBack();
     render();
   }
 
