@@ -1,38 +1,43 @@
-const CACHE_NAME = 'fw-mobile-app-icon-png-1';
+const CACHE_NAME = 'fw-mobile-app-icon-png-2';
+const APP_BASE = new URL('./', self.location.href).pathname;
+const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
+const appPath = path => APP_BASE + path;
+const assetPath = path => SITE_BASE + 'assets/' + path;
+
 const APP_SHELL = [
-  '/app/install.html',
-  '/app/index.html',
-  '/app/app.css',
-  '/app/rooms.css',
-  '/app/bird.css',
-  '/app/app.js',
-  '/app/nav.js',
-  '/app/feed.js',
-  '/app/publish.js',
-  '/app/buddy.js',
-  '/app/buddy-read-tweaks.js',
-  '/app/buddy-chat-tweaks.js',
-  '/app/buddy-chat-polish.js',
-  '/app/buddy-chat-bottom-fix.js',
-  '/app/buddy-chat-scroll-fix.js',
-  '/app/buddy-contacts-actions.js',
-  '/app/buddy-chat-entry-fix.js',
-  '/assets/fw-emoji-panel.js',
-  '/assets/icons/apple-touch-icon.png',
-  '/assets/icons/icon-192.png',
-  '/assets/icons/icon-512.png',
-  '/assets/icons/icon-maskable-512.png',
-  '/assets/icons/fw-lab-icon.svg',
-  '/app/echo.js',
-  '/app/echo-enhance.js',
-  '/app/profile.js',
-  '/app/rooms.js',
-  '/app/bird.js',
-  '/app/bird-tweaks.js',
-  '/app/archive.js',
-  '/app/modules-init.js',
-  '/app/admin.js',
-  '/app/manifest.webmanifest'
+  appPath('install.html'),
+  appPath('index.html'),
+  appPath('app.css'),
+  appPath('rooms.css'),
+  appPath('bird.css'),
+  appPath('app.js'),
+  appPath('nav.js'),
+  appPath('feed.js'),
+  appPath('publish.js'),
+  appPath('buddy.js'),
+  appPath('buddy-read-tweaks.js'),
+  appPath('buddy-chat-tweaks.js'),
+  appPath('buddy-chat-polish.js'),
+  appPath('buddy-chat-bottom-fix.js'),
+  appPath('buddy-chat-scroll-fix.js'),
+  appPath('buddy-contacts-actions.js'),
+  appPath('buddy-chat-entry-fix.js'),
+  assetPath('fw-emoji-panel.js'),
+  assetPath('icons/apple-touch-icon.png'),
+  assetPath('icons/icon-192.png'),
+  assetPath('icons/icon-512.png'),
+  assetPath('icons/icon-maskable-512.png'),
+  assetPath('icons/fw-lab-icon.svg'),
+  appPath('echo.js'),
+  appPath('echo-enhance.js'),
+  appPath('profile.js'),
+  appPath('rooms.js'),
+  appPath('bird.js'),
+  appPath('bird-tweaks.js'),
+  appPath('archive.js'),
+  appPath('modules-init.js'),
+  appPath('admin.js'),
+  appPath('manifest.webmanifest')
 ];
 
 function tweakTag(src){
@@ -41,35 +46,35 @@ function tweakTag(src){
 
 function injectAppTweaks(html){
   let next = String(html || '');
-  if(next.indexOf('/app/echo-enhance.js') < 0){
-    next = next.replace('</body>', tweakTag('/app/echo-enhance.js?v=mobile-echo-enhance-20260529-2'));
+  if(next.indexOf('echo-enhance.js') < 0){
+    next = next.replace('</body>', tweakTag('./echo-enhance.js?v=mobile-echo-enhance-20260529-2'));
   }
-  if(next.indexOf('/assets/fw-emoji-panel.js') < 0){
-    next = next.replace('</body>', tweakTag('/assets/fw-emoji-panel.js?v=mobile-buddy-chat-20260528-1'));
+  if(next.indexOf('fw-emoji-panel.js') < 0){
+    next = next.replace('</body>', tweakTag('../assets/fw-emoji-panel.js?v=mobile-buddy-chat-20260528-1'));
   }
-  if(next.indexOf('/app/bird-tweaks.js') < 0){
-    next = next.replace('</body>', tweakTag('/app/bird-tweaks.js?v=mobile-bird-toggle-20260528-1'));
+  if(next.indexOf('bird-tweaks.js') < 0){
+    next = next.replace('</body>', tweakTag('./bird-tweaks.js?v=mobile-bird-toggle-20260528-1'));
   }
-  if(next.indexOf('/app/buddy-read-tweaks.js') < 0){
-    next = next.replace('</body>', tweakTag('/app/buddy-read-tweaks.js?v=mobile-buddy-read-20260528-1'));
+  if(next.indexOf('buddy-read-tweaks.js') < 0){
+    next = next.replace('</body>', tweakTag('./buddy-read-tweaks.js?v=mobile-buddy-read-20260528-1'));
   }
-  if(next.indexOf('/app/buddy-chat-tweaks.js') < 0){
-    next = next.replace('</body>', tweakTag('/app/buddy-chat-tweaks.js?v=mobile-buddy-chat-20260528-1'));
+  if(next.indexOf('buddy-chat-tweaks.js') < 0){
+    next = next.replace('</body>', tweakTag('./buddy-chat-tweaks.js?v=mobile-buddy-chat-20260528-1'));
   }
-  if(next.indexOf('/app/buddy-chat-polish.js') < 0){
-    next = next.replace('</body>', tweakTag('/app/buddy-chat-polish.js?v=mobile-buddy-chat-polish-20260528-1'));
+  if(next.indexOf('buddy-chat-polish.js') < 0){
+    next = next.replace('</body>', tweakTag('./buddy-chat-polish.js?v=mobile-buddy-chat-polish-20260528-1'));
   }
-  if(next.indexOf('/app/buddy-chat-bottom-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('/app/buddy-chat-bottom-fix.js?v=mobile-buddy-chat-bottom-20260528-1'));
+  if(next.indexOf('buddy-chat-bottom-fix.js') < 0){
+    next = next.replace('</body>', tweakTag('./buddy-chat-bottom-fix.js?v=mobile-buddy-chat-bottom-20260528-1'));
   }
-  if(next.indexOf('/app/buddy-chat-scroll-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('/app/buddy-chat-scroll-fix.js?v=mobile-buddy-chat-scroll-20260528-1'));
+  if(next.indexOf('buddy-chat-scroll-fix.js') < 0){
+    next = next.replace('</body>', tweakTag('./buddy-chat-scroll-fix.js?v=mobile-buddy-chat-scroll-20260528-1'));
   }
-  if(next.indexOf('/app/buddy-contacts-actions.js') < 0){
-    next = next.replace('</body>', tweakTag('/app/buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260528-1'));
+  if(next.indexOf('buddy-contacts-actions.js') < 0){
+    next = next.replace('</body>', tweakTag('./buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260528-1'));
   }
-  if(next.indexOf('/app/buddy-chat-entry-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('/app/buddy-chat-entry-fix.js?v=mobile-buddy-chat-entry-20260528-1'));
+  if(next.indexOf('buddy-chat-entry-fix.js') < 0){
+    next = next.replace('</body>', tweakTag('./buddy-chat-entry-fix.js?v=mobile-buddy-chat-entry-20260528-1'));
   }
   return next;
 }
@@ -109,18 +114,18 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(request.url);
   if(url.origin !== self.location.origin) return;
-  if(!url.pathname.startsWith('/app/') && !url.pathname.startsWith('/assets/')) return;
+  if(!url.pathname.startsWith(APP_BASE) && !url.pathname.startsWith(SITE_BASE + 'assets/')) return;
 
-  if(url.pathname === '/app/' || url.pathname === '/app/index.html'){
+  if(url.pathname === APP_BASE || url.pathname === appPath('index.html')){
     event.respondWith(
       fetch(request).then(async response => {
         if(!response || !response.ok) return response;
         const transformed = await transformIndexResponse(response);
-        caches.open(CACHE_NAME).then(cache => cache.put('/app/index.html', transformed.clone()));
+        caches.open(CACHE_NAME).then(cache => cache.put(appPath('index.html'), transformed.clone()));
         return transformed;
       }).catch(async () => {
-        const cached = await caches.match('/app/index.html');
-        return cached ? transformIndexResponse(cached) : caches.match('/app/index.html');
+        const cached = await caches.match(appPath('index.html'));
+        return cached ? transformIndexResponse(cached) : caches.match(appPath('index.html'));
       })
     );
     return;
@@ -133,6 +138,6 @@ self.addEventListener('fetch', event => {
         caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
       }
       return response;
-    }).catch(() => caches.match(request).then(cached => cached || caches.match('/app/index.html')))
+    }).catch(() => caches.match(request).then(cached => cached || caches.match(appPath('index.html'))))
   );
 });
