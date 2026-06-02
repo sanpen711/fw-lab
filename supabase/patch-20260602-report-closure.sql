@@ -116,14 +116,16 @@ begin
 end;
 $$;
 
--- 兼容旧电脑端搭子举报入口。
+-- 兼容旧电脑端搭子举报入口：保持旧返回类型 void，避免旧库报 42P13。
 create or replace function public.fw_report_user(target_user_id uuid, report_reason text default '用户举报')
-returns bigint
-language sql
+returns void
+language plpgsql
 security definer
 set search_path = public
 as $$
-  select public.fw_submit_report('user', target_user_id::text, report_reason);
+begin
+  perform public.fw_submit_report('user', target_user_id::text, report_reason);
+end;
 $$;
 
 -- 3. 后台统一读取举报：继续沿用前端现有 admin_list_chat_reports 名称，避免改后台主流程。
