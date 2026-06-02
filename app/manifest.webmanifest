@@ -1,33 +1,33 @@
 {
-  "id": "/app/",
+  "id": "./",
   "name": "F.w 研究所",
   "short_name": "F.w",
   "description": "F.w 研究所手机端应用入口",
   "lang": "zh-CN",
-  "start_url": "/app/index.html",
-  "scope": "/app/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "icons": [
     {
-      "src": "/assets/icons/fw-lab-icon.svg",
+      "src": "../assets/icons/fw-lab-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/assets/icons/icon-192.png",
+      "src": "../assets/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/assets/icons/icon-512.png",
+      "src": "../assets/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "/assets/icons/icon-maskable-512.png",
+      "src": "../assets/icons/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
