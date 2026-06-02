@@ -1,7 +1,7 @@
 (function redirectLegacyMobilePagesToPwa(){
   var params = new URLSearchParams(window.location.search || '');
   if(params.get('desktop') === '1' || params.get('app') === '0') return;
-  if((window.location.pathname || '').indexOf('/app/') === 0) return;
+  if(/\/app\//.test(window.location.pathname || '')) return;
 
   var page = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
   var viewMap = {
@@ -26,7 +26,8 @@
   }catch(e){}
   if(!isMobileUa && !isSmallTouch) return;
 
-  var target = '/app/index.html' + (view === 'nav' ? '' : '#' + view);
+  var base = (window.location.pathname || '/').replace(/[^/]*$/, '');
+  var target = base + 'app/index.html' + (view === 'nav' ? '' : '#' + view);
   window.location.replace(target);
 })();
 
