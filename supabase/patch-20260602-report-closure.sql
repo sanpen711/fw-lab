@@ -131,7 +131,8 @@ $$;
 
 -- 3. 后台统一读取举报：继续沿用前端现有 admin_list_chat_reports 名称，避免改后台主流程。
 --    chat_message_reports 保持原样；site_reports 用负数 id 映射，admin_resolve_chat_report 可识别。
-create or replace function public.admin_list_chat_reports()
+drop function if exists public.admin_list_chat_reports();
+create function public.admin_list_chat_reports()
 returns table(
   id bigint,
   message_id bigint,
