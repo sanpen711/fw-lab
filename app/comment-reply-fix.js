@@ -25,13 +25,8 @@
     };
   }
 
-  function cleanReplyPrefix(content, name){
-    content = String(content || '').trim();
-    name = String(name || '').trim();
-    if(!content || !name) return content;
-    var prefix = '回复 ' + name + '：';
-    if(content.indexOf(prefix) === 0) return content.slice(prefix.length).trim();
-    return content;
+  function normalizeText(content){
+    return String(content || '').trim();
   }
 
   async function waitUser(){
@@ -102,14 +97,14 @@
 
     var postId = form.dataset.postId;
     var input = form.querySelector('input[name="content"]');
-    var rawText = input ? input.value : '';
-    var content = cleanReplyPrefix(rawText, replyInfo.name);
-    if(!content.trim()) throw new Error('先写点回复内容。');
+    var rawText = normalizeText(input ? input.value : '');
+    if(!rawText) throw new Error('先写点回复内容。');
 
     var post = findPost(postId);
     var target = findCommentInPost(post, replyInfo.targetCommentId) || {};
     var rootCommentId = findRootCommentId(post, target) || replyInfo.targetCommentId;
     var targetUserId = target.userId || target.user_id || null;
+    var displayContent = '回复 ' + (replyInfo.name || '匿名回声') + '：' + rawText;
 
     var row = {
       post_id:postId,
@@ -117,7 +112,7 @@
       parent_comment_id:rootCommentId,
       reply_to_comment_id:replyInfo.targetCommentId,
       reply_to_user_id:targetUserId,
-      content:content.trim(),
+      content:displayContent,
       is_deleted:false
     };
 
@@ -135,7 +130,7 @@
           type:'comment_reply',
           target_type:'comment',
           target_id:result.data && result.data.id,
-          content:'回复了你的评论：' + content.trim().replace(/\s+/g, ' ').slice(0, 80),
+          content:'回复了你的评论：' + rawText.replace(/\s+/g, ' ').slice(0, 80),
           is_read:false
         });
       }catch(e){ console.warn('[FW mobile comment reply] notification skipped', e); }
