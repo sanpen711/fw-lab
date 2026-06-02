@@ -485,7 +485,7 @@
 
   function registerServiceWorker(){
     if(!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('/app/sw.js', {scope:'/app/'}).catch(function(err){
+    navigator.serviceWorker.register('./sw.js', {scope:'./'}).catch(function(err){
       console.warn('[FW mobile app] service worker register failed', err);
     });
   }
