@@ -4,6 +4,9 @@
   if(window.__FW_MOBILE_REPORT_BRIDGE__) return;
   window.__FW_MOBILE_REPORT_BRIDGE__ = true;
 
+  var buddyReportTargetId = '';
+  var buddyReportTargetName = '';
+
   function app(){ return window.FWApp || null; }
   function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
@@ -72,6 +75,8 @@
 
   function closeBuddySheet(){
     $$('.buddy-contact-menu-mask,.buddy-contact-menu').forEach(function(node){ node.classList.remove('show'); });
+    buddyReportTargetId = '';
+    buddyReportTargetName = '';
   }
   function closeCommentMenu(){
     $$('.comment-more-toggle.active').forEach(function(node){ node.classList.remove('active'); });
@@ -119,29 +124,18 @@
 
   function bind(){
     document.addEventListener('click', function(e){
+      var more = e.target.closest && e.target.closest('[data-buddy-contact-more]');
+      if(more){
+        buddyReportTargetId = more.dataset.buddyContactMore || '';
+        buddyReportTargetName = more.dataset.buddyContactName || '这个搭子';
+      }
+
       var buddy = e.target.closest && e.target.closest('[data-buddy-contact-report]');
       if(buddy){
         e.preventDefault();
         e.stopPropagation();
         if(e.stopImmediatePropagation) e.stopImmediatePropagation();
-        var targetId = '';
-        var name = '这个搭子';
-        var menu = buddy.closest('.buddy-contact-menu');
-        var title = menu && $('[data-buddy-contact-menu-title]', menu);
-        if(title) name = title.textContent || name;
-        var more = document.querySelector('[data-buddy-contact-more]');
-        if(window.__FW_MOBILE_BUDDY_CONTACT_ACTIONS_TARGET__) targetId = window.__FW_MOBILE_BUDDY_CONTACT_ACTIONS_TARGET__;
-        if(!targetId){
-          var shown = $('.buddy-contact-menu.show');
-          var openName = title && title.textContent;
-          $$('.buddy-contact-card').some(function(card){
-            var cardName = $('.buddy-contact-name', card);
-            if(cardName && openName && cardName.textContent === openName){ targetId = card.dataset.buddyContactCard || card.dataset.buddyOpenChat || ''; return true; }
-            return false;
-          });
-        }
-        if(!targetId && more) targetId = more.dataset.buddyContactMore || '';
-        submitReport('user', targetId, '搭子骚扰 / 不适当内容 / 其他');
+        submitReport('user', buddyReportTargetId, '搭子骚扰 / 不适当内容 / 其他');
         return;
       }
 
