@@ -1,5 +1,6 @@
 (function(){
   var archiveScriptLoading = false;
+  var reportScriptLoading = false;
 
   function loadArchiveModule(){
     if(window.FWAppArchive){
@@ -22,11 +23,23 @@
     document.head.appendChild(script);
   }
 
+  function loadReportModule(){
+    if(window.__FW_MOBILE_REPORT_BRIDGE__) return;
+    if(reportScriptLoading) return;
+    reportScriptLoading = true;
+    var script = document.createElement('script');
+    script.src = './report.js?v=mobile-report-20260602-1';
+    script.onload = function(){ reportScriptLoading = false; };
+    script.onerror = function(){ reportScriptLoading = false; };
+    document.head.appendChild(script);
+  }
+
   function run(){
     if(!window.FWApp) return;
     if(window.FWAppRooms && window.FWAppRooms.init) window.FWAppRooms.init();
     if(window.FWAppBird && window.FWAppBird.init) window.FWAppBird.init();
     if(window.FWAppArchive && window.FWAppArchive.init) window.FWAppArchive.init();
+    loadReportModule();
     if(window.__fwMobileModulesWrapped) return;
     window.__fwMobileModulesWrapped = true;
     var originalSetView = window.FWApp.setView;
