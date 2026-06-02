@@ -10,7 +10,7 @@
     if(archiveScriptLoading) return;
     archiveScriptLoading = true;
     var script = document.createElement('script');
-    script.src = '/app/archive.js?v=mobile-archive-20260529-1';
+    script.src = './archive.js?v=mobile-archive-20260529-1';
     script.onload = function(){
       archiveScriptLoading = false;
       if(window.FWAppArchive){
