@@ -1,6 +1,7 @@
 (function(){
   var archiveScriptLoading = false;
   var reportScriptLoading = false;
+  var commentReplyScriptLoading = false;
 
   function loadArchiveModule(){
     if(window.FWAppArchive){
@@ -34,12 +35,24 @@
     document.head.appendChild(script);
   }
 
+  function loadCommentReplyModule(){
+    if(window.__FW_MOBILE_COMMENT_REPLY_FIX__) return;
+    if(commentReplyScriptLoading) return;
+    commentReplyScriptLoading = true;
+    var script = document.createElement('script');
+    script.src = './comment-reply-fix.js?v=mobile-comment-parent-20260602-1';
+    script.onload = function(){ commentReplyScriptLoading = false; };
+    script.onerror = function(){ commentReplyScriptLoading = false; };
+    document.head.appendChild(script);
+  }
+
   function run(){
     if(!window.FWApp) return;
     if(window.FWAppRooms && window.FWAppRooms.init) window.FWAppRooms.init();
     if(window.FWAppBird && window.FWAppBird.init) window.FWAppBird.init();
     if(window.FWAppArchive && window.FWAppArchive.init) window.FWAppArchive.init();
     loadReportModule();
+    loadCommentReplyModule();
     if(window.__fwMobileModulesWrapped) return;
     window.__fwMobileModulesWrapped = true;
     var originalSetView = window.FWApp.setView;
