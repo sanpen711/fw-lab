@@ -1,11 +1,10 @@
 // F.w 研究所：手机端评论父级回复桥接
-// 作用：不重写 feed.js，只在回复评论提交时把 parent_comment_id / reply_to_user_id 真正写入数据库。
+// 作用：不重写 feed.js，只在回复评论提交时把 parent_comment_id / reply_to_comment_id / reply_to_user_id 真正写入数据库。
 (function(){
   if(window.__FW_MOBILE_COMMENT_REPLY_FIX__) return;
   window.__FW_MOBILE_COMMENT_REPLY_FIX__ = true;
 
   function app(){ return window.FWApp || null; }
-  function $(selector, root){ return (root || document).querySelector(selector); }
   function toast(message){ var fw = app(); if(fw && fw.toast) fw.toast(message); else alert(message); }
   function db(){ return window.fwDb || null; }
   function client(){ return db() && db().client; }
@@ -16,12 +15,12 @@
     var replyBox = form.closest('.comment-inline-reply');
     var host = replyBox && replyBox.closest('[data-comment-id]');
     if(!host) return null;
-    var commentId = host.dataset.commentId || '';
-    if(!commentId) return null;
+    var targetCommentId = host.dataset.commentId || '';
+    if(!targetCommentId) return null;
     var author = host.querySelector('.comment-author-name');
     return {
       form:form,
-      parentCommentId:commentId,
+      targetCommentId:targetCommentId,
       name:(author && author.textContent || '匿名回声').trim()
     };
   }
@@ -59,9 +58,20 @@
   function findCommentInPost(post, commentId){
     var comments = post && post.comments || [];
     for(var i = 0; i < comments.length; i += 1){
-      if(String(comments[i].id) === String(commentId)) return comments[i];
+      var c = comments[i];
+      if(String(c.id) === String(commentId)) return c;
+      var replies = c.replies || [];
+      for(var j = 0; j < replies.length; j += 1){
+        if(String(replies[j].id) === String(commentId)) return replies[j];
+      }
     }
     return null;
+  }
+
+  function findRootCommentId(post, targetComment){
+    if(!targetComment) return null;
+    if(!targetComment.parentCommentId && !targetComment.parent_comment_id) return targetComment.id;
+    return targetComment.parentCommentId || targetComment.parent_comment_id || targetComment.id;
   }
 
   function renderPost(postId){
@@ -97,25 +107,30 @@
     if(!content.trim()) throw new Error('先写点回复内容。');
 
     var post = findPost(postId);
-    var parent = findCommentInPost(post, replyInfo.parentCommentId) || {};
-    var parentUserId = parent.userId || parent.user_id || null;
+    var target = findCommentInPost(post, replyInfo.targetCommentId) || {};
+    var rootCommentId = findRootCommentId(post, target) || replyInfo.targetCommentId;
+    var targetUserId = target.userId || target.user_id || null;
 
     var row = {
       post_id:postId,
       user_id:user.id,
-      parent_comment_id:replyInfo.parentCommentId,
-      reply_to_user_id:parentUserId,
+      parent_comment_id:rootCommentId,
+      reply_to_comment_id:replyInfo.targetCommentId,
+      reply_to_user_id:targetUserId,
       content:content.trim(),
       is_deleted:false
     };
 
     var result = await c.from('comments').insert(row).select('id').single();
+    if(result.error && /reply_to_comment_id|schema cache|column/i.test(String(result.error.message || ''))){
+      throw new Error('回复回复字段还没初始化，请先运行 patch-20260602-comment-reply-to-reply.sql。');
+    }
     if(result.error) throw result.error;
 
-    if(parentUserId && String(parentUserId) !== String(user.id)){
+    if(targetUserId && String(targetUserId) !== String(user.id)){
       try{
         await c.from('notifications').insert({
-          user_id:parentUserId,
+          user_id:targetUserId,
           actor_id:user.id,
           type:'comment_reply',
           target_type:'comment',
