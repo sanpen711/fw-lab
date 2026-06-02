@@ -15,11 +15,12 @@
     resolve_report:'处理举报', ignore_report:'忽略举报', system_note:'系统记录'
   };
   const targetText = { user:'账号', post:'帖子', comment:'评论', chat_message:'房间消息', report:'举报', system:'系统' };
+  const reportTypeText = { post:'精神广场帖子', comment:'精神广场评论', user:'用户 / 搭子', chat_message:'房间消息' };
 
   function esc(v){ return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function short(v,n=90){ const s=String(v||'').replace(/\s+/g,' ').trim(); return s.length>n?s.slice(0,n)+'...':s; }
   function fmt(t){ if(!t) return '刚刚'; try{return new Date(t).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return '刚刚';} }
-  function toast(msg){ let t=$('.trial-toast'); if(!t){t=document.createElement('div');t.className='trial-toast';document.body.appendChild(t);} t.textContent=msg;t.classList.add('show');clearTimeout(window.__fwTrialToast);window.__fwTrialToast=setTimeout(()=>t.classList.remove('show'),2400); }
+  function toast(msg){ let t=$('.trial-toast'); if(!t){t=document.createElement('div');t.className='trial-toast';document.body.appendChild(t);} t.textContent=msg;t.classList.add('show');clearTimeout(window.__fwTrialToast);window.__fwTrialToast=setTimeout(()=>t.classList.remove('show'),3200); }
 
   function waitForDb(){
     return new Promise(resolve=>{
@@ -161,7 +162,7 @@
     if(state.tab==='chats') body.innerHTML=renderChats();
     if(state.tab==='logs') body.innerHTML=`<div class="trial-list">${renderLogs(state.rows.logs)}</div>`;
   }
-  function toolbar(label){ return `<div class="trial-toolbar"><b>${esc(label)}</b><input data-admin-search placeholder="搜索昵称、编号、房间或内容..." /></div>`; }
+  function toolbar(label){ return `<div class="trial-toolbar"><b>${esc(label)}</b><input data-admin-search placeholder="搜索昵称、编号、类型或内容..." /></div>`; }
   function row(main, actions, searchText=''){ return `<article class="trial-row" data-search="${esc(searchText).toLowerCase()}"><div class="trial-row-main">${main}</div><div class="trial-actions">${actions}</div></article>`; }
 
   function renderUsers(){
@@ -183,7 +184,17 @@
   }
   function renderReports(){
     const rows=state.rows.reports||[]; if(!rows.length) return toolbar('举报中心')+'<div class="trial-empty">暂无举报。</div>';
-    return toolbar('举报中心') + `<div class="trial-table">${rows.map(r=>{ const main=`<b>举报 #${esc(r.id)} · ${esc(r.status||'pending')} · 被举报：${esc(r.target_name||'未知')}</b><p>房间：${esc(r.room_key||'未知')} · 消息：${esc(short(r.message_content||('消息ID：'+r.message_id),120))}<br>举报人：${esc(r.reporter_name||r.reporter_id||'未知')} · 原因：${esc(r.report_reason||'用户举报')} · ${esc(fmt(r.created_at))}</p>`; const actions=`<button class="dark" data-report-act="resolved" data-id="${r.id}">标记处理</button><button data-report-act="ignored" data-id="${r.id}">忽略</button>${r.message_id?`<button class="danger" data-chat-act="delete" data-id="${r.message_id}">删除消息</button>`:''}`; return row(main, actions, `${r.report_reason||''} ${r.status||''} ${r.target_name||''} ${r.message_content||''}`); }).join('')}</div>`;
+    return toolbar('举报中心') + `<div class="trial-table">${rows.map(r=>{
+      const type = r.room_key || (r.message_id ? 'chat_message' : 'unknown');
+      const typeLabel = reportTypeText[type] || type || '未知类型';
+      const targetId = Number(r.message_id || 0);
+      const isSiteReport = Number(r.id) < 0;
+      const main=`<b>举报 #${esc(r.id)} · ${esc(r.status||'pending')} · ${esc(typeLabel)} · 被举报：${esc(r.target_name||'未知')}</b><p>内容：${esc(short(r.message_content||'暂无内容预览',160))}<br>举报人：${esc(r.reporter_name||r.reporter_id||'未知')} · 原因：${esc(r.report_reason||'用户举报')} · ${esc(fmt(r.created_at))}</p>`;
+      const directActions = type==='post' && targetId ? `<button class="danger" data-post-act="delete" data-id="${targetId}" data-return-tab="reports">删除帖子</button>` : type==='comment' && targetId ? `<button class="danger" data-comment-act="delete" data-id="${targetId}" data-return-tab="reports">删除评论</button>` : type==='user' && r.target_user_id ? `<button class="danger" data-user-act="ban" data-id="${esc(r.target_user_id)}" data-return-tab="reports">封号</button><button class="dark" data-user-act="mute" data-min="1440" data-id="${esc(r.target_user_id)}" data-return-tab="reports">禁言24h</button>` : '';
+      const chatAction = !isSiteReport && r.message_id ? `<button class="danger" data-chat-act="delete" data-id="${r.message_id}" data-return-tab="reports">删除消息</button>` : '';
+      const actions=`${directActions}${chatAction}<button class="dark" data-report-act="resolved" data-id="${r.id}">标记处理</button><button data-report-act="ignored" data-id="${r.id}">忽略</button>`;
+      return row(main, actions, `${typeLabel} ${r.report_reason||''} ${r.status||''} ${r.target_name||''} ${r.message_content||''}`);
+    }).join('')}</div>`;
   }
   function renderChats(){
     const rows=state.rows.chats||[]; if(!rows.length) return toolbar('房间消息管理')+'<div class="trial-empty">暂无房间消息。</div>';
@@ -193,25 +204,26 @@
   function reason(defaultText){ const r = prompt('填写处理原因：', defaultText || '违反研究所公约'); if(r === null) return null; return r.trim() || defaultText || '违反研究所公约'; }
   function visible(){ return confirm('是否公开到“处理公告”公告栏？\n确定 = 公开；取消 = 仅后台记录'); }
   async function rpc(name,args){ const {error}=await db().rpc(name,args); if(error) throw error; }
+  function returnTab(btn, fallback){ return btn.dataset.returnTab || fallback; }
 
   async function handleClick(e){
     const tab=e.target.closest('[data-admin-tab]'); if(tab){ await loadTab(tab.dataset.adminTab); return; }
     if(e.target.closest('[data-admin-refresh]')){ await loadPublicLogs(); await loadTab(state.tab); toast('已刷新。'); return; }
 
     const user=e.target.closest('[data-user-act]');
-    if(user){ const act=user.dataset.userAct; const r=reason(act==='ban'?'账号违规，已封号':act==='mute'?'扰乱交流秩序，已禁言':'状态调整'); if(r===null) return; await rpc('admin_moderate_user',{p_target_user_id:user.dataset.id,p_action:act,p_mute_minutes:Number(user.dataset.min||0)||null,p_reason:r,p_public_visible:visible()}); toast('用户处理完成。'); await loadPublicLogs(); await loadTab('users'); return; }
+    if(user){ const act=user.dataset.userAct; const r=reason(act==='ban'?'账号违规，已封号':act==='mute'?'扰乱交流秩序，已禁言':'状态调整'); if(r===null) return; await rpc('admin_moderate_user',{p_target_user_id:user.dataset.id,p_action:act,p_mute_minutes:Number(user.dataset.min||0)||null,p_reason:r,p_public_visible:visible()}); toast('用户处理完成。'); await loadPublicLogs(); await loadTab(returnTab(user,'users')); return; }
 
     const post=e.target.closest('[data-post-act]');
-    if(post){ const del=post.dataset.postAct==='delete'; const r=reason(del?'内容不适合公开展示':'帖子恢复'); if(r===null) return; await rpc('admin_moderate_post',{p_post_id:Number(post.dataset.id),p_delete:del,p_reason:r,p_public_visible:visible()}); toast('帖子处理完成。'); await loadPublicLogs(); await loadTab('posts'); return; }
+    if(post){ const del=post.dataset.postAct==='delete'; const r=reason(del?'内容不适合公开展示':'帖子恢复'); if(r===null) return; await rpc('admin_moderate_post',{p_post_id:Number(post.dataset.id),p_delete:del,p_reason:r,p_public_visible:visible()}); toast(del?'帖子已删除。':'帖子已恢复。'); await loadPublicLogs(); await loadTab(returnTab(post,'posts')); return; }
 
     const comment=e.target.closest('[data-comment-act]');
-    if(comment){ const del=comment.dataset.commentAct==='delete'; const r=reason(del?'评论不适合公开展示':'评论恢复'); if(r===null) return; await rpc('admin_moderate_comment',{p_comment_id:Number(comment.dataset.id),p_delete:del,p_reason:r,p_public_visible:visible()}); toast('评论处理完成。'); await loadPublicLogs(); await loadTab('comments'); return; }
+    if(comment){ const del=comment.dataset.commentAct==='delete'; const r=reason(del?'评论不适合公开展示':'评论恢复'); if(r===null) return; await rpc('admin_moderate_comment',{p_comment_id:Number(comment.dataset.id),p_delete:del,p_reason:r,p_public_visible:visible()}); toast(del?'评论已删除。':'评论已恢复。'); await loadPublicLogs(); await loadTab(returnTab(comment,'comments')); return; }
 
     const chat=e.target.closest('[data-chat-act]');
-    if(chat){ const del=chat.dataset.chatAct==='delete'; const r=reason(del?'房间消息不适合公开展示':'房间消息恢复'); if(r===null) return; await rpc('admin_moderate_chat_message',{p_message_id:Number(chat.dataset.id),p_delete:del,p_reason:r,p_public_visible:visible()}); toast('房间消息处理完成。'); await loadPublicLogs(); await loadTab(state.tab); return; }
+    if(chat){ const del=chat.dataset.chatAct==='delete'; const r=reason(del?'房间消息不适合公开展示':'房间消息恢复'); if(r===null) return; await rpc('admin_moderate_chat_message',{p_message_id:Number(chat.dataset.id),p_delete:del,p_reason:r,p_public_visible:visible()}); toast(del?'房间消息已删除。':'房间消息已恢复。'); await loadPublicLogs(); await loadTab(returnTab(chat,state.tab)); return; }
 
     const report=e.target.closest('[data-report-act]');
-    if(report){ const status=report.dataset.reportAct; const r=reason(status==='resolved'?'举报已处理':'举报已忽略'); if(r===null) return; await rpc('admin_resolve_chat_report',{p_report_id:Number(report.dataset.id),p_status:status,p_reason:r,p_public_visible:visible()}); toast('举报状态已更新。'); await loadPublicLogs(); await loadTab('reports'); return; }
+    if(report){ const status=report.dataset.reportAct; const r=reason(status==='resolved'?'举报已处理':'举报已忽略'); if(r===null) return; await rpc('admin_resolve_chat_report',{p_report_id:Number(report.dataset.id),p_status:status,p_reason:r,p_public_visible:visible()}); toast(status==='resolved'?'举报已标记为已处理。':'举报已忽略。'); await loadPublicLogs(); await loadTab('reports'); return; }
   }
 
   function bind(){
