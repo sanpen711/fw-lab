@@ -116,8 +116,9 @@ begin
 end;
 $$;
 
--- 兼容旧电脑端搭子举报入口：保持旧返回类型 void，避免旧库报 42P13。
-create or replace function public.fw_report_user(target_user_id uuid, report_reason text default '用户举报')
+-- 兼容旧电脑端搭子举报入口：显式删除旧签名，避免旧返回类型触发 42P13。
+drop function if exists public.fw_report_user(uuid,text);
+create function public.fw_report_user(target_user_id uuid, report_reason text default '用户举报')
 returns void
 language plpgsql
 security definer
