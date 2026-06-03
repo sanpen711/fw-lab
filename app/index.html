@@ -1,13 +1,16 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f172a">
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
   <title>F.w 研究所 App</title>
-  <meta name="description" content="F.w 研究所手机端：精神广场、搭子、回声、我的。">
+  <meta name="theme-color" content="#10170f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="F.w 研究所">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png?v=fw-lab-icon-20260529-1">
+  <link rel="icon" href="../assets/icons/icon-192.png?v=fw-lab-icon-20260529-1" sizes="192x192" type="image/png">
   <link rel="stylesheet" href="./app.css?v=mobile-app-shell-20260525-6">
   <link rel="stylesheet" href="./rooms.css?v=mobile-app-rooms-layout-20260527-1">
   <link rel="stylesheet" href="./bird.css?v=mobile-app-modules-20260527-1">
@@ -15,9 +18,17 @@
 <body>
   <div class="app-shell">
     <header class="app-header">
-      <button class="app-icon-btn" type="button" data-app-back hidden>‹</button>
-      <div class="app-brand"><b>F.w 研究所</b><span data-app-status>未登录</span></div>
-      <button class="app-icon-btn" type="button" data-app-refresh>↻</button>
+      <div class="app-brand" aria-label="F.w 研究所">
+        <span class="app-logo">F.w</span>
+        <div>
+          <strong>F.w 研究所</strong>
+          <small data-app-status>正在连接</small>
+        </div>
+      </div>
+      <button class="user-pill" type="button" data-app-profile-trigger aria-label="打开我的">
+        <span class="user-avatar" data-app-avatar>F</span>
+        <span data-app-user-label>未登录</span>
+      </button>
     </header>
 
     <main class="app-main" id="appMain">
@@ -45,11 +56,24 @@
 
       <section class="app-view" data-app-view="square" aria-label="精神广场">
         <div class="view-head">
+          <button class="back-btn" type="button" data-app-open="nav">‹ 导航</button>
           <p>精神广场</p>
-          <h1>今天也可以低功耗表达</h1>
-          <button class="app-btn primary" type="button" data-app-open="publish">发布</button>
+          <h1>发牢骚，然后低功耗互动</h1>
         </div>
-        <div class="filter-row" data-square-filters>
+        <form class="publish-card" data-publish-form>
+          <label>今天的精神状态</label>
+          <div class="status-picks" data-publish-status>
+            <button class="active" type="button" data-status="已疲惫">已疲惫</button>
+            <button type="button" data-status="摸鱼现场">摸鱼现场</button>
+            <button type="button" data-status="精神离岗">精神离岗</button>
+            <button type="button" data-status="今日无效">今日无效</button>
+            <button type="button" data-status="今日崩溃">今日崩溃</button>
+          </div>
+          <label for="postContent">发一句牢骚</label>
+          <textarea id="postContent" name="content" maxlength="500" placeholder="例如：今天开了三个会，最后决定下次再讨论。"></textarea>
+          <div class="form-row"><span data-publish-count>0/500</span><button class="app-btn primary" type="submit">发布</button></div>
+        </form>
+        <div class="status-filter" data-status-filter>
           <button class="active" type="button" data-filter-status="全部">全部</button>
           <button type="button" data-filter-status="已疲惫">已疲惫</button>
           <button type="button" data-filter-status="摸鱼现场">摸鱼现场</button>
@@ -60,97 +84,139 @@
         <div class="feed-list" data-feed-list="square"></div>
       </section>
 
-      <section class="app-view" data-app-view="publish" aria-label="发布">
-        <div class="view-head compact"><button class="back-btn" type="button" data-app-open="square">‹ 精神广场</button><p>发布</p><h1>投递一条低功耗表达</h1></div>
-        <form class="publish-card" data-mobile-post-form>
-          <label>状态</label>
-          <div class="status-grid">
-            <button class="active" type="button" data-mobile-status="已疲惫">已疲惫</button>
-            <button type="button" data-mobile-status="摸鱼现场">摸鱼现场</button>
-            <button type="button" data-mobile-status="精神离岗">精神离岗</button>
-            <button type="button" data-mobile-status="今日无效">今日无效</button>
-            <button type="button" data-mobile-status="今日崩溃">今日崩溃</button>
+      <section class="app-view" data-app-view="rooms" aria-label="学术研讨">
+        <div class="view-head rooms-view-head">
+          <button class="back-btn" type="button" data-app-open="nav">‹ 首页</button>
+          <button class="rooms-compose-entry" type="button" data-mobile-poll-open-create>发起投票</button>
+          <p>课题与投票</p>
+          <h1>学术研讨</h1>
+        </div>
+        <div class="rooms-filter" data-mobile-poll-filter>
+          <button class="active" type="button" data-poll-filter="all">全部</button>
+          <button type="button" data-poll-filter="official">官方课题</button>
+          <button type="button" data-poll-filter="user">用户课题</button>
+          <button type="button" data-poll-filter="ended">结束课题</button>
+        </div>
+        <p class="rooms-status" data-mobile-polls-status></p>
+        <div class="mobile-polls-list" data-mobile-polls-list><div class="mobile-poll-empty">正在读取学术研讨课题...</div></div>
+      </section>
+
+      <section class="app-view" data-app-view="rooms-compose" aria-label="发起投票">
+        <div class="view-head rooms-view-head">
+          <button class="back-btn" type="button" data-app-open="rooms">‹ 学术研讨</button>
+          <p>课题发布</p>
+          <h1>发起投票</h1>
+        </div>
+        <form class="rooms-create-form" data-mobile-poll-form>
+          <div class="module-card"><h2>每个课题默认观察 7 天</h2><p>发布后会显示票数、百分比、参与人数和剩余时间；截止后自动展示研究结论。截止前用户可以改票，也可以补充一个新选项。</p></div>
+          <div class="rooms-create-card">
+            <h2>发起投票研究</h2>
+            <p>每人每天最多发起 3 次投票；创建时必须填写标题和 4 个初始选项。</p>
+            <label for="mobilePollTitle">课题标题</label>
+            <input id="mobilePollTitle" name="title" maxlength="120" autocomplete="off" placeholder="例如：今天最值得被研究的崩溃来源是什么？">
+            <label>4 个初始选项</label>
+            <div class="rooms-option-fields">
+              <input data-mobile-option-input maxlength="80" autocomplete="off" placeholder="选项 1">
+              <input data-mobile-option-input maxlength="80" autocomplete="off" placeholder="选项 2">
+              <input data-mobile-option-input maxlength="80" autocomplete="off" placeholder="选项 3">
+              <input data-mobile-option-input maxlength="80" autocomplete="off" placeholder="选项 4">
+            </div>
+            <label class="rooms-official-row" data-mobile-official-wrap hidden><input type="checkbox" name="is_official"><span>作为本周官方课题发布并置顶</span></label>
+            <div class="rooms-form-actions"><button class="app-btn" type="button" data-app-open="rooms">取消</button><button class="app-btn dark" type="submit">发布 7 天投票</button></div>
+            <p class="rooms-form-notice" data-mobile-poll-form-notice></p>
           </div>
-          <label>内容</label>
-          <textarea maxlength="300" placeholder="例如：今天开了三个会，最后决定下次再讨论。"></textarea>
-          <button class="app-btn primary full" type="submit">发布</button>
-          <p class="form-hint" data-mobile-post-notice></p>
         </form>
       </section>
 
-      <section class="app-view" data-app-view="rooms" aria-label="学术研讨">
-        <div class="view-head"><p>学术研讨</p><h1>用很正式的语气讨论很没用的事</h1></div>
-        <div class="rooms-mobile-shell">
-          <section class="module-card room-publish-card" data-mobile-room-publish>
-            <div class="module-card-head">
-              <div><span>发起投票</span><b>今日课题</b></div>
-              <small>每人每天最多发起 3 次投票</small>
-            </div>
-            <form class="room-poll-form" data-mobile-poll-form>
-              <label>标题</label>
-              <input name="title" maxlength="80" placeholder="例如：今天最像哪种办公植物？">
-              <label>补充说明</label>
-              <textarea name="description" maxlength="220" placeholder="可选：让大家知道为什么这个问题如此重要。"></textarea>
-              <label>选项</label>
-              <input name="option" maxlength="40" placeholder="选项 A">
-              <input name="option" maxlength="40" placeholder="选项 B">
-              <input name="option" maxlength="40" placeholder="选项 C（可选）">
-              <input name="option" maxlength="40" placeholder="选项 D（可选）">
-              <div class="poll-setting-row">
-                <label><input type="checkbox" name="allow_multiple"> 允许多选</label>
-              </div>
-              <button class="app-btn primary full" type="submit">发布课题</button>
-              <p class="form-hint" data-mobile-poll-notice></p>
-            </form>
-          </section>
-          <section class="module-card room-list-card">
-            <div class="module-card-head"><div><span>课题大厅</span><b>投票列表</b></div><button type="button" data-mobile-room-refresh>刷新</button></div>
-            <div class="list-stack" data-mobile-room-list></div>
-          </section>
+      <section class="app-view" data-app-view="bird" aria-label="观鸟台">
+        <div class="view-head">
+          <button class="back-btn" type="button" data-app-open="nav">‹ 首页</button>
+          <p>观鸟台</p>
+          <h1>离谱样本观察</h1>
         </div>
+        <div class="module-card bird-rule-mini"><h2>林子大了，什么鸟都有</h2><p>这里收录生活和职场里的奇异样本。请匿名观察，文明记录，不要实名攻击。</p><ol><li>不写真姓名、手机号、住址、公司全称。</li><li>不上传他人清晰正脸、工牌、车牌等可识别信息。</li><li>可以吐槽行为，不要煽动攻击个人。</li></ol></div>
+        <div class="bird-mobile-tools"><button class="app-btn primary" type="button" data-mobile-bird-compose>发布观察记录</button><button class="app-btn" type="button" data-mobile-bird-refresh>刷新观鸟台</button></div>
+        <div class="bird-feed-mobile" data-mobile-bird-feed><div class="mobile-bird-empty">正在打开观鸟镜...</div></div>
       </section>
 
-      <section class="app-view" data-app-view="bird" aria-label="观鸟台">
-        <div class="view-head"><p>观鸟台</p><h1>观察离谱样本</h1></div>
-        <div class="bird-mobile-shell">
-          <section class="module-card bird-publish-card" data-mobile-bird-publish></section>
-          <section class="module-card bird-list-card"><div class="list-stack" data-mobile-bird-list></div></section>
-        </div>
+      <section class="app-view mobile-bird-detail-view" data-app-view="bird-detail" aria-label="观鸟台详情">
+        <div class="view-head"><button class="back-btn" type="button" data-mobile-bird-back>‹ 观鸟台</button><p>观鸟台</p><h1>完整观察记录</h1></div>
+        <div data-mobile-bird-detail-body></div>
+      </section>
+
+      <section class="app-view mobile-bird-compose-view" data-app-view="bird-compose" aria-label="发布观察记录">
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="bird">‹ 观鸟台</button><p>观鸟台</p><h1>收录新的奇异样本</h1></div>
+        <form class="publish-card" data-mobile-bird-form>
+          <label for="mobileBirdTitle">这是什么品种？</label>
+          <input id="mobileBirdTitle" name="title" maxlength="80" placeholder="例如：一种开会三小时但没有任何结论的鸟">
+          <label for="mobileBirdContent">观察记录</label>
+          <textarea id="mobileBirdContent" name="content" maxlength="5000" placeholder="请描述它的出没场景、行为特征、攻击方式和你的精神损耗。"></textarea>
+          <label>发布身份</label>
+          <div class="mobile-bird-mode-row">
+            <label class="mobile-bird-mode"><input type="radio" name="display_mode" value="profile" checked> 使用当前昵称</label>
+            <label class="mobile-bird-mode"><input type="radio" name="display_mode" value="anonymous"> 匿名观察员</label>
+            <label class="mobile-bird-mode"><input type="radio" name="display_mode" value="pen_name"> 临时笔名</label>
+          </div>
+          <div class="mobile-bird-pen" data-mobile-bird-pen hidden><label for="mobileBirdPen">临时笔名</label><input id="mobileBirdPen" name="pen_name" maxlength="20" placeholder="例如：路过的观察员"></div>
+          <div class="mobile-bird-upload">
+            <strong>图片（可选）</strong><span>最多 20 张；发布前会自动压缩处理图片。</span>
+            <label class="app-btn dark mobile-bird-file-label" for="mobileBirdImages">选择图片</label>
+            <input class="mobile-bird-file" id="mobileBirdImages" type="file" accept="image/*" multiple data-mobile-bird-file>
+            <span data-mobile-bird-image-count>0 / 20</span>
+            <div class="mobile-bird-preview-grid" data-mobile-bird-preview></div>
+          </div>
+          <p class="mobile-bird-notice" data-mobile-bird-notice></p>
+          <div class="form-row"><button class="app-btn" type="button" data-app-open="bird">取消</button><button class="app-btn primary" type="submit">发布观察记录</button></div>
+        </form>
       </section>
 
       <section class="app-view" data-app-view="archive" aria-label="废话档案">
-        <div class="view-head"><p>废话档案</p><h1>低功耗榜单</h1></div>
-        <div class="archive-mobile-shell" data-mobile-archive-shell>
-          <div class="module-card"><p>正在读取废话档案...</p></div>
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>废话档案</p><h1>低功耗荣誉榜</h1></div>
+        <div class="rank-grid">
+          <div class="module-card"><h2>上周低功耗荣誉榜</h2><p>正在整理榜单。</p></div>
+          <div class="module-card"><h2>昨日情绪残留榜</h2><p>正在整理榜单。</p></div>
+          <div class="module-card"><h2>点赞榜 / 共鸣榜 / 纸巾榜</h2><p>后续会继续完善展示。</p></div>
         </div>
       </section>
 
       <section class="app-view" data-app-view="rules" aria-label="入馆须知">
-        <div class="view-head"><p>入馆须知</p><h1>保持轻松表达，也保持基本边界</h1></div>
-        <div class="module-card rules-card"><p>可以表达情绪和经历，但不要点名攻击、辱骂、造谣、挂人或引导他人围攻。请勿公开真实姓名、电话、地址、公司内部资料、聊天截图、证件信息或其他敏感内容。</p></div>
-        <div class="module-card rules-card"><p>违规内容可能会被隐藏、删除；相关账号可能被禁言或限制使用。本项目仍处于持续完善阶段，功能、规则与管理机制会根据实际使用情况逐步优化。</p></div>
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>入馆须知</p><h1>欢迎来到 F.w 研究所</h1></div>
+        <div class="split-actions rules-actions"><a class="app-btn dark" href="#appRulesContent">查看入馆须知</a><button class="app-btn primary" type="button" data-app-open="nav">我知道了，进入研究所</button></div>
+        <div class="rules-card-stack" id="appRulesContent">
+          <div class="module-card rules-card"><h2>欢迎来到 F.w 研究所</h2><p>这里是轻量化表达、浏览和互动空间。你可以把日常牢骚、低功耗状态和一点点荒诞感暂时放在这里，但这里不是现实纠纷处理平台。</p></div>
+          <div class="module-card rules-card"><h2>可以放松</h2><p>可以发牢骚，可以围观，可以参与投票，也可以什么都不做。这里鼓励低压力表达，不要求每句话都像正式汇报。</p></div>
+          <div class="module-card rules-card"><h2>可以交流</h2><p>你可以评论、点赞、说“俺也一样”、递纸巾，或者和合适的人互加搭子。互动仅代表用户个人表达，不代表平台立场。</p></div>
+          <div class="module-card rules-card"><h2>但要有边界</h2><p>允许吐槽，不允许伤害他人。请不要点名攻击、辱骂、造谣、挂人、煽动围攻，或把别人的痛苦当作消遣。</p></div>
+          <div class="module-card rules-card"><h2>使用声明</h2><p>请不要把本站当成现实纠纷裁判场、曝光台或情绪审判台。现实中的劳动争议、人际冲突、安全问题，仍应通过现实渠道解决。</p></div>
+          <div class="module-card rules-card"><h2>不适合发布的内容</h2><p>不要发布真实隐私，包括姓名、电话、地址、证件、公司内部资料、聊天截图、邮箱、社交账号等可识别信息。禁止广告、引流、诈骗、赌博、色情、暴力、违法和其他风险内容。</p></div>
+          <div class="module-card rules-card"><h2>违规处理</h2><p>明显越界或被举报后确认不合适的内容，可能被隐藏、删除；相关账号可能被禁言、限制使用或采取其他必要处理。</p></div>
+          <div class="module-card rules-card"><h2>不是专业帮助</h2><p>如果你正在经历严重心理压力、现实冲突、人身安全风险或其他紧急情况，请优先联系身边可信任的人、当地紧急服务或专业机构。本站不替代专业帮助。</p></div>
+          <div class="module-card rules-card"><h2>关于本站 / 制作支持</h2><p>F.w 研究所由 YSP启元工作室发起并制作，提供内容策划、页面设计、功能维护与日常运营支持。我们希望它保持轻量、克制、相对安全。</p></div>
+          <div class="module-card rules-card"><h2>项目状态</h2><p>本项目仍处于持续完善阶段。功能、规则和管理机制会根据实际使用情况继续优化；也请大家在轻松使用的同时，保持尊重、克制与安全边界。</p></div>
+        </div>
+        <div class="split-actions rules-actions bottom-actions"><a class="app-btn dark" href="#appRulesContent">查看入馆须知</a><button class="app-btn primary" type="button" data-app-open="nav">我知道了，进入研究所</button></div>
       </section>
 
       <section class="app-view" data-app-view="moderation" aria-label="处理公告">
-        <div class="view-head"><p>处理公告</p><h1>违规处理说明</h1></div>
-        <div class="module-card"><p>这里记录近期被封号、禁言、删帖、删评论等违规处理结果。</p></div>
-        <div class="list-stack" data-mobile-moderation-list></div>
-        <div class="module-card mobile-admin-card" data-mobile-admin-panel hidden>
-          <div class="module-card-head"><div><span>站长处理面板</span><b>管理员可见</b></div><button type="button" data-mobile-admin-refresh>刷新</button></div>
-          <div class="mobile-admin-tabs">
-            <button class="active" type="button" data-mobile-admin-tab="users">用户</button>
-            <button type="button" data-mobile-admin-tab="posts">帖子</button>
-            <button type="button" data-mobile-admin-tab="comments">评论</button>
-            <button type="button" data-mobile-admin-tab="reports">举报</button>
-            <button type="button" data-mobile-admin-tab="logs">记录</button>
-          </div>
-          <div class="list-stack" data-mobile-admin-list></div>
-        </div>
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>处理公告</p><h1>违规处理公告</h1></div>
+        <div class="module-card"><h2>近期违规处理公告</h2><p>公开展示被封号、禁言、删帖、删评论、删除房间消息等处理结果，让边界保持清楚。</p><div class="mobile-admin-public" data-mobile-admin-public-list><div class="mobile-admin-empty">正在读取违规处理公告...</div></div></div>
+        <div class="module-card"><h2>处理说明</h2><p>可以吐槽，但不要人身攻击、隐私曝光、恶意引战、广告引流或持续骚扰。违规内容可能被删除，账号可能被禁言或封禁。</p></div>
+        <p class="mobile-admin-gate" data-mobile-admin-gate>管理员登录后显示站长处理面板。</p>
+        <article class="mobile-admin-card" data-mobile-admin-panel hidden>
+          <div class="mobile-admin-head"><div><h2>站长处理面板</h2><p>仅管理员可见。处理结果可选择是否公开到处理公告。</p></div><button class="mobile-admin-refresh" type="button" data-mobile-admin-refresh>刷新记录</button></div>
+          <div class="mobile-admin-tabs"><button class="active" type="button" data-mobile-admin-tab="users">用户</button><button type="button" data-mobile-admin-tab="posts">帖子</button><button type="button" data-mobile-admin-tab="comments">评论</button><button type="button" data-mobile-admin-tab="reports">举报</button><button type="button" data-mobile-admin-tab="chats">房间消息</button><button type="button" data-mobile-admin-tab="logs">记录</button></div>
+          <div class="mobile-admin-body" data-mobile-admin-body><div class="mobile-admin-empty">正在确认处理权限...</div></div>
+        </article>
       </section>
 
-      <section class="app-view" data-app-view="buddy" aria-label="搭子">
-        <div class="view-head"><p>摸鱼搭子</p><h1>找一个互相理解的人</h1></div>
-        <div class="buddy-tabs">
+      <section class="app-view" data-app-view="buddy" aria-label="搭子中心">
+        <div class="view-head"><p>搭子</p><h1>搭子中心</h1></div>
+        <form class="search-card" data-buddy-search>
+          <input name="q" autocomplete="off" placeholder="搜索实验品编号 / 昵称 / 完整邮箱">
+          <button type="submit">搜索</button>
+        </form>
+        <div class="search-result" data-buddy-search-result></div>
+        <div class="tabs" data-buddy-tabs>
           <button class="active" type="button" data-buddy-tab="friends">我的搭子</button>
           <button type="button" data-buddy-tab="incoming">收到申请</button>
           <button type="button" data-buddy-tab="outgoing">发出申请</button>
@@ -204,6 +270,5 @@
   <script src="./buddy-chat-scroll-fix.js?v=mobile-direct-tweaks-20260528-1"></script>
   <script src="./buddy-contacts-actions.js?v=mobile-direct-tweaks-20260528-1"></script>
   <script src="./buddy-chat-entry-fix.js?v=mobile-direct-tweaks-20260528-1"></script>
-  <script src="./comment-thread-tidy.js?v=mobile-comment-thread-tidy-20260602-1"></script>
 </body>
 </html>
