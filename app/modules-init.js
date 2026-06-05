@@ -2,7 +2,6 @@
   var archiveScriptLoading = false;
   var reportScriptLoading = false;
   var commentReplyScriptLoading = false;
-  var commentThreadTidyScriptLoading = false;
 
   function loadArchiveModule(){
     if(window.FWAppArchive){
@@ -41,20 +40,9 @@
     if(commentReplyScriptLoading) return;
     commentReplyScriptLoading = true;
     var script = document.createElement('script');
-    script.src = './comment-reply-fix.js?v=mobile-comment-reply-safe-20260603-1';
+    script.src = './comment-reply-fix.js?v=mobile-comment-reply-safe-20260603-2';
     script.onload = function(){ commentReplyScriptLoading = false; };
     script.onerror = function(){ commentReplyScriptLoading = false; };
-    document.head.appendChild(script);
-  }
-
-  function loadCommentThreadTidyModule(){
-    if(window.__FW_MOBILE_COMMENT_THREAD_TIDY__) return;
-    if(commentThreadTidyScriptLoading) return;
-    commentThreadTidyScriptLoading = true;
-    var script = document.createElement('script');
-    script.src = './comment-thread-tidy.js?v=mobile-comment-thread-safe-20260603-1';
-    script.onload = function(){ commentThreadTidyScriptLoading = false; };
-    script.onerror = function(){ commentThreadTidyScriptLoading = false; };
     document.head.appendChild(script);
   }
 
@@ -65,7 +53,6 @@
     if(window.FWAppArchive && window.FWAppArchive.init) window.FWAppArchive.init();
     loadReportModule();
     loadCommentReplyModule();
-    loadCommentThreadTidyModule();
     if(window.__fwMobileModulesWrapped) return;
     window.__fwMobileModulesWrapped = true;
     var originalSetView = window.FWApp.setView;
