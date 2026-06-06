@@ -324,7 +324,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const page = (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
   const isHome = !page || page === "index.html";
-  const isRooms = page === "rooms.html";
   const isAdmin = page === "admin.html";
   const hasFeedSurface = Boolean(document.querySelector("[data-post-form], [data-feed]"));
 
@@ -337,12 +336,10 @@ loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
 if(isHome) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
 loadJs("assets/fw-login-submit-fix.js?v=login-submit-fix-20260515-1");
 loadJs("assets/fw-register-disclaimer-link.js?v=register-disclaimer-link-20260513-1");
-if(isRooms) loadJs("assets/fw-room-stable-display-fix.js?v=room-stable-display-fix-20260514-1");
 loadJs("assets/fw-avatar-mobile-fix.js?v=avatar-mobile-fix-20260514-2");
 loadJs("assets/fw-avatar-upload-stage-fix.js?v=avatar-upload-stage-fix-20260514-1");
 loadJs("assets/fw-avatar-save-guard.js?v=avatar-save-guard-20260514-1");
 loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
-if(isRooms) loadJs("assets/fw-rooms-chat.js?v=rooms-chat-20260512-1");
 
 /*
   手机端已经迁移到 /app/ 独立 PWA。
