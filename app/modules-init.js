@@ -2,6 +2,7 @@
   var archiveScriptLoading = false;
   var reportScriptLoading = false;
   var commentReplyScriptLoading = false;
+  var initialHashApplied = false;
 
   function loadArchiveModule(){
     if(window.FWAppArchive){
@@ -46,6 +47,31 @@
     document.head.appendChild(script);
   }
 
+  function getInitialHashView(){
+    var hash = String(window.location.hash || '').replace(/^#/, '').toLowerCase();
+    var allowed = {
+      nav:true,
+      square:true,
+      rooms:true,
+      bird:true,
+      archive:true,
+      rules:true,
+      moderation:true,
+      buddy:true,
+      echo:true,
+      profile:true
+    };
+    return allowed[hash] ? hash : '';
+  }
+
+  function applyInitialHashRoute(){
+    var view = getInitialHashView();
+    if(!view || !window.FWApp || !window.FWApp.setView) return;
+    if(initialHashApplied && window.FWApp.state && window.FWApp.state.view === view) return;
+    initialHashApplied = true;
+    window.FWApp.setView(view);
+  }
+
   function run(){
     if(!window.FWApp) return;
     if(window.FWAppRooms && window.FWAppRooms.init) window.FWAppRooms.init();
@@ -67,6 +93,9 @@
     if(current === 'rooms' && window.FWAppRooms) window.FWAppRooms.ensureLoaded();
     if((current === 'bird' || current === 'bird-detail') && window.FWAppBird) window.FWAppBird.ensureLoaded();
     if(current === 'archive') loadArchiveModule();
+    [0, 80, 240, 700].forEach(function(delay){
+      setTimeout(applyInitialHashRoute, delay);
+    });
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
   else run();
