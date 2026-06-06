@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-auth-clean-20260606-1';
+const CACHE_NAME = 'fw-mobile-app-login-ui-20260606-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -31,6 +31,7 @@ const APP_SHELL = [
   appPath('echo.js'),
   appPath('echo-enhance.js'),
   appPath('profile.js'),
+  appPath('profile-login-ui.js'),
   appPath('rooms.js'),
   appPath('bird.js'),
   appPath('bird-tweaks.js'),
@@ -49,6 +50,9 @@ function injectAppTweaks(html){
   next = next.replace(/\.\/profile\.js\?v=[^"']+/g, './profile.js?v=mobile-profile-auth-clean-20260606-1');
   if(next.indexOf('echo-enhance.js') < 0){
     next = next.replace('</body>', tweakTag('./echo-enhance.js?v=mobile-echo-enhance-20260529-2'));
+  }
+  if(next.indexOf('profile-login-ui.js') < 0){
+    next = next.replace('</body>', tweakTag('./profile-login-ui.js?v=mobile-profile-login-ui-20260606-1'));
   }
   if(next.indexOf('fw-emoji-panel.js') < 0){
     next = next.replace('</body>', tweakTag('../assets/fw-emoji-panel.js?v=mobile-buddy-chat-20260528-1'));
