@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-icon-png-2';
+const CACHE_NAME = 'fw-mobile-app-auth-clean-20260606-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -46,6 +46,7 @@ function tweakTag(src){
 
 function injectAppTweaks(html){
   let next = String(html || '');
+  next = next.replace(/\.\/profile\.js\?v=[^"']+/g, './profile.js?v=mobile-profile-auth-clean-20260606-1');
   if(next.indexOf('echo-enhance.js') < 0){
     next = next.replace('</body>', tweakTag('./echo-enhance.js?v=mobile-echo-enhance-20260529-2'));
   }
