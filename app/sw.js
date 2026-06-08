@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-otp-error-cn-20260608-1';
+const CACHE_NAME = 'fw-mobile-app-password-register-20260608-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -48,7 +48,7 @@ function tweakTag(src){
 
 function injectAppTweaks(html){
   let next = String(html || '');
-  next = next.replace(/\.\/profile\.js\?v=[^"']+/g, './profile.js?v=mobile-profile-auth-clean-20260606-1');
+  next = next.replace(/\.\/profile\.js\?v=[^"']+/g, './profile.js?v=mobile-password-register-20260608-1');
   next = next.replace(/\.\/profile-login-ui\.js\?v=[^"']+/g, './profile-login-ui.js?v=mobile-register-form-20260608-1');
   next = next.replace(/\.\/profile-email-guard\.js\?v=[^"']+/g, './profile-email-guard.js?v=mobile-otp-error-cn-20260608-1');
   next = next.replace(/\.\/nav\.js\?v=[^"']+/g, './nav.js?v=mobile-reload-hash-20260608-1');
