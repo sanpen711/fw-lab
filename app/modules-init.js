@@ -41,7 +41,7 @@
     if(commentReplyScriptLoading) return;
     commentReplyScriptLoading = true;
     var script = document.createElement('script');
-    script.src = './comment-reply-fix.js?v=mobile-comment-reply-safe-20260603-2';
+    script.src = './comment-reply-fix.js?v=mobile-comment-threaded-20260608-1';
     script.onload = function(){ commentReplyScriptLoading = false; };
     script.onerror = function(){ commentReplyScriptLoading = false; };
     document.head.appendChild(script);
