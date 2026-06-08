@@ -36,6 +36,20 @@
     return map[hash] || '';
   }
 
+  function replaceHashForView(view){
+    if(!window.history || !window.history.replaceState) return;
+    var hash = view === 'nav' ? '' : '#' + view;
+    window.history.replaceState(null, document.title, window.location.pathname + window.location.search + hash);
+  }
+
+  function clearHash(){
+    if(window.history && window.history.replaceState){
+      window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      return;
+    }
+    if(window.location.hash) window.location.hash = '';
+  }
+
   function openHashView(){
     var view = viewFromHash();
     if(view) app().setView(view);
@@ -59,10 +73,7 @@
         e.preventDefault();
         var view = open.dataset.appOpen || 'nav';
         app().setView(view);
-        if(window.history && window.history.replaceState){
-          var hash = view === 'nav' ? '' : '#' + view;
-          window.history.replaceState(null, document.title, window.location.pathname + window.location.search + hash);
-        }
+        replaceHashForView(view);
         return;
       }
 
@@ -70,15 +81,14 @@
       if(login){
         e.preventDefault();
         app().setView('profile');
-        if(window.history && window.history.replaceState){
-          window.history.replaceState(null, document.title, window.location.pathname + window.location.search + '#profile');
-        }
+        replaceHashForView('profile');
         return;
       }
 
       var reload = e.target.closest && e.target.closest('[data-app-reload]');
       if(reload){
         e.preventDefault();
+        clearHash();
         window.location.reload();
       }
     });
@@ -90,5 +100,5 @@
     bindHashRoutes();
   }
 
-  window.FWAppNav = {init:init, openHashView:openHashView};
+  window.FWAppNav = {init:init, openHashView:openHashView, replaceHashForView:replaceHashForView, clearHash:clearHash};
 })();
