@@ -33,6 +33,14 @@
   async function emailAlreadyRegistered(email){
     await ensureDb();
     var client = db().client;
+
+    var rpc = await client.rpc('fw_email_registered', {check_email:email});
+    if(!rpc.error){
+      return !!rpc.data;
+    }
+
+    console.warn('[FW mobile app] email check rpc unavailable, fallback to profiles query', rpc.error);
+
     var res = await client
       .from('profiles')
       .select('id')
@@ -67,7 +75,7 @@
       toast('验证码已发送，请查收邮箱。');
     }catch(err){
       console.warn('[FW mobile app] register email check failed', err);
-      toast('邮箱检查或验证码发送失败，请稍后重试。');
+      toast('邮箱查重未初始化，请先运行邮箱查重 SQL。');
     }finally{
       busy = false;
       setBusy(button, false);
@@ -87,7 +95,7 @@
       return false;
     }catch(err){
       console.warn('[FW mobile app] register email check failed', err);
-      toast('邮箱检查失败，请稍后重试。');
+      toast('邮箱查重未初始化，请先运行邮箱查重 SQL。');
       return true;
     }finally{
       busy = false;
