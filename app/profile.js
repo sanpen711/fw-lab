@@ -8,14 +8,56 @@
   var swipeStartY = 0;
   var swipeStartAt = 0;
   var mode = 'home';
+  var authView = 'login';
   var stickers = [];
   var stickersLoaded = false;
   var stickersLoading = false;
   var stickerUploading = false;
+  var registerState = readRegisterState();
+  var loginDraftEmail = '';
 
   function app(){ return window.FWApp; }
   function $(selector, root){ return app().$(selector, root); }
   function esc(value){ return app().esc(value); }
+  function db(){ return window.fwDb && window.fwDb.enabled ? window.fwDb : null; }
+  function client(){ return db() && db().client; }
+  function normEmail(value){ return String(value || '').trim().toLowerCase(); }
+  function normCode(value){ return String(value || '').trim().replace(/\s+/g, '').toUpperCase(); }
+  function validCode(value){ return /^[A-Z0-9]{7}$/.test(normCode(value)); }
+  function nicknameFromCode(code){ return '研究员' + normCode(code); }
+
+  function readRegisterState(){
+    try{
+      var raw = window.sessionStorage && sessionStorage.getItem('fw_mobile_register_state');
+      if(!raw) return {email:'', password:'', labCode:''};
+      var data = JSON.parse(raw);
+      return {email:data.email || '', password:data.password || '', labCode:data.labCode || ''};
+    }catch(e){
+      return {email:'', password:'', labCode:''};
+    }
+  }
+
+  function saveRegisterState(){
+    try{
+      if(window.sessionStorage) sessionStorage.setItem('fw_mobile_register_state', JSON.stringify(registerState));
+    }catch(e){}
+  }
+
+  function clearRegisterState(){
+    registerState = {email:'', password:'', labCode:''};
+    try{
+      if(window.sessionStorage) sessionStorage.removeItem('fw_mobile_register_state');
+    }catch(e){}
+  }
+
+  function withTimeout(promise, ms, message){
+    return Promise.race([
+      promise,
+      new Promise(function(_, reject){
+        setTimeout(function(){ reject(new Error(message || '操作超时，请稍后重试。')); }, ms || 15000);
+      })
+    ]);
+  }
 
   function injectStyle(){
     if($('#fwMobileProfileHubStyle')) return;
@@ -39,7 +81,6 @@
       '.profile-menu-icon.green{color:#2aa875;background:rgba(42,168,117,.10)}',
       '.profile-menu-icon.blue{color:#2b8fc8;background:rgba(43,143,200,.10)}',
       '.profile-menu-icon.orange{color:#d18428;background:rgba(209,132,40,.12)}',
-      '.profile-menu-icon.red{color:#d86d6d;background:rgba(216,109,109,.12)}',
       '.profile-menu-icon.yellow{color:#d0a925;background:rgba(208,169,37,.13)}',
       '.profile-menu-icon.cyan{color:#3aa4bd;background:rgba(58,164,189,.12)}',
       '.profile-menu-item b{font-size:17px;line-height:1;font-weight:900;letter-spacing:-.02em;flex:1}',
@@ -63,7 +104,17 @@
       '.profile-login-entry .login-card{margin:0}',
       '.profile-card{box-shadow:none;border:0;padding:0;background:transparent}',
       '.profile-card .profile-head{padding:0}',
-      '.profile-card .stack label{color:var(--accent-dark);font-weight:1000}'
+      '.profile-card .stack label{color:var(--accent-dark);font-weight:1000}',
+      '.mobile-auth-tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}',
+      '.mobile-auth-tabs button{min-height:38px;border:1px solid rgba(16,23,15,.12);border-radius:999px;background:#fffaf1;color:var(--deep);font-size:13px;font-weight:1000}',
+      '.mobile-auth-tabs button.active{background:var(--deep);color:#fffdf7}',
+      '.mobile-register-steps{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:4px 0 12px}',
+      '.mobile-register-steps span{border:1px solid rgba(16,23,15,.12);border-radius:999px;padding:8px 4px;text-align:center;font-size:12px;font-weight:1000;color:var(--muted)}',
+      '.mobile-register-steps span.active{background:var(--deep);color:#fffdf7}',
+      '.mobile-disclaimer{border:1px solid rgba(16,23,15,.10);border-radius:12px;background:#fffaf1;padding:10px;display:grid;gap:6px;color:var(--muted);font-size:12px;line-height:1.5;font-weight:850}',
+      '.mobile-disclaimer label{display:flex;gap:8px;align-items:flex-start;color:var(--deep)!important}',
+      '.mobile-disclaimer input{width:auto;margin-top:2px}',
+      '.mobile-auth-note{margin:0;color:var(--muted);font-size:12px;line-height:1.55;font-weight:850}'
     ].join('\n');
     document.head.appendChild(style);
   }
@@ -131,52 +182,76 @@
     '</section>';
   }
 
+  function authTabs(){
+    return '<div class="mobile-auth-tabs">' +
+      '<button type="button" data-auth-view="login" class="' + (authView === 'login' ? 'active' : '') + '">登录</button>' +
+      '<button type="button" data-auth-view="register1" class="' + (/^register/.test(authView) ? 'active' : '') + '">注册</button>' +
+    '</div>';
+  }
+
+  function loginFormHtml(){
+    return '<form class="stack" data-login-form>' +
+      '<label for="loginEmail">邮箱</label>' +
+      '<input id="loginEmail" name="email" type="email" autocomplete="email" placeholder="you@example.com" value="' + esc(loginDraftEmail) + '" required>' +
+      '<label for="loginPassword">密码</label>' +
+      '<input id="loginPassword" name="password" type="password" autocomplete="current-password" placeholder="输入账号密码" required>' +
+      '<button class="app-btn dark" type="submit">登录</button>' +
+      '<p class="mobile-auth-note">如果你已经在电脑端注册过，请直接用邮箱和密码登录。</p>' +
+    '</form>';
+  }
+
+  function registerStep1Html(){
+    return '<form class="stack" data-register-form>' +
+      '<div class="mobile-register-steps"><span class="active">1 填写信息</span><span>2 验证邮箱</span></div>' +
+      '<label for="regEmail">邮箱</label>' +
+      '<input id="regEmail" name="email" type="email" autocomplete="email" placeholder="用于登录和找回密码" value="' + esc(registerState.email || '') + '" required>' +
+      '<label for="regLabCode">实验品编号</label>' +
+      '<input id="regLabCode" name="lab_code" maxlength="7" autocomplete="off" placeholder="7 位字母或数字，例如 FW2026A" value="' + esc(registerState.labCode || '') + '" required>' +
+      '<p class="mobile-auth-note">实验品编号全站唯一，注册后不能修改。</p>' +
+      '<label for="regPassword">密码</label>' +
+      '<input id="regPassword" name="password" type="password" autocomplete="new-password" placeholder="至少 6 位，以后用它登录" required>' +
+      '<label for="regPassword2">确认密码</label>' +
+      '<input id="regPassword2" name="password2" type="password" autocomplete="new-password" placeholder="再输入一次密码" required>' +
+      '<div class="mobile-disclaimer"><label><input type="checkbox" name="agree" value="1"><span>我已阅读并同意《F.w研究所声明》</span></label><p>勾选后，才能发送邮箱验证码并继续注册。</p></div>' +
+      '<button class="app-btn dark" type="submit">下一步，验证邮箱</button>' +
+      '<p class="mobile-auth-note"><button class="profile-back-btn" type="button" data-auth-view="login">已有账号？返回登录</button></p>' +
+    '</form>';
+  }
+
+  function registerStep2Html(){
+    return '<form class="stack" data-register-verify-form>' +
+      '<div class="mobile-register-steps"><span class="active">1 填写信息</span><span class="active">2 验证邮箱</span></div>' +
+      '<p class="mobile-auth-note">验证码已发送至 ' + esc(registerState.email || '你的邮箱') + '，请输入邮件中的验证码。</p>' +
+      '<label for="regToken">验证码</label>' +
+      '<input id="regToken" name="token" inputmode="numeric" autocomplete="one-time-code" placeholder="填写邮件里的验证码" required>' +
+      '<button class="app-btn dark" type="submit">确认验证码，完成注册</button>' +
+      '<div class="split-actions"><button class="app-btn" type="button" data-resend-register-code>重新发送</button><button class="app-btn" type="button" data-auth-view="register1">返回修改</button></div>' +
+    '</form>';
+  }
+
   function loginHtml(){
+    var body = authView === 'register2' ? registerStep2Html() : (authView === 'register1' ? registerStep1Html() : loginFormHtml());
     return '<section class="profile-detail-card profile-login-entry">' +
-      '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>注册 / 登录</h2></div>' +
-      '<section class="login-card">' +
-        '<div class="stack">' +
-          '<form class="stack" data-login-form>' +
-            '<label for="loginEmail">邮箱</label>' +
-            '<input id="loginEmail" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>' +
-            '<label for="loginPassword">密码</label>' +
-            '<input id="loginPassword" name="password" type="password" autocomplete="current-password" placeholder="至少 6 位" required>' +
-            '<button class="app-btn dark" type="submit">邮箱密码登录</button>' +
-          '</form>' +
-          '<div class="subtle-line"></div>' +
-          '<form class="stack" data-otp-form>' +
-            '<label for="otpNickname">昵称</label>' +
-            '<input id="otpNickname" name="nickname" maxlength="24" placeholder="临时研究员">' +
-            '<label for="otpEmail">邮箱验证码登录 / 注册</label>' +
-            '<input id="otpEmail" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>' +
-            '<div class="split-actions"><button class="app-btn" type="button" data-send-otp>发送验证码</button><button class="app-btn dark" type="submit">验证进入</button></div>' +
-            '<input name="token" inputmode="numeric" autocomplete="one-time-code" placeholder="输入邮箱验证码">' +
-          '</form>' +
-          '<p class="form-note">如果你已经在电脑版登录过，同一浏览器环境通常会自动同步登录状态。</p>' +
-        '</div>' +
-      '</section>' +
+      '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>' + (/^register/.test(authView) ? '注册账号' : '账号登录') + '</h2></div>' +
+      '<section class="login-card"><div class="stack">' +
+        '<p class="mobile-login-kicker">FW ACCOUNT</p>' +
+        '<h1 class="mobile-login-title">' + (/^register/.test(authView) ? '注册账号' : '账号登录') + '</h1>' +
+        '<p class="mobile-login-desc">' + (/^register/.test(authView) ? '填写账号信息并验证邮箱，完成正式注册。' : '输入邮箱和密码，进入研究所。') + '</p>' +
+        authTabs() + body +
+      '</div></section>' +
     '</section>';
   }
 
   function centerHtml(){
-    return '<section class="profile-detail-card">' +
-      '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>个人中心</h2></div>' +
-      '<div class="profile-member-placeholder">个人中心先保留入口。后续可以放个人主页、成长记录、账号概览或其他个人相关功能。</div>' +
-    '</section>';
+    return '<section class="profile-detail-card"><div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>个人中心</h2></div><div class="profile-member-placeholder">个人中心先保留入口。后续可以放个人主页、成长记录、账号概览或其他个人相关功能。</div></section>';
   }
 
   function memberHtml(){
-    return '<section class="profile-detail-card">' +
-      '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>会员中心</h2></div>' +
-      '<div class="profile-member-placeholder">会员中心先保留入口。后续可以放会员身份、专属标识、功能权益或其他设置；目前只展示文字，不接具体功能。</div>' +
-    '</section>';
+    return '<section class="profile-detail-card"><div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>会员中心</h2></div><div class="profile-member-placeholder">会员中心先保留入口。后续可以放会员身份、专属标识、功能权益或其他设置；目前只展示文字，不接具体功能。</div></section>';
   }
 
   function shopHtml(){
-    return '<section class="profile-detail-card">' +
-      '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>周边商城</h2></div>' +
-      '<div class="profile-member-placeholder">周边商城先保留入口。后续可以放研究所周边、虚拟纪念品或其它展示内容。</div>' +
-    '</section>';
+    return '<section class="profile-detail-card"><div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>周边商城</h2></div><div class="profile-member-placeholder">周边商城先保留入口。后续可以放研究所周边、虚拟纪念品或其它展示内容。</div></section>';
   }
 
   function stickersHtml(user){
@@ -211,10 +286,9 @@
     stickersLoading = true;
     refreshStickerList();
     try{
-      var db = app().db();
-      var client = db && db.client;
-      if(!client) throw new Error('db');
-      var res = await client.from('user_stickers').select('id,image_url,storage_path,file_name,file_size,mime_type,created_at').eq('user_id', user.id).eq('is_deleted', false).order('created_at', {ascending:false}).limit(30);
+      var c = client();
+      if(!c) throw new Error('db');
+      var res = await c.from('user_stickers').select('id,image_url,storage_path,file_name,file_size,mime_type,created_at').eq('user_id', user.id).eq('is_deleted', false).order('created_at', {ascending:false}).limit(30);
       if(res.error) throw res.error;
       stickers = res.data || [];
       stickersLoaded = true;
@@ -251,27 +325,22 @@
   async function uploadSticker(file){
     if(stickerUploading) return;
     var user = app().state.user;
-    if(!user){
-      mode = 'login';
-      render();
-      return;
-    }
+    if(!user){ mode = 'login'; render(); return; }
     validateSticker(file);
-    var db = app().db();
-    var client = db && db.client;
-    if(!client || !client.storage) throw new Error('storage');
+    var c = client();
+    if(!c || !c.storage) throw new Error('storage');
     stickerUploading = true;
     app().toast('正在添加表情...');
     try{
       var ext = extFromFile(file);
       var random = Math.random().toString(36).slice(2, 8);
       var path = String(user.id) + '/' + Date.now().toString(36) + '_' + random + '.' + ext;
-      var uploaded = await client.storage.from('stickers').upload(path, file, {cacheControl:'3600', upsert:false, contentType:file.type || 'image/' + ext});
+      var uploaded = await c.storage.from('stickers').upload(path, file, {cacheControl:'3600', upsert:false, contentType:file.type || 'image/' + ext});
       if(uploaded.error) throw uploaded.error;
-      var publicData = client.storage.from('stickers').getPublicUrl(path);
+      var publicData = c.storage.from('stickers').getPublicUrl(path);
       var publicUrl = publicData && publicData.data && publicData.data.publicUrl;
       if(!publicUrl) throw new Error('public-url');
-      var saved = await client.from('user_stickers').insert({user_id:user.id,image_url:publicUrl,storage_path:path,file_name:file.name || 'sticker',file_size:file.size || 0,mime_type:file.type || ''}).select('id,image_url,storage_path,file_name,file_size,mime_type,created_at').single();
+      var saved = await c.from('user_stickers').insert({user_id:user.id,image_url:publicUrl,storage_path:path,file_name:file.name || 'sticker',file_size:file.size || 0,mime_type:file.type || ''}).select('id,image_url,storage_path,file_name,file_size,mime_type,created_at').single();
       if(saved.error) throw saved.error;
       stickers = [saved.data].concat(stickers).slice(0, 30);
       stickersLoaded = true;
@@ -285,10 +354,9 @@
   async function deleteSticker(id){
     if(!id) return;
     if(!window.confirm('确定删除这个表情吗？')) return;
-    var db = app().db();
-    var client = db && db.client;
-    if(!client) throw new Error('db');
-    var res = await client.from('user_stickers').update({is_deleted:true}).eq('id', id).eq('user_id', app().state.user.id);
+    var c = client();
+    if(!c) throw new Error('db');
+    var res = await c.from('user_stickers').update({is_deleted:true}).eq('id', id).eq('user_id', app().state.user.id);
     if(res.error) throw res.error;
     stickers = stickers.filter(function(row){ return String(row.id) !== String(id); });
     refreshStickerList();
@@ -324,11 +392,137 @@
   }
 
   function safeMessage(err, fallback){
-    var msg = err && err.message ? err.message : '';
-    if(/Could not|relationship|schema|duplicate key|violates/i.test(msg)) return fallback;
+    var msg = err && err.message ? err.message : String(err || '');
+    if(/token has expired|token.*invalid|expired or is invalid|otp.*expired|otp.*invalid/i.test(msg)) return '验证码错误或已失效';
+    if(/invalid login credentials/i.test(msg)) return '邮箱或密码不正确。';
+    if(/email not confirmed/i.test(msg)) return '邮箱还没有验证，请先完成邮箱验证码验证。';
+    if(/User already registered/i.test(msg)) return '这个邮箱已经注册过，请直接登录。';
+    if(/Email rate limit exceeded|rate limit|too many/i.test(msg)) return '验证码发送太频繁，请稍后再试。';
+    if(/duplicate key|unique|duplicate/i.test(msg)) return '该资料已被占用，请换一个。';
+    if(/Could not|relationship|schema|violates/i.test(msg)) return fallback;
     if(/bucket|storage|not found/i.test(msg)) return '表情存储还没初始化，请先检查表情包 SQL。';
     if(/row-level security|permission|policy|denied/i.test(msg)) return '没有权限执行这个操作，请检查登录状态。';
     return msg || fallback;
+  }
+
+  async function waitForDb(){
+    if(app() && app().waitForDb){
+      var ok = await app().waitForDb(10000);
+      if(ok && db()) return true;
+    }
+    if(db()) return true;
+    throw new Error('数据库连接未就绪，请刷新页面后重试。');
+  }
+
+  async function registerStep1(form){
+    var btn = form.querySelector('button[type="submit"]');
+    setBusy(btn, true, '发送中...');
+    try{
+      await waitForDb();
+      var email = normEmail(form.email && form.email.value);
+      var password = String(form.password && form.password.value || '').trim();
+      var password2 = String(form.password2 && form.password2.value || '').trim();
+      var labCode = normCode(form.lab_code && form.lab_code.value);
+      if(!email) throw new Error('请填写邮箱。');
+      if(!validCode(labCode)) throw new Error('实验品编号必须是 7 位字母或数字。');
+      if(password.length < 6) throw new Error('密码至少 6 位。');
+      if(password !== password2) throw new Error('两次密码不一致。');
+      if(!form.agree || !form.agree.checked) throw new Error('请先勾选声明。');
+
+      var nickname = nicknameFromCode(labCode);
+      var c = client();
+      var chk = await withTimeout(c.rpc('fw_check_profile_identity', {check_lab_code:labCode, check_nickname:nickname}), 10000, '检查编号是否重复超时，请稍后重试。');
+      if(chk.error) throw chk.error;
+      if(chk.data && chk.data.lab_code_taken) throw new Error('该编号已被注册。');
+      if(chk.data && chk.data.nickname_taken) throw new Error('该昵称已被注册。');
+
+      registerState = {email:email, password:password, labCode:labCode};
+      saveRegisterState();
+
+      var r = await withTimeout(c.auth.signUp({
+        email:email,
+        password:password,
+        options:{
+          data:{nickname:nickname, lab_code:labCode},
+          emailRedirectTo:window.location.href.split('#')[0]
+        }
+      }), 18000, '验证码发送超时，请稍后重试。');
+      if(r.error) throw r.error;
+
+      authView = 'register2';
+      render();
+      app().toast('验证码已发送。');
+    }catch(err){
+      app().toast(safeMessage(err, '注册信息提交失败。'));
+    }finally{
+      setBusy(btn, false);
+    }
+  }
+
+  async function resendRegisterCode(btn){
+    setBusy(btn, true, '发送中...');
+    try{
+      await waitForDb();
+      if(!registerState.email) throw new Error('注册信息丢失，请返回第一步重新填写。');
+      var c = client();
+      if(c.auth.resend){
+        var resend = await withTimeout(c.auth.resend({type:'signup', email:registerState.email}), 15000, '验证码发送超时，请稍后重试。');
+        if(resend.error) throw resend.error;
+      }else{
+        var again = await withTimeout(c.auth.signUp({email:registerState.email, password:registerState.password, options:{data:{nickname:nicknameFromCode(registerState.labCode), lab_code:registerState.labCode}, emailRedirectTo:window.location.href.split('#')[0]}}), 15000, '验证码发送超时，请稍后重试。');
+        if(again.error) throw again.error;
+      }
+      app().toast('验证码已重新发送。');
+    }catch(err){
+      app().toast(safeMessage(err, '验证码重新发送失败。'));
+    }finally{
+      setBusy(btn, false);
+    }
+  }
+
+  async function registerStep2(form){
+    var btn = form.querySelector('button[type="submit"]');
+    setBusy(btn, true, '验证中...');
+    try{
+      await waitForDb();
+      registerState = readRegisterState();
+      var token = String(form.token && form.token.value || '').trim().replace(/\s+/g, '');
+      if(!registerState.email || !validCode(registerState.labCode)) throw new Error('注册信息丢失，请返回第一步重新填写。');
+      if(!token) throw new Error('请填写验证码。');
+
+      var c = client();
+      var verified = await withTimeout(c.auth.verifyOtp({email:registerState.email, token:token, type:'signup'}), 18000, '验证码验证超时，请稍后重试。');
+      if(verified.error) throw verified.error;
+
+      var user = verified.data && verified.data.user || null;
+      if(!user){
+        var sessionRes = await withTimeout(c.auth.getSession(), 8000, '读取登录状态超时，请刷新后登录。');
+        user = sessionRes.data && sessionRes.data.session && sessionRes.data.session.user || null;
+      }
+      if(!user || !user.id) throw new Error('邮箱已验证，但登录状态未同步，请刷新后登录。');
+
+      var saved = await withTimeout(c.from('profiles').update({
+        nickname:nicknameFromCode(registerState.labCode),
+        lab_code:registerState.labCode,
+        email_search:registerState.email,
+        updated_at:new Date().toISOString()
+      }).eq('id', user.id).select('id,lab_code,nickname').maybeSingle(), 10000, '保存实验品编号超时，请稍后重试。');
+      if(saved.error) throw saved.error;
+
+      var registeredEmail = registerState.email;
+      clearRegisterState();
+      await c.auth.signOut().catch(function(){});
+      await app().refreshUser();
+      loginDraftEmail = registeredEmail;
+      authView = 'login';
+      mode = 'login';
+      render();
+      app().toast('注册成功，请用邮箱和密码登录。');
+    }catch(err){
+      app().toast(safeMessage(err, '验证码验证失败。'));
+    }finally{
+      setBusy(btn, false);
+    }
   }
 
   function bindSwipeBack(){
@@ -389,27 +583,17 @@
         return;
       }
 
-      var otpForm = e.target.closest && e.target.closest('[data-otp-form]');
-      if(otpForm){
+      var registerForm = e.target.closest && e.target.closest('[data-register-form]');
+      if(registerForm){
         e.preventDefault();
-        var otpBtn = otpForm.querySelector('button[type="submit"]');
-        setBusy(otpBtn, true, '验证中...');
-        try{
-          await window.fwDb.verifyEmailOtp({
-            email:otpForm.email.value,
-            token:otpForm.token.value,
-            nickname:otpForm.nickname.value
-          });
-          await app().refreshUser();
-          if(window.FWAppFeed) await window.FWAppFeed.load(true);
-          mode = 'home';
-          render();
-          app().toast('已进入研究所');
-        }catch(err){
-          app().toast(safeMessage(err, '验证码验证失败。'));
-        }finally{
-          setBusy(otpBtn, false);
-        }
+        await registerStep1(registerForm);
+        return;
+      }
+
+      var verifyForm = e.target.closest && e.target.closest('[data-register-verify-form]');
+      if(verifyForm){
+        e.preventDefault();
+        await registerStep2(verifyForm);
         return;
       }
 
@@ -439,15 +623,27 @@
       var file = fileInput.files && fileInput.files[0] || null;
       fileInput.value = '';
       if(!file) return;
-      try{
-        await uploadSticker(file);
-      }catch(err){
-        console.warn('[FW mobile app] sticker upload failed', err);
-        app().toast(safeMessage(err, '表情添加失败。'));
-      }
+      try{ await uploadSticker(file); }
+      catch(err){ console.warn('[FW mobile app] sticker upload failed', err); app().toast(safeMessage(err, '表情添加失败。')); }
     });
 
     document.addEventListener('click', async function(e){
+      var authBtn = e.target.closest && e.target.closest('[data-auth-view]');
+      if(authBtn){
+        e.preventDefault();
+        authView = authBtn.dataset.authView || 'login';
+        mode = 'login';
+        render();
+        return;
+      }
+
+      var resend = e.target.closest && e.target.closest('[data-resend-register-code]');
+      if(resend){
+        e.preventDefault();
+        await resendRegisterCode(resend);
+        return;
+      }
+
       var modeBtn = e.target.closest && e.target.closest('[data-profile-mode]');
       if(modeBtn){
         e.preventDefault();
@@ -467,32 +663,8 @@
       var del = e.target.closest && e.target.closest('[data-sticker-delete]');
       if(del){
         e.preventDefault();
-        try{
-          await deleteSticker(del.dataset.stickerDelete);
-        }catch(err){
-          console.warn('[FW mobile app] sticker delete failed', err);
-          app().toast(safeMessage(err, '表情删除失败。'));
-        }
-        return;
-      }
-
-      var send = e.target.closest && e.target.closest('[data-send-otp]');
-      if(send){
-        var form = send.closest('[data-otp-form]');
-        if(!form.email.value.trim()){
-          form.email.focus();
-          app().toast('先填写邮箱。');
-          return;
-        }
-        setBusy(send, true, '发送中...');
-        try{
-          await window.fwDb.sendEmailOtp({email:form.email.value, nickname:form.nickname.value});
-          app().toast('验证码已发送，请查收邮箱。');
-        }catch(err){
-          app().toast(safeMessage(err, '验证码发送失败。'));
-        }finally{
-          setBusy(send, false);
-        }
+        try{ await deleteSticker(del.dataset.stickerDelete); }
+        catch(err){ console.warn('[FW mobile app] sticker delete failed', err); app().toast(safeMessage(err, '表情删除失败。')); }
         return;
       }
 
