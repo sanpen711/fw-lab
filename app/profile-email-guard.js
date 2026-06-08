@@ -3,6 +3,9 @@
   window.__FW_MOBILE_PROFILE_EMAIL_GUARD__ = true;
 
   var busy = false;
+  var pendingOtpEmail = '';
+  var pendingOtpNickname = '';
+  var pendingOtpSentAt = 0;
 
   function normEmail(value){ return String(value || '').trim().toLowerCase(); }
   function app(){ return window.FWApp || null; }
@@ -21,13 +24,15 @@
     }
   }
 
-  function sentEmail(form){ return normEmail(form && form.dataset && form.dataset.emailGuardSentEmail); }
-  function markSent(form, email){
-    if(!form) return;
-    form.dataset.emailGuardSentEmail = normEmail(email);
-    form.dataset.emailGuardSentAt = String(Date.now());
+  function markPending(email, nickname){
+    pendingOtpEmail = normEmail(email);
+    pendingOtpNickname = String(nickname || '').trim();
+    pendingOtpSentAt = Date.now();
   }
-  function isJustSentEmail(form, email){ return !!email && sentEmail(form) === normEmail(email); }
+
+  function hasPending(email){
+    return !!pendingOtpEmail && pendingOtpEmail === normEmail(email);
+  }
 
   async function ensureDb(){
     if(app() && app().waitForDb){
@@ -66,6 +71,7 @@
   async function handleSend(button, form){
     if(busy) return;
     var email = normEmail(form && form.email && form.email.value);
+    var nickname = form && form.nickname ? form.nickname.value : '';
     if(!email){
       if(form && form.email) form.email.focus();
       toast('先填写邮箱。');
@@ -74,42 +80,29 @@
     busy = true;
     setBusy(button, true, '检查中...');
     try{
-      if(!isJustSentEmail(form, email) && await emailAlreadyRegistered(email)){
+      if(!hasPending(email) && await emailAlreadyRegistered(email)){
         toast('这个邮箱已经注册过，请返回登录，使用邮箱和密码登录。');
         return;
       }
       setBusy(button, true, '发送中...');
-      await window.fwDb.sendEmailOtp({email:email, nickname:form.nickname && form.nickname.value});
-      markSent(form, email);
+      await window.fwDb.sendEmailOtp({email:email, nickname:nickname});
+      markPending(email, nickname);
       toast('验证码已发送，请查收邮箱。');
     }catch(err){
       console.warn('[FW mobile app] register email check failed', err);
-      toast('邮箱查重未初始化，请先运行邮箱查重 SQL。');
+      toast('验证码发送失败，请稍后重试。');
     }finally{
       busy = false;
       setBusy(button, false);
     }
   }
 
-  async function shouldBlockSubmit(form){
-    if(busy) return true;
-    var email = normEmail(form && form.email && form.email.value);
-    if(!email) return false;
-    if(isJustSentEmail(form, email)) return false;
-    busy = true;
-    try{
-      if(await emailAlreadyRegistered(email)){
-        toast('这个邮箱已经注册过，请返回登录，使用邮箱和密码登录。');
-        return true;
-      }
-      return false;
-    }catch(err){
-      console.warn('[FW mobile app] register email check failed', err);
-      toast('邮箱查重未初始化，请先运行邮箱查重 SQL。');
-      return true;
-    }finally{
-      busy = false;
-    }
+  function blockSubmit(event, form, message, focusNode){
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    if(focusNode && focusNode.focus) focusNode.focus();
+    toast(message);
   }
 
   document.addEventListener('click', function(event){
@@ -122,19 +115,28 @@
     handleSend(send, form);
   }, true);
 
-  document.addEventListener('submit', async function(event){
+  document.addEventListener('submit', function(event){
     var form = event.target.closest && event.target.closest('[data-otp-form]');
     if(!form || !isMobileRegisterPanel(form)) return;
-    if(form.dataset.emailGuardPassed === '1'){
-      delete form.dataset.emailGuardPassed;
+
+    var email = normEmail(form.email && form.email.value);
+    var token = String(form.token && form.token.value || '').trim().replace(/\s/g, '');
+
+    if(!email){
+      blockSubmit(event, form, '先填写邮箱。', form.email);
       return;
     }
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    var blocked = await shouldBlockSubmit(form);
-    if(blocked) return;
-    form.dataset.emailGuardPassed = '1';
-    form.dispatchEvent(new Event('submit', {bubbles:true, cancelable:true}));
+
+    if(!hasPending(email)){
+      blockSubmit(event, form, '请先发送验证码，再验证进入。', form.email);
+      return;
+    }
+
+    if(!token){
+      blockSubmit(event, form, '请输入邮箱验证码。', form.token);
+      return;
+    }
+
+    // 已经发送过验证码的同一邮箱：不再查重、不再二次派发 submit，直接交给 profile.js 原始验证逻辑处理。
   }, true);
 })();
