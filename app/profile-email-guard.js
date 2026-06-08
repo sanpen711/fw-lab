@@ -4,7 +4,6 @@
 
   var busy = false;
 
-  function $(selector, root){ return (root || document).querySelector(selector); }
   function normEmail(value){ return String(value || '').trim().toLowerCase(); }
   function app(){ return window.FWApp || null; }
   function toast(message){ if(app() && app().toast) app().toast(message); }
@@ -75,16 +74,17 @@
     }
   }
 
-  async function handleSubmit(form){
-    if(busy) return;
+  async function shouldBlockSubmit(form){
+    if(busy) return true;
     var email = normEmail(form && form.email && form.email.value);
-    if(!email) return;
+    if(!email) return false;
     busy = true;
     try{
       if(await emailAlreadyRegistered(email)){
         toast('这个邮箱已经注册过，请返回登录，使用邮箱和密码登录。');
         return true;
       }
+      return false;
     }catch(err){
       console.warn('[FW mobile app] register email check failed', err);
       toast('邮箱检查失败，请稍后重试。');
@@ -92,7 +92,6 @@
     }finally{
       busy = false;
     }
-    return false;
   }
 
   document.addEventListener('click', function(event){
@@ -108,11 +107,16 @@
   document.addEventListener('submit', async function(event){
     var form = event.target.closest && event.target.closest('[data-otp-form]');
     if(!form || !isMobileRegisterPanel(form)) return;
+    if(form.dataset.emailGuardPassed === '1'){
+      delete form.dataset.emailGuardPassed;
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
-    var blocked = await handleSubmit(form);
+    var blocked = await shouldBlockSubmit(form);
     if(blocked) return;
+    form.dataset.emailGuardPassed = '1';
     form.dispatchEvent(new Event('submit', {bubbles:true, cancelable:true}));
   }, true);
 })();
