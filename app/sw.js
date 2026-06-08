@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-mobile-only-label-20260608-1';
+const CACHE_NAME = 'fw-mobile-app-password-register-20260608-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -23,7 +23,6 @@ const APP_SHELL = [
   appPath('buddy-contacts-actions.js'),
   appPath('buddy-chat-entry-fix.js'),
   assetPath('fw-emoji-panel.js'),
-  assetPath('fw-researcher-id-label.js'),
   assetPath('icons/apple-touch-icon.png'),
   assetPath('icons/icon-192.png'),
   assetPath('icons/icon-512.png'),
@@ -50,13 +49,10 @@ function tweakTag(src){
 function injectAppTweaks(html){
   let next = String(html || '');
   next = next.replace(/\.\/profile\.js\?v=[^"']+/g, './profile.js?v=mobile-password-register-20260608-1');
-  next = next.replace(/\.\/profile-login-ui\.js\?v=[^"']+/g, './profile-login-ui.js?v=mobile-auth-choice-20260608-1');
-  next = next.replace(/\.\/profile-email-guard\.js\?v=[^"']+/g, './profile-email-guard.js?v=mobile-auth-clean-20260608-1');
+  next = next.replace(/\.\/profile-login-ui\.js\?v=[^"']+/g, './profile-login-ui.js?v=mobile-register-form-20260608-1');
+  next = next.replace(/\.\/profile-email-guard\.js\?v=[^"']+/g, './profile-email-guard.js?v=mobile-otp-error-cn-20260608-1');
   next = next.replace(/\.\/nav\.js\?v=[^"']+/g, './nav.js?v=mobile-reload-hash-20260608-1');
   next = next.replace(/\.\/modules-init\.js\?v=[^"']+/g, './modules-init.js?v=mobile-comment-thread-20260608-1');
-  if(next.indexOf('fw-researcher-id-label.js') < 0){
-    next = next.replace('</body>', tweakTag('../assets/fw-researcher-id-label.js?v=mobile-only-label-20260608-1'));
-  }
   if(next.indexOf('echo-enhance.js') < 0){
     next = next.replace('</body>', tweakTag('./echo-enhance.js?v=mobile-echo-enhance-20260529-2'));
   }
