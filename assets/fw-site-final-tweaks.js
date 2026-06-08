@@ -49,15 +49,6 @@
     return s.length > 32 ? s.slice(0, 32) + '…' : s;
   }
 
-  function loadResearcherIdLabel(){
-    var src = 'assets/fw-researcher-id-label.js?v=researcher-id-label-20260608-1';
-    if(document.querySelector('script[src="' + src + '"]')) return;
-    var s = document.createElement('script');
-    s.src = src;
-    s.defer = false;
-    document.body.appendChild(s);
-  }
-
   function patchNav(){
     var page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
     var active = page === 'admin.html';
@@ -263,7 +254,7 @@
         var name = p.nickname || (nameBox && nameBox.textContent) || '低功耗研究员';
         var lab = p.lab_code || '未设置';
 
-        var title = name + '｜研究员ID：' + lab;
+        var title = name + '｜实验品编号：' + lab;
 
         row.title = title;
         row.setAttribute('aria-label', title);
@@ -283,7 +274,7 @@
         var sub = row.querySelector('.fw-wx-sub');
 
         if(sub){
-          var text = '研究员ID：' + lab;
+          var text = '实验品编号：' + lab;
 
           if(pv[id]){
             text += '｜最后消息：' + (pv[id].mine ? '我：' : '对方：') + shortText(pv[id].content);
@@ -314,7 +305,7 @@
       .trim() || '搭子';
 
     var sub = chatSub ? chatSub.textContent : '';
-    var match = sub.match(/(?:实验品编号|研究员ID)[:：]\s*([^\s｜]+)/);
+    var match = sub.match(/实验品编号[:：]\s*([^\s｜]+)/);
     var lab = match ? match[1] : '未设置';
 
     $$('.fw-wx-pm').forEach(function(pm){
@@ -326,7 +317,7 @@
         box.textContent = '我｜本人';
         box.title = '我｜本人';
       }else{
-        var text = name + '｜研究员ID：' + lab;
+        var text = name + '｜实验品编号：' + lab;
         box.textContent = text;
         box.title = text;
       }
@@ -383,7 +374,6 @@
   }
 
   function boot(){
-    loadResearcherIdLabel();
     patchNav();
     protectEcho();
     bindEnhance();
