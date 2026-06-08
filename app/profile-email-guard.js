@@ -9,7 +9,23 @@
 
   function normEmail(value){ return String(value || '').trim().toLowerCase(); }
   function app(){ return window.FWApp || null; }
-  function toast(message){ if(app() && app().toast) app().toast(message); }
+  function translateMessage(message){
+    var text = String(message || '');
+    if(/token has expired|token.*invalid|expired or is invalid|otp.*expired|otp.*invalid/i.test(text)){
+      return '验证码错误或已失效';
+    }
+    return text;
+  }
+  function patchToast(){
+    var fw = app();
+    if(!fw || !fw.toast || fw.__fwOtpToastPatched) return;
+    var original = fw.toast;
+    fw.toast = function(message){
+      return original.call(fw, translateMessage(message));
+    };
+    fw.__fwOtpToastPatched = true;
+  }
+  function toast(message){ patchToast(); if(app() && app().toast) app().toast(translateMessage(message)); }
   function db(){ return window.fwDb && window.fwDb.enabled ? window.fwDb : null; }
 
   function setBusy(button, loading, text){
@@ -105,6 +121,8 @@
     toast(message);
   }
 
+  patchToast();
+
   document.addEventListener('click', function(event){
     var send = event.target.closest && event.target.closest('[data-send-otp]');
     if(!send || !isMobileRegisterPanel(send)) return;
@@ -116,6 +134,7 @@
   }, true);
 
   document.addEventListener('submit', function(event){
+    patchToast();
     var form = event.target.closest && event.target.closest('[data-otp-form]');
     if(!form || !isMobileRegisterPanel(form)) return;
 
