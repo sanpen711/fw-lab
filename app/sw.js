@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-reload-hash-20260608-1';
+const CACHE_NAME = 'fw-mobile-app-inline-login-20260608-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -53,12 +53,6 @@ function injectAppTweaks(html){
   next = next.replace(/\.\/modules-init\.js\?v=[^"']+/g, './modules-init.js?v=mobile-comment-thread-20260608-1');
   if(next.indexOf('echo-enhance.js') < 0){
     next = next.replace('</body>', tweakTag('./echo-enhance.js?v=mobile-echo-enhance-20260529-2'));
-  }
-  if(next.indexOf('profile-login-ui.js') < 0){
-    next = next.replace('</body>', tweakTag('./profile-login-ui.js?v=mobile-profile-login-ui-20260606-1'));
-  }
-  if(next.indexOf('profile-email-guard.js') < 0){
-    next = next.replace('</body>', tweakTag('./profile-email-guard.js?v=mobile-email-guard-20260608-1'));
   }
   if(next.indexOf('fw-emoji-panel.js') < 0){
     next = next.replace('</body>', tweakTag('../assets/fw-emoji-panel.js?v=mobile-buddy-chat-20260528-1'));
