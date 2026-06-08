@@ -21,6 +21,14 @@
     }
   }
 
+  function sentEmail(form){ return normEmail(form && form.dataset && form.dataset.emailGuardSentEmail); }
+  function markSent(form, email){
+    if(!form) return;
+    form.dataset.emailGuardSentEmail = normEmail(email);
+    form.dataset.emailGuardSentAt = String(Date.now());
+  }
+  function isJustSentEmail(form, email){ return !!email && sentEmail(form) === normEmail(email); }
+
   async function ensureDb(){
     if(app() && app().waitForDb){
       var ok = await app().waitForDb(10000);
@@ -66,12 +74,13 @@
     busy = true;
     setBusy(button, true, '检查中...');
     try{
-      if(await emailAlreadyRegistered(email)){
+      if(!isJustSentEmail(form, email) && await emailAlreadyRegistered(email)){
         toast('这个邮箱已经注册过，请返回登录，使用邮箱和密码登录。');
         return;
       }
       setBusy(button, true, '发送中...');
       await window.fwDb.sendEmailOtp({email:email, nickname:form.nickname && form.nickname.value});
+      markSent(form, email);
       toast('验证码已发送，请查收邮箱。');
     }catch(err){
       console.warn('[FW mobile app] register email check failed', err);
@@ -86,6 +95,7 @@
     if(busy) return true;
     var email = normEmail(form && form.email && form.email.value);
     if(!email) return false;
+    if(isJustSentEmail(form, email)) return false;
     busy = true;
     try{
       if(await emailAlreadyRegistered(email)){
