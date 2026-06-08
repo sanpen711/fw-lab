@@ -1,6 +1,9 @@
-// F.w 研究所：显示层文案统一
-// 仅把页面可见的“实验品编号”替换为“研究员ID”，不修改数据库字段 lab_code。
+// F.w 研究所：手机端 PWA 显示层文案统一
+// 只在 /app/ 手机端 PWA 内，把页面可见的“实验品编号”替换为“研究员ID”。
+// 不修改数据库字段 lab_code；电脑端页面即使加载到本脚本也不会执行。
 (function(){
+  var path = String(location.pathname || '');
+  if(!/\/app(?:\/|$)/.test(path)) return;
   if(window.__FW_RESEARCHER_ID_LABEL__) return;
   window.__FW_RESEARCHER_ID_LABEL__ = true;
 
