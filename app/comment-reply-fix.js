@@ -1,13 +1,37 @@
-// F.w 研究所：手机端评论父级回复桥接
-// 作用：不重写 feed.js，只在回复评论提交时把 parent_comment_id / reply_to_comment_id / reply_to_user_id 真正写入数据库。
+// F.w 研究所：手机端评论父级回复桥接 + 父子评论展示
+// 作用：回复评论时写入 parent_comment_id / reply_to_comment_id / reply_to_user_id，并把详情页评论按父子结构展示。
 (function(){
   if(window.__FW_MOBILE_COMMENT_REPLY_FIX__) return;
   window.__FW_MOBILE_COMMENT_REPLY_FIX__ = true;
+
+  var observerBound = false;
+  var renderTimer = null;
+  var threading = false;
 
   function app(){ return window.FWApp || null; }
   function toast(message){ var fw = app(); if(fw && fw.toast) fw.toast(message); else alert(message); }
   function db(){ return window.fwDb || null; }
   function client(){ return db() && db().client; }
+
+  function injectStyle(){
+    if(document.getElementById('fwMobileCommentThreadStyle')) return;
+    var style = document.createElement('style');
+    style.id = 'fwMobileCommentThreadStyle';
+    style.textContent = [
+      '.detail-comment-list.is-threaded{display:grid;gap:12px}',
+      '.comment-thread{display:grid;gap:8px}',
+      '.comment-thread>.comment{margin:0}',
+      '.comment-replies{display:grid;gap:8px;margin-left:38px;padding-left:10px;border-left:2px solid rgba(16,23,15,.08)}',
+      '.comment-replies .comment{margin:0;padding-top:6px}',
+      '.comment-replies .post-avatar{width:28px;height:28px;font-size:11px}',
+      '.comment-replies .comment-info-line{font-size:12px}',
+      '.comment-replies .fw-rich-content{font-size:13px;line-height:1.55}',
+      '.comment-root-item>.comment-body{min-width:0}',
+      '.comment-reply-item>.comment-body{min-width:0}',
+      '@media (max-width:380px){.comment-replies{margin-left:28px;padding-left:8px}}'
+    ].join('\n');
+    document.head.appendChild(style);
+  }
 
   function getDraftReply(postId){
     var form = document.querySelector('[data-comment-form][data-comment-kind="reply"][data-post-id="' + String(postId).replace(/"/g, '\\"') + '"]');
@@ -50,6 +74,10 @@
     return null;
   }
 
+  function commentParentId(comment){
+    return comment && (comment.parentCommentId || comment.parent_comment_id) || null;
+  }
+
   function findCommentInPost(post, commentId){
     var comments = post && post.comments || [];
     for(var i = 0; i < comments.length; i += 1){
@@ -65,8 +93,160 @@
 
   function findRootCommentId(post, targetComment){
     if(!targetComment) return null;
-    if(!targetComment.parentCommentId && !targetComment.parent_comment_id) return targetComment.id;
-    return targetComment.parentCommentId || targetComment.parent_comment_id || targetComment.id;
+    if(!commentParentId(targetComment)) return targetComment.id;
+    return commentParentId(targetComment) || targetComment.id;
+  }
+
+  function buildCommentTree(comments){
+    comments = comments || [];
+    var byId = {};
+    comments.forEach(function(comment){
+      if(comment && comment.id != null) byId[String(comment.id)] = comment;
+    });
+
+    function rootIdOf(comment){
+      var parentId = commentParentId(comment);
+      if(!parentId || !byId[String(parentId)]) return String(comment.id);
+      var guard = 0;
+      var current = byId[String(parentId)];
+      while(current && commentParentId(current) && byId[String(commentParentId(current))] && guard < 20){
+        current = byId[String(commentParentId(current))];
+        guard += 1;
+      }
+      return current && current.id != null ? String(current.id) : String(comment.id);
+    }
+
+    var rootIds = [];
+    var repliesByRoot = {};
+    comments.forEach(function(comment){
+      if(!comment || comment.id == null) return;
+      var id = String(comment.id);
+      var parentId = commentParentId(comment);
+      if(parentId && byId[String(parentId)]){
+        var rootId = rootIdOf(comment);
+        if(rootId === id){
+          rootIds.push(id);
+        }else{
+          (repliesByRoot[rootId] = repliesByRoot[rootId] || []).push(comment);
+        }
+      }else{
+        rootIds.push(id);
+      }
+    });
+    return {rootIds:rootIds, repliesByRoot:repliesByRoot};
+  }
+
+  function commentSignature(comments){
+    return (comments || []).map(function(comment){
+      return [comment.id, commentParentId(comment) || '', comment.replyToCommentId || comment.reply_to_comment_id || ''].join(':');
+    }).join('|');
+  }
+
+  function applyThreadedComments(postId){
+    if(threading) return;
+    var post = findPost(postId || currentDetailPostId());
+    var list = document.querySelector('.detail-comment-list');
+    if(!post || !list) return;
+    var comments = post.comments || [];
+    if(!comments.length) return;
+
+    var signature = commentSignature(comments);
+    if(list.dataset.threadSignature === signature && list.classList.contains('is-threaded')) return;
+
+    var nodes = Array.from(list.querySelectorAll('.comment[data-comment-id]'));
+    if(!nodes.length) return;
+    var nodeById = {};
+    nodes.forEach(function(node){
+      nodeById[String(node.dataset.commentId || '')] = node;
+    });
+
+    var tree = buildCommentTree(comments);
+    var used = {};
+    var frag = document.createDocumentFragment();
+
+    threading = true;
+    try{
+      tree.rootIds.forEach(function(rootId){
+        var rootNode = nodeById[String(rootId)];
+        if(!rootNode) return;
+        used[String(rootId)] = true;
+        rootNode.classList.add('comment-root-item');
+        rootNode.classList.remove('comment-reply-item');
+
+        var thread = document.createElement('div');
+        thread.className = 'comment-thread';
+        thread.dataset.rootCommentId = String(rootId);
+        thread.appendChild(rootNode);
+
+        var replies = tree.repliesByRoot[String(rootId)] || [];
+        if(replies.length){
+          var replyBox = document.createElement('div');
+          replyBox.className = 'comment-replies';
+          replyBox.dataset.repliesFor = String(rootId);
+          replies.forEach(function(reply){
+            var replyNode = nodeById[String(reply.id)];
+            if(!replyNode) return;
+            used[String(reply.id)] = true;
+            replyNode.classList.add('comment-reply-item');
+            replyNode.classList.remove('comment-root-item');
+            replyBox.appendChild(replyNode);
+          });
+          if(replyBox.children.length) thread.appendChild(replyBox);
+        }
+
+        frag.appendChild(thread);
+      });
+
+      nodes.forEach(function(node){
+        var id = String(node.dataset.commentId || '');
+        if(used[id]) return;
+        var orphan = document.createElement('div');
+        orphan.className = 'comment-thread comment-thread-orphan';
+        node.classList.add('comment-root-item');
+        node.classList.remove('comment-reply-item');
+        orphan.appendChild(node);
+        frag.appendChild(orphan);
+      });
+
+      list.innerHTML = '';
+      list.appendChild(frag);
+      list.classList.add('is-threaded');
+      list.dataset.threadSignature = signature;
+    }finally{
+      threading = false;
+    }
+  }
+
+  function currentDetailPostId(){
+    var card = document.querySelector('.detail-comments-card[data-post-id]');
+    return card && card.dataset.postId || '';
+  }
+
+  function scheduleThreadRender(postId){
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(function(){
+      applyThreadedComments(postId || currentDetailPostId());
+    }, 30);
+  }
+
+  function bindThreadObserver(){
+    if(observerBound) return;
+    observerBound = true;
+    var target = document.getElementById('appMain') || document.body;
+    if(window.MutationObserver && target){
+      var observer = new MutationObserver(function(mutations){
+        if(threading) return;
+        for(var i = 0; i < mutations.length; i += 1){
+          var node = mutations[i].target;
+          if(node && node.closest && (node.closest('.square-detail-body') || node.closest('.detail-comment-list'))){
+            scheduleThreadRender();
+            return;
+          }
+        }
+      });
+      observer.observe(target, {childList:true, subtree:true});
+    }
+    document.addEventListener('click', function(){ setTimeout(function(){ scheduleThreadRender(); }, 80); }, true);
   }
 
   function renderPost(postId){
@@ -74,6 +254,7 @@
     if(!fw || !window.FWAppFeed) return;
     if(fw.state && fw.state.view === 'square-detail' && window.FWAppFeed.openDetail){
       window.FWAppFeed.openDetail(postId);
+      scheduleThreadRender(postId);
       return;
     }
     if(window.FWAppFeed.renderAll) window.FWAppFeed.renderAll();
@@ -81,10 +262,14 @@
 
   async function reloadPost(postId){
     if(window.FWAppFeed && window.FWAppFeed.load){
-      try{ await window.FWAppFeed.load(true, {preserveScroll:true, detailPostId:postId, silent:true}); return; }
-      catch(e){ console.warn('[FW mobile comment reply] reload failed', e); }
+      try{
+        await window.FWAppFeed.load(true, {preserveScroll:true, detailPostId:postId, silent:true});
+        scheduleThreadRender(postId);
+        return;
+      }catch(e){ console.warn('[FW mobile comment reply] reload failed', e); }
     }
     renderPost(postId);
+    scheduleThreadRender(postId);
   }
 
   async function insertReply(form, replyInfo){
@@ -141,6 +326,10 @@
   }
 
   function bind(){
+    injectStyle();
+    bindThreadObserver();
+    scheduleThreadRender();
+
     document.addEventListener('submit', async function(e){
       var form = e.target && e.target.closest && e.target.closest('[data-comment-form][data-comment-kind="reply"]');
       if(!form) return;
