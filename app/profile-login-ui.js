@@ -1,39 +1,63 @@
-// 手机端账号入口展示整理。
-// 只负责显示账号入口选择；登录、注册、验证码等业务逻辑仍由 app/profile.js 负责。
 (function(){
   if(window.__FW_MOBILE_PROFILE_LOGIN_UI__) return;
   window.__FW_MOBILE_PROFILE_LOGIN_UI__ = true;
 
+  var activePanel = 'login';
+  var otpDraft = {nickname:'', email:'', token:''};
+
   function $(selector, root){ return (root || document).querySelector(selector); }
+  function $$(selector, root){ return Array.from((root || document).querySelectorAll(selector)); }
 
   function injectStyle(){
-    if($('#fwMobileAuthChoiceStyle')) return;
+    if($('#fwMobileLoginUiStyle')) return;
     var style = document.createElement('style');
-    style.id = 'fwMobileAuthChoiceStyle';
+    style.id = 'fwMobileLoginUiStyle';
     style.textContent = [
-      '.mobile-auth-tabs{display:none!important}',
-      '.mobile-auth-choice{display:grid;gap:12px}',
-      '.mobile-auth-choice-card{width:100%;min-height:86px;border:1px solid rgba(16,23,15,.12);border-radius:14px;background:#fffaf1;color:var(--deep);padding:14px;text-align:left;display:grid;gap:6px;box-shadow:0 6px 16px rgba(16,23,15,.04)}',
-      '.mobile-auth-choice-card strong{display:block;font-size:20px;line-height:1.1;font-weight:1000;letter-spacing:-.04em}',
-      '.mobile-auth-choice-card span{display:block;color:var(--muted);font-size:13px;line-height:1.45;font-weight:850}',
-      '.mobile-auth-choice-card.primary{background:var(--deep);color:#fffdf7}',
-      '.mobile-auth-choice-card.primary span{color:rgba(255,253,247,.78)}',
-      '.profile-login-entry[data-mobile-auth-choice="choice"] [data-login-form]{display:none!important}',
-      '.profile-login-entry[data-mobile-auth-choice="login"] .mobile-auth-choice{display:none!important}',
-      '.profile-login-entry[data-mobile-auth-choice="login"] [data-login-form]{display:grid!important}',
-      '.mobile-auth-register-entry{display:none!important}'
+      '.mobile-login-ui{display:grid;gap:14px}',
+      '.mobile-login-ui .subtle-line{display:none}',
+      '.mobile-login-kicker{margin:0;color:var(--accent-dark);font-size:12px;font-weight:1000;letter-spacing:.18em;text-transform:uppercase}',
+      '.mobile-login-title{margin:0;color:var(--deep);font-size:34px;line-height:.95;letter-spacing:-.08em;font-weight:1000}',
+      '.mobile-login-desc{margin:0;color:var(--muted);font-size:15px;line-height:1.5;font-weight:900}',
+      '.mobile-login-panel{display:none}',
+      '.mobile-login-panel.show{display:block}',
+      '.mobile-login-links{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 0}',
+      '.mobile-login-links button{border:0;background:transparent;color:var(--accent-dark);padding:0;font-size:13px;font-weight:1000;text-decoration:underline}',
+      '.mobile-login-note{margin:0;color:var(--muted);font-size:12px;line-height:1.55;font-weight:850}',
+      '.mobile-login-ui .stack{gap:12px}',
+      '.profile-login-entry{padding-bottom:calc(var(--tabbar-total-h,88px) + 12px)}'
     ].join('\n');
     document.head.appendChild(style);
   }
 
-  function setTitle(entry, mode){
-    var head = entry && $('.profile-detail-head h2', entry);
-    var title = entry && $('.mobile-login-title', entry);
-    var desc = entry && $('.mobile-login-desc', entry);
-    if(mode === 'choice'){
-      if(head) head.textContent = '账号入口';
-      if(title) title.textContent = '账号入口';
-      if(desc) desc.textContent = '请选择登录或注册。';
+  function saveOtpDraft(form){
+    if(!form) return;
+    otpDraft.nickname = form.nickname ? form.nickname.value : otpDraft.nickname;
+    otpDraft.email = form.email ? form.email.value : otpDraft.email;
+    otpDraft.token = form.token ? form.token.value : otpDraft.token;
+  }
+
+  function applyOtpDraft(form){
+    if(!form) return;
+    if(form.nickname && otpDraft.nickname) form.nickname.value = otpDraft.nickname;
+    if(form.email && otpDraft.email) form.email.value = otpDraft.email;
+    if(form.token && otpDraft.token) form.token.value = otpDraft.token;
+  }
+
+  function setPanel(root, name){
+    var form = root && $('[data-otp-form]', root);
+    saveOtpDraft(form);
+    activePanel = name === 'register' ? 'register' : 'login';
+    $$('[data-mobile-login-panel]', root).forEach(function(panel){
+      panel.classList.toggle('show', panel.dataset.mobileLoginPanel === activePanel);
+    });
+    var title = $('[data-mobile-login-title]', root);
+    var desc = $('[data-mobile-login-desc]', root);
+    var entry = root.closest('.profile-login-entry');
+    var head = entry && $('[data-mobile-login-head]', entry);
+    if(activePanel === 'register'){
+      if(head) head.textContent = '注册账号';
+      if(title) title.textContent = '注册账号';
+      if(desc) desc.textContent = '填写昵称和邮箱，接收验证码后进入研究所。';
     }else{
       if(head) head.textContent = '账号登录';
       if(title) title.textContent = '账号登录';
@@ -41,53 +65,96 @@
     }
   }
 
-  function enhance(){
-    injectStyle();
-    var entry = $('.profile-login-entry');
-    if(!entry) return;
+  function rebuild(entry){
+    if(!entry || $('[data-mobile-login-ui]', entry)) return;
     var loginForm = $('[data-login-form]', entry);
-    var registerForm = $('[data-register-form], [data-register-verify-form]', entry);
-    if(!loginForm || registerForm) return;
+    var otpForm = $('[data-otp-form]', entry);
+    if(!loginForm || !otpForm) return;
 
-    var oldBottom = $('[data-mobile-register-entry]', loginForm);
-    if(oldBottom) oldBottom.remove();
-
-    var choice = $('.mobile-auth-choice', entry);
-    if(!choice){
-      choice = document.createElement('div');
-      choice.className = 'mobile-auth-choice';
-      choice.innerHTML = '<button class="mobile-auth-choice-card primary" type="button" data-mobile-auth-show-login><strong>账号登录</strong><span>已经注册过，用邮箱和密码进入研究所。</span></button>' +
-        '<button class="mobile-auth-choice-card" type="button" data-auth-view="register1"><strong>注册账号</strong><span>新用户设置研究员ID、密码，并完成邮箱验证。</span></button>';
-      loginForm.parentNode.insertBefore(choice, loginForm);
+    applyOtpDraft(otpForm);
+    injectStyle();
+    var headTitle = $('.profile-detail-head h2', entry);
+    if(headTitle){
+      headTitle.textContent = activePanel === 'register' ? '注册账号' : '账号登录';
+      headTitle.setAttribute('data-mobile-login-head', '1');
     }
 
-    var emailValue = loginForm.email && String(loginForm.email.value || '').trim();
-    if(!entry.dataset.mobileAuthChoice){
-      entry.dataset.mobileAuthChoice = emailValue ? 'login' : 'choice';
-    }
-    setTitle(entry, entry.dataset.mobileAuthChoice || 'choice');
+    var shell = document.createElement('div');
+    shell.className = 'mobile-login-ui';
+    shell.setAttribute('data-mobile-login-ui', '1');
+    shell.innerHTML = '<p class="mobile-login-kicker">FW ACCOUNT</p>' +
+      '<h1 class="mobile-login-title" data-mobile-login-title>' + (activePanel === 'register' ? '注册账号' : '账号登录') + '</h1>' +
+      '<p class="mobile-login-desc" data-mobile-login-desc>' + (activePanel === 'register' ? '填写昵称和邮箱，接收验证码后进入研究所。' : '输入邮箱和密码，进入研究所。') + '</p>';
+
+    var loginPanel = document.createElement('section');
+    loginPanel.className = 'mobile-login-panel' + (activePanel === 'login' ? ' show' : '');
+    loginPanel.dataset.mobileLoginPanel = 'login';
+    loginPanel.appendChild(loginForm);
+    var loginSubmit = loginForm.querySelector('button[type="submit"]');
+    if(loginSubmit) loginSubmit.textContent = '登录';
+    loginForm.insertAdjacentHTML('beforeend', '<p class="mobile-login-links"><button type="button" data-mobile-login-go="register">没有账号？去注册</button></p>');
+
+    var regPanel = document.createElement('section');
+    regPanel.className = 'mobile-login-panel' + (activePanel === 'register' ? ' show' : '');
+    regPanel.dataset.mobileLoginPanel = 'register';
+    var nickLabel = otpForm.querySelector('label[for="otpNickname"]');
+    if(nickLabel) nickLabel.textContent = '昵称';
+    var emailLabel = otpForm.querySelector('label[for="otpEmail"]');
+    if(emailLabel) emailLabel.textContent = '邮箱验证码注册 / 登录';
+    var token = otpForm.querySelector('input[name="token"]');
+    if(token) token.placeholder = '输入邮箱验证码';
+    var submit = otpForm.querySelector('button[type="submit"]');
+    if(submit) submit.textContent = '验证进入';
+    otpForm.insertAdjacentHTML('beforeend', '<p class="mobile-login-note">没有账号时，先填写昵称和邮箱，发送验证码后即可进入。</p><p class="mobile-login-links"><button type="button" data-mobile-login-go="login">已有账号？返回登录</button></p>');
+    regPanel.appendChild(otpForm);
+
+    var card = $('.login-card', entry);
+    if(!card) return;
+    card.innerHTML = '';
+    shell.appendChild(loginPanel);
+    shell.appendChild(regPanel);
+    card.appendChild(shell);
   }
 
-  document.addEventListener('click', function(event){
-    var btn = event.target.closest && event.target.closest('[data-mobile-auth-show-login]');
-    if(!btn) return;
-    var entry = btn.closest('.profile-login-entry');
-    if(!entry) return;
-    event.preventDefault();
-    entry.dataset.mobileAuthChoice = 'login';
-    setTitle(entry, 'login');
+  function scan(){ rebuild($('.profile-login-entry')); }
+
+  document.addEventListener('input', function(event){
+    var form = event.target.closest && event.target.closest('[data-otp-form]');
+    if(!form) return;
+    saveOtpDraft(form);
   }, true);
 
-  function boot(){
-    enhance();
+  document.addEventListener('click', function(event){
+    var send = event.target.closest && event.target.closest('[data-send-otp]');
+    if(send){
+      saveOtpDraft(send.closest('[data-otp-form]'));
+    }
+
+    var btn = event.target.closest && event.target.closest('[data-mobile-login-go]');
+    if(!btn) return;
+    var root = btn.closest('[data-mobile-login-ui]');
+    if(!root) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setPanel(root, btn.dataset.mobileLoginGo || 'login');
+  }, true);
+
+  document.addEventListener('submit', function(event){
+    var form = event.target.closest && event.target.closest('[data-otp-form]');
+    if(form) saveOtpDraft(form);
+  }, true);
+
+  function watch(){
+    scan();
     var panel = $('[data-profile-panel]');
-    if(panel && !panel.__fwMobileAuthChoiceObserver){
-      panel.__fwMobileAuthChoiceObserver = new MutationObserver(function(){ setTimeout(enhance, 0); });
-      panel.__fwMobileAuthChoiceObserver.observe(panel, {childList:true, subtree:true});
+    if(panel && !panel.__fwMobileLoginUiObserver){
+      panel.__fwMobileLoginUiObserver = new MutationObserver(scan);
+      panel.__fwMobileLoginUiObserver.observe(panel, {childList:true, subtree:false});
     }
   }
 
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
-  window.addEventListener('pageshow', boot);
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
+  else watch();
+  window.addEventListener('pageshow', watch);
+  document.addEventListener('click', function(){ setTimeout(scan, 0); }, true);
 })();
