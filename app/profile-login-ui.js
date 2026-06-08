@@ -2,6 +2,8 @@
   if(window.__FW_MOBILE_PROFILE_LOGIN_UI__) return;
   window.__FW_MOBILE_PROFILE_LOGIN_UI__ = true;
 
+  var activePanel = 'login';
+
   function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.from((root || document).querySelectorAll(selector)); }
 
@@ -27,14 +29,15 @@
   }
 
   function setPanel(root, name){
+    activePanel = name === 'register' ? 'register' : 'login';
     $$('[data-mobile-login-panel]', root).forEach(function(panel){
-      panel.classList.toggle('show', panel.dataset.mobileLoginPanel === name);
+      panel.classList.toggle('show', panel.dataset.mobileLoginPanel === activePanel);
     });
     var title = $('[data-mobile-login-title]', root);
     var desc = $('[data-mobile-login-desc]', root);
     var entry = root.closest('.profile-login-entry');
     var head = entry && $('[data-mobile-login-head]', entry);
-    if(name === 'register'){
+    if(activePanel === 'register'){
       if(head) head.textContent = '注册账号';
       if(title) title.textContent = '注册账号';
       if(desc) desc.textContent = '填写昵称和邮箱，接收验证码后进入研究所。';
@@ -54,7 +57,7 @@
     injectStyle();
     var headTitle = $('.profile-detail-head h2', entry);
     if(headTitle){
-      headTitle.textContent = '账号登录';
+      headTitle.textContent = activePanel === 'register' ? '注册账号' : '账号登录';
       headTitle.setAttribute('data-mobile-login-head', '1');
     }
 
@@ -62,11 +65,11 @@
     shell.className = 'mobile-login-ui';
     shell.setAttribute('data-mobile-login-ui', '1');
     shell.innerHTML = '<p class="mobile-login-kicker">FW ACCOUNT</p>' +
-      '<h1 class="mobile-login-title" data-mobile-login-title>账号登录</h1>' +
-      '<p class="mobile-login-desc" data-mobile-login-desc>输入邮箱和密码，进入研究所。</p>';
+      '<h1 class="mobile-login-title" data-mobile-login-title>' + (activePanel === 'register' ? '注册账号' : '账号登录') + '</h1>' +
+      '<p class="mobile-login-desc" data-mobile-login-desc>' + (activePanel === 'register' ? '填写昵称和邮箱，接收验证码后进入研究所。' : '输入邮箱和密码，进入研究所。') + '</p>';
 
     var loginPanel = document.createElement('section');
-    loginPanel.className = 'mobile-login-panel show';
+    loginPanel.className = 'mobile-login-panel' + (activePanel === 'login' ? ' show' : '');
     loginPanel.dataset.mobileLoginPanel = 'login';
     loginPanel.appendChild(loginForm);
     var loginSubmit = loginForm.querySelector('button[type="submit"]');
@@ -74,7 +77,7 @@
     loginForm.insertAdjacentHTML('beforeend', '<p class="mobile-login-links"><button type="button" data-mobile-login-go="register">没有账号？去注册</button></p>');
 
     var regPanel = document.createElement('section');
-    regPanel.className = 'mobile-login-panel';
+    regPanel.className = 'mobile-login-panel' + (activePanel === 'register' ? ' show' : '');
     regPanel.dataset.mobileLoginPanel = 'register';
     var nickLabel = otpForm.querySelector('label[for="otpNickname"]');
     if(nickLabel) nickLabel.textContent = '昵称';
