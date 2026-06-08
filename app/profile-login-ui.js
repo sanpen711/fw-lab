@@ -3,6 +3,7 @@
   window.__FW_MOBILE_PROFILE_LOGIN_UI__ = true;
 
   var activePanel = 'login';
+  var otpDraft = {nickname:'', email:'', token:''};
 
   function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.from((root || document).querySelectorAll(selector)); }
@@ -28,7 +29,23 @@
     document.head.appendChild(style);
   }
 
+  function saveOtpDraft(form){
+    if(!form) return;
+    otpDraft.nickname = form.nickname ? form.nickname.value : otpDraft.nickname;
+    otpDraft.email = form.email ? form.email.value : otpDraft.email;
+    otpDraft.token = form.token ? form.token.value : otpDraft.token;
+  }
+
+  function applyOtpDraft(form){
+    if(!form) return;
+    if(form.nickname && otpDraft.nickname) form.nickname.value = otpDraft.nickname;
+    if(form.email && otpDraft.email) form.email.value = otpDraft.email;
+    if(form.token && otpDraft.token) form.token.value = otpDraft.token;
+  }
+
   function setPanel(root, name){
+    var form = root && $('[data-otp-form]', root);
+    saveOtpDraft(form);
     activePanel = name === 'register' ? 'register' : 'login';
     $$('[data-mobile-login-panel]', root).forEach(function(panel){
       panel.classList.toggle('show', panel.dataset.mobileLoginPanel === activePanel);
@@ -54,6 +71,7 @@
     var otpForm = $('[data-otp-form]', entry);
     if(!loginForm || !otpForm) return;
 
+    applyOtpDraft(otpForm);
     injectStyle();
     var headTitle = $('.profile-detail-head h2', entry);
     if(headTitle){
@@ -100,7 +118,18 @@
 
   function scan(){ rebuild($('.profile-login-entry')); }
 
+  document.addEventListener('input', function(event){
+    var form = event.target.closest && event.target.closest('[data-otp-form]');
+    if(!form) return;
+    saveOtpDraft(form);
+  }, true);
+
   document.addEventListener('click', function(event){
+    var send = event.target.closest && event.target.closest('[data-send-otp]');
+    if(send){
+      saveOtpDraft(send.closest('[data-otp-form]'));
+    }
+
     var btn = event.target.closest && event.target.closest('[data-mobile-login-go]');
     if(!btn) return;
     var root = btn.closest('[data-mobile-login-ui]');
@@ -108,6 +137,11 @@
     event.preventDefault();
     event.stopPropagation();
     setPanel(root, btn.dataset.mobileLoginGo || 'login');
+  }, true);
+
+  document.addEventListener('submit', function(event){
+    var form = event.target.closest && event.target.closest('[data-otp-form]');
+    if(form) saveOtpDraft(form);
   }, true);
 
   function watch(){
