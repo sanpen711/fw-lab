@@ -43,7 +43,7 @@
       '.buddy-avatar-wrap{display:inline-grid;position:relative;place-items:center}.buddy-avatar-wrap .list-avatar{grid-area:1/1}.buddy-dot{position:absolute;right:1px;top:1px;width:10px;height:10px;border-radius:999px;background:#e64b4b;border:2px solid #fffdf7}.buddy-dot[hidden]{display:none!important}.buddy-message-snippet{display:block;margin-top:3px;color:var(--muted);font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.buddy-message-time{display:block;margin-top:5px;color:var(--accent-dark);font-size:11px;font-weight:1000}',
       '.buddy-chat-panel{display:none;min-height:100%;padding-bottom:8px}[data-app-view="buddy"].is-chatting > .tabs,[data-app-view="buddy"].is-chatting > [data-buddy-list]{display:none!important}[data-app-view="buddy"].is-chatting > .buddy-chat-panel{display:grid;grid-template-rows:auto minmax(280px,1fr) auto;gap:10px}',
       '.buddy-chat-messages{min-height:280px;max-height:calc(var(--app-viewport-height,100dvh) - 250px);overflow:auto;border:1px solid rgba(30,30,28,.12);border-radius:16px;background:rgba(255,253,247,.72);padding:12px;display:grid;align-content:start;gap:10px}.buddy-message{max-width:82%;display:grid;gap:5px;justify-self:start}.buddy-message.mine{justify-self:end;text-align:right}.buddy-message-name{color:var(--accent-dark);font-size:11px;font-weight:1000}.buddy-message-bubble{display:inline-block;border-radius:15px;background:#fffdf7;color:var(--text);border:1px solid rgba(30,30,28,.08);padding:10px 12px;font-size:14px;line-height:1.5;font-weight:900;text-align:left;word-break:break-word;white-space:pre-wrap}.buddy-message.mine .buddy-message-bubble{background:var(--deep);border-color:var(--deep);color:#fff}',
-      '.buddy-chat-form{position:sticky;bottom:0;display:grid;grid-template-columns:minmax(0,1fr) 64px;gap:8px;padding:10px;border:1px solid rgba(30,30,28,.12);border-radius:16px;background:#fffdf7}.buddy-chat-form input{height:42px;border:1px solid rgba(30,30,28,.14);border-radius:999px;background:#fffaf1;padding:0 13px;font-size:16px;font-weight:900;min-width:0}.buddy-chat-form button{height:42px;border:0;border-radius:999px;background:var(--deep);color:#fff;font-weight:1000}.buddy-empty-tip{border:1px dashed rgba(30,30,28,.18);border-radius:14px;background:rgba(255,253,247,.68);padding:15px;color:var(--muted);font-size:13px;line-height:1.55;font-weight:900}'
+      '.buddy-chat-form{position:sticky;bottom:0;display:grid;grid-template-columns:minmax(0,1fr) 64px;gap:8px;padding:10px;border:1px solid rgba(30,30,28,.12);border-radius:16px;background:#fffdf7}.buddy-chat-form input{height:42px;border:1px solid rgba(30,30,28,.14);border-radius:999px;background:#fffaf1;padding:0 13px;font-size:16px;font-weight:900;min-width:0}.buddy-chat-form button{height:42px;border:0;border-radius:999px;background:var(--deep);color:#fff;font-weight:1000}.buddy-chat-form button:disabled{opacity:.72}.buddy-empty-tip{border:1px dashed rgba(30,30,28,.18);border-radius:14px;background:rgba(255,253,247,.68);padding:15px;color:var(--muted);font-size:13px;line-height:1.55;font-weight:900}'
     ].join('\n');
     document.head.appendChild(style);
   }
@@ -89,6 +89,8 @@
     var days = Math.floor(hours / 24);
     return days < 7 ? days + '天前' : date.toLocaleDateString('zh-CN');
   }
+  function isStickerPayload(text){ return /^\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]$/.test(String(text || '').trim()); }
+  function messagePreview(content){ return isStickerPayload(content) ? '动画表情' : (content || '[消息]'); }
   function acceptedRows(){ return friendshipRows.filter(function(row){ return row.status === 'accepted'; }); }
   function incomingRows(){ var me = app().state.user; return friendshipRows.filter(function(row){ return row.status === 'pending' && me && row.receiver_id === me.id; }); }
   function outgoingRows(){ var me = app().state.user; return friendshipRows.filter(function(row){ return row.status === 'pending' && me && row.requester_id === me.id; }); }
@@ -127,7 +129,7 @@
     var me = app().state.user;
     var meId = me && me.id;
     var profile = item.profile || {};
-    var snippet = (item.sender_id === meId ? '我：' : '') + (item.content || '[消息]');
+    var snippet = (item.sender_id === meId ? '我：' : '') + messagePreview(item.content || '');
     var unread = item.sender_id && item.sender_id !== meId;
     return '<article class="list-item buddy-row buddy-message-row is-clickable" data-buddy-open-chat="' + esc(item.userId) + '" data-buddy-last-message-id="' + esc(item.id) + '" data-buddy-last-message-at="' + esc(item.created_at) + '" data-buddy-last-sender="' + esc(item.sender_id || '') + '"><span class="buddy-avatar-wrap">' + avatar(profile) + '<i class="buddy-dot" ' + (unread ? '' : 'hidden') + ' aria-hidden="true"></i></span><div class="list-main"><b>' + esc(profile.nickname || '低功耗搭子') + '</b><span class="buddy-message-snippet">' + esc(snippet) + '</span><span class="buddy-message-time">' + esc(timeText(item.created_at)) + '</span></div></article>';
   }
@@ -314,14 +316,15 @@
     if(!text){ if(input) input.focus(); return; }
     if(!/^\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]$/.test(text) && text.length > 300){ toast('私聊最多 300 字。'); return; }
     if(!/^\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]$/.test(text) && /(https?:\/\/|www\.)/i.test(text)){ toast('私聊暂不支持链接。'); return; }
-    var button = form.querySelector('button'), old = button.textContent; button.disabled = true; button.textContent = '发送中...';
+    var button = form.querySelector('button');
+    if(button) button.disabled = true;
     try{
       if(!activeConversationId) activeConversationId = await getConversationId(activeTargetId);
       try{ var convId = Number(await rpc('fw_send_private_message_to_user', {target_user_id:activeTargetId, message_text:text}, '发送失败')); if(Number.isFinite(convId) && convId > 0){ activeConversationId = convId; conversationCache[activeTargetId] = convId; } }
       catch(primaryError){ await rpc('fw_send_private_message', {target_conversation_id:activeConversationId, message_text:text}, '发送失败'); }
       input.value = ''; await loadMessages(); if(activeTab === 'messages') renderMessages();
     }catch(e){ console.warn('[FW mobile app] buddy send failed', e); toast(e.message || '发送失败。'); }
-    finally{ button.disabled = false; button.textContent = old; }
+    finally{ if(button) button.disabled = false; }
   }
 
   function bind(){
