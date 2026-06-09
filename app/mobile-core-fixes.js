@@ -84,14 +84,22 @@
     }, true);
   }
 
-  function ensureReportBridge(){
-    if(window.__FW_MOBILE_REPORT_BRIDGE__) return;
-    if(document.querySelector('script[data-mobile-report-bridge]')) return;
+  function loadScriptOnce(flagName, dataName, src){
+    if(window[flagName]) return;
+    if(document.querySelector('script[' + dataName + ']')) return;
     var script = document.createElement('script');
-    script.src = './report.js?v=mobile-report-20260609-1';
+    script.src = src;
     script.async = false;
-    script.dataset.mobileReportBridge = '1';
+    script.setAttribute(dataName, '1');
     document.body.appendChild(script);
+  }
+
+  function ensureReportBridge(){
+    loadScriptOnce('__FW_MOBILE_REPORT_BRIDGE__', 'data-mobile-report-bridge', './report.js?v=mobile-report-20260609-1');
+  }
+
+  function ensureBuddyChatReadFix(){
+    loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-1');
   }
 
   function requestServiceWorkerRefresh(){
@@ -108,6 +116,7 @@
     schedulePatchSetView();
     bindClickSync();
     ensureReportBridge();
+    ensureBuddyChatReadFix();
     requestServiceWorkerRefresh();
   }
 
