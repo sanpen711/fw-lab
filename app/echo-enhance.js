@@ -164,6 +164,17 @@
     return fail(await query, '回声读取失败') || [];
   }
 
+  async function hasPrivateMessageFallback(){
+    try{
+      if(window.FWAppBuddyUnread && typeof window.FWAppBuddyUnread.hasUnread === 'function'){
+        return await window.FWAppBuddyUnread.hasUnread();
+      }
+    }catch(e){
+      console.warn('[FW mobile app] buddy private fallback failed', e);
+    }
+    return false;
+  }
+
   async function refreshBadges(){
     var fw = app();
     if(!fw || !(await fw.waitForDb())){
@@ -184,8 +195,9 @@
       var friendNoticeCount = rows.filter(function(row){ return row.type === 'friend_request' || row.type === 'friend_accept'; }).length;
       var pending = await client().from('friendships').select('id', {count:'exact', head:true}).eq('receiver_id', me.id).eq('status', 'pending');
       var pendingCount = pending && !pending.error ? (pending.count || 0) : 0;
+      var privateFallbackCount = privateCount > 0 ? 0 : ((await hasPrivateMessageFallback()) ? 1 : 0);
       setTabBadge('echo', echoCount);
-      setTabBadge('buddy', privateCount + Math.max(friendNoticeCount, pendingCount));
+      setTabBadge('buddy', privateCount + privateFallbackCount + Math.max(friendNoticeCount, pendingCount));
     }catch(e){
       console.warn('[FW mobile app] echo badge refresh failed', e);
     }
