@@ -5,6 +5,7 @@
 
   var menuTargetId = '';
   var menuTargetName = '';
+  var transformPending = false;
 
   function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
@@ -94,12 +95,15 @@
     menu.classList.add('show');
   }
 
-  function transformContacts(){
+  function isFriendsTabVisible(){
     var view = $('[data-app-view="buddy"]');
-    if(!view || view.classList.contains('is-chatting') || view.classList.contains('is-profile')) return;
+    if(!view || view.classList.contains('is-chatting') || view.classList.contains('is-profile')) return false;
     var active = $('[data-buddy-tab].active');
-    if(!active || active.dataset.buddyTab !== 'friends') return;
+    return !!(active && active.dataset.buddyTab === 'friends');
+  }
 
+  function transformContacts(){
+    if(!isFriendsTabVisible()) return;
     $$('.buddy-contact-row[data-buddy-profile]').forEach(function(row){
       if(row.dataset.fwContactActionEnhanced === '1') return;
       var targetId = row.dataset.buddyProfile || '';
@@ -114,6 +118,17 @@
       card.innerHTML = (avatar ? avatar.outerHTML : '<span class="list-avatar">研</span>') + '<span class="buddy-contact-name">' + esc(label) + '</span><button class="buddy-contact-more" type="button" data-buddy-contact-more="' + esc(targetId) + '" data-buddy-contact-name="' + esc(label) + '" aria-label="更多操作">⋯</button>';
       row.replaceWith(card);
     });
+  }
+
+  function scheduleTransform(delay){
+    if(transformPending) return;
+    transformPending = true;
+    setTimeout(function(){
+      requestAnimationFrame(function(){
+        transformPending = false;
+        transformContacts();
+      });
+    }, delay == null ? 80 : delay);
   }
 
   async function findFriendshipId(targetId){
@@ -211,10 +226,10 @@
     ensureMenu();
     bind();
     var list = $('[data-buddy-list]') || document.body;
-    var observer = new MutationObserver(function(){ requestAnimationFrame(transformContacts); });
+    var observer = new MutationObserver(function(){ scheduleTransform(80); });
     observer.observe(list, {childList:true, subtree:true});
-    document.addEventListener('click', function(){ setTimeout(transformContacts, 60); });
-    setInterval(transformContacts, 700);
+    document.addEventListener('click', function(){ scheduleTransform(120); });
+    setInterval(function(){ if(isFriendsTabVisible()) scheduleTransform(0); }, 3000);
     transformContacts();
   }
 
