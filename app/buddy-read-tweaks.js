@@ -1,5 +1,5 @@
 // F.w 研究所：手机端搭子消息列表与本地未读红点修正
-// 只处理“搭子 → 消息”列表里的单个会话红点；不再控制底部导航栏搭子红点。
+// 只处理“搭子 → 消息”列表里的单个会话红点；底部导航栏搭子红点由 echo-enhance.js 统一控制。
 (function(){
   if(window.__FW_MOBILE_BUDDY_READ_TWEAKS__) return;
   window.__FW_MOBILE_BUDDY_READ_TWEAKS__ = true;
@@ -129,6 +129,21 @@
     };
   }
 
+  async function hasUnreadPrivateMessage(){
+    var me = currentUser();
+    if(!me || !me.id || !client()) return false;
+    try{
+      var latest = await getLatestBuddyMessages(me);
+      var map = readMap();
+      return latest.items.some(function(item){
+        return item && item.sender_id && item.sender_id !== me.id && map[item.userId] !== String(item.id || item.created_at || '');
+      });
+    }catch(e){
+      console.warn('[FW mobile app] buddy unread check failed', e);
+      return false;
+    }
+  }
+
   async function markLatestMessageReadForUser(userId){
     var me = currentUser();
     var c = client();
@@ -203,6 +218,14 @@
       await markLatestMessageReadForUser(userId);
       await markPrivateNoticeRead(userId);
     }
+  }
+
+  function scheduleMarkReadAfterChatOpen(userId){
+    if(!userId) return;
+    setTimeout(function(){
+      var view = $('[data-app-view="buddy"]');
+      if(view && view.classList.contains('is-chatting')) markReadByUserId(userId);
+    }, 850);
   }
 
   function applyUnreadDots(){
@@ -319,16 +342,11 @@
     observeBuddyList();
     scheduleRender(500);
     document.addEventListener('click', function(e){
-      var row = e.target.closest && e.target.closest('.buddy-message-row[data-buddy-open-chat]');
-      if(row){
-        markReadByRow(row);
-        setTimeout(applyUnreadDots, 120);
-        return;
-      }
       var chat = e.target.closest && e.target.closest('[data-buddy-open-chat]');
       if(chat){
-        markReadByUserId(chat.getAttribute('data-buddy-open-chat'));
+        scheduleMarkReadAfterChatOpen(chat.getAttribute('data-buddy-open-chat'));
         setTimeout(applyUnreadDots, 120);
+        return;
       }
       var tab = e.target.closest && e.target.closest('[data-buddy-tab]');
       if(tab && tab.dataset.buddyTab === 'messages') scheduleRender(220);
@@ -338,7 +356,7 @@
     setInterval(function(){ observeBuddyList(); applyUnreadDots(); if(isBuddyMessagesView()) scheduleRender(0); }, 7500);
   }
 
-  window.FWAppBuddyUnread = {apply:applyUnreadDots, refresh:scheduleRender, markRead:markReadByUserId};
+  window.FWAppBuddyUnread = {apply:applyUnreadDots, refresh:scheduleRender, markRead:markReadByUserId, hasUnread:hasUnreadPrivateMessage};
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
