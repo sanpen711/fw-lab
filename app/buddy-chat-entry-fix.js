@@ -6,6 +6,7 @@
   var wasChatting = false;
   var activeChatKey = '';
   var edgeTouch = null;
+  var pending = false;
 
   function $(selector, root){ return (root || document).querySelector(selector); }
 
@@ -57,6 +58,15 @@
     wasChatting = chatting;
   }
 
+  function scheduleWatchChatOpen(){
+    if(pending) return;
+    pending = true;
+    requestAnimationFrame(function(){
+      pending = false;
+      watchChatOpen();
+    });
+  }
+
   function bindBackOverride(){
     document.addEventListener('click', function(e){
       var back = e.target.closest && e.target.closest('[data-buddy-chat-back]');
@@ -95,9 +105,9 @@
 
   function boot(){
     bindBackOverride();
-    var observer = new MutationObserver(function(){ requestAnimationFrame(watchChatOpen); });
+    var observer = new MutationObserver(scheduleWatchChatOpen);
     observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
-    setInterval(watchChatOpen, 400);
+    setInterval(function(){ if(isChatting() || wasChatting) watchChatOpen(); }, 1500);
     watchChatOpen();
   }
 
