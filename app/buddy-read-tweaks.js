@@ -1,11 +1,23 @@
-// F.w 研究所：手机端搭子页 UI 微调与本地未读状态
+// F.w 研究所：手机端搭子消息列表与本地未读红点修正
 (function(){
   if(window.__FW_MOBILE_BUDDY_READ_TWEAKS__) return;
   window.__FW_MOBILE_BUDDY_READ_TWEAKS__ = true;
 
+  var rendering = false;
+  var lastRenderKey = '';
+  var renderTimer = 0;
+
   function app(){ return window.FWApp || null; }
   function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
+  function client(){ return window.fwDb && window.fwDb.client; }
+  function esc(value){
+    var fw = app();
+    if(fw && fw.esc) return fw.esc(value);
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
 
   function userKey(){
     var fw = app();
@@ -22,20 +34,18 @@
     try{ localStorage.setItem(userKey(), JSON.stringify(map || {})); }catch(e){}
   }
 
-  function rowSignature(row){
+  function messageSignature(row){
     if(!row) return '';
-    var userId = row.getAttribute('data-buddy-open-chat') || '';
-    var snippet = $('.buddy-message-snippet', row);
-    var time = $('.buddy-message-time', row);
-    return [userId, snippet ? snippet.textContent.trim() : '', time ? time.textContent.trim() : ''].join('|');
+    return row.getAttribute('data-buddy-last-message-id') || row.getAttribute('data-buddy-last-message-at') || '';
   }
 
   function markReadByRow(row){
     if(!row) return;
     var userId = row.getAttribute('data-buddy-open-chat') || '';
-    if(!userId) return;
+    var sig = messageSignature(row);
+    if(!userId || !sig) return;
     var map = readMap();
-    map[userId] = rowSignature(row);
+    map[userId] = sig;
     saveReadMap(map);
     var dot = $('.buddy-dot', row);
     if(dot) dot.hidden = true;
@@ -48,12 +58,16 @@
   }
 
   function applyUnreadDots(){
+    var fw = app();
+    var meId = fw && fw.state && fw.state.user && fw.state.user.id;
     var map = readMap();
     $$('.buddy-message-row[data-buddy-open-chat]').forEach(function(row){
       var userId = row.getAttribute('data-buddy-open-chat') || '';
       var dot = $('.buddy-dot', row);
       if(!dot || !userId) return;
-      dot.hidden = map[userId] === rowSignature(row);
+      var sig = messageSignature(row);
+      var sender = row.getAttribute('data-buddy-last-sender') || '';
+      dot.hidden = !sig || sender === meId || map[userId] === sig;
     });
   }
 
@@ -69,12 +83,135 @@
     document.head.appendChild(style);
   }
 
+  function isBuddyMessagesView(){
+    var fw = app();
+    if(!fw || !fw.state || fw.state.view !== 'buddy') return false;
+    var view = $('[data-app-view="buddy"]');
+    if(!view || view.classList.contains('is-chatting') || view.classList.contains('is-profile')) return false;
+    var active = $('[data-buddy-tab].active');
+    return !!(active && active.dataset.buddyTab === 'messages');
+  }
+
+  function timeText(value){
+    if(!value) return '刚刚';
+    var date = new Date(value);
+    if(isNaN(date.getTime())) return '刚刚';
+    var minutes = Math.floor(Math.max(0, Date.now() - date.getTime()) / 60000);
+    if(minutes < 1) return '刚刚';
+    if(minutes < 60) return minutes + '分钟前';
+    var hours = Math.floor(minutes / 60);
+    if(hours < 24) return hours + '小时前';
+    var days = Math.floor(hours / 24);
+    return days < 7 ? days + '天前' : date.toLocaleDateString('zh-CN');
+  }
+
+  function avatar(profile){
+    profile = profile || {};
+    var fw = app();
+    var name = profile.nickname || '研究员';
+    if(profile.avatar_url) return '<span class="list-avatar"><img src="' + esc(profile.avatar_url) + '" alt="' + esc(name) + '"></span>';
+    return '<span class="list-avatar">' + esc(fw && fw.initials ? fw.initials(name) : String(name).slice(0, 2)) + '</span>';
+  }
+
+  function fail(result, message){
+    if(result && result.error) throw new Error(message || result.error.message || '读取失败');
+    return result ? result.data : null;
+  }
+
+  function otherId(row, meId){ return String(row.requester_id) === String(meId) ? row.receiver_id : row.requester_id; }
+
+  async function getAcceptedFriendships(meId){
+    var rows = fail(await client().from('friendships').select('id,requester_id,receiver_id,status,updated_at').or('requester_id.eq.' + meId + ',receiver_id.eq.' + meId).eq('status', 'accepted'), '搭子列表读取失败') || [];
+    return rows;
+  }
+
+  async function getProfiles(ids){
+    var unique = Array.from(new Set((ids || []).filter(Boolean)));
+    if(!unique.length) return {};
+    var rows = fail(await client().from('profiles').select('id,nickname,avatar_url,lab_code').in('id', unique), '资料读取失败') || [];
+    var map = {};
+    rows.forEach(function(row){ map[row.id] = row; });
+    return map;
+  }
+
+  async function getConversationMap(buddyIds){
+    var map = {};
+    await Promise.all((buddyIds || []).map(async function(userId){
+      try{
+        var result = await client().rpc('fw_get_or_create_conversation', {target_user_id:userId});
+        if(result && result.error) throw result.error;
+        var convId = Number(result && result.data);
+        if(Number.isFinite(convId) && convId > 0) map[convId] = userId;
+      }catch(e){
+        console.warn('[FW mobile app] buddy conversation lookup failed', userId, e);
+      }
+    }));
+    return map;
+  }
+
+  function messageRowHtml(item, meId){
+    var profile = item.profile || {};
+    var snippet = item.content || '[消息]';
+    var unread = item.sender_id && item.sender_id !== meId;
+    return '<article class="list-item buddy-row buddy-message-row is-clickable" data-buddy-open-chat="' + esc(item.userId) + '" data-buddy-last-message-id="' + esc(item.id) + '" data-buddy-last-message-at="' + esc(item.created_at) + '" data-buddy-last-sender="' + esc(item.sender_id || '') + '"><span class="buddy-avatar-wrap">' + avatar(profile) + '<i class="buddy-dot" ' + (unread ? '' : 'hidden') + ' aria-hidden="true"></i></span><div class="list-main"><b>' + esc(profile.nickname || '低功耗搭子') + '</b><span class="buddy-message-snippet">' + esc(item.sender_id === meId ? '我：' + snippet : snippet) + '</span><span class="buddy-message-time">' + esc(timeText(item.created_at)) + '</span></div></article>';
+  }
+
+  async function renderAccurateMessages(){
+    if(rendering || !isBuddyMessagesView()) return;
+    var fw = app();
+    var me = fw && fw.state && fw.state.user;
+    var list = $('[data-buddy-list]');
+    if(!me || !list || !client()) return;
+    rendering = true;
+    try{
+      var friendships = await getAcceptedFriendships(me.id);
+      var buddyIds = friendships.map(function(row){ return otherId(row, me.id); }).filter(Boolean);
+      if(!buddyIds.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。先去“新的搭子”加一个搭子吧。</div>'; return; }
+      var profiles = await getProfiles(buddyIds);
+      var conversationMap = await getConversationMap(buddyIds);
+      var convIds = Object.keys(conversationMap).map(function(id){ return Number(id); }).filter(function(id){ return Number.isFinite(id) && id > 0; });
+      if(!convIds.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。</div>'; return; }
+      var messages = fail(await client().from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').in('conversation_id', convIds).eq('is_deleted', false).order('created_at', {ascending:false}).limit(Math.max(120, convIds.length * 6)), '消息读取失败') || [];
+      var latestByBuddy = {};
+      messages.forEach(function(msg){
+        var userId = conversationMap[msg.conversation_id];
+        if(!userId || latestByBuddy[userId]) return;
+        latestByBuddy[userId] = {
+          id:msg.id,
+          userId:userId,
+          sender_id:msg.sender_id,
+          content:msg.content || '',
+          created_at:msg.created_at,
+          profile:profiles[userId] || {}
+        };
+      });
+      var latest = Object.keys(latestByBuddy).map(function(userId){ return latestByBuddy[userId]; }).sort(function(a,b){ return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); });
+      if(!latest.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。</div>'; return; }
+      var key = latest.map(function(item){ return [item.userId, item.id, item.created_at, item.sender_id].join(':'); }).join('|');
+      if(key !== lastRenderKey || !$('.buddy-message-row', list)){
+        lastRenderKey = key;
+        list.innerHTML = latest.map(function(item){ return messageRowHtml(item, me.id); }).join('');
+      }
+      applyUnreadDots();
+    }catch(e){
+      console.warn('[FW mobile app] accurate buddy messages failed', e);
+      if(list && isBuddyMessagesView()) list.innerHTML = '<div class="error">搭子消息暂时读取失败，请稍后再试。</div>';
+    }finally{
+      rendering = false;
+    }
+  }
+
+  function scheduleRender(delay){
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(renderAccurateMessages, delay == null ? 140 : delay);
+  }
+
   function observeBuddyList(){
     var list = $('[data-buddy-list]');
     if(!list || list.__fwBuddyReadObserver) return;
     list.__fwBuddyReadObserver = true;
     var observer = new MutationObserver(function(){
-      window.requestAnimationFrame(applyUnreadDots);
+      window.requestAnimationFrame(function(){ applyUnreadDots(); if(isBuddyMessagesView()) scheduleRender(180); });
     });
     observer.observe(list, {childList:true, subtree:true});
   }
@@ -83,6 +220,7 @@
     injectStyle();
     observeBuddyList();
     applyUnreadDots();
+    scheduleRender(500);
     document.addEventListener('click', function(e){
       var row = e.target.closest && e.target.closest('.buddy-message-row[data-buddy-open-chat]');
       if(row){
@@ -95,9 +233,12 @@
         markReadByUserId(chat.getAttribute('data-buddy-open-chat'));
         setTimeout(applyUnreadDots, 120);
       }
+      var tab = e.target.closest && e.target.closest('[data-buddy-tab]');
+      if(tab && tab.dataset.buddyTab === 'messages') scheduleRender(220);
     }, true);
-    window.addEventListener('focus', function(){ setTimeout(applyUnreadDots, 150); });
-    setInterval(function(){ observeBuddyList(); applyUnreadDots(); }, 2500);
+    window.addEventListener('focus', function(){ setTimeout(function(){ applyUnreadDots(); scheduleRender(150); }, 150); });
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) scheduleRender(150); });
+    setInterval(function(){ observeBuddyList(); applyUnreadDots(); if(isBuddyMessagesView()) scheduleRender(0); }, 7500);
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
