@@ -7,6 +7,7 @@
   var friendshipRows = [];
   var profileMap = {};
   var conversationCache = {};
+  var messageListCacheHtml = '';
   var activeTargetId = '';
   var activeConversationId = null;
   var chatTimer = null;
@@ -135,11 +136,13 @@
     var list = $('[data-buddy-list]');
     if(!list || messageLoading) return;
     var rows = acceptedRows();
-    if(!rows.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。先去“新的搭子”加一个搭子吧。</div>'; return; }
+    if(!rows.length){ messageListCacheHtml = ''; list.innerHTML = '<div class="empty">暂时还没有搭子消息。先去“新的搭子”加一个搭子吧。</div>'; return; }
     var me = app().state.user;
     var buddyIds = rows.map(function(row){ return otherId(row, me.id); }).filter(Boolean);
+    var hasRenderedRows = !!list.querySelector('.buddy-message-row');
+    if(!hasRenderedRows && messageListCacheHtml){ list.innerHTML = messageListCacheHtml; hasRenderedRows = true; }
     messageLoading = true;
-    list.innerHTML = '<div class="loading">正在读取搭子消息...</div>';
+    if(!hasRenderedRows) list.innerHTML = '<div class="loading">正在读取搭子消息...</div>';
     try{
       var allowed = {};
       buddyIds.forEach(function(id){ allowed[String(id)] = true; });
@@ -150,7 +153,7 @@
         if(allowed[String(other)]) convMap[row.id] = other;
       });
       var convIds = Object.keys(convMap).map(Number).filter(function(id){ return Number.isFinite(id) && id > 0; });
-      if(!convIds.length){ list.innerHTML = '<div class="empty">暂时没有搭子消息。</div>'; return; }
+      if(!convIds.length){ messageListCacheHtml = ''; list.innerHTML = '<div class="empty">暂时没有搭子消息。</div>'; return; }
       var messages = fail(await client().from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').in('conversation_id', convIds).eq('is_deleted', false).order('created_at', {ascending:false}).limit(Math.max(160, convIds.length * 8)), '消息读取失败') || [];
       var latestByBuddy = {};
       messages.forEach(function(msg){
@@ -159,10 +162,11 @@
         latestByBuddy[userId] = {id:msg.id,userId:userId,sender_id:msg.sender_id,content:msg.content || '',created_at:msg.created_at,profile:profileMap[userId] || {}};
       });
       var latest = Object.keys(latestByBuddy).map(function(id){ return latestByBuddy[id]; }).sort(function(a,b){ return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); });
-      if(!latest.length){ list.innerHTML = '<div class="empty">暂时没有搭子消息。</div>'; return; }
-      list.innerHTML = latest.map(messageRowHtml).join('');
+      if(!latest.length){ messageListCacheHtml = ''; list.innerHTML = '<div class="empty">暂时没有搭子消息。</div>'; return; }
+      messageListCacheHtml = latest.map(messageRowHtml).join('');
+      list.innerHTML = messageListCacheHtml;
       if(window.FWAppBuddyUnread && typeof window.FWAppBuddyUnread.apply === 'function') window.FWAppBuddyUnread.apply();
-    }catch(e){ console.warn('[FW mobile app] buddy messages tab failed', e); list.innerHTML = '<div class="error">搭子消息暂时读取失败，请稍后再试。</div>'; }
+    }catch(e){ console.warn('[FW mobile app] buddy messages tab failed', e); if(!hasRenderedRows && !messageListCacheHtml) list.innerHTML = '<div class="error">搭子消息暂时读取失败，请稍后再试。</div>'; }
     finally{ messageLoading = false; }
   }
 
@@ -194,7 +198,8 @@
 
   async function load(force){
     if(loaded && !force){ render(); return; }
-    var list = $('[data-buddy-list]'); if(list) list.innerHTML = '<div class="loading">正在读取搭子列表...</div>';
+    var list = $('[data-buddy-list]');
+    if(list && !(activeTab === 'messages' && messageListCacheHtml)) list.innerHTML = '<div class="loading">正在读取搭子列表...</div>';
     try{
       await app().refreshUser();
       var me = app().state.user;
@@ -206,7 +211,7 @@
       profileMap = await fetchProfiles(ids);
       loaded = true;
       render();
-    }catch(e){ console.warn('[FW mobile app] buddy load failed', e); if(list) list.innerHTML = '<div class="error">搭子列表暂时读取失败，请稍后再试。</div>'; }
+    }catch(e){ console.warn('[FW mobile app] buddy load failed', e); if(list && !(activeTab === 'messages' && messageListCacheHtml)) list.innerHTML = '<div class="error">搭子列表暂时读取失败，请稍后再试。</div>'; }
   }
 
   function activeSearchResult(){ var nodes = $$('[data-buddy-search-result]'); return nodes.length ? nodes[nodes.length - 1] : null; }
