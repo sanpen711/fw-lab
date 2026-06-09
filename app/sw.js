@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-10';
+const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-11';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -82,27 +82,37 @@ function injectAppTweaks(html){
     next = next.replace('</body>', tweakTag('./buddy-chat-tweaks.js?v=mobile-buddy-chat-20260528-1'));
   }
   if(next.indexOf('buddy-chat-polish.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-chat-polish.js?v=mobile-buddy-chat-polish-20260528-1'));
+    next = next.replace('</body>', tweakTag('./buddy-chat-polish.js?v=mobile-buddy-chat-polish-20260609-1'));
+  }else{
+    next = next.replace(/\.\/buddy-chat-polish\.js\?v=[^"']+/g, './buddy-chat-polish.js?v=mobile-buddy-chat-polish-20260609-1');
   }
   if(next.indexOf('buddy-chat-bottom-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-chat-bottom-fix.js?v=mobile-buddy-chat-bottom-20260528-1'));
+    next = next.replace('</body>', tweakTag('./buddy-chat-bottom-fix.js?v=mobile-buddy-chat-bottom-20260609-1'));
+  }else{
+    next = next.replace(/\.\/buddy-chat-bottom-fix\.js\?v=[^"']+/g, './buddy-chat-bottom-fix.js?v=mobile-buddy-chat-bottom-20260609-1');
   }
   if(next.indexOf('buddy-chat-scroll-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-chat-scroll-fix.js?v=mobile-buddy-chat-scroll-20260528-1'));
+    next = next.replace('</body>', tweakTag('./buddy-chat-scroll-fix.js?v=mobile-buddy-chat-scroll-20260609-1'));
+  }else{
+    next = next.replace(/\.\/buddy-chat-scroll-fix\.js\?v=[^"']+/g, './buddy-chat-scroll-fix.js?v=mobile-buddy-chat-scroll-20260609-1');
   }
   if(next.indexOf('buddy-user-action-prehook.js') < 0){
     const hook = scriptTag('./buddy-user-action-prehook.js?v=mobile-buddy-user-action-20260609-1');
     if(next.indexOf('buddy-contacts-actions.js') >= 0){
-      next = next.replace(/\s*<script src="\.\/buddy-contacts-actions\.js\?v=[^"']+"><\/script>/, '\n' + hook + '  <script src="./buddy-contacts-actions.js?v=mobile-direct-tweaks-20260528-1"></script>');
+      next = next.replace(/\s*<script src="\.\/buddy-contacts-actions\.js\?v=[^"']+"><\/script>/, '\n' + hook + '  <script src="./buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260609-1"></script>');
     }else{
       next = next.replace('</body>', hook + '</body>');
     }
   }
   if(next.indexOf('buddy-contacts-actions.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260528-1'));
+    next = next.replace('</body>', tweakTag('./buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260609-1'));
+  }else{
+    next = next.replace(/\.\/buddy-contacts-actions\.js\?v=[^"']+/g, './buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260609-1');
   }
   if(next.indexOf('buddy-chat-entry-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-chat-entry-fix.js?v=mobile-buddy-chat-entry-20260528-1'));
+    next = next.replace('</body>', tweakTag('./buddy-chat-entry-fix.js?v=mobile-buddy-chat-entry-20260609-1'));
+  }else{
+    next = next.replace(/\.\/buddy-chat-entry-fix\.js\?v=[^"']+/g, './buddy-chat-entry-fix.js?v=mobile-buddy-chat-entry-20260609-1');
   }
   if(next.indexOf('report.js') < 0){
     next = next.replace('</body>', tweakTag('./report.js?v=mobile-report-20260609-1'));
@@ -113,9 +123,9 @@ function injectAppTweaks(html){
     next = next.replace(/\.\/buddy-badge-fix\.js\?v=[^"']+/g, './buddy-badge-fix.js?v=mobile-buddy-badge-20260609-3');
   }
   if(next.indexOf('buddy-chat-read-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-1'));
+    next = next.replace('</body>', tweakTag('./buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-2'));
   }else{
-    next = next.replace(/\.\/buddy-chat-read-fix\.js\?v=[^"']+/g, './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-1');
+    next = next.replace(/\.\/buddy-chat-read-fix\.js\?v=[^"']+/g, './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-2');
   }
   if(next.indexOf('mobile-core-fixes.js') < 0){
     next = next.replace('</body>', tweakTag('./mobile-core-fixes.js?v=mobile-core-fixes-20260609-5'));
