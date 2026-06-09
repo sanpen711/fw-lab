@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-14';
+const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-15';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -15,7 +15,6 @@ const APP_SHELL = [
   appPath('feed.js'),
   appPath('publish.js'),
   appPath('buddy.js'),
-  appPath('buddy-open-fast.js'),
   appPath('buddy-read-tweaks.js'),
   appPath('buddy-chat-read-fix.js'),
   appPath('buddy-badge-fix.js'),
@@ -52,92 +51,16 @@ function tweakTag(src){
   return '  <scr' + 'ipt src="' + src + '"></scr' + 'ipt>\n</body>';
 }
 
-function scriptTag(src){
-  return '  <scr' + 'ipt src="' + src + '"></scr' + 'ipt>\n';
-}
-
 function injectAppTweaks(html){
   let next = String(html || '');
-  next = next.replace(/\.\/profile\.js\?v=[^"']+/g, './profile.js?v=mobile-password-register-20260608-1');
-  next = next.replace(/\.\/profile-login-ui\.js\?v=[^"']+/g, './profile-login-ui.js?v=mobile-auth-compact-20260608-1');
-  next = next.replace(/\.\/profile-email-guard\.js\?v=[^"']+/g, './profile-email-guard.js?v=mobile-auth-clean-final-20260608-1');
-  next = next.replace(/\.\/nav\.js\?v=[^"']+/g, './nav.js?v=mobile-reload-hash-20260608-1');
-  next = next.replace(/\.\/modules-init\.js\?v=[^"']+/g, './modules-init.js?v=mobile-comment-thread-20260608-1');
-  if(next.indexOf('echo-enhance.js') < 0){
-    next = next.replace('</body>', tweakTag('./echo-enhance.js?v=mobile-echo-enhance-20260609-2'));
-  }else{
-    next = next.replace(/\.\/echo-enhance\.js\?v=[^"']+/g, './echo-enhance.js?v=mobile-echo-enhance-20260609-2');
-  }
-  if(next.indexOf('fw-emoji-panel.js') < 0){
-    next = next.replace('</body>', tweakTag('../assets/fw-emoji-panel.js?v=mobile-buddy-chat-20260528-1'));
-  }
-  if(next.indexOf('bird-tweaks.js') < 0){
-    next = next.replace('</body>', tweakTag('./bird-tweaks.js?v=mobile-bird-toggle-20260528-1'));
-  }
-  if(next.indexOf('buddy-open-fast.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-open-fast.js?v=mobile-buddy-open-fast-20260609-1'));
-  }else{
-    next = next.replace(/\.\/buddy-open-fast\.js\?v=[^"']+/g, './buddy-open-fast.js?v=mobile-buddy-open-fast-20260609-1');
-  }
-  if(next.indexOf('buddy-read-tweaks.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-read-tweaks.js?v=mobile-buddy-read-20260609-6'));
-  }else{
-    next = next.replace(/\.\/buddy-read-tweaks\.js\?v=[^"']+/g, './buddy-read-tweaks.js?v=mobile-buddy-read-20260609-6');
-  }
-  if(next.indexOf('buddy-chat-tweaks.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-chat-tweaks.js?v=mobile-buddy-chat-20260528-1'));
-  }
-  if(next.indexOf('buddy-chat-polish.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-chat-polish.js?v=mobile-buddy-chat-polish-20260609-1'));
-  }else{
-    next = next.replace(/\.\/buddy-chat-polish\.js\?v=[^"']+/g, './buddy-chat-polish.js?v=mobile-buddy-chat-polish-20260609-1');
-  }
-  if(next.indexOf('buddy-chat-bottom-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-chat-bottom-fix.js?v=mobile-buddy-chat-bottom-20260609-1'));
-  }else{
-    next = next.replace(/\.\/buddy-chat-bottom-fix\.js\?v=[^"']+/g, './buddy-chat-bottom-fix.js?v=mobile-buddy-chat-bottom-20260609-1');
-  }
-  if(next.indexOf('buddy-chat-scroll-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-chat-scroll-fix.js?v=mobile-buddy-chat-scroll-20260609-1'));
-  }else{
-    next = next.replace(/\.\/buddy-chat-scroll-fix\.js\?v=[^"']+/g, './buddy-chat-scroll-fix.js?v=mobile-buddy-chat-scroll-20260609-1');
-  }
-  if(next.indexOf('buddy-user-action-prehook.js') < 0){
-    const hook = scriptTag('./buddy-user-action-prehook.js?v=mobile-buddy-user-action-20260609-1');
-    if(next.indexOf('buddy-contacts-actions.js') >= 0){
-      next = next.replace(/\s*<script src="\.\/buddy-contacts-actions\.js\?v=[^"']+"><\/script>/, '\n' + hook + '  <script src="./buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260609-1"></script>');
-    }else{
-      next = next.replace('</body>', hook + '</body>');
-    }
-  }
-  if(next.indexOf('buddy-contacts-actions.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260609-1'));
-  }else{
-    next = next.replace(/\.\/buddy-contacts-actions\.js\?v=[^"']+/g, './buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260609-1');
-  }
-  if(next.indexOf('buddy-chat-entry-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-chat-entry-fix.js?v=mobile-buddy-chat-entry-20260609-1'));
-  }else{
-    next = next.replace(/\.\/buddy-chat-entry-fix\.js\?v=[^"']+/g, './buddy-chat-entry-fix.js?v=mobile-buddy-chat-entry-20260609-1');
-  }
-  if(next.indexOf('report.js') < 0){
-    next = next.replace('</body>', tweakTag('./report.js?v=mobile-report-20260609-1'));
-  }
-  if(next.indexOf('buddy-badge-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-badge-fix.js?v=mobile-buddy-badge-20260609-3'));
-  }else{
-    next = next.replace(/\.\/buddy-badge-fix\.js\?v=[^"']+/g, './buddy-badge-fix.js?v=mobile-buddy-badge-20260609-3');
-  }
-  if(next.indexOf('buddy-chat-read-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4'));
-  }else{
-    next = next.replace(/\.\/buddy-chat-read-fix\.js\?v=[^"']+/g, './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4');
-  }
-  if(next.indexOf('mobile-core-fixes.js') < 0){
-    next = next.replace('</body>', tweakTag('./mobile-core-fixes.js?v=mobile-core-fixes-20260609-6'));
-  }else{
-    next = next.replace(/\.\/mobile-core-fixes\.js\?v=[^"']+/g, './mobile-core-fixes.js?v=mobile-core-fixes-20260609-6');
-  }
+  next = next.replace(/\s*<script src="\.\/buddy-open-fast\.js\?v=[^"']+"><\/script>/g, '');
+  next = next.replace(/\.\/buddy\.js\?v=[^"']+/g, './buddy.js?v=mobile-buddy-core-20260609-1');
+  next = next.replace(/\.\/buddy-read-tweaks\.js\?v=[^"']+/g, './buddy-read-tweaks.js?v=mobile-buddy-read-state-20260609-1');
+  next = next.replace(/\.\/buddy-chat-read-fix\.js\?v=[^"']+/g, './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4');
+  next = next.replace(/\.\/mobile-core-fixes\.js\?v=[^"']+/g, './mobile-core-fixes.js?v=mobile-core-fixes-20260609-7');
+  next = next.replace(/\.\/echo-enhance\.js\?v=[^"']+/g, './echo-enhance.js?v=mobile-echo-enhance-20260609-2');
+  if(next.indexOf('report.js') < 0) next = next.replace('</body>', tweakTag('./report.js?v=mobile-report-20260609-1'));
+  if(next.indexOf('mobile-core-fixes.js') < 0) next = next.replace('</body>', tweakTag('./mobile-core-fixes.js?v=mobile-core-fixes-20260609-7'));
   return next;
 }
 
@@ -157,9 +80,7 @@ async function transformIndexResponse(response){
 }
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting())
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {
@@ -173,11 +94,9 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   if(request.method !== 'GET') return;
-
   const url = new URL(request.url);
   if(url.origin !== self.location.origin) return;
   if(!url.pathname.startsWith(APP_BASE) && !url.pathname.startsWith(SITE_BASE + 'assets/')) return;
-
   if(url.pathname === APP_BASE || url.pathname === appPath('index.html')){
     event.respondWith(
       fetch(request).then(async response => {
@@ -192,7 +111,6 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
-
   event.respondWith(
     fetch(request).then(response => {
       if(response && response.ok){
