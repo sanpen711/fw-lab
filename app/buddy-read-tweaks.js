@@ -4,9 +4,10 @@
   window.__FW_MOBILE_BUDDY_READ_TWEAKS__ = true;
 
   var rendering = false;
+  var badgeChecking = false;
   var lastRenderKey = '';
   var renderTimer = 0;
-  var badgeSanitizeTimer = 0;
+  var badgeTimer = 0;
 
   function app(){ return window.FWApp || null; }
   function $(selector, root){ return (root || document).querySelector(selector); }
@@ -20,10 +21,14 @@
     });
   }
 
-  function userKey(){
+  function currentUser(){
     var fw = app();
-    var userId = fw && fw.state && fw.state.user && fw.state.user.id;
-    return 'fw_mobile_buddy_read:' + (userId || 'guest');
+    return fw && fw.state && fw.state.user || null;
+  }
+
+  function userKey(){
+    var user = currentUser();
+    return 'fw_mobile_buddy_read:' + (user && user.id || 'guest');
   }
 
   function readMap(){
@@ -52,15 +57,23 @@
     return badge;
   }
 
-  function sanitizeBuddyTabBadge(forceVisible){
+  function setBuddyTabBadge(visible){
     var button = $('[data-app-nav="buddy"]');
     var badge = buddyTabBadge();
     if(!button || !badge) return;
     badge.textContent = '';
     badge.setAttribute('aria-hidden', 'true');
-    if(typeof forceVisible === 'boolean'){
-      badge.classList.toggle('show', forceVisible);
-      button.classList.toggle('has-mobile-echo-badge', forceVisible);
+    if(typeof visible === 'boolean'){
+      badge.classList.toggle('show', visible);
+      button.classList.toggle('has-mobile-echo-badge', visible);
+    }
+  }
+
+  function clearBuddyBadgeText(){
+    var badge = buddyTabBadge();
+    if(badge){
+      badge.textContent = '';
+      badge.setAttribute('aria-hidden', 'true');
     }
   }
 
@@ -69,6 +82,135 @@
       var dot = $('.buddy-dot', row);
       return !!(dot && !dot.hidden);
     });
+  }
+
+  function fail(result, message){
+    if(result && result.error) throw new Error(message || result.error.message || '读取失败');
+    return result ? result.data : null;
+  }
+
+  function otherId(row, meId){ return String(row.requester_id) === String(meId) ? row.receiver_id : row.requester_id; }
+
+  async function getAcceptedFriendships(meId){
+    return fail(await client().from('friendships').select('id,requester_id,receiver_id,status,updated_at').or('requester_id.eq.' + meId + ',receiver_id.eq.' + meId).eq('status', 'accepted'), '搭子列表读取失败') || [];
+  }
+
+  async function getProfiles(ids){
+    var unique = Array.from(new Set((ids || []).filter(Boolean)));
+    if(!unique.length) return {};
+    var rows = fail(await client().from('profiles').select('id,nickname,avatar_url,lab_code').in('id', unique), '资料读取失败') || [];
+    var map = {};
+    rows.forEach(function(row){ map[row.id] = row; });
+    return map;
+  }
+
+  async function getConversationMap(buddyIds){
+    var map = {};
+    await Promise.all((buddyIds || []).map(async function(userId){
+      try{
+        var result = await client().rpc('fw_get_or_create_conversation', {target_user_id:userId});
+        if(result && result.error) throw result.error;
+        var convId = Number(result && result.data);
+        if(Number.isFinite(convId) && convId > 0) map[convId] = userId;
+      }catch(e){
+        console.warn('[FW mobile app] buddy conversation lookup failed', userId, e);
+      }
+    }));
+    return map;
+  }
+
+  async function getLatestBuddyMessages(me){
+    var friendships = await getAcceptedFriendships(me.id);
+    var buddyIds = friendships.map(function(row){ return otherId(row, me.id); }).filter(Boolean);
+    if(!buddyIds.length) return {items:[], profiles:{}};
+    var profiles = await getProfiles(buddyIds);
+    var conversationMap = await getConversationMap(buddyIds);
+    var convIds = Object.keys(conversationMap).map(function(id){ return Number(id); }).filter(function(id){ return Number.isFinite(id) && id > 0; });
+    if(!convIds.length) return {items:[], profiles:profiles};
+    var messages = fail(await client().from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').in('conversation_id', convIds).eq('is_deleted', false).order('created_at', {ascending:false}).limit(Math.max(120, convIds.length * 6)), '消息读取失败') || [];
+    var latestByBuddy = {};
+    messages.forEach(function(msg){
+      var userId = conversationMap[msg.conversation_id];
+      if(!userId || latestByBuddy[userId]) return;
+      latestByBuddy[userId] = {id:msg.id,userId:userId,sender_id:msg.sender_id,content:msg.content || '',created_at:msg.created_at,profile:profiles[userId] || {}};
+    });
+    return {
+      items:Object.keys(latestByBuddy).map(function(userId){ return latestByBuddy[userId]; }).sort(function(a,b){ return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); }),
+      profiles:profiles
+    };
+  }
+
+  function latestHasUnread(items, meId){
+    var map = readMap();
+    return (items || []).some(function(item){
+      return item && item.sender_id && item.sender_id !== meId && map[item.userId] !== String(item.id || item.created_at || '');
+    });
+  }
+
+  async function hasPendingBuddyNotices(me){
+    try{
+      var pending = await client().from('friendships').select('id', {count:'exact', head:true}).eq('receiver_id', me.id).eq('status', 'pending');
+      if(pending && !pending.error && Number(pending.count || 0) > 0) return true;
+      var rows = fail(await client().from('notifications').select('id,type').eq('user_id', me.id).eq('is_read', false).in('type', ['friend_request','friend_accept']).limit(20), '搭子通知读取失败') || [];
+      return rows.length > 0;
+    }catch(e){
+      return false;
+    }
+  }
+
+  async function refreshBuddyTabBadgeFromData(){
+    if(badgeChecking) return;
+    var me = currentUser();
+    if(!me || !me.id || !client()){ clearBuddyBadgeText(); return; }
+    badgeChecking = true;
+    try{
+      var latest = await getLatestBuddyMessages(me);
+      var unreadMessages = latestHasUnread(latest.items, me.id);
+      var pendingBuddy = await hasPendingBuddyNotices(me);
+      setBuddyTabBadge(unreadMessages || pendingBuddy);
+    }catch(e){
+      console.warn('[FW mobile app] buddy badge refresh failed', e);
+      clearBuddyBadgeText();
+    }finally{
+      badgeChecking = false;
+    }
+  }
+
+  async function markLatestMessageReadForUser(userId){
+    var me = currentUser();
+    var c = client();
+    if(!me || !me.id || !userId || !c) return;
+    try{
+      var conv = await c.rpc('fw_get_or_create_conversation', {target_user_id:userId});
+      if(conv && conv.error) throw conv.error;
+      var convId = Number(conv && conv.data);
+      if(!Number.isFinite(convId) || convId <= 0) return;
+      var rows = fail(await c.from('private_messages').select('id,conversation_id,sender_id,is_deleted,created_at').eq('conversation_id', convId).eq('is_deleted', false).order('created_at', {ascending:false}).limit(1), '消息读取失败') || [];
+      var latest = rows[0];
+      if(latest){
+        var map = readMap();
+        map[userId] = String(latest.id || latest.created_at || '');
+        saveReadMap(map);
+      }
+    }catch(e){
+      console.warn('[FW mobile app] mark latest buddy message read failed', e);
+    }
+  }
+
+  async function markPrivateNoticeRead(userId){
+    var me = currentUser();
+    var c = client();
+    if(!userId || !me || !me.id || !c) return;
+    try{
+      var result = await c.from('notifications').update({is_read:true}).eq('user_id', me.id).eq('actor_id', userId).eq('type', 'private_message').eq('is_read', false);
+      if(result && result.error) throw result.error;
+      refreshBuddyTabBadgeFromData();
+      if(window.FWAppEcho && window.FWAppEcho.refreshBadges){
+        setTimeout(function(){ window.FWAppEcho.refreshBadges(); setTimeout(refreshBuddyTabBadgeFromData, 220); }, 150);
+      }
+    }catch(e){
+      console.warn('[FW mobile app] mark private notice read failed', e);
+    }
   }
 
   function markReadByRow(row){
@@ -84,42 +226,23 @@
     var dot = $('.buddy-dot', row);
     if(dot) dot.hidden = true;
     markPrivateNoticeRead(userId);
-    setTimeout(function(){ sanitizeBuddyTabBadge(hasVisibleUnreadRows()); }, 120);
+    setTimeout(function(){ applyUnreadDots(); refreshBuddyTabBadgeFromData(); }, 120);
   }
 
-  function markReadByUserId(userId){
+  async function markReadByUserId(userId){
     if(!userId) return;
     var row = $('[data-buddy-open-chat="' + String(userId).replace(/"/g, '\\"') + '"].buddy-message-row');
     if(row) markReadByRow(row);
-    else markPrivateNoticeRead(userId);
-  }
-
-  async function markPrivateNoticeRead(userId){
-    var fw = app();
-    var me = fw && fw.state && fw.state.user;
-    var c = client();
-    if(!userId || !me || !me.id || !c) return;
-    try{
-      var result = await c
-        .from('notifications')
-        .update({is_read:true})
-        .eq('user_id', me.id)
-        .eq('actor_id', userId)
-        .eq('type', 'private_message')
-        .eq('is_read', false);
-      if(result && result.error) throw result.error;
-      sanitizeBuddyTabBadge(hasVisibleUnreadRows());
-      if(window.FWAppEcho && window.FWAppEcho.refreshBadges){
-        setTimeout(function(){ window.FWAppEcho.refreshBadges(); setTimeout(function(){ sanitizeBuddyTabBadge(hasVisibleUnreadRows()); }, 200); }, 150);
-      }
-    }catch(e){
-      console.warn('[FW mobile app] mark private notice read failed', e);
+    else{
+      await markLatestMessageReadForUser(userId);
+      await markPrivateNoticeRead(userId);
+      refreshBuddyTabBadgeFromData();
     }
   }
 
   function applyUnreadDots(){
-    var fw = app();
-    var meId = fw && fw.state && fw.state.user && fw.state.user.id;
+    var me = currentUser();
+    var meId = me && me.id;
     var map = readMap();
     var hasRows = false;
     $$('.buddy-message-row[data-buddy-open-chat]').forEach(function(row){
@@ -131,8 +254,8 @@
       var sender = row.getAttribute('data-buddy-last-sender') || '';
       dot.hidden = !sig || sender === meId || map[userId] === sig;
     });
-    if(hasRows) sanitizeBuddyTabBadge(hasVisibleUnreadRows());
-    else sanitizeBuddyTabBadge();
+    if(hasRows) setBuddyTabBadge(hasVisibleUnreadRows());
+    else clearBuddyBadgeText();
   }
 
   function injectStyle(){
@@ -179,41 +302,6 @@
     return '<span class="list-avatar">' + esc(fw && fw.initials ? fw.initials(name) : String(name).slice(0, 2)) + '</span>';
   }
 
-  function fail(result, message){
-    if(result && result.error) throw new Error(message || result.error.message || '读取失败');
-    return result ? result.data : null;
-  }
-
-  function otherId(row, meId){ return String(row.requester_id) === String(meId) ? row.receiver_id : row.requester_id; }
-
-  async function getAcceptedFriendships(meId){
-    return fail(await client().from('friendships').select('id,requester_id,receiver_id,status,updated_at').or('requester_id.eq.' + meId + ',receiver_id.eq.' + meId).eq('status', 'accepted'), '搭子列表读取失败') || [];
-  }
-
-  async function getProfiles(ids){
-    var unique = Array.from(new Set((ids || []).filter(Boolean)));
-    if(!unique.length) return {};
-    var rows = fail(await client().from('profiles').select('id,nickname,avatar_url,lab_code').in('id', unique), '资料读取失败') || [];
-    var map = {};
-    rows.forEach(function(row){ map[row.id] = row; });
-    return map;
-  }
-
-  async function getConversationMap(buddyIds){
-    var map = {};
-    await Promise.all((buddyIds || []).map(async function(userId){
-      try{
-        var result = await client().rpc('fw_get_or_create_conversation', {target_user_id:userId});
-        if(result && result.error) throw result.error;
-        var convId = Number(result && result.data);
-        if(Number.isFinite(convId) && convId > 0) map[convId] = userId;
-      }catch(e){
-        console.warn('[FW mobile app] buddy conversation lookup failed', userId, e);
-      }
-    }));
-    return map;
-  }
-
   function messageRowHtml(item, meId){
     var profile = item.profile || {};
     var snippet = item.content || '[消息]';
@@ -223,34 +311,20 @@
 
   async function renderAccurateMessages(){
     if(rendering || !isBuddyMessagesView()) return;
-    var fw = app();
-    var me = fw && fw.state && fw.state.user;
+    var me = currentUser();
     var list = $('[data-buddy-list]');
     if(!me || !list || !client()) return;
     rendering = true;
     try{
-      var friendships = await getAcceptedFriendships(me.id);
-      var buddyIds = friendships.map(function(row){ return otherId(row, me.id); }).filter(Boolean);
-      if(!buddyIds.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。先去“新的搭子”加一个搭子吧。</div>'; sanitizeBuddyTabBadge(false); return; }
-      var profiles = await getProfiles(buddyIds);
-      var conversationMap = await getConversationMap(buddyIds);
-      var convIds = Object.keys(conversationMap).map(function(id){ return Number(id); }).filter(function(id){ return Number.isFinite(id) && id > 0; });
-      if(!convIds.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。</div>'; sanitizeBuddyTabBadge(false); return; }
-      var messages = fail(await client().from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').in('conversation_id', convIds).eq('is_deleted', false).order('created_at', {ascending:false}).limit(Math.max(120, convIds.length * 6)), '消息读取失败') || [];
-      var latestByBuddy = {};
-      messages.forEach(function(msg){
-        var userId = conversationMap[msg.conversation_id];
-        if(!userId || latestByBuddy[userId]) return;
-        latestByBuddy[userId] = {id:msg.id,userId:userId,sender_id:msg.sender_id,content:msg.content || '',created_at:msg.created_at,profile:profiles[userId] || {}};
-      });
-      var latest = Object.keys(latestByBuddy).map(function(userId){ return latestByBuddy[userId]; }).sort(function(a,b){ return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); });
-      if(!latest.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。</div>'; sanitizeBuddyTabBadge(false); return; }
-      var key = latest.map(function(item){ return [item.userId, item.id, item.created_at, item.sender_id].join(':'); }).join('|');
+      var latest = await getLatestBuddyMessages(me);
+      if(!latest.items.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。</div>'; setBuddyTabBadge(false); return; }
+      var key = latest.items.map(function(item){ return [item.userId, item.id, item.created_at, item.sender_id].join(':'); }).join('|');
       if(key !== lastRenderKey || !$('.buddy-message-row', list)){
         lastRenderKey = key;
-        list.innerHTML = latest.map(function(item){ return messageRowHtml(item, me.id); }).join('');
+        list.innerHTML = latest.items.map(function(item){ return messageRowHtml(item, me.id); }).join('');
       }
       applyUnreadDots();
+      refreshBuddyTabBadgeFromData();
     }catch(e){
       console.warn('[FW mobile app] accurate buddy messages failed', e);
       if(list && isBuddyMessagesView()) list.innerHTML = '<div class="error">搭子消息暂时读取失败，请稍后再试。</div>';
@@ -277,7 +351,9 @@
   function boot(){
     injectStyle();
     observeBuddyList();
-    applyUnreadDots();
+    clearBuddyBadgeText();
+    setTimeout(refreshBuddyTabBadgeFromData, 500);
+    setTimeout(refreshBuddyTabBadgeFromData, 1600);
     scheduleRender(500);
     document.addEventListener('click', function(e){
       var row = e.target.closest && e.target.closest('.buddy-message-row[data-buddy-open-chat]');
@@ -294,14 +370,14 @@
       var tab = e.target.closest && e.target.closest('[data-buddy-tab]');
       if(tab && tab.dataset.buddyTab === 'messages') scheduleRender(220);
     }, true);
-    window.addEventListener('focus', function(){ setTimeout(function(){ applyUnreadDots(); scheduleRender(150); }, 150); });
-    document.addEventListener('visibilitychange', function(){ if(!document.hidden) scheduleRender(150); });
-    clearInterval(badgeSanitizeTimer);
-    badgeSanitizeTimer = setInterval(function(){ sanitizeBuddyTabBadge(); applyUnreadDots(); }, 1200);
+    window.addEventListener('focus', function(){ setTimeout(function(){ refreshBuddyTabBadgeFromData(); applyUnreadDots(); scheduleRender(150); }, 150); });
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) setTimeout(refreshBuddyTabBadgeFromData, 150); });
+    clearInterval(badgeTimer);
+    badgeTimer = setInterval(function(){ clearBuddyBadgeText(); refreshBuddyTabBadgeFromData(); }, 6500);
     setInterval(function(){ observeBuddyList(); applyUnreadDots(); if(isBuddyMessagesView()) scheduleRender(0); }, 7500);
   }
 
-  window.FWAppBuddyUnread = {apply:applyUnreadDots, refresh:scheduleRender, markRead:markReadByUserId, sanitizeBadge:sanitizeBuddyTabBadge};
+  window.FWAppBuddyUnread = {apply:applyUnreadDots, refresh:scheduleRender, refreshBadge:refreshBuddyTabBadgeFromData, markRead:markReadByUserId, setBadge:setBuddyTabBadge};
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
