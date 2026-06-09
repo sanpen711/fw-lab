@@ -8,6 +8,7 @@
 
   var STORE_KEY = 'fw_mobile_buddy_chat_target_avatar';
   var TARGET_KEY = 'fw_mobile_buddy_chat_target_id';
+  var pending = false;
 
   function injectStyle(){
     if($('#fwMobileBuddyChatPolishStyle')) return;
@@ -100,12 +101,21 @@
     }
   }
 
+  function schedulePolish(){
+    if(pending) return;
+    pending = true;
+    requestAnimationFrame(function(){
+      pending = false;
+      polish();
+    });
+  }
+
   function boot(){
     injectStyle();
     bindCapture();
-    var observer = new MutationObserver(function(){ requestAnimationFrame(polish); });
+    var observer = new MutationObserver(schedulePolish);
     observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
-    setInterval(polish, 500);
+    setInterval(function(){ if(document.body.classList.contains('fw-buddy-chatting')) polish(); }, 2000);
     polish();
   }
 
