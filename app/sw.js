@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-report-bridge-20260609-1';
+const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -20,6 +20,7 @@ const APP_SHELL = [
   appPath('buddy-chat-polish.js'),
   appPath('buddy-chat-bottom-fix.js'),
   appPath('buddy-chat-scroll-fix.js'),
+  appPath('buddy-user-action-prehook.js'),
   appPath('buddy-contacts-actions.js'),
   appPath('buddy-chat-entry-fix.js'),
   assetPath('fw-emoji-panel.js'),
@@ -48,6 +49,10 @@ function tweakTag(src){
   return '  <scr' + 'ipt src="' + src + '"></scr' + 'ipt>\n</body>';
 }
 
+function scriptTag(src){
+  return '  <scr' + 'ipt src="' + src + '"></scr' + 'ipt>\n';
+}
+
 function injectAppTweaks(html){
   let next = String(html || '');
   next = next.replace(/\.\/profile\.js\?v=[^"']+/g, './profile.js?v=mobile-password-register-20260608-1');
@@ -65,7 +70,7 @@ function injectAppTweaks(html){
     next = next.replace('</body>', tweakTag('./bird-tweaks.js?v=mobile-bird-toggle-20260528-1'));
   }
   if(next.indexOf('buddy-read-tweaks.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-read-tweaks.js?v=mobile-buddy-read-20260528-1'));
+    next = next.replace('</body>', tweakTag('./buddy-read-tweaks.js?v=mobile-buddy-read-20260609-1'));
   }
   if(next.indexOf('buddy-chat-tweaks.js') < 0){
     next = next.replace('</body>', tweakTag('./buddy-chat-tweaks.js?v=mobile-buddy-chat-20260528-1'));
@@ -78,6 +83,14 @@ function injectAppTweaks(html){
   }
   if(next.indexOf('buddy-chat-scroll-fix.js') < 0){
     next = next.replace('</body>', tweakTag('./buddy-chat-scroll-fix.js?v=mobile-buddy-chat-scroll-20260528-1'));
+  }
+  if(next.indexOf('buddy-user-action-prehook.js') < 0){
+    const hook = scriptTag('./buddy-user-action-prehook.js?v=mobile-buddy-user-action-20260609-1');
+    if(next.indexOf('buddy-contacts-actions.js') >= 0){
+      next = next.replace(/\s*<script src="\.\/buddy-contacts-actions\.js\?v=[^"']+"><\/script>/, '\n' + hook + '  <script src="./buddy-contacts-actions.js?v=mobile-direct-tweaks-20260528-1"></script>');
+    }else{
+      next = next.replace('</body>', hook + '</body>');
+    }
   }
   if(next.indexOf('buddy-contacts-actions.js') < 0){
     next = next.replace('</body>', tweakTag('./buddy-contacts-actions.js?v=mobile-buddy-contact-actions-20260528-1'));
