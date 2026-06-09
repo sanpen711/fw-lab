@@ -24,10 +24,6 @@
     var style = document.createElement('style');
     style.id = 'fwMobileCoreFixesStyle';
     style.textContent = [
-      ':root{--tabbar-total-h:calc(var(--tab-h,50px) + env(safe-area-inset-bottom,0px));}',
-      '.app-main{bottom:var(--tabbar-total-h)!important;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))!important;}',
-      '.app-tabbar{height:var(--tabbar-total-h)!important;padding:6px 8px env(safe-area-inset-bottom,0px)!important;}',
-      '.app-toast{bottom:calc(var(--tabbar-total-h) + 14px)!important;}',
       '.comment-menu-item[data-comment-report]{display:none!important;}'
     ].join('\n');
     document.head.appendChild(style);
