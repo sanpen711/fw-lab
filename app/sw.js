@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-9';
+const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-10';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -16,6 +16,7 @@ const APP_SHELL = [
   appPath('publish.js'),
   appPath('buddy.js'),
   appPath('buddy-read-tweaks.js'),
+  appPath('buddy-chat-read-fix.js'),
   appPath('buddy-badge-fix.js'),
   appPath('buddy-chat-tweaks.js'),
   appPath('buddy-chat-polish.js'),
@@ -111,8 +112,15 @@ function injectAppTweaks(html){
   }else{
     next = next.replace(/\.\/buddy-badge-fix\.js\?v=[^"']+/g, './buddy-badge-fix.js?v=mobile-buddy-badge-20260609-3');
   }
+  if(next.indexOf('buddy-chat-read-fix.js') < 0){
+    next = next.replace('</body>', tweakTag('./buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-1'));
+  }else{
+    next = next.replace(/\.\/buddy-chat-read-fix\.js\?v=[^"']+/g, './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-1');
+  }
   if(next.indexOf('mobile-core-fixes.js') < 0){
-    next = next.replace('</body>', tweakTag('./mobile-core-fixes.js?v=mobile-core-fixes-20260609-4'));
+    next = next.replace('</body>', tweakTag('./mobile-core-fixes.js?v=mobile-core-fixes-20260609-5'));
+  }else{
+    next = next.replace(/\.\/mobile-core-fixes\.js\?v=[^"']+/g, './mobile-core-fixes.js?v=mobile-core-fixes-20260609-5');
   }
   return next;
 }
