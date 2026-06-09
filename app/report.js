@@ -1,5 +1,5 @@
 // F.w 研究所：手机端统一举报桥接
-// 作用：不改 feed/buddy 主流程，用捕获层接管已有举报入口并提交到 Supabase site_reports。
+// 作用：接管手机端帖子 / 评论 / 搭子举报入口，统一提交到 Supabase site_reports，并修正后台举报处理按钮。
 (function(){
   if(window.__FW_MOBILE_REPORT_BRIDGE__) return;
   window.__FW_MOBILE_REPORT_BRIDGE__ = true;
@@ -47,14 +47,14 @@
 
   async function submitReport(targetType, targetId, defaultReason){
     targetId = String(targetId || '').trim();
-    if(!targetType || !targetId){ toast('没有找到举报对象。'); return; }
-    if(!(await waitDb())){ toast('暂时无法连接数据服务。'); return; }
+    if(!targetType || !targetId){ toast('没有找到举报对象。'); return false; }
+    if(!(await waitDb())){ toast('暂时无法连接数据服务。'); return false; }
     var user = await requireUser();
-    if(!user){ toast('请先登录后再举报。'); if(app()) app().setView && app().setView('profile'); return; }
+    if(!user){ toast('请先登录后再举报。'); if(app()) app().setView && app().setView('profile'); return false; }
     var reason = window.prompt('请输入举报原因：', defaultReason || '不适当内容 / 骚扰 / 恶意攻击 / 其他');
-    if(reason === null) return;
+    if(reason === null) return false;
     reason = String(reason || '').trim();
-    if(reason.length < 2){ toast('举报原因至少 2 个字。'); return; }
+    if(reason.length < 2){ toast('举报原因至少 2 个字。'); return false; }
     try{
       var c = client();
       if(!c) throw new Error('暂时无法连接数据服务。');
@@ -67,9 +67,11 @@
       toast('举报已提交，管理员会在后台处理。');
       closeBuddySheet();
       closeCommentMenu();
+      return true;
     }catch(e){
       console.warn('[FW mobile app] report submit failed', e);
       toast(e.message || '举报提交失败。');
+      return false;
     }
   }
 
@@ -122,6 +124,28 @@
     });
   }
 
+  function enhanceAdminReportActions(){
+    var fw = app();
+    if(!fw || !fw.state || fw.state.view !== 'moderation') return;
+    $$('.mobile-admin-row').forEach(function(row){
+      if(row.dataset.fwReportActionFixed === '1') return;
+      var text = row.textContent || '';
+      var type = text.indexOf('房间：post') >= 0 ? 'post' : text.indexOf('房间：comment') >= 0 ? 'comment' : '';
+      if(!type) return;
+      var button = $('[data-mobile-chat-act][data-id]', row);
+      if(!button) return;
+      if(type === 'post'){
+        button.dataset.mobilePostAct = button.dataset.mobileChatAct || 'delete';
+        button.textContent = '删除帖子';
+      }else{
+        button.dataset.mobileCommentAct = button.dataset.mobileChatAct || 'delete';
+        button.textContent = '删除评论';
+      }
+      delete button.dataset.mobileChatAct;
+      row.dataset.fwReportActionFixed = '1';
+    });
+  }
+
   function bind(){
     document.addEventListener('click', function(e){
       var more = e.target.closest && e.target.closest('[data-buddy-contact-more]');
@@ -159,17 +183,37 @@
 
     var timer = 0;
     if(window.MutationObserver){
-      var observer = new MutationObserver(function(){ clearTimeout(timer); timer = setTimeout(enhancePostReports, 120); });
+      var observer = new MutationObserver(function(){
+        clearTimeout(timer);
+        timer = setTimeout(function(){
+          enhancePostReports();
+          enhanceAdminReportActions();
+        }, 120);
+      });
       observer.observe(document.body, {childList:true, subtree:true});
     }
-    document.addEventListener('click', function(){ setTimeout(enhancePostReports, 90); });
-    setInterval(enhancePostReports, 1600);
+    document.addEventListener('click', function(){
+      setTimeout(function(){
+        enhancePostReports();
+        enhanceAdminReportActions();
+      }, 90);
+    });
+    setInterval(function(){
+      enhancePostReports();
+      enhanceAdminReportActions();
+    }, 1600);
   }
 
   function boot(){
     injectStyle();
     bind();
     enhancePostReports();
+    enhanceAdminReportActions();
+    window.FWAppReport = {
+      submit:submitReport,
+      enhancePostReports:enhancePostReports,
+      enhanceAdminReportActions:enhanceAdminReportActions
+    };
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
