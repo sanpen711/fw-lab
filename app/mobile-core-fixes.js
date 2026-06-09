@@ -19,16 +19,6 @@
     return (root || document).querySelector(selector);
   }
 
-  function injectStyle(){
-    if(document.getElementById('fwMobileCoreFixesStyle')) return;
-    var style = document.createElement('style');
-    style.id = 'fwMobileCoreFixesStyle';
-    style.textContent = [
-      '.comment-menu-item[data-comment-report]{display:none!important;}'
-    ].join('\n');
-    document.head.appendChild(style);
-  }
-
   function normalizeViewport(){
     var meta = $('meta[name="viewport"]');
     if(!meta) return;
@@ -90,16 +80,6 @@
       if(opener){
         var openView = opener.dataset.appOpen || 'nav';
         setTimeout(function(){ replaceHashForView(openView); }, 0);
-        return;
-      }
-
-      var report = target.closest('[data-comment-report]');
-      if(report){
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        if(window.FWApp && typeof window.FWApp.toast === 'function'){
-          window.FWApp.toast('举报入口正在整理，暂时请先通过处理公告反馈。');
-        }
       }
     }, true);
   }
@@ -114,7 +94,6 @@
   }
 
   function start(){
-    injectStyle();
     normalizeViewport();
     schedulePatchSetView();
     bindClickSync();
