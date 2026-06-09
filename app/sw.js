@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-13';
+const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-14';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -15,6 +15,7 @@ const APP_SHELL = [
   appPath('feed.js'),
   appPath('publish.js'),
   appPath('buddy.js'),
+  appPath('buddy-open-fast.js'),
   appPath('buddy-read-tweaks.js'),
   appPath('buddy-chat-read-fix.js'),
   appPath('buddy-badge-fix.js'),
@@ -73,6 +74,11 @@ function injectAppTweaks(html){
   if(next.indexOf('bird-tweaks.js') < 0){
     next = next.replace('</body>', tweakTag('./bird-tweaks.js?v=mobile-bird-toggle-20260528-1'));
   }
+  if(next.indexOf('buddy-open-fast.js') < 0){
+    next = next.replace('</body>', tweakTag('./buddy-open-fast.js?v=mobile-buddy-open-fast-20260609-1'));
+  }else{
+    next = next.replace(/\.\/buddy-open-fast\.js\?v=[^"']+/g, './buddy-open-fast.js?v=mobile-buddy-open-fast-20260609-1');
+  }
   if(next.indexOf('buddy-read-tweaks.js') < 0){
     next = next.replace('</body>', tweakTag('./buddy-read-tweaks.js?v=mobile-buddy-read-20260609-6'));
   }else{
@@ -128,9 +134,9 @@ function injectAppTweaks(html){
     next = next.replace(/\.\/buddy-chat-read-fix\.js\?v=[^"']+/g, './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4');
   }
   if(next.indexOf('mobile-core-fixes.js') < 0){
-    next = next.replace('</body>', tweakTag('./mobile-core-fixes.js?v=mobile-core-fixes-20260609-5'));
+    next = next.replace('</body>', tweakTag('./mobile-core-fixes.js?v=mobile-core-fixes-20260609-6'));
   }else{
-    next = next.replace(/\.\/mobile-core-fixes\.js\?v=[^"']+/g, './mobile-core-fixes.js?v=mobile-core-fixes-20260609-5');
+    next = next.replace(/\.\/mobile-core-fixes\.js\?v=[^"']+/g, './mobile-core-fixes.js?v=mobile-core-fixes-20260609-6');
   }
   return next;
 }
