@@ -1,4 +1,4 @@
-// F.w 研究所：手机端搭子消息列表与本地未读红点修正
+// F.w 研究所：手机端搭子消息列表、本地未读红点与底部搭子红点修正
 (function(){
   if(window.__FW_MOBILE_BUDDY_READ_TWEAKS__) return;
   window.__FW_MOBILE_BUDDY_READ_TWEAKS__ = true;
@@ -6,6 +6,7 @@
   var rendering = false;
   var lastRenderKey = '';
   var renderTimer = 0;
+  var badgeSanitizeTimer = 0;
 
   function app(){ return window.FWApp || null; }
   function $(selector, root){ return (root || document).querySelector(selector); }
@@ -39,29 +40,90 @@
     return row.getAttribute('data-buddy-last-message-id') || row.getAttribute('data-buddy-last-message-at') || '';
   }
 
+  function buddyTabBadge(){
+    var button = $('[data-app-nav="buddy"]');
+    if(!button) return null;
+    var badge = $('.mobile-echo-badge', button);
+    if(!badge){
+      badge = document.createElement('span');
+      badge.className = 'mobile-echo-badge';
+      button.appendChild(badge);
+    }
+    return badge;
+  }
+
+  function sanitizeBuddyTabBadge(forceVisible){
+    var button = $('[data-app-nav="buddy"]');
+    var badge = buddyTabBadge();
+    if(!button || !badge) return;
+    badge.textContent = '';
+    badge.setAttribute('aria-hidden', 'true');
+    if(typeof forceVisible === 'boolean'){
+      badge.classList.toggle('show', forceVisible);
+      button.classList.toggle('has-mobile-echo-badge', forceVisible);
+    }
+  }
+
+  function hasVisibleUnreadRows(){
+    return $$('.buddy-message-row[data-buddy-open-chat]').some(function(row){
+      var dot = $('.buddy-dot', row);
+      return !!(dot && !dot.hidden);
+    });
+  }
+
   function markReadByRow(row){
     if(!row) return;
     var userId = row.getAttribute('data-buddy-open-chat') || '';
     var sig = messageSignature(row);
-    if(!userId || !sig) return;
-    var map = readMap();
-    map[userId] = sig;
-    saveReadMap(map);
+    if(!userId) return;
+    if(sig){
+      var map = readMap();
+      map[userId] = sig;
+      saveReadMap(map);
+    }
     var dot = $('.buddy-dot', row);
     if(dot) dot.hidden = true;
+    markPrivateNoticeRead(userId);
+    setTimeout(function(){ sanitizeBuddyTabBadge(hasVisibleUnreadRows()); }, 120);
   }
 
   function markReadByUserId(userId){
     if(!userId) return;
     var row = $('[data-buddy-open-chat="' + String(userId).replace(/"/g, '\\"') + '"].buddy-message-row');
     if(row) markReadByRow(row);
+    else markPrivateNoticeRead(userId);
+  }
+
+  async function markPrivateNoticeRead(userId){
+    var fw = app();
+    var me = fw && fw.state && fw.state.user;
+    var c = client();
+    if(!userId || !me || !me.id || !c) return;
+    try{
+      var result = await c
+        .from('notifications')
+        .update({is_read:true})
+        .eq('user_id', me.id)
+        .eq('actor_id', userId)
+        .eq('type', 'private_message')
+        .eq('is_read', false);
+      if(result && result.error) throw result.error;
+      sanitizeBuddyTabBadge(hasVisibleUnreadRows());
+      if(window.FWAppEcho && window.FWAppEcho.refreshBadges){
+        setTimeout(function(){ window.FWAppEcho.refreshBadges(); setTimeout(function(){ sanitizeBuddyTabBadge(hasVisibleUnreadRows()); }, 200); }, 150);
+      }
+    }catch(e){
+      console.warn('[FW mobile app] mark private notice read failed', e);
+    }
   }
 
   function applyUnreadDots(){
     var fw = app();
     var meId = fw && fw.state && fw.state.user && fw.state.user.id;
     var map = readMap();
+    var hasRows = false;
     $$('.buddy-message-row[data-buddy-open-chat]').forEach(function(row){
+      hasRows = true;
       var userId = row.getAttribute('data-buddy-open-chat') || '';
       var dot = $('.buddy-dot', row);
       if(!dot || !userId) return;
@@ -69,6 +131,8 @@
       var sender = row.getAttribute('data-buddy-last-sender') || '';
       dot.hidden = !sig || sender === meId || map[userId] === sig;
     });
+    if(hasRows) sanitizeBuddyTabBadge(hasVisibleUnreadRows());
+    else sanitizeBuddyTabBadge();
   }
 
   function injectStyle(){
@@ -78,7 +142,9 @@
     style.textContent = [
       '[data-app-view="buddy"] > .tabs{background:transparent!important;box-shadow:none!important;padding-top:0!important;padding-bottom:10px!important}',
       '[data-app-view="buddy"] > .tabs:before,[data-app-view="buddy"] > .tabs:after{display:none!important;content:none!important}',
-      '.buddy-dot[hidden]{display:none!important}'
+      '.buddy-dot[hidden]{display:none!important}',
+      '[data-app-nav="buddy"] .mobile-echo-badge{width:13px!important;min-width:13px!important;height:13px!important;padding:0!important;border-radius:999px!important;font-size:0!important;line-height:0!important;color:transparent!important;overflow:hidden!important;right:22px!important;top:6px!important}',
+      '[data-app-nav="buddy"] .mobile-echo-badge::before{content:""!important}'
     ].join('\n');
     document.head.appendChild(style);
   }
@@ -121,8 +187,7 @@
   function otherId(row, meId){ return String(row.requester_id) === String(meId) ? row.receiver_id : row.requester_id; }
 
   async function getAcceptedFriendships(meId){
-    var rows = fail(await client().from('friendships').select('id,requester_id,receiver_id,status,updated_at').or('requester_id.eq.' + meId + ',receiver_id.eq.' + meId).eq('status', 'accepted'), '搭子列表读取失败') || [];
-    return rows;
+    return fail(await client().from('friendships').select('id,requester_id,receiver_id,status,updated_at').or('requester_id.eq.' + meId + ',receiver_id.eq.' + meId).eq('status', 'accepted'), '搭子列表读取失败') || [];
   }
 
   async function getProfiles(ids){
@@ -166,27 +231,20 @@
     try{
       var friendships = await getAcceptedFriendships(me.id);
       var buddyIds = friendships.map(function(row){ return otherId(row, me.id); }).filter(Boolean);
-      if(!buddyIds.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。先去“新的搭子”加一个搭子吧。</div>'; return; }
+      if(!buddyIds.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。先去“新的搭子”加一个搭子吧。</div>'; sanitizeBuddyTabBadge(false); return; }
       var profiles = await getProfiles(buddyIds);
       var conversationMap = await getConversationMap(buddyIds);
       var convIds = Object.keys(conversationMap).map(function(id){ return Number(id); }).filter(function(id){ return Number.isFinite(id) && id > 0; });
-      if(!convIds.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。</div>'; return; }
+      if(!convIds.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。</div>'; sanitizeBuddyTabBadge(false); return; }
       var messages = fail(await client().from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').in('conversation_id', convIds).eq('is_deleted', false).order('created_at', {ascending:false}).limit(Math.max(120, convIds.length * 6)), '消息读取失败') || [];
       var latestByBuddy = {};
       messages.forEach(function(msg){
         var userId = conversationMap[msg.conversation_id];
         if(!userId || latestByBuddy[userId]) return;
-        latestByBuddy[userId] = {
-          id:msg.id,
-          userId:userId,
-          sender_id:msg.sender_id,
-          content:msg.content || '',
-          created_at:msg.created_at,
-          profile:profiles[userId] || {}
-        };
+        latestByBuddy[userId] = {id:msg.id,userId:userId,sender_id:msg.sender_id,content:msg.content || '',created_at:msg.created_at,profile:profiles[userId] || {}};
       });
       var latest = Object.keys(latestByBuddy).map(function(userId){ return latestByBuddy[userId]; }).sort(function(a,b){ return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); });
-      if(!latest.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。</div>'; return; }
+      if(!latest.length){ list.innerHTML = '<div class="empty">暂时还没有搭子消息。</div>'; sanitizeBuddyTabBadge(false); return; }
       var key = latest.map(function(item){ return [item.userId, item.id, item.created_at, item.sender_id].join(':'); }).join('|');
       if(key !== lastRenderKey || !$('.buddy-message-row', list)){
         lastRenderKey = key;
@@ -238,8 +296,12 @@
     }, true);
     window.addEventListener('focus', function(){ setTimeout(function(){ applyUnreadDots(); scheduleRender(150); }, 150); });
     document.addEventListener('visibilitychange', function(){ if(!document.hidden) scheduleRender(150); });
+    clearInterval(badgeSanitizeTimer);
+    badgeSanitizeTimer = setInterval(function(){ sanitizeBuddyTabBadge(); applyUnreadDots(); }, 1200);
     setInterval(function(){ observeBuddyList(); applyUnreadDots(); if(isBuddyMessagesView()) scheduleRender(0); }, 7500);
   }
+
+  window.FWAppBuddyUnread = {apply:applyUnreadDots, refresh:scheduleRender, markRead:markReadByUserId, sanitizeBadge:sanitizeBuddyTabBadge};
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
