@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-6';
+const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-7';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -62,7 +62,9 @@ function injectAppTweaks(html){
   next = next.replace(/\.\/nav\.js\?v=[^"']+/g, './nav.js?v=mobile-reload-hash-20260608-1');
   next = next.replace(/\.\/modules-init\.js\?v=[^"']+/g, './modules-init.js?v=mobile-comment-thread-20260608-1');
   if(next.indexOf('echo-enhance.js') < 0){
-    next = next.replace('</body>', tweakTag('./echo-enhance.js?v=mobile-echo-enhance-20260529-2'));
+    next = next.replace('</body>', tweakTag('./echo-enhance.js?v=mobile-echo-enhance-20260609-1'));
+  }else{
+    next = next.replace(/\.\/echo-enhance\.js\?v=[^"']+/g, './echo-enhance.js?v=mobile-echo-enhance-20260609-1');
   }
   if(next.indexOf('fw-emoji-panel.js') < 0){
     next = next.replace('</body>', tweakTag('../assets/fw-emoji-panel.js?v=mobile-buddy-chat-20260528-1'));
@@ -71,9 +73,9 @@ function injectAppTweaks(html){
     next = next.replace('</body>', tweakTag('./bird-tweaks.js?v=mobile-bird-toggle-20260528-1'));
   }
   if(next.indexOf('buddy-read-tweaks.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-read-tweaks.js?v=mobile-buddy-read-20260609-3'));
+    next = next.replace('</body>', tweakTag('./buddy-read-tweaks.js?v=mobile-buddy-read-20260609-4'));
   }else{
-    next = next.replace(/\.\/buddy-read-tweaks\.js\?v=[^"']+/g, './buddy-read-tweaks.js?v=mobile-buddy-read-20260609-3');
+    next = next.replace(/\.\/buddy-read-tweaks\.js\?v=[^"']+/g, './buddy-read-tweaks.js?v=mobile-buddy-read-20260609-4');
   }
   if(next.indexOf('buddy-chat-tweaks.js') < 0){
     next = next.replace('</body>', tweakTag('./buddy-chat-tweaks.js?v=mobile-buddy-chat-20260528-1'));
