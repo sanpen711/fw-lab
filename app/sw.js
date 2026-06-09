@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-5';
+const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-6';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -105,9 +105,9 @@ function injectAppTweaks(html){
     next = next.replace('</body>', tweakTag('./report.js?v=mobile-report-20260609-1'));
   }
   if(next.indexOf('buddy-badge-fix.js') < 0){
-    next = next.replace('</body>', tweakTag('./buddy-badge-fix.js?v=mobile-buddy-badge-20260609-2'));
+    next = next.replace('</body>', tweakTag('./buddy-badge-fix.js?v=mobile-buddy-badge-20260609-3'));
   }else{
-    next = next.replace(/\.\/buddy-badge-fix\.js\?v=[^"']+/g, './buddy-badge-fix.js?v=mobile-buddy-badge-20260609-2');
+    next = next.replace(/\.\/buddy-badge-fix\.js\?v=[^"']+/g, './buddy-badge-fix.js?v=mobile-buddy-badge-20260609-3');
   }
   if(next.indexOf('mobile-core-fixes.js') < 0){
     next = next.replace('</body>', tweakTag('./mobile-core-fixes.js?v=mobile-core-fixes-20260609-4'));
