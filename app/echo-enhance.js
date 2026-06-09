@@ -11,7 +11,6 @@
 
   function app(){ return window.FWApp || null; }
   function $(selector, root){ return (root || document).querySelector(selector); }
-  function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
   function esc(value){
     var fw = app();
     if(fw && fw.esc) return fw.esc(value);
@@ -84,6 +83,7 @@
       '.app-tabbar button{position:relative}',
       '.mobile-echo-badge{position:absolute;right:16px;top:5px;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:#d95353;color:#fff;border:2px solid #10170f;display:none;place-items:center;font-size:10px;line-height:13px;font-weight:1000;box-shadow:0 4px 12px rgba(0,0,0,.22);box-sizing:border-box}',
       '.mobile-echo-badge.show{display:grid}',
+      '[data-app-nav="buddy"] .mobile-echo-badge{width:13px!important;min-width:13px!important;height:13px!important;padding:0!important;font-size:0!important;line-height:0!important;color:transparent!important;overflow:hidden!important;right:22px!important;top:6px!important}',
       '.mobile-echo-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:0 0 10px}',
       '.mobile-echo-toolbar b{font-size:14px;color:var(--deep);font-weight:1000}',
       '.mobile-echo-refresh{min-height:34px;border:1px solid rgba(16,23,15,.13);border-radius:999px;background:#fffdf7;color:var(--deep);padding:0 12px;font-size:12px;font-weight:1000}',
@@ -123,17 +123,20 @@
     }
     return badge;
   }
+
   function setTabBadge(name, count){
     var button = $('[data-app-nav="' + name + '"]');
     var badge = tabBadge(button);
-    if(!badge) return;
+    if(!button || !badge) return;
     var n = Number(count || 0);
     if(n > 0){
-      badge.textContent = n > 99 ? '99+' : String(n);
+      badge.textContent = name === 'buddy' ? '' : (n > 99 ? '99+' : String(n));
+      badge.setAttribute('aria-hidden', name === 'buddy' ? 'true' : 'false');
       badge.classList.add('show');
       button.classList.add('has-mobile-echo-badge');
     }else{
       badge.textContent = '';
+      badge.setAttribute('aria-hidden', 'true');
       badge.classList.remove('show');
       button.classList.remove('has-mobile-echo-badge');
     }
