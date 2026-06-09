@@ -84,6 +84,16 @@
     }, true);
   }
 
+  function ensureReportBridge(){
+    if(window.__FW_MOBILE_REPORT_BRIDGE__) return;
+    if(document.querySelector('script[data-mobile-report-bridge]')) return;
+    var script = document.createElement('script');
+    script.src = './report.js?v=mobile-report-20260609-1';
+    script.async = false;
+    script.dataset.mobileReportBridge = '1';
+    document.body.appendChild(script);
+  }
+
   function requestServiceWorkerRefresh(){
     if(!('serviceWorker' in navigator)) return;
     try{
@@ -97,6 +107,7 @@
     normalizeViewport();
     schedulePatchSetView();
     bindClickSync();
+    ensureReportBridge();
     requestServiceWorkerRefresh();
   }
 
