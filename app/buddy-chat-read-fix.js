@@ -35,6 +35,14 @@
     return !!(view && view.classList.contains('is-chatting'));
   }
 
+  function refreshBuddyList(delay){
+    setTimeout(function(){
+      if(window.FWAppBuddyUnread && typeof window.FWAppBuddyUnread.apply === 'function') window.FWAppBuddyUnread.apply();
+      if(window.FWAppBuddyUnread && typeof window.FWAppBuddyUnread.refresh === 'function') window.FWAppBuddyUnread.refresh(0);
+      if(window.FWAppEcho && typeof window.FWAppEcho.refreshBadges === 'function') window.FWAppEcho.refreshBadges();
+    }, delay == null ? 0 : delay);
+  }
+
   async function markLatestReadDirect(targetId){
     var me = currentUser();
     var c = client();
@@ -66,23 +74,29 @@
         .eq('type', 'private_message')
         .eq('is_read', false);
       if(notice && notice.error) throw notice.error;
-      if(window.FWAppBuddyUnread && typeof window.FWAppBuddyUnread.apply === 'function') window.FWAppBuddyUnread.apply();
-      if(window.FWAppEcho && typeof window.FWAppEcho.refreshBadges === 'function') window.FWAppEcho.refreshBadges();
+      refreshBuddyList(0);
+      refreshBuddyList(250);
+      refreshBuddyList(800);
     }catch(e){
       console.warn('[FW mobile app] direct chat read failed', e);
       if(window.FWAppBuddyUnread && typeof window.FWAppBuddyUnread.markRead === 'function'){
         window.FWAppBuddyUnread.markRead(targetId);
       }
+      refreshBuddyList(250);
     }
   }
 
   function requestMarkRead(delay, allowAfterBack){
     clearTimeout(readTimer);
     var targetId = activeTargetId;
-    readTimer = setTimeout(function(){
+    readTimer = setTimeout(async function(){
       if(!targetId) return;
       if(!allowAfterBack && !isBuddyChatting()) return;
-      markLatestReadDirect(targetId);
+      await markLatestReadDirect(targetId);
+      if(allowAfterBack){
+        refreshBuddyList(120);
+        refreshBuddyList(500);
+      }
     }, delay == null ? 350 : delay);
   }
 
@@ -97,9 +111,11 @@
       }
       var back = event.target.closest && event.target.closest('[data-buddy-chat-back]');
       if(back){
-        // 返回前用当前会话最新消息 ID 写入已读；不依赖消息列表上的旧 last-message-id。
+        // 返回前用当前会话最新消息 ID 写入已读；随后立即刷新消息列表，不等原 4.5 秒轮询。
         requestMarkRead(0, true);
-        setTimeout(function(){ activeTargetId = ''; }, 650);
+        refreshBuddyList(180);
+        refreshBuddyList(650);
+        setTimeout(function(){ activeTargetId = ''; }, 900);
       }
     }, true);
   }
