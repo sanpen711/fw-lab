@@ -7,6 +7,7 @@
   var rendering = false;
   var lastRenderKey = '';
   var renderTimer = 0;
+  var badgeRefreshTimer = 0;
 
   function app(){ return window.FWApp || null; }
   function $(selector, root){ return (root || document).querySelector(selector); }
@@ -42,6 +43,18 @@
   function fail(result, message){
     if(result && result.error) throw new Error(message || result.error.message || '读取失败');
     return result ? result.data : null;
+  }
+
+  function requestBadgeRefresh(delay){
+    clearTimeout(badgeRefreshTimer);
+    badgeRefreshTimer = setTimeout(function(){
+      try{
+        document.dispatchEvent(new CustomEvent('fw:buddy-unread-changed'));
+      }catch(e){}
+      if(window.FWAppEcho && typeof window.FWAppEcho.refreshBadges === 'function'){
+        window.FWAppEcho.refreshBadges();
+      }
+    }, delay == null ? 120 : delay);
   }
 
   function otherId(row, meId){
@@ -187,9 +200,7 @@
         .eq('type', 'private_message')
         .eq('is_read', false);
       if(result && result.error) throw result.error;
-      if(window.FWAppEcho && window.FWAppEcho.refreshBadges){
-        setTimeout(function(){ window.FWAppEcho.refreshBadges(); }, 150);
-      }
+      requestBadgeRefresh(150);
     }catch(e){
       console.warn('[FW mobile app] mark private notice read failed', e);
     }
@@ -208,6 +219,7 @@
     var dot = $('.buddy-dot', row);
     if(dot) dot.hidden = true;
     markPrivateNoticeRead(userId);
+    requestBadgeRefresh(180);
   }
 
   async function markReadByUserId(userId){
@@ -217,6 +229,7 @@
     else{
       await markLatestMessageReadForUser(userId);
       await markPrivateNoticeRead(userId);
+      requestBadgeRefresh(180);
     }
   }
 
@@ -232,14 +245,18 @@
     var me = currentUser();
     var meId = me && me.id;
     var map = readMap();
+    var hasUnread = false;
     $$('.buddy-message-row[data-buddy-open-chat]').forEach(function(row){
       var userId = row.getAttribute('data-buddy-open-chat') || '';
       var dot = $('.buddy-dot', row);
       if(!dot || !userId) return;
       var sig = messageSignature(row);
       var sender = row.getAttribute('data-buddy-last-sender') || '';
-      dot.hidden = !sig || sender === meId || map[userId] === sig;
+      var unread = !!(sig && sender !== meId && map[userId] !== sig);
+      dot.hidden = !unread;
+      if(unread) hasUnread = true;
     });
+    if(hasUnread) requestBadgeRefresh(80);
   }
 
   function injectStyle(){
@@ -303,6 +320,7 @@
       var latest = await getLatestBuddyMessages(me);
       if(!latest.items.length){
         list.innerHTML = '<div class="empty">暂时还没有搭子消息。</div>';
+        requestBadgeRefresh(150);
         return;
       }
       var key = latest.items.map(function(item){ return [item.userId, item.id, item.created_at, item.sender_id].join(':'); }).join('|');
@@ -351,12 +369,12 @@
       var tab = e.target.closest && e.target.closest('[data-buddy-tab]');
       if(tab && tab.dataset.buddyTab === 'messages') scheduleRender(220);
     }, true);
-    window.addEventListener('focus', function(){ setTimeout(function(){ applyUnreadDots(); scheduleRender(150); }, 150); });
-    document.addEventListener('visibilitychange', function(){ if(!document.hidden) scheduleRender(150); });
+    window.addEventListener('focus', function(){ setTimeout(function(){ applyUnreadDots(); scheduleRender(150); requestBadgeRefresh(220); }, 150); });
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden){ scheduleRender(150); requestBadgeRefresh(260); } });
     setInterval(function(){ observeBuddyList(); applyUnreadDots(); if(isBuddyMessagesView()) scheduleRender(0); }, 7500);
   }
 
-  window.FWAppBuddyUnread = {apply:applyUnreadDots, refresh:scheduleRender, markRead:markReadByUserId, hasUnread:hasUnreadPrivateMessage};
+  window.FWAppBuddyUnread = {apply:applyUnreadDots, refresh:scheduleRender, markRead:markReadByUserId, hasUnread:hasUnreadPrivateMessage, requestBadgeRefresh:requestBadgeRefresh};
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
