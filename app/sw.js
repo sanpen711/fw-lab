@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-15';
+const CACHE_NAME = 'fw-mobile-app-buddy-core-20260609-16';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -54,7 +54,7 @@ function tweakTag(src){
 function injectAppTweaks(html){
   let next = String(html || '');
   next = next.replace(/\s*<script src="\.\/buddy-open-fast\.js\?v=[^"']+"><\/script>/g, '');
-  next = next.replace(/\.\/buddy\.js\?v=[^"']+/g, './buddy.js?v=mobile-buddy-core-20260609-1');
+  next = next.replace(/\.\/buddy\.js\?v=[^"']+/g, './buddy.js?v=mobile-buddy-core-20260609-2');
   next = next.replace(/\.\/buddy-read-tweaks\.js\?v=[^"']+/g, './buddy-read-tweaks.js?v=mobile-buddy-read-state-20260609-1');
   next = next.replace(/\.\/buddy-chat-read-fix\.js\?v=[^"']+/g, './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4');
   next = next.replace(/\.\/mobile-core-fixes\.js\?v=[^"']+/g, './mobile-core-fixes.js?v=mobile-core-fixes-20260609-7');
