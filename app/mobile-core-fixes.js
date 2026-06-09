@@ -99,7 +99,11 @@
   }
 
   function ensureBuddyChatReadFix(){
-    loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-1');
+    loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4');
+  }
+
+  function ensureBuddyOpenFast(){
+    loadScriptOnce('__FW_MOBILE_BUDDY_OPEN_FAST__', 'data-mobile-buddy-open-fast', './buddy-open-fast.js?v=mobile-buddy-open-fast-20260609-1');
   }
 
   function requestServiceWorkerRefresh(){
@@ -117,6 +121,7 @@
     bindClickSync();
     ensureReportBridge();
     ensureBuddyChatReadFix();
+    ensureBuddyOpenFast();
     requestServiceWorkerRefresh();
   }
 
