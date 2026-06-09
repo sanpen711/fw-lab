@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-core-fixes-20260609-2';
+const CACHE_NAME = 'fw-mobile-app-core-fixes-20260609-3';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -85,7 +85,7 @@ function injectAppTweaks(html){
     next = next.replace('</body>', tweakTag('./buddy-chat-entry-fix.js?v=mobile-buddy-chat-entry-20260528-1'));
   }
   if(next.indexOf('mobile-core-fixes.js') < 0){
-    next = next.replace('</body>', tweakTag('./mobile-core-fixes.js?v=mobile-core-fixes-20260609-2'));
+    next = next.replace('</body>', tweakTag('./mobile-core-fixes.js?v=mobile-core-fixes-20260609-3'));
   }
   return next;
 }
