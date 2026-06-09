@@ -3,6 +3,7 @@
   window.__FW_MOBILE_BUDDY_BADGE_FIX__ = true;
 
   var timer = 0;
+  var lockTimer = 0;
   var busy = false;
   var lastVisible = false;
 
@@ -10,8 +11,10 @@
   function app(){ return window.FWApp || null; }
   function client(){ return window.fwDb && window.fwDb.client; }
 
+  function buddyButton(){ return $('[data-app-nav="buddy"]'); }
+
   function badge(){
-    var button = $('[data-app-nav="buddy"]');
+    var button = buddyButton();
     if(!button) return null;
     var node = $('.mobile-echo-badge', button);
     if(!node){
@@ -22,15 +25,26 @@
     return node;
   }
 
-  function setBadge(visible){
-    var button = $('[data-app-nav="buddy"]');
+  function applyLock(){
+    var button = buddyButton();
     var node = badge();
     if(!button || !node) return;
     node.textContent = '';
     node.setAttribute('aria-hidden', 'true');
-    node.classList.toggle('show', !!visible);
-    button.classList.toggle('has-mobile-echo-badge', !!visible);
+    if(lastVisible){
+      button.setAttribute('data-fw-buddy-badge', '1');
+      node.classList.add('show');
+      button.classList.add('has-mobile-echo-badge');
+    }else{
+      button.setAttribute('data-fw-buddy-badge', '0');
+      node.classList.remove('show');
+      button.classList.remove('has-mobile-echo-badge');
+    }
+  }
+
+  function setBadge(visible){
     lastVisible = !!visible;
+    applyLock();
   }
 
   function dotOnly(){
@@ -39,7 +53,9 @@
     style.id = 'fwMobileBuddyBadgeFixStyle';
     style.textContent = [
       '[data-app-nav="buddy"] .mobile-echo-badge{width:13px!important;min-width:13px!important;height:13px!important;padding:0!important;border-radius:999px!important;font-size:0!important;line-height:0!important;color:transparent!important;overflow:hidden!important;right:22px!important;top:6px!important}',
-      '[data-app-nav="buddy"] .mobile-echo-badge::before{content:""!important}'
+      '[data-app-nav="buddy"] .mobile-echo-badge::before{content:""!important}',
+      '[data-app-nav="buddy"][data-fw-buddy-badge="1"] .mobile-echo-badge{display:grid!important;opacity:1!important;visibility:visible!important}',
+      '[data-app-nav="buddy"][data-fw-buddy-badge="0"] .mobile-echo-badge{display:none!important;opacity:0!important;visibility:hidden!important}'
     ].join('\n');
     document.head.appendChild(style);
   }
@@ -58,8 +74,7 @@
 
   async function refresh(){
     dotOnly();
-    var node = badge();
-    if(node) node.textContent = '';
+    applyLock();
     if(busy) return;
     busy = true;
     try{
@@ -86,7 +101,7 @@
       setBadge(Number(pending && pending.count || 0) > 0);
     }catch(e){
       console.warn('[FW mobile app] buddy badge fix refresh failed', e);
-      setBadge(lastVisible);
+      applyLock();
     }finally{
       busy = false;
     }
@@ -94,20 +109,27 @@
 
   function boot(){
     dotOnly();
+    applyLock();
     setTimeout(refresh, 300);
     setTimeout(refresh, 1200);
     setTimeout(refresh, 2600);
     clearInterval(timer);
     timer = setInterval(refresh, 2500);
+    clearInterval(lockTimer);
+    lockTimer = setInterval(applyLock, 260);
     document.addEventListener('click', function(e){
       if(e.target.closest && e.target.closest('[data-buddy-open-chat],[data-buddy-tab],[data-app-nav="buddy"]')){
         setTimeout(refresh, 350);
         setTimeout(refresh, 1400);
       }
     }, true);
+    if(window.MutationObserver){
+      var observer = new MutationObserver(applyLock);
+      observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class','data-fw-buddy-badge']});
+    }
     window.addEventListener('focus', function(){ setTimeout(refresh, 300); });
     document.addEventListener('visibilitychange', function(){ if(!document.hidden) setTimeout(refresh, 300); });
-    window.FWAppBuddyBadgeFix = {refresh:refresh, set:setBadge};
+    window.FWAppBuddyBadgeFix = {refresh:refresh, set:setBadge, apply:applyLock};
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
