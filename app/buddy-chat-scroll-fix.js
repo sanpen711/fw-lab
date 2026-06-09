@@ -10,6 +10,7 @@
   var preserveHeight = 0;
   var restoring = false;
   var lastUserScrollAt = 0;
+  var pendingInstall = false;
 
   function $(selector, root){ return (root || document).querySelector(selector); }
 
@@ -118,11 +119,20 @@
     }
   }
 
+  function scheduleInstall(){
+    if(pendingInstall) return;
+    pendingInstall = true;
+    requestAnimationFrame(function(){
+      pendingInstall = false;
+      install();
+    });
+  }
+
   function boot(){
     install();
-    var bodyObserver = new MutationObserver(function(){ install(); });
+    var bodyObserver = new MutationObserver(scheduleInstall);
     bodyObserver.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
-    setInterval(install, 1000);
+    setInterval(function(){ if(isChatting() || box) install(); }, 2500);
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
