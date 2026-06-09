@@ -3,6 +3,8 @@
   if(window.__FW_MOBILE_BUDDY_CHAT_BOTTOM_FIX__) return;
   window.__FW_MOBILE_BUDDY_CHAT_BOTTOM_FIX__ = true;
 
+  var pending = false;
+
   function $(selector, root){ return (root || document).querySelector(selector); }
 
   function injectStyle(){
@@ -39,11 +41,21 @@
     if(messages) messages.style.paddingBottom = '64px';
   }
 
+  function scheduleFix(){
+    if(pending) return;
+    pending = true;
+    requestAnimationFrame(function(){
+      pending = false;
+      fix();
+    });
+  }
+
   function boot(){
     injectStyle();
-    var observer = new MutationObserver(function(){ requestAnimationFrame(fix); });
-    observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class','style']});
-    setInterval(fix, 500);
+    var observer = new MutationObserver(scheduleFix);
+    // 只监听 class，避免 fix() 写 style 后再次触发自己，减少循环重排。
+    observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
+    setInterval(function(){ if(document.body.classList.contains('fw-buddy-chatting')) fix(); }, 2000);
     fix();
   }
 
