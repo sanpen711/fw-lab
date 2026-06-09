@@ -45,9 +45,10 @@
   function observeChatBox(){
     if(observerReady) return;
     var box = $('[data-buddy-chat-messages]');
-    if(!box){ setTimeout(observeChatBox, 500); return; }
+    if(!box){ setTimeout(observeChatBox, 700); return; }
     observerReady = true;
     var observer = new MutationObserver(function(){
+      // 消息区真的新增/更新时才快速标记已读；避免一直轮询写已读。
       if(activeTargetId && isBuddyChatting()) requestMarkRead(450);
     });
     observer.observe(box, {childList:true, subtree:true});
@@ -56,9 +57,10 @@
   function boot(){
     bindClicks();
     observeChatBox();
+    // 兜底检查降频，主要依赖消息区变化触发，减少聊天过程中的重复查询/写入。
     setInterval(function(){
       if(activeTargetId && isBuddyChatting()) requestMarkRead(0);
-    }, 3000);
+    }, 9000);
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
