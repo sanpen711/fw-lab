@@ -7,6 +7,7 @@
   var badgeTimer = 0;
   var echoDetailReturn = false;
   var pendingEchoFocus = null;
+  var ECHO_RETURN_KEY = 'fw_mobile_echo_detail_return';
   var ECHO_TYPES = ['like','same','tissue','comment','chat_agree','system'];
 
   function app(){ return window.FWApp; }
@@ -16,6 +17,8 @@
   function fail(result, message){ if(result && result.error) throw new Error(message || result.error.message || '读取失败'); return result ? result.data : null; }
   function isEchoType(type){ return ECHO_TYPES.indexOf(String(type || '')) >= 0; }
   function isPostNotice(notice){ return !!(notice && notice.target_id && (notice.target_type === 'post' || ['like','same','tissue','comment'].indexOf(notice.type) >= 0)); }
+  function setReturnFlag(value){ try{ if(value) sessionStorage.setItem(ECHO_RETURN_KEY, '1'); else sessionStorage.removeItem(ECHO_RETURN_KEY); }catch(e){} }
+  function hasReturnFlag(){ try{ return sessionStorage.getItem(ECHO_RETURN_KEY) === '1'; }catch(e){ return false; } }
 
   function timeText(value){
     if(!value) return '刚刚';
@@ -40,13 +43,14 @@
     style.id = 'fwMobileEchoCoreStyle';
     style.textContent = [
       '.app-tabbar button{position:relative}',
-      '[data-app-nav="echo"] .mobile-echo-badge{position:absolute;right:16px;top:5px;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:#d95353;color:#fff;border:2px solid #10170f;display:none;place-items:center;font-size:10px;line-height:13px;font-weight:1000;box-shadow:0 4px 12px rgba(0,0,0,.22);box-sizing:border-box}',
-      '[data-app-nav="echo"] .mobile-echo-badge.show{display:grid}',
+      '[data-app-nav="echo"] .mobile-echo-badge{position:absolute;right:22px;top:6px;width:13px!important;min-width:13px!important;height:13px!important;padding:0!important;border-radius:999px;background:#d95353;color:transparent!important;border:2px solid #10170f;display:none;font-size:0!important;line-height:0!important;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.22);box-sizing:border-box}',
+      '[data-app-nav="echo"] .mobile-echo-badge.show{display:block}',
       '.mobile-echo-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:0 0 10px}',
       '.mobile-echo-toolbar b{font-size:14px;color:var(--deep);font-weight:1000}',
       '.mobile-echo-refresh{min-height:34px;border:1px solid rgba(16,23,15,.13);border-radius:999px;background:#fffdf7;color:var(--deep);padding:0 12px;font-size:12px;font-weight:1000}',
-      '.mobile-echo-item{cursor:pointer;align-items:flex-start}',
+      '.mobile-echo-item{cursor:pointer;align-items:flex-start;position:relative}',
       '.mobile-echo-item.unread{background:linear-gradient(135deg,#fffdf7,#fff3ef);border-color:rgba(217,121,121,.5)}',
+      '.mobile-echo-item.unread:before{content:"";position:absolute;left:10px;top:10px;width:10px;height:10px;border-radius:999px;background:#d95353;border:2px solid #fffdf7;box-shadow:0 3px 10px rgba(217,83,83,.28)}',
       '.mobile-echo-item .list-main small{display:block;margin-top:5px;color:var(--accent-dark);font-size:11px;font-weight:1000}',
       '.mobile-echo-item .notice-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center;justify-content:flex-start;margin-top:8px}',
       '.mobile-echo-mini{min-height:30px;border:1px solid rgba(16,23,15,.13);border-radius:999px;background:#fffdf7;color:var(--deep);padding:0 10px;font-size:12px;font-weight:1000}',
@@ -81,8 +85,17 @@
     var badge = button.querySelector('.mobile-echo-badge');
     if(!badge){ badge = document.createElement('span'); badge.className = 'mobile-echo-badge'; button.appendChild(badge); }
     var n = Number(count || 0);
-    if(n > 0){ badge.textContent = n > 99 ? '99+' : String(n); badge.setAttribute('aria-hidden', 'false'); badge.classList.add('show'); button.classList.add('has-mobile-echo-badge'); }
-    else{ badge.textContent = ''; badge.setAttribute('aria-hidden', 'true'); badge.classList.remove('show'); button.classList.remove('has-mobile-echo-badge'); }
+    if(n > 0){
+      badge.textContent = '';
+      badge.setAttribute('aria-hidden', 'true');
+      badge.classList.add('show');
+      button.classList.add('has-mobile-echo-badge');
+    }else{
+      badge.textContent = '';
+      badge.setAttribute('aria-hidden', 'true');
+      badge.classList.remove('show');
+      button.classList.remove('has-mobile-echo-badge');
+    }
   }
 
   async function currentUser(){
@@ -133,11 +146,7 @@
 
   function flattenComments(rows){
     var out = [];
-    (rows || []).forEach(function(c){
-      if(!c) return;
-      out.push(c);
-      if(Array.isArray(c.replies)) out = out.concat(flattenComments(c.replies));
-    });
+    (rows || []).forEach(function(c){ if(!c) return; out.push(c); if(Array.isArray(c.replies)) out = out.concat(flattenComments(c.replies)); });
     return out;
   }
 
@@ -178,6 +187,7 @@
     options = options || {};
     if(!postId){ app().toast('这条回声暂时没有对应帖子。'); return; }
     echoDetailReturn = true;
+    setReturnFlag(true);
     pendingEchoFocus = {postId:String(postId), actorId:options.actorId || '', createdAt:options.createdAt || '', openComments:!!options.openComments};
     app().setView('square');
     try{
@@ -192,6 +202,7 @@
 
   function returnToEcho(){
     echoDetailReturn = false;
+    setReturnFlag(false);
     app().setView('echo');
     if(window.FWAppEcho && typeof window.FWAppEcho.ensureLoaded === 'function') window.FWAppEcho.ensureLoaded();
   }
@@ -201,9 +212,17 @@
     bound = true;
     document.addEventListener('click', function(e){
       var detailBack = e.target.closest && e.target.closest('[data-square-detail-back]');
-      if(detailBack && echoDetailReturn){ e.preventDefault(); e.stopPropagation(); returnToEcho(); return; }
+      if(detailBack && (echoDetailReturn || hasReturnFlag())){
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(returnToEcho, 0);
+        setTimeout(returnToEcho, 80);
+        return;
+      }
     }, true);
     document.addEventListener('click', function(e){
+      var detailBack = e.target.closest && e.target.closest('[data-square-detail-back]');
+      if(detailBack && hasReturnFlag()){ setTimeout(returnToEcho, 120); return; }
       var refresh = e.target.closest && e.target.closest('[data-mobile-echo-refresh]');
       if(refresh){ e.preventDefault(); loaded = false; load(true); return; }
       var post = e.target.closest && e.target.closest('[data-mobile-echo-post]');
