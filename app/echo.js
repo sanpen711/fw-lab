@@ -5,6 +5,8 @@
   var loaded = false;
   var lastLoadAt = 0;
   var badgeTimer = 0;
+  var echoDetailReturn = false;
+  var pendingEchoFocus = null;
   var ECHO_TYPES = ['like','same','tissue','comment','chat_agree','system'];
 
   function app(){ return window.FWApp; }
@@ -50,6 +52,7 @@
       '.mobile-echo-mini{min-height:30px;border:1px solid rgba(16,23,15,.13);border-radius:999px;background:#fffdf7;color:var(--deep);padding:0 10px;font-size:12px;font-weight:1000}',
       '.mobile-echo-mini.dark{background:var(--deep);border-color:var(--deep);color:#fff}',
       '.mobile-echo-target{animation:mobileEchoTarget 2.6s ease both}',
+      '.mobile-echo-target-comment{animation:mobileEchoTarget 3s ease both;border-radius:14px}',
       '@keyframes mobileEchoTarget{0%{box-shadow:0 0 0 0 rgba(217,121,121,.7);transform:translateY(-2px)}40%{box-shadow:0 0 0 8px rgba(217,121,121,.18)}100%{box-shadow:0 0 0 0 rgba(217,121,121,0);transform:none}}'
     ].join('\n');
     document.head.appendChild(style);
@@ -78,17 +81,8 @@
     var badge = button.querySelector('.mobile-echo-badge');
     if(!badge){ badge = document.createElement('span'); badge.className = 'mobile-echo-badge'; button.appendChild(badge); }
     var n = Number(count || 0);
-    if(n > 0){
-      badge.textContent = n > 99 ? '99+' : String(n);
-      badge.setAttribute('aria-hidden', 'false');
-      badge.classList.add('show');
-      button.classList.add('has-mobile-echo-badge');
-    }else{
-      badge.textContent = '';
-      badge.setAttribute('aria-hidden', 'true');
-      badge.classList.remove('show');
-      button.classList.remove('has-mobile-echo-badge');
-    }
+    if(n > 0){ badge.textContent = n > 99 ? '99+' : String(n); badge.setAttribute('aria-hidden', 'false'); badge.classList.add('show'); button.classList.add('has-mobile-echo-badge'); }
+    else{ badge.textContent = ''; badge.setAttribute('aria-hidden', 'true'); badge.classList.remove('show'); button.classList.remove('has-mobile-echo-badge'); }
   }
 
   async function currentUser(){
@@ -110,7 +104,7 @@
     var action = typeText(notice.type);
     var content = notice.content || '对你的低功耗发言产生了回应。';
     var actions = '';
-    if(isPostNotice(notice)) actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-post="' + esc(notice.target_id) + '" data-open-comments="' + (notice.type === 'comment' ? '1' : '0') + '">查看帖子</button>';
+    if(isPostNotice(notice)) actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-post="' + esc(notice.target_id) + '" data-mobile-echo-type="' + esc(notice.type || '') + '" data-mobile-echo-actor="' + esc(notice.actor_id || '') + '" data-mobile-echo-time="' + esc(notice.created_at || '') + '" data-open-comments="' + (notice.type === 'comment' ? '1' : '0') + '">查看帖子</button>';
     if(notice.type === 'chat_agree') actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-rooms>去学术研讨</button>';
     return '<article class="notice-item mobile-echo-item ' + (notice.is_read ? '' : 'unread') + '" data-mobile-echo-item="' + esc(notice.id) + '">' + avatar(profile) + '<div class="list-main"><b>' + esc((profile && profile.nickname || '某位研究员') + ' ' + action) + '</b><span>' + esc(content) + '</span><small>' + esc(timeText(notice.created_at)) + '</small>' + (actions ? '<div class="notice-actions">' + actions + '</div>' : '') + '</div></article>';
   }
@@ -137,29 +131,88 @@
     }catch(e){ console.warn('[FW mobile app] echo load failed', e); list.innerHTML = '<div class="error">回声暂时读取失败，请稍后再试。</div>'; }
   }
 
-  async function openPost(postId, openComments){
+  function flattenComments(rows){
+    var out = [];
+    (rows || []).forEach(function(c){
+      if(!c) return;
+      out.push(c);
+      if(Array.isArray(c.replies)) out = out.concat(flattenComments(c.replies));
+    });
+    return out;
+  }
+
+  function findEchoComment(postId, actorId, createdAt){
+    var posts = app().state.posts || [];
+    var post = posts.find(function(row){ return String(row.id) === String(postId); });
+    if(!post || !actorId) return null;
+    var rows = flattenComments(post.comments || []).filter(function(c){ return String(c.userId || c.authorId || '') === String(actorId); });
+    if(!rows.length) return null;
+    var ts = new Date(createdAt || '').getTime();
+    rows.sort(function(a,b){
+      var at = new Date(a.createdAt || '').getTime();
+      var bt = new Date(b.createdAt || '').getTime();
+      if(!isNaN(ts) && !isNaN(at) && !isNaN(bt)) return Math.abs(at - ts) - Math.abs(bt - ts);
+      return (bt || 0) - (at || 0);
+    });
+    return rows[0];
+  }
+
+  function focusEchoTarget(){
+    var focus = pendingEchoFocus;
+    if(!focus) return;
+    var target = null;
+    if(focus.openComments){
+      var comment = findEchoComment(focus.postId, focus.actorId, focus.createdAt);
+      if(comment && comment.id) target = document.querySelector('[data-comment-id="' + String(comment.id).replace(/"/g, '') + '"]');
+      if(!target) target = document.querySelector('.detail-comments-card[data-post-id="' + String(focus.postId).replace(/"/g, '') + '"]') || document.querySelector('.detail-comments-card');
+    }
+    if(!target) target = document.querySelector('[data-post-id="' + String(focus.postId).replace(/"/g, '') + '"]');
+    if(target){
+      target.classList.add('mobile-echo-target-comment');
+      target.scrollIntoView({block:'center', behavior:'smooth'});
+      setTimeout(function(){ target.classList.remove('mobile-echo-target-comment'); }, 3200);
+    }
+  }
+
+  async function openPost(postId, options){
+    options = options || {};
     if(!postId){ app().toast('这条回声暂时没有对应帖子。'); return; }
+    echoDetailReturn = true;
+    pendingEchoFocus = {postId:String(postId), actorId:options.actorId || '', createdAt:options.createdAt || '', openComments:!!options.openComments};
     app().setView('square');
     try{
       if(window.FWAppFeed && window.FWAppFeed.load) await window.FWAppFeed.load(false, {silent:true});
       if(window.FWAppFeed && window.FWAppFeed.openDetail){
-        window.FWAppFeed.openDetail(postId, {openComments:!!openComments});
-        setTimeout(function(){
-          var card = document.querySelector('[data-post-id="' + String(postId).replace(/"/g, '') + '"]');
-          if(card){ card.classList.add('mobile-echo-target'); card.scrollIntoView({block:'center', behavior:'smooth'}); setTimeout(function(){ card.classList.remove('mobile-echo-target'); }, 2800); }
-        }, 180);
+        window.FWAppFeed.openDetail(postId, {openComments:!!options.openComments, from:'echo'});
+        setTimeout(focusEchoTarget, 220);
+        setTimeout(focusEchoTarget, 700);
       }else app().toast('帖子可能还在加载中，请稍后再试。');
     }catch(e){ console.warn('[FW mobile app] open echo post failed', e); app().toast('帖子打开失败，请稍后再试。'); }
+  }
+
+  function returnToEcho(){
+    echoDetailReturn = false;
+    app().setView('echo');
+    if(window.FWAppEcho && typeof window.FWAppEcho.ensureLoaded === 'function') window.FWAppEcho.ensureLoaded();
   }
 
   function bind(){
     if(bound) return;
     bound = true;
     document.addEventListener('click', function(e){
+      var detailBack = e.target.closest && e.target.closest('[data-square-detail-back]');
+      if(detailBack && echoDetailReturn){ e.preventDefault(); e.stopPropagation(); returnToEcho(); return; }
+    }, true);
+    document.addEventListener('click', function(e){
       var refresh = e.target.closest && e.target.closest('[data-mobile-echo-refresh]');
       if(refresh){ e.preventDefault(); loaded = false; load(true); return; }
       var post = e.target.closest && e.target.closest('[data-mobile-echo-post]');
-      if(post){ e.preventDefault(); e.stopPropagation(); openPost(post.dataset.mobileEchoPost, post.dataset.openComments === '1'); return; }
+      if(post){
+        e.preventDefault();
+        e.stopPropagation();
+        openPost(post.dataset.mobileEchoPost, {openComments:post.dataset.openComments === '1', actorId:post.dataset.mobileEchoActor || '', createdAt:post.dataset.mobileEchoTime || ''});
+        return;
+      }
       var rooms = e.target.closest && e.target.closest('[data-mobile-echo-rooms]');
       if(rooms){ e.preventDefault(); e.stopPropagation(); app().setView('rooms'); }
     });
