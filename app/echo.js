@@ -7,6 +7,7 @@
   var badgeTimer = 0;
   var echoDetailReturn = false;
   var pendingEchoFocus = null;
+  var setViewPatched = false;
   var ECHO_RETURN_KEY = 'fw_mobile_echo_detail_return';
   var ECHO_TYPES = ['like','same','tissue','comment','chat_agree','system'];
 
@@ -183,9 +184,25 @@
     }
   }
 
+  function patchSetView(){
+    var fw = app();
+    if(setViewPatched || !fw || typeof fw.setView !== 'function') return;
+    var originalSetView = fw.setView.bind(fw);
+    fw.setView = function(name){
+      if((echoDetailReturn || hasReturnFlag()) && name === 'square' && fw.state && fw.state.view === 'square-detail'){
+        echoDetailReturn = false;
+        setReturnFlag(false);
+        return originalSetView('echo');
+      }
+      return originalSetView.apply(fw, arguments);
+    };
+    setViewPatched = true;
+  }
+
   async function openPost(postId, options){
     options = options || {};
     if(!postId){ app().toast('这条回声暂时没有对应帖子。'); return; }
+    patchSetView();
     echoDetailReturn = true;
     setReturnFlag(true);
     pendingEchoFocus = {postId:String(postId), actorId:options.actorId || '', createdAt:options.createdAt || '', openComments:!!options.openComments};
@@ -239,7 +256,7 @@
     document.addEventListener('visibilitychange', function(){ if(!document.hidden) refreshBadges(); });
   }
 
-  function init(){ injectStyle(); bind(); refreshBadges(); clearInterval(badgeTimer); badgeTimer = setInterval(refreshBadges, 45000); }
+  function init(){ injectStyle(); patchSetView(); bind(); refreshBadges(); clearInterval(badgeTimer); badgeTimer = setInterval(refreshBadges, 45000); }
   function ensureLoaded(){ load(false); }
   window.FWAppEcho = {init:init, load:load, ensureLoaded:ensureLoaded, refreshBadges:refreshBadges, openPost:openPost};
 })();
