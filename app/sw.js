@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-echo-standalone-20260610-3';
+const CACHE_NAME = 'fw-mobile-app-echo-standalone-20260610-4';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -57,7 +57,7 @@ function injectAppTweaks(html){
   next = next.replace(/\.\/buddy\.js\?v=[^"']+/g, './buddy.js?v=mobile-buddy-core-20260609-3');
   next = next.replace(/\.\/buddy-read-tweaks\.js\?v=[^"']+/g, './buddy-read-tweaks.js?v=mobile-buddy-read-state-20260610-1');
   next = next.replace(/\.\/buddy-chat-read-fix\.js\?v=[^"']+/g, './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4');
-  next = next.replace(/\.\/echo\.js\?v=[^"']+/g, './echo.js?v=mobile-echo-standalone-20260610-3');
+  next = next.replace(/\.\/echo\.js\?v=[^"']+/g, './echo.js?v=mobile-echo-standalone-20260610-4');
   next = next.replace(/\.\/echo-enhance\.js\?v=[^"']+/g, './echo-enhance.js?v=mobile-echo-compat-20260610-1');
   next = next.replace(/\.\/mobile-core-fixes\.js\?v=[^"']+/g, './mobile-core-fixes.js?v=mobile-core-fixes-20260609-7');
   if(next.indexOf('report.js') < 0) next = next.replace('</body>', tweakTag('./report.js?v=mobile-report-20260609-1'));
