@@ -38,6 +38,15 @@
     return ({like:'点赞了你的帖子',same:'对你说：俺也一样',tissue:'给你递了纸巾',comment:'评论了你的帖子',chat_agree:'赞同了你的房间消息',system:'系统通知'})[type] || '给你发来一条回声';
   }
 
+  function noticePreview(value){
+    return String(value || '')
+      .replace(/\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]/g, '动画表情')
+      .replace(/\[\[FW_MEDIA_IMAGE:[A-Za-z0-9+/=]+\]\]/g, '图片')
+      .replace(/\[\[FW_MEDIA_VIDEO:[A-Za-z0-9+/=]+\]\]/g, '视频')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   function injectStyle(){
     if(document.getElementById('fwMobileEchoCoreStyle')) return;
     var style = document.createElement('style');
@@ -116,7 +125,7 @@
 
   function noticeHtml(notice, profile){
     var action = typeText(notice.type);
-    var content = notice.content || '对你的低功耗发言产生了回应。';
+    var content = noticePreview(notice.content || '对你的低功耗发言产生了回应。') || '对你的低功耗发言产生了回应。';
     var actions = '';
     if(isPostNotice(notice)) actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-post="' + esc(notice.target_id) + '" data-mobile-echo-type="' + esc(notice.type || '') + '" data-mobile-echo-actor="' + esc(notice.actor_id || '') + '" data-mobile-echo-time="' + esc(notice.created_at || '') + '" data-open-comments="' + (notice.type === 'comment' ? '1' : '0') + '">查看帖子</button>';
     if(notice.type === 'chat_agree') actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-rooms>去学术研讨</button>';
