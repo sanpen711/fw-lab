@@ -30,9 +30,18 @@
     return Object.prototype.hasOwnProperty.call(ROUTABLE_VIEWS, view) ? ROUTABLE_VIEWS[view] : null;
   }
 
+  function hasAppView(view){
+    var views = document.querySelectorAll('[data-app-view]');
+    for(var i = 0; i < views.length; i += 1){
+      if(views[i].dataset && views[i].dataset.appView === view) return true;
+    }
+    return false;
+  }
+
   function normalizeView(view){
     view = view || 'nav';
-    return routeHashForView(view) == null ? 'nav' : view;
+    if(routeHashForView(view) != null) return view;
+    return hasAppView(view) ? view : 'nav';
   }
 
   function replaceHashForView(view){
