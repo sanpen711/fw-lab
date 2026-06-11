@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-echo-standalone-20260610-4';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260611-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -47,28 +47,27 @@ const APP_SHELL = [
   appPath('manifest.webmanifest')
 ];
 
-function tweakTag(src){
-  return '  <scr' + 'ipt src="' + src + '"></scr' + 'ipt>\n</body>';
+function appendScriptBeforeBody(html, src){
+  return String(html || '').replace('</body>', '  <scr' + 'ipt src="' + src + '"></scr' + 'ipt>\n</body>');
 }
 
-function injectAppTweaks(html){
+function ensureCompatScripts(html){
   let next = String(html || '');
-  next = next.replace(/\s*<script src="\.\/buddy-open-fast\.js\?v=[^"']+"><\/script>/g, '');
-  next = next.replace(/\.\/buddy\.js\?v=[^"']+/g, './buddy.js?v=mobile-buddy-core-20260609-3');
-  next = next.replace(/\.\/buddy-read-tweaks\.js\?v=[^"']+/g, './buddy-read-tweaks.js?v=mobile-buddy-read-state-20260610-1');
-  next = next.replace(/\.\/buddy-chat-read-fix\.js\?v=[^"']+/g, './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4');
-  next = next.replace(/\.\/echo\.js\?v=[^"']+/g, './echo.js?v=mobile-echo-standalone-20260610-4');
-  next = next.replace(/\.\/echo-enhance\.js\?v=[^"']+/g, './echo-enhance.js?v=mobile-echo-compat-20260610-1');
-  next = next.replace(/\.\/mobile-core-fixes\.js\?v=[^"']+/g, './mobile-core-fixes.js?v=mobile-core-fixes-20260609-7');
-  if(next.indexOf('report.js') < 0) next = next.replace('</body>', tweakTag('./report.js?v=mobile-report-20260609-1'));
-  if(next.indexOf('mobile-core-fixes.js') < 0) next = next.replace('</body>', tweakTag('./mobile-core-fixes.js?v=mobile-core-fixes-20260609-7'));
+  const requiredScripts = [
+    './report.js?v=mobile-report-20260609-1',
+    './mobile-core-fixes.js?v=mobile-core-fixes-20260609-7'
+  ];
+  requiredScripts.forEach(src => {
+    const plainName = src.replace(/^\.\//, '').split('?')[0];
+    if(next.indexOf(plainName) < 0) next = appendScriptBeforeBody(next, src);
+  });
   return next;
 }
 
 function htmlResponse(html, response){
   const headers = new Headers(response && response.headers || {});
   headers.set('content-type', 'text/html; charset=utf-8');
-  return new Response(injectAppTweaks(html), {
+  return new Response(ensureCompatScripts(html), {
     status: response && response.status || 200,
     statusText: response && response.statusText || 'OK',
     headers
@@ -102,9 +101,9 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(request).then(async response => {
         if(!response || !response.ok) return response;
-        const transformed = await transformIndexResponse(response);
-        caches.open(CACHE_NAME).then(cache => cache.put(appPath('index.html'), transformed.clone()));
-        return transformed;
+        const cachedCopy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(appPath('index.html'), cachedCopy));
+        return transformIndexResponse(response);
       }).catch(async () => {
         const cached = await caches.match(appPath('index.html'));
         return cached ? transformIndexResponse(cached) : caches.match(appPath('index.html'));
