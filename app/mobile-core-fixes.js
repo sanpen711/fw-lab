@@ -83,6 +83,22 @@
     });
   }
 
+  function openAppView(view, options){
+    var api = window.FWApp;
+    view = normalizeView(view || 'nav');
+    if(!api) return false;
+    if(typeof api.openView === 'function'){
+      api.openView(view, options);
+      return true;
+    }
+    if(typeof api.setView === 'function'){
+      api.setView(view);
+      if(!options || options.updateHash !== false) replaceHashForView(view);
+      return true;
+    }
+    return false;
+  }
+
   function bindClickSync(){
     document.addEventListener('click', function(event){
       var target = event.target;
@@ -91,12 +107,22 @@
       var nav = target.closest('[data-app-nav]');
       if(nav){
         var navView = normalizeView(nav.dataset.appNav || 'nav');
+        if(openAppView(navView)){
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
         setTimeout(function(){ replaceHashForView(navView); }, 0);
         return;
       }
 
       var profile = target.closest('[data-app-profile-trigger]');
       if(profile){
+        if(openAppView('profile')){
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
         setTimeout(function(){ replaceHashForView('profile'); }, 0);
         return;
       }
