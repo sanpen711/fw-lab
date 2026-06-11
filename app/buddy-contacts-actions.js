@@ -102,6 +102,52 @@
     return !!(active && active.dataset.buddyTab === 'friends');
   }
 
+  function letterForName(name){
+    name = String(name || '').trim();
+    if(!name) return '#';
+    var first = name.charAt(0).toUpperCase();
+    return /^[A-Z]$/.test(first) ? first : '#';
+  }
+
+  function sortCards(cards){
+    return cards.sort(function(a, b){
+      var an = (($('.buddy-contact-name', a) || {}).textContent || '').trim();
+      var bn = (($('.buddy-contact-name', b) || {}).textContent || '').trim();
+      var al = letterForName(an);
+      var bl = letterForName(bn);
+      if(al !== bl){
+        if(al === '#') return 1;
+        if(bl === '#') return -1;
+        return al.localeCompare(bl, 'en');
+      }
+      return an.localeCompare(bn, 'zh-CN', {numeric:true});
+    });
+  }
+
+  function groupContactCards(){
+    if(!isFriendsTabVisible()) return;
+    var list = $('[data-buddy-list]');
+    if(!list || list.dataset.fwBuddyContactGrouped === '1') return;
+    var cards = $$('.buddy-contact-card[data-buddy-contact-card], .buddy-contact-row[data-buddy-profile]', list);
+    if(!cards.length) return;
+    cards = sortCards(cards.map(function(card){ return card.cloneNode(true); }));
+    var html = [];
+    var currentLetter = '';
+    cards.forEach(function(card){
+      var name = (($('.buddy-contact-name', card) || {}).textContent || '').trim();
+      var letter = letterForName(name);
+      if(letter !== currentLetter){
+        if(currentLetter) html.push('</div>');
+        currentLetter = letter;
+        html.push('<div class="buddy-letter">' + esc(letter) + '</div><div class="buddy-contact-list">');
+      }
+      html.push(card.outerHTML);
+    });
+    if(currentLetter) html.push('</div>');
+    list.innerHTML = html.join('');
+    list.dataset.fwBuddyContactGrouped = '1';
+  }
+
   function transformContacts(){
     if(!isFriendsTabVisible()) return;
     $$('.buddy-contact-row[data-buddy-profile]').forEach(function(row){
@@ -118,6 +164,7 @@
       card.innerHTML = (avatar ? avatar.outerHTML : '<span class="list-avatar">研</span>') + '<span class="buddy-contact-name">' + esc(label) + '</span><button class="buddy-contact-more" type="button" data-buddy-contact-more="' + esc(targetId) + '" data-buddy-contact-name="' + esc(label) + '" aria-label="更多操作">⋯</button>';
       row.replaceWith(card);
     });
+    groupContactCards();
   }
 
   function scheduleTransform(delay){
