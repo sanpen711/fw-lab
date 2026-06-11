@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260611-1';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260611-2';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -47,38 +47,6 @@ const APP_SHELL = [
   appPath('manifest.webmanifest')
 ];
 
-function appendScriptBeforeBody(html, src){
-  return String(html || '').replace('</body>', '  <scr' + 'ipt src="' + src + '"></scr' + 'ipt>\n</body>');
-}
-
-function ensureCompatScripts(html){
-  let next = String(html || '');
-  const requiredScripts = [
-    './report.js?v=mobile-report-20260609-1',
-    './mobile-core-fixes.js?v=mobile-core-fixes-20260609-7'
-  ];
-  requiredScripts.forEach(src => {
-    const plainName = src.replace(/^\.\//, '').split('?')[0];
-    if(next.indexOf(plainName) < 0) next = appendScriptBeforeBody(next, src);
-  });
-  return next;
-}
-
-function htmlResponse(html, response){
-  const headers = new Headers(response && response.headers || {});
-  headers.set('content-type', 'text/html; charset=utf-8');
-  return new Response(ensureCompatScripts(html), {
-    status: response && response.status || 200,
-    statusText: response && response.statusText || 'OK',
-    headers
-  });
-}
-
-async function transformIndexResponse(response){
-  const html = await response.clone().text();
-  return htmlResponse(html, response);
-}
-
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
@@ -99,15 +67,13 @@ self.addEventListener('fetch', event => {
   if(!url.pathname.startsWith(APP_BASE) && !url.pathname.startsWith(SITE_BASE + 'assets/')) return;
   if(url.pathname === APP_BASE || url.pathname === appPath('index.html')){
     event.respondWith(
-      fetch(request).then(async response => {
-        if(!response || !response.ok) return response;
-        const cachedCopy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(appPath('index.html'), cachedCopy));
-        return transformIndexResponse(response);
-      }).catch(async () => {
-        const cached = await caches.match(appPath('index.html'));
-        return cached ? transformIndexResponse(cached) : caches.match(appPath('index.html'));
-      })
+      fetch(request).then(response => {
+        if(response && response.ok){
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(appPath('index.html'), copy));
+        }
+        return response;
+      }).catch(() => caches.match(appPath('index.html')))
     );
     return;
   }
