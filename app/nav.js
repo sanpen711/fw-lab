@@ -50,9 +50,23 @@
     if(window.location.hash) window.location.hash = '';
   }
 
+  function openView(view, options){
+    var api = app();
+    view = view || 'nav';
+    if(!api) return;
+    if(typeof api.openView === 'function'){
+      api.openView(view, options);
+      return;
+    }
+    if(typeof api.setView === 'function'){
+      api.setView(view);
+      if(!options || options.updateHash !== false) replaceHashForView(view);
+    }
+  }
+
   function openHashView(){
     var view = viewFromHash();
-    if(view) app().setView(view);
+    if(view) openView(view, {updateHash:false});
   }
 
   function bindHashRoutes(){
@@ -72,16 +86,14 @@
       if(open){
         e.preventDefault();
         var view = open.dataset.appOpen || 'nav';
-        app().setView(view);
-        replaceHashForView(view);
+        openView(view);
         return;
       }
 
       var login = e.target.closest && e.target.closest('[data-app-login]');
       if(login){
         e.preventDefault();
-        app().setView('profile');
-        replaceHashForView('profile');
+        openView('profile');
         return;
       }
 
