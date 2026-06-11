@@ -30,6 +30,11 @@
     return Object.prototype.hasOwnProperty.call(ROUTABLE_VIEWS, view) ? ROUTABLE_VIEWS[view] : null;
   }
 
+  function normalizeView(view){
+    view = view || 'nav';
+    return routeHashForView(view) == null ? 'nav' : view;
+  }
+
   function replaceHashForView(view){
     var hash = routeHashForView(view);
     if(hash == null || !window.history || !window.history.replaceState) return;
@@ -43,18 +48,38 @@
     var originalSetView = window.FWApp.setView;
     if(typeof originalSetView !== 'function') return false;
     window.FWApp.setView = function(name){
-      var result = originalSetView.apply(this, arguments);
-      replaceHashForView(name || 'nav');
+      var view = normalizeView(name || 'nav');
+      var result = originalSetView.call(this, view);
+      replaceHashForView(view);
       return result;
     };
     window.FWApp.__mobileCoreFixesPatched = true;
     return true;
   }
 
+  function ensureOpenView(){
+    if(!window.FWApp || window.FWApp.__mobileCoreOpenView) return false;
+    if(typeof window.FWApp.setView !== 'function') return false;
+    window.FWApp.openView = function(name, options){
+      var view = normalizeView(name || 'nav');
+      var result = window.FWApp.setView(view);
+      if(!options || options.updateHash !== false) replaceHashForView(view);
+      return result;
+    };
+    window.FWApp.__mobileCoreOpenView = true;
+    return true;
+  }
+
+  function patchAppViewApi(){
+    var patched = patchSetView();
+    var opened = ensureOpenView();
+    return patched && opened;
+  }
+
   function schedulePatchSetView(){
-    if(patchSetView()) return;
+    if(patchAppViewApi()) return;
     [0, 80, 240, 700, 1500].forEach(function(delay){
-      setTimeout(patchSetView, delay);
+      setTimeout(patchAppViewApi, delay);
     });
   }
 
@@ -65,7 +90,7 @@
 
       var nav = target.closest('[data-app-nav]');
       if(nav){
-        var navView = nav.dataset.appNav || 'nav';
+        var navView = normalizeView(nav.dataset.appNav || 'nav');
         setTimeout(function(){ replaceHashForView(navView); }, 0);
         return;
       }
@@ -78,7 +103,7 @@
 
       var opener = target.closest('[data-app-open]');
       if(opener){
-        var openView = opener.dataset.appOpen || 'nav';
+        var openView = normalizeView(opener.dataset.appOpen || 'nav');
         setTimeout(function(){ replaceHashForView(openView); }, 0);
       }
     }, true);
