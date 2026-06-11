@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260611-4';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260611-5';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -10,6 +10,8 @@ const APP_SHELL = [
   appPath('app.css'),
   appPath('rooms.css'),
   appPath('bird.css'),
+  assetPath('supabase-config.js'),
+  assetPath('supabase-db.js'),
   appPath('app.js'),
   appPath('nav.js'),
   appPath('feed.js'),
@@ -43,6 +45,7 @@ const APP_SHELL = [
   appPath('modules-init.js'),
   appPath('admin.js'),
   appPath('report.js'),
+  appPath('comment-reply-fix.js'),
   appPath('mobile-core-fixes.js'),
   appPath('manifest.webmanifest')
 ];
