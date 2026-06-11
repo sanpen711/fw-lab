@@ -6,6 +6,12 @@
   var menuTargetId = '';
   var menuTargetName = '';
   var transformPending = false;
+  var pinyinCollator = null;
+  var PINYIN_BOUNDARIES = [
+    ['A','啊'], ['B','芭'], ['C','擦'], ['D','搭'], ['E','蛾'], ['F','发'], ['G','噶'], ['H','哈'],
+    ['J','击'], ['K','喀'], ['L','垃'], ['M','妈'], ['N','拿'], ['O','哦'], ['P','啪'], ['Q','期'],
+    ['R','然'], ['S','撒'], ['T','塌'], ['W','挖'], ['X','昔'], ['Y','压'], ['Z','匝']
+  ];
 
   function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
@@ -102,11 +108,42 @@
     return !!(active && active.dataset.buddyTab === 'friends');
   }
 
+  function getPinyinCollator(){
+    if(pinyinCollator) return pinyinCollator;
+    try{
+      pinyinCollator = new Intl.Collator('zh-Hans-u-co-pinyin', {sensitivity:'base'});
+    }catch(e){
+      pinyinCollator = null;
+    }
+    return pinyinCollator;
+  }
+
+  function firstMeaningfulChar(name){
+    var chars = Array.from(String(name || '').trim());
+    for(var i = 0; i < chars.length; i += 1){
+      if(/[A-Za-z\u4e00-\u9fff]/.test(chars[i])) return chars[i];
+    }
+    return chars[0] || '';
+  }
+
+  function pinyinInitialForChinese(ch){
+    var collator = getPinyinCollator();
+    if(!collator) return '#';
+    var initial = '#';
+    for(var i = 0; i < PINYIN_BOUNDARIES.length; i += 1){
+      if(collator.compare(ch, PINYIN_BOUNDARIES[i][1]) >= 0) initial = PINYIN_BOUNDARIES[i][0];
+      else break;
+    }
+    return initial;
+  }
+
   function letterForName(name){
-    name = String(name || '').trim();
-    if(!name) return '#';
-    var first = name.charAt(0).toUpperCase();
-    return /^[A-Z]$/.test(first) ? first : '#';
+    var first = firstMeaningfulChar(name);
+    if(!first) return '#';
+    var upper = first.toUpperCase();
+    if(/^[A-Z]$/.test(upper)) return upper;
+    if(/^[\u4e00-\u9fff]$/.test(first)) return pinyinInitialForChinese(first);
+    return '#';
   }
 
   function sortCards(cards){
@@ -120,14 +157,15 @@
         if(bl === '#') return -1;
         return al.localeCompare(bl, 'en');
       }
-      return an.localeCompare(bn, 'zh-CN', {numeric:true});
+      return an.localeCompare(bn, 'zh-Hans-u-co-pinyin', {numeric:true});
     });
   }
 
   function groupContactCards(){
     if(!isFriendsTabVisible()) return;
     var list = $('[data-buddy-list]');
-    if(!list || list.dataset.fwBuddyContactGrouped === '1') return;
+    if(!list) return;
+    if(list.dataset.fwBuddyContactGrouped === '1' && list.querySelector('.buddy-letter')) return;
     var cards = $$('.buddy-contact-card[data-buddy-contact-card], .buddy-contact-row[data-buddy-profile]', list);
     if(!cards.length) return;
     cards = sortCards(cards.map(function(card){ return card.cloneNode(true); }));
