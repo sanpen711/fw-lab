@@ -1,5 +1,5 @@
 // F.w 研究所：手机端统一举报桥接
-// 作用：接管手机端帖子 / 评论 / 搭子举报入口，统一提交到 Supabase site_reports，并修正后台举报处理按钮。
+// 作用：接管手机端帖子 / 评论 / 搭子举报入口，统一提交到 Supabase site_reports。
 (function(){
   if(window.__FW_MOBILE_REPORT_BRIDGE__) return;
   window.__FW_MOBILE_REPORT_BRIDGE__ = true;
@@ -124,27 +124,7 @@
     });
   }
 
-  function enhanceAdminReportActions(){
-    var fw = app();
-    if(!fw || !fw.state || fw.state.view !== 'moderation') return;
-    $$('.mobile-admin-row').forEach(function(row){
-      if(row.dataset.fwReportActionFixed === '1') return;
-      var text = row.textContent || '';
-      var type = text.indexOf('房间：post') >= 0 ? 'post' : text.indexOf('房间：comment') >= 0 ? 'comment' : '';
-      if(!type) return;
-      var button = $('[data-mobile-chat-act][data-id]', row);
-      if(!button) return;
-      if(type === 'post'){
-        button.dataset.mobilePostAct = button.dataset.mobileChatAct || 'delete';
-        button.textContent = '删除帖子';
-      }else{
-        button.dataset.mobileCommentAct = button.dataset.mobileChatAct || 'delete';
-        button.textContent = '删除评论';
-      }
-      delete button.dataset.mobileChatAct;
-      row.dataset.fwReportActionFixed = '1';
-    });
-  }
+  function enhanceAdminReportActions(){}
 
   function bind(){
     document.addEventListener('click', function(e){
@@ -185,30 +165,20 @@
     if(window.MutationObserver){
       var observer = new MutationObserver(function(){
         clearTimeout(timer);
-        timer = setTimeout(function(){
-          enhancePostReports();
-          enhanceAdminReportActions();
-        }, 120);
+        timer = setTimeout(enhancePostReports, 120);
       });
       observer.observe(document.body, {childList:true, subtree:true});
     }
     document.addEventListener('click', function(){
-      setTimeout(function(){
-        enhancePostReports();
-        enhanceAdminReportActions();
-      }, 90);
+      setTimeout(enhancePostReports, 90);
     });
-    setInterval(function(){
-      enhancePostReports();
-      enhanceAdminReportActions();
-    }, 1600);
+    setInterval(enhancePostReports, 1600);
   }
 
   function boot(){
     injectStyle();
     bind();
     enhancePostReports();
-    enhanceAdminReportActions();
     window.FWAppReport = {
       submit:submitReport,
       enhancePostReports:enhancePostReports,
