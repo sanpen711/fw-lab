@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260611-5';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260611-6';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -19,12 +19,10 @@ const APP_SHELL = [
   appPath('buddy.js'),
   appPath('buddy-read-tweaks.js'),
   appPath('buddy-chat-read-fix.js'),
-  appPath('buddy-badge-fix.js'),
   appPath('buddy-chat-tweaks.js'),
   appPath('buddy-chat-polish.js'),
   appPath('buddy-chat-bottom-fix.js'),
   appPath('buddy-chat-scroll-fix.js'),
-  appPath('buddy-user-action-prehook.js'),
   appPath('buddy-contacts-actions.js'),
   appPath('buddy-chat-entry-fix.js'),
   assetPath('fw-emoji-panel.js'),
