@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260611-3';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260611-4';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -53,8 +53,16 @@ function isNavigationRequest(request){
   return accept.indexOf('text/html') >= 0;
 }
 
+function cacheAppShell(cache){
+  return Promise.all(APP_SHELL.map(url => {
+    return cache.add(url).catch(error => {
+      console.warn('[FW mobile app] shell cache skipped', url, error);
+    });
+  }));
+}
+
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE_NAME).then(cacheAppShell).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {
