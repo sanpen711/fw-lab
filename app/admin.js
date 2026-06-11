@@ -275,13 +275,35 @@
       return row(main, actions, (profile.nickname || '') + ' ' + (comment.content || ''));
     }).join('') + '</div>';
   }
+  function reportType(value){
+    value = String(value || '').trim();
+    if(value === 'post' || value === 'comment' || value === 'user' || value === 'chat_message') return value;
+    return 'chat_message';
+  }
+  function reportTypeLabel(type){
+    return {post:'帖子', comment:'评论', user:'用户 / 搭子', chat_message:'历史消息'}[type] || '举报对象';
+  }
+  function reportContentLabel(type){
+    return {post:'帖子内容', comment:'评论内容', user:'对象信息', chat_message:'历史消息'}[type] || '内容';
+  }
+  function reportDeleteAction(report, type){
+    if(!report.message_id) return '';
+    if(type === 'post') return '<button class="danger" data-mobile-post-act="delete" data-id="' + esc(report.message_id) + '">删除帖子</button>';
+    if(type === 'comment') return '<button class="danger" data-mobile-comment-act="delete" data-id="' + esc(report.message_id) + '">删除评论</button>';
+    if(type === 'chat_message') return '<button class="danger" data-mobile-chat-act="delete" data-id="' + esc(report.message_id) + '">删除历史消息</button>';
+    return '';
+  }
   function renderReports(){
     var rows = state.rows.reports || [];
     if(!rows.length) return toolbar('举报中心') + '<div class="mobile-admin-empty">暂无举报。</div>';
     return toolbar('举报中心') + '<div class="mobile-admin-table">' + rows.map(function(report){
-      var main = '<b>举报 #' + esc(report.id) + ' · ' + esc(report.status || 'pending') + ' · 被举报：' + esc(report.target_name || '未知') + '</b><p>房间：' + esc(report.room_key || '未知') + ' · 消息：' + esc(short(report.message_content || ('消息ID：' + report.message_id), 120)) + '<br>举报人：' + esc(report.reporter_name || report.reporter_id || '未知') + ' · 原因：' + esc(report.report_reason || '用户举报') + ' · ' + esc(fmt(report.created_at)) + '</p>';
-      var actions = '<button class="dark" data-mobile-report-act="resolved" data-id="' + esc(report.id) + '">标记处理</button><button data-mobile-report-act="ignored" data-id="' + esc(report.id) + '">忽略</button>' + (report.message_id ? '<button class="danger" data-mobile-chat-act="delete" data-id="' + esc(report.message_id) + '">删除消息</button>' : '');
-      return row(main, actions, (report.report_reason || '') + ' ' + (report.status || '') + ' ' + (report.target_name || '') + ' ' + (report.message_content || ''));
+      var type = reportType(report.room_key);
+      var typeLabel = reportTypeLabel(type);
+      var contentLabel = reportContentLabel(type);
+      var preview = short(report.message_content || (report.message_id ? ('对象ID：' + report.message_id) : '暂无内容预览'), 120);
+      var main = '<b>举报 #' + esc(report.id) + ' · ' + esc(report.status || 'pending') + ' · 类型：' + esc(typeLabel) + ' · 被举报：' + esc(report.target_name || '未知') + '</b><p>' + esc(contentLabel) + '：' + esc(preview) + '<br>举报人：' + esc(report.reporter_name || report.reporter_id || '未知') + ' · 原因：' + esc(report.report_reason || '用户举报') + ' · ' + esc(fmt(report.created_at)) + '</p>';
+      var actions = '<button class="dark" data-mobile-report-act="resolved" data-id="' + esc(report.id) + '">标记处理</button><button data-mobile-report-act="ignored" data-id="' + esc(report.id) + '">忽略</button>' + reportDeleteAction(report, type);
+      return row(main, actions, (typeLabel || '') + ' ' + (report.report_reason || '') + ' ' + (report.status || '') + ' ' + (report.target_name || '') + ' ' + (report.message_content || ''));
     }).join('') + '</div>';
   }
   function renderChats(){
