@@ -64,12 +64,25 @@
     return allowed[hash] ? hash : '';
   }
 
+  function openInitialView(view){
+    var api = window.FWApp;
+    if(!api) return false;
+    if(typeof api.openView === 'function'){
+      api.openView(view, {updateHash:false});
+      return true;
+    }
+    if(typeof api.setView === 'function'){
+      api.setView(view);
+      return true;
+    }
+    return false;
+  }
+
   function applyInitialHashRoute(){
     var view = getInitialHashView();
-    if(!view || !window.FWApp || !window.FWApp.setView) return;
+    if(!view || !window.FWApp) return;
     if(initialHashApplied && window.FWApp.state && window.FWApp.state.view === view) return;
-    initialHashApplied = true;
-    window.FWApp.setView(view);
+    if(openInitialView(view)) initialHashApplied = true;
   }
 
   function run(){
