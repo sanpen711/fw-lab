@@ -42,9 +42,9 @@
       'html.fw-mobile-motion-ready .app-view.fw-view-edge-release{will-change:transform,opacity;transition:transform 250ms cubic-bezier(.18,.82,.22,1),opacity 250ms cubic-bezier(.18,.82,.22,1)!important}',
       'html.fw-mobile-motion-ready button,html.fw-mobile-motion-ready .app-btn,html.fw-mobile-motion-ready [role="button"]{transition:transform 170ms ease,filter 170ms ease,box-shadow 220ms ease}',
       'html.fw-mobile-motion-ready .fw-pressing{transform:scale(.975)!important;filter:brightness(.985)}',
-      '@keyframes fwViewEnterForward{0%{opacity:.01;transform:translate3d(16px,9px,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
+      '@keyframes fwViewEnterForward{0%{opacity:.01;transform:translate3d(18px,0,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
       '@keyframes fwViewEnterBack{0%{opacity:.01;transform:translate3d(-14px,0,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
-      '@keyframes fwViewEnterTab{0%{opacity:.01;transform:translate3d(0,12px,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
+      '@keyframes fwViewEnterTab{0%{opacity:.01;transform:translate3d(0,8px,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
       '@media (prefers-reduced-motion:reduce){html.fw-mobile-motion-ready .app-view.is-active.fw-view-enter-forward,html.fw-mobile-motion-ready .app-view.is-active.fw-view-enter-back,html.fw-mobile-motion-ready .app-view.is-active.fw-view-enter-tab{animation:none!important}html.fw-mobile-motion-ready button,html.fw-mobile-motion-ready .app-btn,html.fw-mobile-motion-ready [role="button"]{transition:none!important}}'
     ].join('\n');
     document.head.appendChild(style);
