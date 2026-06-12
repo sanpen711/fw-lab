@@ -3,8 +3,8 @@
   if(window.__FW_MOBILE_TRANSITIONS__) return;
   window.__FW_MOBILE_TRANSITIONS__ = true;
 
-  var ENTER_MS = 230;
-  var CLEAN_MS = 280;
+  var ENTER_MS = 320;
+  var CLEAN_MS = 390;
   var EDGE_LIMIT = 44;
   var touchState = null;
   var lastView = '';
@@ -34,16 +34,16 @@
     var style = document.createElement('style');
     style.id = 'fwMobileTransitionsStyle';
     style.textContent = [
-      'html.fw-mobile-motion-ready .app-view.is-active.fw-view-enter-forward{animation:fwViewEnterForward 230ms cubic-bezier(.2,.82,.2,1) both}',
-      'html.fw-mobile-motion-ready .app-view.is-active.fw-view-enter-back{animation:fwViewEnterBack 210ms cubic-bezier(.2,.82,.2,1) both}',
-      'html.fw-mobile-motion-ready .app-view.is-active.fw-view-enter-tab{animation:fwViewEnterTab 200ms cubic-bezier(.2,.82,.2,1) both}',
+      'html.fw-mobile-motion-ready .app-view.is-active.fw-view-enter-forward{animation:fwViewEnterForward 320ms cubic-bezier(.18,.82,.22,1) both}',
+      'html.fw-mobile-motion-ready .app-view.is-active.fw-view-enter-back{animation:fwViewEnterBack 290ms cubic-bezier(.18,.82,.22,1) both}',
+      'html.fw-mobile-motion-ready .app-view.is-active.fw-view-enter-tab{animation:fwViewEnterTab 310ms cubic-bezier(.18,.82,.22,1) both}',
       'html.fw-mobile-motion-ready .app-view.fw-view-edge-peek{will-change:transform,opacity;transition:none!important}',
-      'html.fw-mobile-motion-ready .app-view.fw-view-edge-release{will-change:transform,opacity;transition:transform 180ms cubic-bezier(.2,.82,.2,1),opacity 180ms cubic-bezier(.2,.82,.2,1)!important}',
-      'html.fw-mobile-motion-ready button,html.fw-mobile-motion-ready .app-btn,html.fw-mobile-motion-ready [role="button"]{transition:transform 130ms ease,filter 130ms ease,box-shadow 180ms ease}',
+      'html.fw-mobile-motion-ready .app-view.fw-view-edge-release{will-change:transform,opacity;transition:transform 250ms cubic-bezier(.18,.82,.22,1),opacity 250ms cubic-bezier(.18,.82,.22,1)!important}',
+      'html.fw-mobile-motion-ready button,html.fw-mobile-motion-ready .app-btn,html.fw-mobile-motion-ready [role="button"]{transition:transform 170ms ease,filter 170ms ease,box-shadow 220ms ease}',
       'html.fw-mobile-motion-ready .fw-pressing{transform:scale(.975)!important;filter:brightness(.985)}',
-      '@keyframes fwViewEnterForward{0%{opacity:.01;transform:translate3d(14px,8px,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
-      '@keyframes fwViewEnterBack{0%{opacity:.01;transform:translate3d(-12px,0,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
-      '@keyframes fwViewEnterTab{0%{opacity:.01;transform:translate3d(0,10px,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
+      '@keyframes fwViewEnterForward{0%{opacity:.01;transform:translate3d(16px,9px,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
+      '@keyframes fwViewEnterBack{0%{opacity:.01;transform:translate3d(-14px,0,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
+      '@keyframes fwViewEnterTab{0%{opacity:.01;transform:translate3d(0,12px,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
       '@media (prefers-reduced-motion:reduce){html.fw-mobile-motion-ready .app-view.is-active.fw-view-enter-forward,html.fw-mobile-motion-ready .app-view.is-active.fw-view-enter-back,html.fw-mobile-motion-ready .app-view.is-active.fw-view-enter-tab{animation:none!important}html.fw-mobile-motion-ready button,html.fw-mobile-motion-ready .app-btn,html.fw-mobile-motion-ready [role="button"]{transition:none!important}}'
     ].join('\n');
     document.head.appendChild(style);
@@ -131,7 +131,7 @@
       node.style.transform = '';
       node.style.opacity = '';
       clearTimeout(node.__fwEdgeTimer);
-      node.__fwEdgeTimer = setTimeout(function(){ node.classList.remove('fw-view-edge-release'); }, 190);
+      node.__fwEdgeTimer = setTimeout(function(){ node.classList.remove('fw-view-edge-release'); }, 270);
     }else{
       node.classList.remove('fw-view-edge-release');
       node.style.transform = '';
@@ -192,7 +192,7 @@
       if(!node || node.disabled) return;
       node.classList.add('fw-pressing');
       clearTimeout(node.__fwPressTimer);
-      node.__fwPressTimer = setTimeout(function(){ node.classList.remove('fw-pressing'); }, 220);
+      node.__fwPressTimer = setTimeout(function(){ node.classList.remove('fw-pressing'); }, 280);
     }, true);
 
     ['pointerup','pointercancel','pointerleave','blur'].forEach(function(type){
