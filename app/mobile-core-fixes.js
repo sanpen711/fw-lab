@@ -167,7 +167,7 @@
   }
 
   function ensureMobileTransitions(){
-    loadScriptOnce('__FW_MOBILE_TRANSITIONS__', 'data-mobile-transitions', './mobile-transitions.js?v=mobile-transitions-20260612-3');
+    loadScriptOnce('__FW_MOBILE_TRANSITIONS__', 'data-mobile-transitions', './mobile-transitions.js?v=mobile-transitions-20260612-4');
   }
 
   function requestServiceWorkerRefresh(){
