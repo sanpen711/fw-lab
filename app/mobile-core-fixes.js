@@ -33,6 +33,8 @@
   var routeSyncing = false;
   var setViewHistoryMuted = false;
   var popStateBound = false;
+  var initialHash = String(window.location.hash || '');
+  var initialHashPending = !!initialHash;
 
   function $(selector, root){
     return (root || document).querySelector(selector);
@@ -49,9 +51,13 @@
     return Object.prototype.hasOwnProperty.call(ROUTABLE_VIEWS, view) ? ROUTABLE_VIEWS[view] : null;
   }
 
-  function viewFromHash(){
-    var hash = String(window.location.hash || '').replace(/^#/, '').toLowerCase();
+  function viewFromHashValue(hashValue){
+    var hash = String(hashValue || '').replace(/^#/, '').toLowerCase();
     return HASH_VIEW_ALIASES[hash] || 'nav';
+  }
+
+  function viewFromHash(){
+    return viewFromHashValue(window.location.hash || '');
   }
 
   function hasAppView(view){
@@ -108,6 +114,7 @@
   function updateHistoryForView(view, options, fallbackMode){
     if(routeSyncing) return;
     if(options && options.updateHash === false) return;
+    if(initialHashPending && view === 'nav') return;
     var mode = (options && options.historyMode) || fallbackMode || 'replace';
     if(mode === 'none') return;
     if(mode === 'push') pushHashForView(view);
@@ -169,10 +176,9 @@
       return true;
     }
     if(typeof api.setView === 'function'){
-      var result;
       setViewHistoryMuted = true;
       try{
-        result = api.setView(view);
+        api.setView(view);
       }finally{
         setViewHistoryMuted = false;
       }
@@ -182,9 +188,9 @@
     return false;
   }
 
-  function syncRouteFromLocation(){
-    var view = normalizeView(viewFromHash());
+  function syncRouteToView(view, restoreHash){
     var api = window.FWApp;
+    view = normalizeView(view || 'nav');
     if(!api || typeof api.setView !== 'function') return false;
     routeSyncing = true;
     setViewHistoryMuted = true;
@@ -194,13 +200,19 @@
       setViewHistoryMuted = false;
       routeSyncing = false;
     }
+    if(restoreHash) replaceHashForView(view);
     return true;
+  }
+
+  function syncRouteFromLocation(){
+    return syncRouteToView(viewFromHash(), false);
   }
 
   function bindPopStateRoute(){
     if(popStateBound) return;
     popStateBound = true;
     window.addEventListener('popstate', function(){
+      initialHashPending = false;
       syncRouteFromLocation();
     });
   }
@@ -209,6 +221,10 @@
     [0, 180, 700].forEach(function(delay){
       setTimeout(function(){
         patchAppViewApi();
+        if(initialHashPending && initialHash){
+          if(syncRouteToView(viewFromHashValue(initialHash), true)) initialHashPending = false;
+          return;
+        }
         if(window.location.hash) syncRouteFromLocation();
         else replaceHashForView('nav');
       }, delay);
@@ -230,6 +246,7 @@
       var nav = target.closest('[data-app-nav]');
       if(nav){
         var navView = normalizeView(nav.dataset.appNav || 'nav');
+        initialHashPending = false;
         suppressNextViewMotion();
         if(openAppView(navView)){
           event.preventDefault();
@@ -242,6 +259,7 @@
 
       var profile = target.closest('[data-app-profile-trigger]');
       if(profile){
+        initialHashPending = false;
         if(openAppView('profile')){
           event.preventDefault();
           event.stopPropagation();
@@ -254,6 +272,7 @@
       var opener = target.closest('[data-app-open]');
       if(opener){
         var openView = normalizeView(opener.dataset.appOpen || 'nav');
+        initialHashPending = false;
         setTimeout(function(){
           if(window.FWApp && window.FWApp.state && window.FWApp.state.view === openView) pushHashForView(openView);
         }, 0);
