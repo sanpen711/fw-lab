@@ -55,9 +55,11 @@
       '.app-tabbar button{position:relative}',
       '[data-app-nav="echo"] .mobile-echo-badge{position:absolute;right:22px;top:6px;width:13px!important;min-width:13px!important;height:13px!important;padding:0!important;border-radius:999px;background:#d95353;color:transparent!important;border:2px solid #10170f;display:none;font-size:0!important;line-height:0!important;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.22);box-sizing:border-box}',
       '[data-app-nav="echo"] .mobile-echo-badge.show{display:block}',
-      '.mobile-echo-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:0 0 10px}',
+      '.mobile-echo-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:0 0 10px;flex-wrap:wrap}',
       '.mobile-echo-toolbar b{font-size:14px;color:var(--deep);font-weight:1000}',
-      '.mobile-echo-refresh{min-height:34px;border:1px solid rgba(16,23,15,.13);border-radius:999px;background:#fffdf7;color:var(--deep);padding:0 12px;font-size:12px;font-weight:1000}',
+      '.mobile-echo-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}',
+      '.mobile-echo-refresh,.mobile-echo-mark-all{min-height:34px;border:1px solid rgba(16,23,15,.13);border-radius:999px;background:#fffdf7;color:var(--deep);padding:0 12px;font-size:12px;font-weight:1000}',
+      '.mobile-echo-mark-all{background:var(--deep);border-color:var(--deep);color:#fff}',
       '.mobile-echo-item{cursor:pointer;align-items:flex-start;position:relative}',
       '.mobile-echo-item.unread{background:linear-gradient(135deg,#fffdf7,#fff3ef);border-color:rgba(217,121,121,.5)}',
       '.mobile-echo-item.unread:before{content:"";position:absolute;left:10px;top:10px;width:10px;height:10px;border-radius:999px;background:#d95353;border:2px solid #fffdf7;box-shadow:0 3px 10px rgba(217,83,83,.28)}',
@@ -108,6 +110,14 @@
     }
   }
 
+  function visibleUnreadCount(){
+    return document.querySelectorAll('[data-echo-list] .mobile-echo-item.unread').length;
+  }
+
+  function updateBadgeFromVisibleItems(){
+    setEchoBadge(visibleUnreadCount());
+  }
+
   async function currentUser(){
     if(app().state && app().state.user) return app().state.user;
     try{ return app().refreshUser ? await app().refreshUser() : null; }catch(e){ return null; }
@@ -123,12 +133,32 @@
     }catch(e){ console.warn('[FW mobile app] echo badge refresh failed', e); }
   }
 
+  async function markRead(ids){
+    ids = Array.from(new Set((ids || []).map(function(id){ return String(id || '').trim(); }).filter(Boolean)));
+    if(!ids.length) return;
+
+    ids.forEach(function(id){
+      var item = document.querySelector('[data-mobile-echo-item="' + id.replace(/"/g, '') + '"]');
+      if(item) item.classList.remove('unread');
+    });
+    updateBadgeFromVisibleItems();
+
+    try{
+      if(!(await app().waitForDb())) return;
+      await client().from('notifications').update({is_read:true}).in('id', ids);
+      refreshBadges();
+    }catch(e){
+      console.warn('[FW mobile app] echo mark read failed', e);
+      refreshBadges();
+    }
+  }
+
   function noticeHtml(notice, profile){
     var action = typeText(notice.type);
     var content = noticePreview(notice.content || '对你的低功耗发言产生了回应。') || '对你的低功耗发言产生了回应。';
     var actions = '';
-    if(isPostNotice(notice)) actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-post="' + esc(notice.target_id) + '" data-mobile-echo-type="' + esc(notice.type || '') + '" data-mobile-echo-actor="' + esc(notice.actor_id || '') + '" data-mobile-echo-time="' + esc(notice.created_at || '') + '" data-open-comments="' + (notice.type === 'comment' ? '1' : '0') + '">查看帖子</button>';
-    if(notice.type === 'chat_agree') actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-rooms>去学术研讨</button>';
+    if(isPostNotice(notice)) actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-post="' + esc(notice.target_id) + '" data-mobile-echo-notice="' + esc(notice.id) + '" data-mobile-echo-type="' + esc(notice.type || '') + '" data-mobile-echo-actor="' + esc(notice.actor_id || '') + '" data-mobile-echo-time="' + esc(notice.created_at || '') + '" data-open-comments="' + (notice.type === 'comment' ? '1' : '0') + '">查看帖子</button>';
+    if(notice.type === 'chat_agree') actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-rooms data-mobile-echo-notice="' + esc(notice.id) + '">去学术研讨</button>';
     return '<article class="notice-item mobile-echo-item ' + (notice.is_read ? '' : 'unread') + '" data-mobile-echo-item="' + esc(notice.id) + '">' + avatar(profile) + '<div class="list-main"><b>' + esc((profile && profile.nickname || '某位研究员') + ' ' + action) + '</b><span>' + esc(content) + '</span><small>' + esc(timeText(notice.created_at)) + '</small>' + (actions ? '<div class="notice-actions">' + actions + '</div>' : '') + '</div></article>';
   }
 
@@ -143,12 +173,12 @@
       if(!me || !me.id){ list.innerHTML = '<div class="empty">请先登录后查看回声。</div>'; loaded = true; lastLoadAt = Date.now(); refreshBadges(); return; }
       var rows = fail(await client().from('notifications').select('id,actor_id,type,target_type,target_id,content,is_read,created_at').eq('user_id', me.id).in('type', ECHO_TYPES).order('created_at', {ascending:false}).limit(100), '回声读取失败') || [];
       rows = rows.filter(function(row){ return isEchoType(row.type); });
-      var profiles = await fetchProfiles(rows.map(function(row){ return row.actor_id; }));
-      var toolbar = '<div class="mobile-echo-toolbar"><b>回声通知</b><button class="mobile-echo-refresh" type="button" data-mobile-echo-refresh>刷新</button></div>';
-      list.innerHTML = toolbar + (rows.length ? rows.map(function(row){ return noticeHtml(row, profiles[row.actor_id] || {}); }).join('') : '<div class="empty">暂时没有新的回声。安静也是一种运行状态。</div>');
       var unreadIds = rows.filter(function(row){ return !row.is_read; }).map(function(row){ return row.id; });
-      if(unreadIds.length) client().from('notifications').update({is_read:true}).in('id', unreadIds).then(function(){ refreshBadges(); });
-      else refreshBadges();
+      var profiles = await fetchProfiles(rows.map(function(row){ return row.actor_id; }));
+      var toolbar = '<div class="mobile-echo-toolbar"><b>回声通知</b><div class="mobile-echo-actions">' + (unreadIds.length ? '<button class="mobile-echo-mark-all" type="button" data-mobile-echo-mark-all>全部已读</button>' : '') + '<button class="mobile-echo-refresh" type="button" data-mobile-echo-refresh>刷新</button></div></div>';
+      list.innerHTML = toolbar + (rows.length ? rows.map(function(row){ return noticeHtml(row, profiles[row.actor_id] || {}); }).join('') : '<div class="empty">暂时没有新的回声。安静也是一种运行状态。</div>');
+      setEchoBadge(unreadIds.length);
+      refreshBadges();
       loaded = true;
       lastLoadAt = Date.now();
     }catch(e){ console.warn('[FW mobile app] echo load failed', e); list.innerHTML = '<div class="error">回声暂时读取失败，请稍后再试。</div>'; }
@@ -211,6 +241,7 @@
   async function openPost(postId, options){
     options = options || {};
     if(!postId){ app().toast('这条回声暂时没有对应帖子。'); return; }
+    if(options.noticeId) markRead([options.noticeId]);
     patchSetView();
     echoDetailReturn = true;
     setReturnFlag(true);
@@ -251,15 +282,25 @@
       if(detailBack && hasReturnFlag()){ setTimeout(returnToEcho, 120); return; }
       var refresh = e.target.closest && e.target.closest('[data-mobile-echo-refresh]');
       if(refresh){ e.preventDefault(); loaded = false; load(true); return; }
+      var markAll = e.target.closest && e.target.closest('[data-mobile-echo-mark-all]');
+      if(markAll){
+        e.preventDefault();
+        var ids = Array.prototype.slice.call(document.querySelectorAll('[data-echo-list] .mobile-echo-item.unread')).map(function(item){ return item.dataset.mobileEchoItem; });
+        markRead(ids);
+        markAll.remove();
+        return;
+      }
       var post = e.target.closest && e.target.closest('[data-mobile-echo-post]');
       if(post){
         e.preventDefault();
         e.stopPropagation();
-        openPost(post.dataset.mobileEchoPost, {openComments:post.dataset.openComments === '1', actorId:post.dataset.mobileEchoActor || '', createdAt:post.dataset.mobileEchoTime || ''});
+        openPost(post.dataset.mobileEchoPost, {noticeId:post.dataset.mobileEchoNotice || '', openComments:post.dataset.openComments === '1', actorId:post.dataset.mobileEchoActor || '', createdAt:post.dataset.mobileEchoTime || ''});
         return;
       }
       var rooms = e.target.closest && e.target.closest('[data-mobile-echo-rooms]');
-      if(rooms){ e.preventDefault(); e.stopPropagation(); app().setView('rooms'); }
+      if(rooms){ e.preventDefault(); e.stopPropagation(); markRead([rooms.dataset.mobileEchoNotice || '']); app().setView('rooms'); return; }
+      var item = e.target.closest && e.target.closest('[data-mobile-echo-item]');
+      if(item && item.classList.contains('unread')) markRead([item.dataset.mobileEchoItem]);
     });
     window.addEventListener('focus', function(){ refreshBadges(); });
     document.addEventListener('visibilitychange', function(){ if(!document.hidden) refreshBadges(); });
@@ -267,5 +308,5 @@
 
   function init(){ injectStyle(); patchSetView(); bind(); refreshBadges(); clearInterval(badgeTimer); badgeTimer = setInterval(refreshBadges, 45000); }
   function ensureLoaded(){ load(false); }
-  window.FWAppEcho = {init:init, load:load, ensureLoaded:ensureLoaded, refreshBadges:refreshBadges, openPost:openPost};
+  window.FWAppEcho = {init:init, load:load, ensureLoaded:ensureLoaded, refreshBadges:refreshBadges, openPost:openPost, markRead:markRead};
 })();
