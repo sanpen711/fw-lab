@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="fw_bg">#10170F</color>
+    <color name="fw_panel">#162116</color>
+    <color name="fw_accent">#9DBE83</color>
+    <color name="fw_text">#F4F7EC</color>
+</resources>
