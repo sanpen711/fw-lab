@@ -14,6 +14,7 @@
   function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
   function app(){ return window.FWApp || null; }
   function reduceMotion(){ return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  function scroller(){ return $('#appMain') || document.scrollingElement || document.documentElement; }
 
   function currentView(){
     var fw = app();
@@ -148,8 +149,9 @@
     var touch = event.touches[0];
     if(!touch || touch.clientX > EDGE_LIMIT) return;
     var view = activeView();
+    var scroll = scroller();
     if(!view) return;
-    touchState = {x:touch.clientX,y:touch.clientY,view:view,viewName:viewName,tracking:false};
+    touchState = {x:touch.clientX,y:touch.clientY,view:view,viewName:viewName,tracking:false,scroll:scroll,scrollTop:scroll ? scroll.scrollTop || 0 : 0};
   }
 
   function onTouchMove(event){
@@ -159,9 +161,13 @@
     var dx = touch.clientX - touchState.x;
     var dy = touch.clientY - touchState.y;
     if(dx <= 0) return;
-    if(!touchState.tracking && Math.abs(dx) < 8) return;
-    if(Math.abs(dy) > Math.abs(dx) * 1.2) return;
-    touchState.tracking = true;
+    if(!touchState.tracking){
+      if(Math.abs(dx) < 10) return;
+      if(Math.abs(dy) > Math.abs(dx) * .95) return;
+      touchState.tracking = true;
+    }
+    if(event.cancelable) event.preventDefault();
+    if(touchState.scroll) touchState.scroll.scrollTop = touchState.scrollTop;
     var offset = Math.min(52, dx * 0.32);
     var opacity = Math.max(.92, 1 - offset / 520);
     touchState.view.classList.add('fw-view-edge-peek');
@@ -173,14 +179,17 @@
     if(!touchState) return;
     var node = touchState.view;
     var tracked = touchState.tracking;
+    var scroll = touchState.scroll;
+    var scrollTop = touchState.scrollTop;
     touchState = null;
+    if(tracked && scroll) scroll.scrollTop = scrollTop;
     if(tracked) clearEdgePreview(node, true);
   }
 
   function bindEdgePreview(){
     var main = $('#appMain') || document;
     main.addEventListener('touchstart', onTouchStart, {passive:true});
-    main.addEventListener('touchmove', onTouchMove, {passive:true});
+    main.addEventListener('touchmove', onTouchMove, {passive:false});
     main.addEventListener('touchend', onTouchEnd, {passive:true});
     main.addEventListener('touchcancel', onTouchEnd, {passive:true});
   }
