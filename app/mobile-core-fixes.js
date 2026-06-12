@@ -166,6 +166,10 @@
     loadScriptOnce('__FW_MOBILE_SWIPE_BACK__', 'data-mobile-swipe-back', './mobile-swipe-back.js?v=mobile-swipe-back-20260612-1');
   }
 
+  function ensureMobileTransitions(){
+    loadScriptOnce('__FW_MOBILE_TRANSITIONS__', 'data-mobile-transitions', './mobile-transitions.js?v=mobile-transitions-20260612-1');
+  }
+
   function requestServiceWorkerRefresh(){
     if(!('serviceWorker' in navigator)) return;
     try{
@@ -182,6 +186,7 @@
     ensureReportBridge();
     ensureBuddyChatReadFix();
     ensureMobileSwipeBack();
+    ensureMobileTransitions();
     requestServiceWorkerRefresh();
   }
 
