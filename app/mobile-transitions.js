@@ -14,6 +14,11 @@
   function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
   function app(){ return window.FWApp || null; }
   function reduceMotion(){ return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  function takeSkipNextViewMotion(){
+    var skip = !!window.__FW_MOBILE_SKIP_NEXT_VIEW_MOTION__;
+    if(skip) window.__FW_MOBILE_SKIP_NEXT_VIEW_MOTION__ = false;
+    return skip;
+  }
   function scroller(){ return $('#appMain') || document.scrollingElement || document.documentElement; }
 
   function currentView(){
@@ -42,6 +47,8 @@
       'html.fw-mobile-motion-ready .app-view.fw-view-edge-release{will-change:transform,opacity;transition:transform 250ms cubic-bezier(.18,.82,.22,1),opacity 250ms cubic-bezier(.18,.82,.22,1)!important}',
       'html.fw-mobile-motion-ready button,html.fw-mobile-motion-ready .app-btn,html.fw-mobile-motion-ready [role="button"]{transition:transform 170ms ease,filter 170ms ease,box-shadow 220ms ease}',
       'html.fw-mobile-motion-ready .fw-pressing{transform:scale(.975)!important;filter:brightness(.985)}',
+      'html.fw-mobile-motion-ready .app-tabbar button{transition:none!important}',
+      'html.fw-mobile-motion-ready .app-tabbar button.fw-pressing{transform:none!important;filter:none!important}',
       '@keyframes fwViewEnterForward{0%{opacity:.01;transform:translate3d(18px,0,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
       '@keyframes fwViewEnterBack{0%{opacity:.01;transform:translate3d(-14px,0,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
       '@keyframes fwViewEnterTab{0%{opacity:.01;transform:translate3d(0,8px,0)}100%{opacity:1;transform:translate3d(0,0,0)}}',
@@ -94,11 +101,12 @@
     var original = fw.setView;
     fw.setView = function(name){
       var from = currentView() || lastView;
+      var skipMotion = takeSkipNextViewMotion();
       var result = original.apply(this, arguments);
       var to = currentView() || name || '';
-      var type = transitionType(from, to);
+      var type = skipMotion ? '' : transitionType(from, to);
       lastView = to;
-      requestAnimationFrame(function(){ animateView(to, type); });
+      if(type) requestAnimationFrame(function(){ animateView(to, type); });
       return result;
     };
     patched = true;
@@ -199,6 +207,7 @@
       if(reduceMotion()) return;
       var node = event.target && event.target.closest && event.target.closest('button,.app-btn,[role="button"]');
       if(!node || node.disabled) return;
+      if(node.closest && node.closest('.app-tabbar')) return;
       node.classList.add('fw-pressing');
       clearTimeout(node.__fwPressTimer);
       node.__fwPressTimer = setTimeout(function(){ node.classList.remove('fw-pressing'); }, 280);
