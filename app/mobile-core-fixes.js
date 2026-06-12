@@ -14,6 +14,25 @@
     echo:'#echo',
     profile:'#profile'
   };
+  var HASH_VIEW_ALIASES = {
+    home:'nav',
+    nav:'nav',
+    index:'nav',
+    square:'square',
+    rooms:'rooms',
+    bird:'bird',
+    archive:'archive',
+    rules:'rules',
+    moderation:'moderation',
+    admin:'moderation',
+    buddy:'buddy',
+    echo:'echo',
+    profile:'profile',
+    me:'profile'
+  };
+  var routeSyncing = false;
+  var setViewHistoryMuted = false;
+  var popStateBound = false;
 
   function $(selector, root){
     return (root || document).querySelector(selector);
@@ -30,6 +49,11 @@
     return Object.prototype.hasOwnProperty.call(ROUTABLE_VIEWS, view) ? ROUTABLE_VIEWS[view] : null;
   }
 
+  function viewFromHash(){
+    var hash = String(window.location.hash || '').replace(/^#/, '').toLowerCase();
+    return HASH_VIEW_ALIASES[hash] || 'nav';
+  }
+
   function hasAppView(view){
     var views = document.querySelectorAll('[data-app-view]');
     for(var i = 0; i < views.length; i += 1){
@@ -44,12 +68,50 @@
     return hasAppView(view) ? view : 'nav';
   }
 
-  function replaceHashForView(view){
+  function urlForView(view){
     var hash = routeHashForView(view);
-    if(hash == null || !window.history || !window.history.replaceState) return;
-    var next = window.location.pathname + window.location.search + hash;
-    var current = window.location.pathname + window.location.search + window.location.hash;
-    if(next !== current) window.history.replaceState(null, document.title, next);
+    if(hash == null) hash = '';
+    return window.location.pathname + window.location.search + hash;
+  }
+
+  function currentUrl(){
+    return window.location.pathname + window.location.search + window.location.hash;
+  }
+
+  function historyStateForView(view){
+    return {fwAppView:normalizeView(view), fwApp:true};
+  }
+
+  function replaceHashForView(view){
+    if(!window.history || !window.history.replaceState) return;
+    view = normalizeView(view || 'nav');
+    var next = urlForView(view);
+    if(next !== currentUrl() || !history.state || !history.state.fwApp){
+      window.history.replaceState(historyStateForView(view), document.title, next);
+    }
+  }
+
+  function pushHashForView(view){
+    if(!window.history || !window.history.pushState){
+      replaceHashForView(view);
+      return;
+    }
+    view = normalizeView(view || 'nav');
+    var next = urlForView(view);
+    if(next === currentUrl()){
+      window.history.replaceState(historyStateForView(view), document.title, next);
+      return;
+    }
+    window.history.pushState(historyStateForView(view), document.title, next);
+  }
+
+  function updateHistoryForView(view, options, fallbackMode){
+    if(routeSyncing) return;
+    if(options && options.updateHash === false) return;
+    var mode = (options && options.historyMode) || fallbackMode || 'replace';
+    if(mode === 'none') return;
+    if(mode === 'push') pushHashForView(view);
+    else replaceHashForView(view);
   }
 
   function patchSetView(){
@@ -59,7 +121,7 @@
     window.FWApp.setView = function(name){
       var view = normalizeView(name || 'nav');
       var result = originalSetView.call(this, view);
-      replaceHashForView(view);
+      if(!setViewHistoryMuted) updateHistoryForView(view, null, 'replace');
       return result;
     };
     window.FWApp.__mobileCoreFixesPatched = true;
@@ -71,8 +133,14 @@
     if(typeof window.FWApp.setView !== 'function') return false;
     window.FWApp.openView = function(name, options){
       var view = normalizeView(name || 'nav');
-      var result = window.FWApp.setView(view);
-      if(!options || options.updateHash !== false) replaceHashForView(view);
+      var result;
+      setViewHistoryMuted = true;
+      try{
+        result = window.FWApp.setView(view);
+      }finally{
+        setViewHistoryMuted = false;
+      }
+      updateHistoryForView(view, options, 'push');
       return result;
     };
     window.FWApp.__mobileCoreOpenView = true;
@@ -101,11 +169,50 @@
       return true;
     }
     if(typeof api.setView === 'function'){
-      api.setView(view);
-      if(!options || options.updateHash !== false) replaceHashForView(view);
+      var result;
+      setViewHistoryMuted = true;
+      try{
+        result = api.setView(view);
+      }finally{
+        setViewHistoryMuted = false;
+      }
+      updateHistoryForView(view, options, 'push');
       return true;
     }
     return false;
+  }
+
+  function syncRouteFromLocation(){
+    var view = normalizeView(viewFromHash());
+    var api = window.FWApp;
+    if(!api || typeof api.setView !== 'function') return false;
+    routeSyncing = true;
+    setViewHistoryMuted = true;
+    try{
+      api.setView(view);
+    }finally{
+      setViewHistoryMuted = false;
+      routeSyncing = false;
+    }
+    return true;
+  }
+
+  function bindPopStateRoute(){
+    if(popStateBound) return;
+    popStateBound = true;
+    window.addEventListener('popstate', function(){
+      syncRouteFromLocation();
+    });
+  }
+
+  function scheduleInitialRouteSync(){
+    [0, 180, 700].forEach(function(delay){
+      setTimeout(function(){
+        patchAppViewApi();
+        if(window.location.hash) syncRouteFromLocation();
+        else replaceHashForView('nav');
+      }, delay);
+    });
   }
 
   function suppressNextViewMotion(){
@@ -147,7 +254,9 @@
       var opener = target.closest('[data-app-open]');
       if(opener){
         var openView = normalizeView(opener.dataset.appOpen || 'nav');
-        setTimeout(function(){ replaceHashForView(openView); }, 0);
+        setTimeout(function(){
+          if(window.FWApp && window.FWApp.state && window.FWApp.state.view === openView) pushHashForView(openView);
+        }, 0);
       }
     }, true);
   }
@@ -190,11 +299,13 @@
   function start(){
     normalizeViewport();
     schedulePatchSetView();
+    bindPopStateRoute();
     bindClickSync();
     ensureReportBridge();
     ensureBuddyChatReadFix();
     ensureMobileSwipeBack();
     ensureMobileTransitions();
+    scheduleInitialRouteSync();
     requestServiceWorkerRefresh();
   }
 
