@@ -108,6 +108,13 @@
     return false;
   }
 
+  function suppressNextViewMotion(){
+    window.__FW_MOBILE_SKIP_NEXT_VIEW_MOTION__ = true;
+    setTimeout(function(){
+      if(window.__FW_MOBILE_SKIP_NEXT_VIEW_MOTION__) window.__FW_MOBILE_SKIP_NEXT_VIEW_MOTION__ = false;
+    }, 180);
+  }
+
   function bindClickSync(){
     document.addEventListener('click', function(event){
       var target = event.target;
@@ -116,6 +123,7 @@
       var nav = target.closest('[data-app-nav]');
       if(nav){
         var navView = normalizeView(nav.dataset.appNav || 'nav');
+        suppressNextViewMotion();
         if(openAppView(navView)){
           event.preventDefault();
           event.stopPropagation();
@@ -167,7 +175,7 @@
   }
 
   function ensureMobileTransitions(){
-    loadScriptOnce('__FW_MOBILE_TRANSITIONS__', 'data-mobile-transitions', './mobile-transitions.js?v=mobile-transitions-20260612-4');
+    loadScriptOnce('__FW_MOBILE_TRANSITIONS__', 'data-mobile-transitions', './mobile-transitions.js?v=mobile-transitions-20260612-5');
   }
 
   function requestServiceWorkerRefresh(){
