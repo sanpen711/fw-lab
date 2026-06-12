@@ -162,6 +162,10 @@
     loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4');
   }
 
+  function ensureMobileSwipeBack(){
+    loadScriptOnce('__FW_MOBILE_SWIPE_BACK__', 'data-mobile-swipe-back', './mobile-swipe-back.js?v=mobile-swipe-back-20260612-1');
+  }
+
   function requestServiceWorkerRefresh(){
     if(!('serviceWorker' in navigator)) return;
     try{
@@ -177,6 +181,7 @@
     bindClickSync();
     ensureReportBridge();
     ensureBuddyChatReadFix();
+    ensureMobileSwipeBack();
     requestServiceWorkerRefresh();
   }
 
