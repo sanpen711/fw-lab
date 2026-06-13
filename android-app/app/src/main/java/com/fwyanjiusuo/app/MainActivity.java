@@ -1,6 +1,7 @@
 package com.fwyanjiusuo.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Color;
@@ -14,14 +15,25 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
+
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class MainActivity extends Activity {
     private static final String HOME_URL = "https://fwyanjiusuo.com/app/";
     private static final String APP_HOST = "fwyanjiusuo.com";
+    private static final String UPDATE_URL = "https://fwyanjiusuo.com/download/android-version.json";
     private static final int FILE_CHOOSER_REQUEST = 1001;
 
     private WebView webView;
     private ValueCallback<Uri[]> uploadCallback;
+    private boolean updateDialogShowing = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +53,7 @@ public class MainActivity extends Activity {
         } else {
             webView.loadUrl(HOME_URL);
         }
+        checkForAppUpdate();
     }
 
     private void configureSystemBars() {
@@ -65,7 +78,7 @@ public class MainActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(false);
         String ua = settings.getUserAgentString();
         if (ua != null && !ua.contains("FWYanjiusuoAndroid")) {
-            settings.setUserAgentString(ua + " FWYanjiusuoAndroid/1.0");
+            settings.setUserAgentString(ua + " FWYanjiusuoAndroid/" + BuildConfig.VERSION_NAME);
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
@@ -126,14 +139,79 @@ public class MainActivity extends Activity {
             return false;
         }
         if ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) {
-            try {
-                startActivity(new Intent(Intent.ACTION_VIEW, uri));
-                return true;
-            } catch (ActivityNotFoundException ignored) {
-                return true;
-            }
+            openExternalUrl(uri.toString());
+            return true;
         }
         return false;
+    }
+
+    private void checkForAppUpdate() {
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(UPDATE_URL + "?t=" + System.currentTimeMillis());
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(6000);
+                connection.setReadTimeout(6000);
+                connection.setUseCaches(false);
+                connection.setRequestMethod("GET");
+                int status = connection.getResponseCode();
+                if (status < 200 || status >= 300) return;
+                String jsonText = readStream(connection.getInputStream());
+                JSONObject json = new JSONObject(jsonText);
+                int latestCode = json.optInt("versionCode", BuildConfig.VERSION_CODE);
+                if (latestCode <= BuildConfig.VERSION_CODE) return;
+                String versionName = json.optString("versionName", "新版");
+                String apkUrl = json.optString("apkUrl", "");
+                String notes = json.optString("notes", "发现新版本，建议更新后继续使用。");
+                boolean forceUpdate = json.optBoolean("forceUpdate", false);
+                if (apkUrl.trim().isEmpty()) return;
+                runOnUiThread(() -> showUpdateDialog(versionName, notes, apkUrl, forceUpdate));
+            } catch (Exception ignored) {
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }).start();
+    }
+
+    private String readStream(InputStream inputStream) throws Exception {
+        StringBuilder builder = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            builder.append(line);
+        }
+        reader.close();
+        return builder.toString();
+    }
+
+    private void showUpdateDialog(String versionName, String notes, String apkUrl, boolean forceUpdate) {
+        if (isFinishing() || updateDialogShowing) return;
+        updateDialogShowing = true;
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle("发现新版本 " + versionName)
+                .setMessage(notes)
+                .setPositiveButton("立即更新", (dialog, which) -> {
+                    updateDialogShowing = false;
+                    openExternalUrl(apkUrl);
+                    if (forceUpdate) moveTaskToBack(true);
+                });
+        if (!forceUpdate) {
+            builder.setNegativeButton("稍后再说", (dialog, which) -> updateDialogShowing = false);
+        }
+        AlertDialog dialog = builder.create();
+        dialog.setOnCancelListener(d -> updateDialogShowing = false);
+        dialog.setCanceledOnTouchOutside(!forceUpdate);
+        dialog.show();
+    }
+
+    private void openExternalUrl(String url) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, "无法打开下载链接", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
