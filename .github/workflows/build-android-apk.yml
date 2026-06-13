@@ -34,7 +34,7 @@ jobs:
         uses: timheuer/base64-to-file@v1
         with:
           fileName: fw-release.jks
-          fileDir: android-app
+          fileDir: android-app/app
           encodedString: ${{ secrets.FW_RELEASE_KEYSTORE_BASE64 }}
 
       - name: Build release APK
