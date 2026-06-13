@@ -239,10 +239,18 @@ public class MainActivity extends Activity {
         String script = "(function(){" +
                 "try{" +
                 "var fw=window.FWApp;" +
-                "var view=(fw&&fw.state&&fw.state.view)||'';" +
-                "if(!view){var active=document.querySelector('[data-app-view].is-active');view=active&&active.dataset?active.dataset.appView:'';}" +
+                "var active=document.querySelector('[data-app-view].is-active');" +
+                "var view=(fw&&fw.state&&fw.state.view)||(active&&active.dataset?active.dataset.appView:'');" +
+                "var buddy=document.querySelector('[data-app-view=buddy]');" +
+                "if(view==='buddy'&&buddy&&buddy.classList&&buddy.classList.contains('is-chatting')){" +
+                "if(window.FWAppBuddy&&typeof window.FWAppBuddy.closeChat==='function'){window.FWAppBuddy.closeChat(true);return true;}" +
+                "var bb=document.querySelector('[data-buddy-chat-back]');if(bb){bb.click();return true;}" +
+                "}" +
+                "var profile=document.querySelector('[data-app-view=profile].is-active')||document.querySelector('[data-app-view=profile]');" +
+                "if(view==='profile'&&profile&&profile.querySelector('[data-profile-back]')){var pb=profile.querySelector('[data-profile-back]');if(pb){pb.click();return true;}}" +
+                "var modal=document.querySelector('.modal:not([hidden]),.app-modal:not([hidden]),[data-app-modal]:not([hidden])');" +
+                "if(modal){var close=modal.querySelector('[data-modal-close],[data-close],.modal-close');if(close){close.click();return true;}}" +
                 "if(!view||view==='nav'){return false;}" +
-                "if(fw&&typeof fw.openView==='function'){fw.openView('nav');return true;}" +
                 "if(fw&&typeof fw.setView==='function'){fw.setView('nav');return true;}" +
                 "return false;" +
                 "}catch(e){return false;}" +
