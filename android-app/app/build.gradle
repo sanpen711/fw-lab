@@ -2,6 +2,12 @@ plugins {
     id("com.android.application")
 }
 
+def releaseStoreFilePath = System.getenv("FW_RELEASE_STORE_FILE")
+def releaseStorePassword = System.getenv("FW_RELEASE_STORE_PASSWORD")
+def releaseKeyAlias = System.getenv("FW_RELEASE_KEY_ALIAS")
+def releaseKeyPassword = System.getenv("FW_RELEASE_KEY_PASSWORD")
+def hasReleaseSigning = releaseStoreFilePath && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+
 android {
     namespace = "com.fwyanjiusuo.app"
     compileSdk = 35
@@ -12,6 +18,27 @@ android {
         targetSdk = 35
         versionCode = 3
         versionName = "1.0.2"
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile = file(releaseStoreFilePath)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+            shrinkResources = false
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.release
+            }
+        }
     }
 
     buildFeatures {
