@@ -1,7 +1,7 @@
 {
-  "versionCode": 2,
-  "versionName": "1.0.1",
-  "apkUrl": "https://fwyanjiusuo.com/download/fw-lab-android-latest.apk",
+  "versionCode": 3,
+  "versionName": "1.0.2",
+  "apkUrl": "https://fwyanjiusuo.com/download/",
   "forceUpdate": false,
-  "notes": "修复安卓系统返回键直接退出的问题，并加入稳定版更新检测。"
+  "notes": "优化安卓返回键体验。"
 }
