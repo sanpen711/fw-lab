@@ -30,19 +30,31 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build debug APK
-        run: gradle -p android-app assembleDebug
+      - name: Prepare release key
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: fw-release.jks
+          fileDir: android-app
+          encodedString: ${{ secrets.FW_RELEASE_KEYSTORE_BASE64 }}
+
+      - name: Build release APK
+        env:
+          FW_RELEASE_STORE_FILE: fw-release.jks
+          FW_RELEASE_STORE_PASSWORD: ${{ secrets.FW_RELEASE_STORE_PASSWORD }}
+          FW_RELEASE_KEY_ALIAS: ${{ secrets.FW_RELEASE_KEY_ALIAS }}
+          FW_RELEASE_KEY_PASSWORD: ${{ secrets.FW_RELEASE_KEY_PASSWORD }}
+        run: gradle -p android-app assembleRelease
 
       - name: Publish latest APK into download folder
         run: |
           mkdir -p download
-          cp android-app/app/build/outputs/apk/debug/app-debug.apk download/fw-lab-android-latest.apk
+          cp android-app/app/build/outputs/apk/release/app-release.apk download/fw-lab-android-latest.apk
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add download/fw-lab-android-latest.apk
           if git diff --cached --quiet; then
             echo "No APK changes to commit."
           else
-            git commit -m "Build latest Android APK"
+            git commit -m "Build latest release Android APK"
             git push
           fi
