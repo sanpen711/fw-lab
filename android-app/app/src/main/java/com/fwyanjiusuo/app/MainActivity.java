@@ -150,11 +150,35 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
+        if (webView == null) {
+            moveTaskToBack(true);
             return;
         }
-        moveTaskToBack(true);
+        handleAppBackButton();
+    }
+
+    private void handleAppBackButton() {
+        String script = "(function(){" +
+                "try{" +
+                "var fw=window.FWApp;" +
+                "var view=(fw&&fw.state&&fw.state.view)||'';" +
+                "if(!view){var active=document.querySelector('[data-app-view].is-active');view=active&&active.dataset?active.dataset.appView:'';}" +
+                "if(!view||view==='nav'){return false;}" +
+                "if(fw&&typeof fw.openView==='function'){fw.openView('nav');return true;}" +
+                "if(fw&&typeof fw.setView==='function'){fw.setView('nav');return true;}" +
+                "return false;" +
+                "}catch(e){return false;}" +
+                "})()";
+
+        webView.evaluateJavascript(script, value -> {
+            boolean handled = "true".equals(String.valueOf(value));
+            if (handled) return;
+            if (webView != null && webView.canGoBack()) {
+                webView.goBack();
+                return;
+            }
+            moveTaskToBack(true);
+        });
     }
 
     @Override
