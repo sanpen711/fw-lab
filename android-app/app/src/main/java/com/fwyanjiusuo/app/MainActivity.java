@@ -238,19 +238,28 @@ public class MainActivity extends Activity {
     private void handleAppBackButton() {
         String script = "(function(){" +
                 "try{" +
-                "var fw=window.FWApp;" +
-                "var active=document.querySelector('[data-app-view].is-active');" +
-                "var view=(fw&&fw.state&&fw.state.view)||(active&&active.dataset?active.dataset.appView:'');" +
-                "var buddy=document.querySelector('[data-app-view=buddy]');" +
+                "var fw=window.FWApp||{};" +
+                "function q(s,r){return (r||document).querySelector(s);}" +
+                "function click(el){if(!el||el.disabled)return false;el.click();return true;}" +
+                "var active=q('[data-app-view].is-active');" +
+                "var view=(fw.state&&fw.state.view)||(active&&active.dataset?active.dataset.appView:'');" +
+                "var modal=q('dialog[open],.modal:not([hidden]),.app-modal:not([hidden]),[data-app-modal]:not([hidden])');" +
+                "if(modal){var mc=q('[data-modal-close],[data-close],.modal-close,button[aria-label*=关闭]',modal);if(click(mc))return true;}" +
+                "var buddy=q('[data-app-view=buddy]');" +
                 "if(view==='buddy'&&buddy&&buddy.classList&&buddy.classList.contains('is-chatting')){" +
                 "if(window.FWAppBuddy&&typeof window.FWAppBuddy.closeChat==='function'){window.FWAppBuddy.closeChat(true);return true;}" +
-                "var bb=document.querySelector('[data-buddy-chat-back]');if(bb){bb.click();return true;}" +
+                "if(click(q('[data-buddy-chat-back]',buddy)))return true;" +
                 "}" +
-                "var profile=document.querySelector('[data-app-view=profile].is-active')||document.querySelector('[data-app-view=profile]');" +
-                "if(view==='profile'&&profile&&profile.querySelector('[data-profile-back]')){var pb=profile.querySelector('[data-profile-back]');if(pb){pb.click();return true;}}" +
-                "var modal=document.querySelector('.modal:not([hidden]),.app-modal:not([hidden]),[data-app-modal]:not([hidden])');" +
-                "if(modal){var close=modal.querySelector('[data-modal-close],[data-close],.modal-close');if(close){close.click();return true;}}" +
-                "if(!view||view==='nav'){return false;}" +
+                "if(view==='profile'&&active&&click(q('[data-profile-back]',active)))return true;" +
+                "if(view==='bird-detail'&&window.FWAppBird&&typeof window.FWAppBird.backToBird==='function'){window.FWAppBird.backToBird();return true;}" +
+                "if(active){" +
+                "var back=q('[data-square-detail-back],[data-mobile-bird-back],[data-profile-back],.back-btn',active);" +
+                "if(click(back))return true;" +
+                "}" +
+                "if(view==='square-detail'&&click(q('[data-square-detail-back]')))return true;" +
+                "if(view==='bird-compose'){if(fw&&typeof fw.setView==='function'){fw.setView('bird');return true;}}" +
+                "if(view==='rooms-compose'){if(fw&&typeof fw.setView==='function'){fw.setView('rooms');return true;}}" +
+                "if(!view||view==='nav')return false;" +
                 "if(fw&&typeof fw.setView==='function'){fw.setView('nav');return true;}" +
                 "return false;" +
                 "}catch(e){return false;}" +
