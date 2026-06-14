@@ -171,7 +171,7 @@
   }
 
   function ensureMobileSwipeBack(){
-    loadScriptOnce('__FW_MOBILE_SWIPE_BACK__', 'data-mobile-swipe-back', './mobile-swipe-back.js?v=mobile-swipe-back-20260612-1');
+    loadScriptOnce('__FW_MOBILE_SWIPE_BACK__', 'data-mobile-swipe-back', './mobile-swipe-back.js?v=mobile-swipe-back-20260614-2');
   }
 
   function ensureMobileTransitions(){
