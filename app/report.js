@@ -51,7 +51,8 @@
     if(!(await waitDb())){ toast('暂时无法连接数据服务。'); return false; }
     var user = await requireUser();
     if(!user){ toast('请先登录后再举报。'); if(app()) app().setView && app().setView('profile'); return false; }
-    var reason = window.prompt('请输入举报原因：', defaultReason || '不适当内容 / 骚扰 / 恶意攻击 / 其他');
+    var hint = defaultReason ? '可写：' + defaultReason : '请简单说明原因';
+    var reason = window.prompt('请输入举报原因（' + hint + '）：', '');
     if(reason === null) return false;
     reason = String(reason || '').trim();
     if(reason.length < 2){ toast('举报原因至少 2 个字。'); return false; }
