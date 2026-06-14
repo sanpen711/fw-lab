@@ -1,7 +1,7 @@
 {
-  "versionCode": 4,
-  "versionName": "1.0.3",
+  "versionCode": 5,
+  "versionName": "1.0.4",
   "apkUrl": "https://fwyanjiusuo.com/download/",
   "forceUpdate": false,
-  "notes": "完善安卓系统返回键：覆盖观鸟台详情、观鸟发布页、回声查看帖子、精神广场详情、学术研讨发布页、搭子私聊和弹窗返回。"
+  "notes": "修复搭子页安卓返回键。"
 }
