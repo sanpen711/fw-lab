@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260614-2';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260614-3';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -15,6 +15,7 @@ const APP_SHELL = [
   appPath('app.js'),
   appPath('nav.js'),
   appPath('feed.js'),
+  appPath('feed-detail-return.js'),
   appPath('publish.js'),
   appPath('buddy.js'),
   appPath('buddy-read-tweaks.js'),
