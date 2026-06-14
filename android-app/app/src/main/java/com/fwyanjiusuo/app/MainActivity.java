@@ -240,28 +240,30 @@ public class MainActivity extends Activity {
                 "try{" +
                 "var fw=window.FWApp||{};" +
                 "function q(s,r){return (r||document).querySelector(s);}" +
-                "function click(el){if(!el||el.disabled)return false;el.click();return true;}" +
+                "function qs(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));}" +
+                "function visible(el){if(!el||el.disabled||el.hidden)return false;var cur=el;while(cur&&cur!==document.body){if(cur.hidden)return false;var st=window.getComputedStyle?getComputedStyle(cur):null;if(st&&(st.display==='none'||st.visibility==='hidden'))return false;cur=cur.parentElement;}var cs=window.getComputedStyle?getComputedStyle(el):null;if(cs&&(cs.display==='none'||cs.visibility==='hidden'))return false;var r=el.getBoundingClientRect?el.getBoundingClientRect():null;return !r||(r.width>0&&r.height>0);}" +
+                "function click(el){if(!visible(el))return false;el.click();return true;}" +
+                "function clickFirst(sel,root){var arr=qs(sel,root);for(var i=0;i<arr.length;i++){if(click(arr[i]))return true;}return false;}" +
+                "function go(name){if(fw&&typeof fw.openView==='function'){fw.openView(name);return true;}if(fw&&typeof fw.setView==='function'){fw.setView(name);return true;}return false;}" +
                 "var active=q('[data-app-view].is-active');" +
                 "var view=(fw.state&&fw.state.view)||(active&&active.dataset?active.dataset.appView:'');" +
                 "var modal=q('dialog[open],.modal:not([hidden]),.app-modal:not([hidden]),[data-app-modal]:not([hidden])');" +
-                "if(modal){var mc=q('[data-modal-close],[data-close],.modal-close,button[aria-label*=关闭]',modal);if(click(mc))return true;}" +
+                "if(modal&&clickFirst('[data-modal-close],[data-close],.modal-close',modal))return true;" +
                 "var buddy=q('[data-app-view=buddy]');" +
-                "if(view==='buddy'&&buddy&&buddy.classList&&buddy.classList.contains('is-chatting')){" +
+                "var buddyPanel=buddy?q('[data-buddy-chat-panel]',buddy):null;" +
+                "var buddyChatting=!!(view==='buddy'&&buddy&&buddy.classList&&buddy.classList.contains('is-chatting')&&visible(buddyPanel));" +
+                "if(buddyChatting){" +
                 "if(window.FWAppBuddy&&typeof window.FWAppBuddy.closeChat==='function'){window.FWAppBuddy.closeChat(true);return true;}" +
-                "if(click(q('[data-buddy-chat-back]',buddy)))return true;" +
+                "if(clickFirst('[data-buddy-chat-back]',buddy))return true;" +
                 "}" +
-                "if(view==='profile'&&active&&click(q('[data-profile-back]',active)))return true;" +
+                "if(view==='profile'&&active&&clickFirst('[data-profile-back]',active))return true;" +
                 "if(view==='bird-detail'&&window.FWAppBird&&typeof window.FWAppBird.backToBird==='function'){window.FWAppBird.backToBird();return true;}" +
-                "if(active){" +
-                "var back=q('[data-square-detail-back],[data-mobile-bird-back],[data-profile-back],.back-btn',active);" +
-                "if(click(back))return true;" +
-                "}" +
-                "if(view==='square-detail'&&click(q('[data-square-detail-back]')))return true;" +
-                "if(view==='bird-compose'){if(fw&&typeof fw.setView==='function'){fw.setView('bird');return true;}}" +
-                "if(view==='rooms-compose'){if(fw&&typeof fw.setView==='function'){fw.setView('rooms');return true;}}" +
+                "if(active&&clickFirst('[data-square-detail-back],[data-mobile-bird-back],[data-profile-back],.back-btn',active))return true;" +
+                "if(view==='square-detail'&&clickFirst('[data-square-detail-back]'))return true;" +
+                "if(view==='bird-compose')return go('bird');" +
+                "if(view==='rooms-compose')return go('rooms');" +
                 "if(!view||view==='nav')return false;" +
-                "if(fw&&typeof fw.setView==='function'){fw.setView('nav');return true;}" +
-                "return false;" +
+                "return go('nav');" +
                 "}catch(e){return false;}" +
                 "})()";
 
