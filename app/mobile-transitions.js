@@ -127,8 +127,15 @@
     return !!(target && target.closest && target.closest('.status-filter,.status-picks,.rooms-filter,.mobile-admin-tabs,.tabs,.mobile-bird-images,.profile-sticker-grid'));
   }
 
+  function isBuddyChatting(){
+    var buddy = $('[data-app-view="buddy"]');
+    return !!((buddy && buddy.classList.contains('is-chatting')) || document.body.classList.contains('fw-buddy-chatting'));
+  }
+
   function canEdgePreview(view){
     if(!view || view === 'nav') return false;
+    // 搭子私聊有独立左滑关闭逻辑；这里不要再给整个页面加位移预览，避免关闭后残留 transform。
+    if(view === 'buddy' && isBuddyChatting()) return false;
     return true;
   }
 
