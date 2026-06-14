@@ -9,6 +9,7 @@
   var pending = false;
 
   function $(selector, root){ return (root || document).querySelector(selector); }
+  function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
 
   function isChatting(){
     var view = $('[data-app-view="buddy"]');
@@ -27,6 +28,22 @@
     box.scrollTop = box.scrollHeight;
   }
 
+  function resetMotionResidue(){
+    $$('[data-app-view="buddy"], [data-app-view].is-active').forEach(function(node){
+      if(!node) return;
+      node.classList.remove('fw-view-edge-peek','fw-view-edge-release','fw-view-enter-forward','fw-view-enter-back','fw-view-enter-tab');
+      node.style.transform = '';
+      node.style.opacity = '';
+    });
+    var main = $('#appMain');
+    if(main){
+      main.style.transform = '';
+      main.style.opacity = '';
+      main.scrollLeft = 0;
+    }
+    document.documentElement.classList.remove('fw-buddy-swipe-returning');
+  }
+
   function forceLatestOnOpen(){
     // 进入聊天页时强制定位到最新消息；只在刚进入/换聊天对象时触发，不影响之后向上翻历史。
     scrollToLatest();
@@ -37,6 +54,7 @@
   }
 
   function closeChatToList(){
+    resetMotionResidue();
     if(window.FWAppBuddy && window.FWAppBuddy.closeChat){
       window.FWAppBuddy.closeChat(true);
     }else{
@@ -46,6 +64,10 @@
     }
     var viewNode = $('[data-app-view="buddy"]');
     if(viewNode) viewNode.classList.remove('is-profile');
+    resetMotionResidue();
+    requestAnimationFrame(resetMotionResidue);
+    setTimeout(resetMotionResidue, 80);
+    setTimeout(resetMotionResidue, 260);
   }
 
   function watchChatOpen(){
@@ -81,26 +103,44 @@
       if(!isChatting()) return;
       var touch = e.touches && e.touches[0];
       if(!touch || touch.clientX > 42) return;
-      edgeTouch = {x:touch.clientX, y:touch.clientY};
+      edgeTouch = {x:touch.clientX, y:touch.clientY, at:Date.now()};
+      resetMotionResidue();
+    }, {capture:true, passive:true});
+
+    document.addEventListener('touchmove', function(e){
+      if(!edgeTouch || !isChatting()) return;
+      var touch = e.touches && e.touches[0];
+      if(!touch) return;
+      var dx = touch.clientX - edgeTouch.x;
+      var dy = Math.abs(touch.clientY - edgeTouch.y);
+      if(dx > 10 && dy <= Math.max(55, dx * .9)) resetMotionResidue();
     }, {capture:true, passive:true});
 
     document.addEventListener('touchend', function(e){
       if(!edgeTouch || !isChatting()){
         edgeTouch = null;
+        resetMotionResidue();
         return;
       }
       var touch = e.changedTouches && e.changedTouches[0];
-      if(!touch){ edgeTouch = null; return; }
+      if(!touch){ edgeTouch = null; resetMotionResidue(); return; }
       var dx = touch.clientX - edgeTouch.x;
       var dy = Math.abs(touch.clientY - edgeTouch.y);
+      var elapsed = Date.now() - edgeTouch.at;
       edgeTouch = null;
-      if(dx >= 72 && dy <= 55){
+      resetMotionResidue();
+      if(dx >= 72 && dy <= 55 && elapsed <= 900){
         e.preventDefault();
         e.stopPropagation();
         if(e.stopImmediatePropagation) e.stopImmediatePropagation();
         closeChatToList();
       }
     }, {capture:true, passive:false});
+
+    document.addEventListener('touchcancel', function(){
+      edgeTouch = null;
+      resetMotionResidue();
+    }, {capture:true, passive:true});
   }
 
   function boot(){
