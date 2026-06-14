@@ -52,13 +52,27 @@
     if(next !== current) window.history.replaceState(null, document.title, next);
   }
 
+  function resetProfileHome(){
+    var panel = $('[data-profile-panel]');
+    var back = panel && $('[data-profile-back]', panel);
+    if(back){
+      try{ back.click(); }catch(e){}
+    }
+  }
+
+  function scheduleProfileHomeReset(){
+    [0, 80, 220].forEach(function(delay){ setTimeout(resetProfileHome, delay); });
+  }
+
   function patchSetView(){
     if(!window.FWApp || window.FWApp.__mobileCoreFixesPatched) return false;
     var originalSetView = window.FWApp.setView;
     if(typeof originalSetView !== 'function') return false;
     window.FWApp.setView = function(name){
       var view = normalizeView(name || 'nav');
+      var previousView = this && this.state && this.state.view || '';
       var result = originalSetView.call(this, view);
+      if(view === 'profile' && previousView !== 'profile') scheduleProfileHomeReset();
       replaceHashForView(view);
       return result;
     };
@@ -182,6 +196,10 @@
     loadScriptOnce('__FW_MOBILE_TRANSITIONS__', 'data-mobile-transitions', './mobile-transitions.js?v=mobile-transitions-20260614-1');
   }
 
+  function ensurePriorityFixes(){
+    loadScriptOnce('__FW_MOBILE_PRIORITY_FIXES__', 'data-mobile-priority-fixes', './mobile-priority-fixes.js?v=mobile-priority-fixes-20260614-1');
+  }
+
   function requestServiceWorkerRefresh(){
     if(!('serviceWorker' in navigator)) return;
     try{
@@ -200,6 +218,7 @@
     ensureFeedDetailReturnBridge();
     ensureMobileSwipeBack();
     ensureMobileTransitions();
+    ensurePriorityFixes();
     requestServiceWorkerRefresh();
   }
 
