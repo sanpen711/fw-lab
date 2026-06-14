@@ -170,6 +170,10 @@
     loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4');
   }
 
+  function ensureFeedDetailReturnBridge(){
+    loadScriptOnce('__FW_MOBILE_FEED_DETAIL_RETURN__', 'data-mobile-feed-detail-return', './feed-detail-return.js?v=mobile-feed-detail-return-20260614-1');
+  }
+
   function ensureMobileSwipeBack(){
     loadScriptOnce('__FW_MOBILE_SWIPE_BACK__', 'data-mobile-swipe-back', './mobile-swipe-back.js?v=mobile-swipe-back-20260614-2');
   }
@@ -193,6 +197,7 @@
     bindClickSync();
     ensureReportBridge();
     ensureBuddyChatReadFix();
+    ensureFeedDetailReturnBridge();
     ensureMobileSwipeBack();
     ensureMobileTransitions();
     requestServiceWorkerRefresh();
