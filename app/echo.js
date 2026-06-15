@@ -5,10 +5,8 @@
   var loaded = false;
   var lastLoadAt = 0;
   var badgeTimer = 0;
-  var echoDetailReturn = false;
   var pendingEchoFocus = null;
-  var setViewPatched = false;
-  var ECHO_RETURN_KEY = 'fw_mobile_echo_detail_return';
+  var FEED_RETURN_KEY = 'fw_mobile_feed_detail_return_view';
   var ECHO_TYPES = ['like','same','tissue','comment','chat_agree','system'];
 
   function app(){ return window.FWApp; }
@@ -18,8 +16,7 @@
   function fail(result, message){ if(result && result.error) throw new Error(message || result.error.message || '读取失败'); return result ? result.data : null; }
   function isEchoType(type){ return ECHO_TYPES.indexOf(String(type || '')) >= 0; }
   function isPostNotice(notice){ return !!(notice && notice.target_id && (notice.target_type === 'post' || ['like','same','tissue','comment'].indexOf(notice.type) >= 0)); }
-  function setReturnFlag(value){ try{ if(value) sessionStorage.setItem(ECHO_RETURN_KEY, '1'); else sessionStorage.removeItem(ECHO_RETURN_KEY); }catch(e){} }
-  function hasReturnFlag(){ try{ return sessionStorage.getItem(ECHO_RETURN_KEY) === '1'; }catch(e){ return false; } }
+  function writeFeedReturnView(value){ try{ if(value) sessionStorage.setItem(FEED_RETURN_KEY, value); else sessionStorage.removeItem(FEED_RETURN_KEY); }catch(e){} }
 
   function timeText(value){
     if(!value) return '刚刚';
@@ -223,63 +220,27 @@
     }
   }
 
-  function patchSetView(){
-    var fw = app();
-    if(setViewPatched || !fw || typeof fw.setView !== 'function') return;
-    var originalSetView = fw.setView.bind(fw);
-    fw.setView = function(name){
-      if((echoDetailReturn || hasReturnFlag()) && name === 'square' && fw.state && fw.state.view === 'square-detail'){
-        echoDetailReturn = false;
-        setReturnFlag(false);
-        return originalSetView('echo');
-      }
-      return originalSetView.apply(fw, arguments);
-    };
-    setViewPatched = true;
-  }
-
   async function openPost(postId, options){
     options = options || {};
     if(!postId){ app().toast('这条回声暂时没有对应帖子。'); return; }
     if(options.noticeId) markRead([options.noticeId]);
-    patchSetView();
-    echoDetailReturn = true;
-    setReturnFlag(true);
+    writeFeedReturnView('echo');
     pendingEchoFocus = {postId:String(postId), actorId:options.actorId || '', createdAt:options.createdAt || '', openComments:!!options.openComments};
     app().setView('square');
     try{
       if(window.FWAppFeed && window.FWAppFeed.load) await window.FWAppFeed.load(false, {silent:true});
       if(window.FWAppFeed && window.FWAppFeed.openDetail){
-        window.FWAppFeed.openDetail(postId, {openComments:!!options.openComments, from:'echo'});
+        window.FWAppFeed.openDetail(postId, {openComments:!!options.openComments, from:'echo', returnView:'echo'});
         setTimeout(focusEchoTarget, 220);
         setTimeout(focusEchoTarget, 700);
       }else app().toast('帖子可能还在加载中，请稍后再试。');
     }catch(e){ console.warn('[FW mobile app] open echo post failed', e); app().toast('帖子打开失败，请稍后再试。'); }
   }
 
-  function returnToEcho(){
-    echoDetailReturn = false;
-    setReturnFlag(false);
-    app().setView('echo');
-    if(window.FWAppEcho && typeof window.FWAppEcho.ensureLoaded === 'function') window.FWAppEcho.ensureLoaded();
-  }
-
   function bind(){
     if(bound) return;
     bound = true;
     document.addEventListener('click', function(e){
-      var detailBack = e.target.closest && e.target.closest('[data-square-detail-back]');
-      if(detailBack && (echoDetailReturn || hasReturnFlag())){
-        e.preventDefault();
-        e.stopPropagation();
-        setTimeout(returnToEcho, 0);
-        setTimeout(returnToEcho, 80);
-        return;
-      }
-    }, true);
-    document.addEventListener('click', function(e){
-      var detailBack = e.target.closest && e.target.closest('[data-square-detail-back]');
-      if(detailBack && hasReturnFlag()){ setTimeout(returnToEcho, 120); return; }
       var refresh = e.target.closest && e.target.closest('[data-mobile-echo-refresh]');
       if(refresh){ e.preventDefault(); loaded = false; load(true); return; }
       var markAll = e.target.closest && e.target.closest('[data-mobile-echo-mark-all]');
@@ -306,7 +267,7 @@
     document.addEventListener('visibilitychange', function(){ if(!document.hidden) refreshBadges(); });
   }
 
-  function init(){ injectStyle(); patchSetView(); bind(); refreshBadges(); clearInterval(badgeTimer); badgeTimer = setInterval(refreshBadges, 45000); }
+  function init(){ injectStyle(); bind(); refreshBadges(); clearInterval(badgeTimer); badgeTimer = setInterval(refreshBadges, 45000); }
   function ensureLoaded(){ load(false); }
   window.FWAppEcho = {init:init, load:load, ensureLoaded:ensureLoaded, refreshBadges:refreshBadges, openPost:openPost, markRead:markRead};
 })();
