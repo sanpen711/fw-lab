@@ -1,9 +1,11 @@
-// F.w 研究所：统一帖子详情返回来源，修复回声查看帖子返回链路
+// F.w 研究所：统一帖子详情返回来源
+// 作用：让精神广场详情页只通过一个入口处理返回来源，避免回声和帖子详情重复接管。
 (function(){
   if(window.__FW_MOBILE_FEED_DETAIL_RETURN__) return;
   window.__FW_MOBILE_FEED_DETAIL_RETURN__ = true;
 
   var RETURN_KEY = 'fw_mobile_feed_detail_return_view';
+  var OLD_ECHO_RETURN_KEY = 'fw_mobile_echo_detail_return';
   var patchedFeed = false;
   var patchedView = false;
   var bound = false;
@@ -21,8 +23,12 @@
   }
 
   function readReturnView(){
-    try{ return normalizeReturnView(sessionStorage.getItem(RETURN_KEY)); }
-    catch(e){ return ''; }
+    try{
+      var direct = normalizeReturnView(sessionStorage.getItem(RETURN_KEY));
+      if(direct) return direct;
+      if(sessionStorage.getItem(OLD_ECHO_RETURN_KEY) === '1') return 'echo';
+    }catch(e){}
+    return '';
   }
 
   function writeReturnView(value){
@@ -30,6 +36,7 @@
     try{
       if(value) sessionStorage.setItem(RETURN_KEY, value);
       else sessionStorage.removeItem(RETURN_KEY);
+      sessionStorage.removeItem(OLD_ECHO_RETURN_KEY);
     }catch(e){}
   }
 
