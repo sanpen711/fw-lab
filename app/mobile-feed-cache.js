@@ -4,7 +4,7 @@
 
   var CACHE_PREFIX = 'fw_mobile_feed_cache_v1:';
   var PUBLIC_KEY = CACHE_PREFIX + 'public';
-  var TTL = 2 * 60 * 1000;
+  var TTL = 30 * 24 * 60 * 60 * 1000;
   var MAX_POSTS = 80;
   var MAX_COMMENTS_PER_POST = 40;
   var patched = false;
