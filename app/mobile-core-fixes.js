@@ -205,7 +205,7 @@
   }
 
   function ensureFeedCache(){
-    loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260616-1');
+    loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260616-2');
   }
 
   function requestServiceWorkerRefresh(){
