@@ -5,6 +5,7 @@
   window.__FW_MOBILE_FEED_CACHE__ = true;
 
   var CACHE_PREFIX = 'fw_mobile_feed_cache_v1:';
+  var PUBLIC_KEY = CACHE_PREFIX + 'public';
   var TTL = 2 * 60 * 1000;
   var MAX_POSTS = 80;
   var MAX_COMMENTS_PER_POST = 40;
@@ -30,14 +31,27 @@
     catch(e){ return null; }
   }
 
+  function parseCache(raw){
+    if(!raw) return null;
+    var data = JSON.parse(raw);
+    if(!data || !Array.isArray(data.posts) || !data.posts.length) return null;
+    if(now() - Number(data.at || 0) > TTL) return null;
+    return data;
+  }
+
   function readCache(){
     try{
-      var raw = window.localStorage && localStorage.getItem(cacheKey());
-      if(!raw) return null;
-      var data = JSON.parse(raw);
-      if(!data || !Array.isArray(data.posts)) return null;
-      if(now() - Number(data.at || 0) > TTL) return null;
-      return data;
+      if(!window.localStorage) return null;
+      var keys = [cacheKey(), PUBLIC_KEY, CACHE_PREFIX + 'anon'];
+      var seen = {};
+      for(var i = 0; i < keys.length; i += 1){
+        var key = keys[i];
+        if(!key || seen[key]) continue;
+        seen[key] = true;
+        var data = parseCache(localStorage.getItem(key));
+        if(data) return data;
+      }
+      return null;
     }catch(e){
       return null;
     }
@@ -89,7 +103,9 @@
     try{
       var rows = fw.state.posts.slice(0, MAX_POSTS).map(cleanPost).filter(Boolean);
       if(!rows.length) return;
-      localStorage.setItem(cacheKey(), JSON.stringify({at:now(), posts:rows}));
+      var payload = JSON.stringify({at:now(), posts:rows});
+      localStorage.setItem(cacheKey(), payload);
+      localStorage.setItem(PUBLIC_KEY, payload);
     }catch(e){}
   }
 
