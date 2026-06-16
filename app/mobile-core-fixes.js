@@ -204,6 +204,10 @@
     loadScriptOnce('__FW_MOBILE_MEDIA_CACHE__', 'data-mobile-media-cache', './mobile-media-cache.js?v=mobile-media-cache-20260616-1');
   }
 
+  function ensureFeedCache(){
+    loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260616-1');
+  }
+
   function requestServiceWorkerRefresh(){
     if(!('serviceWorker' in navigator)) return;
     try{
@@ -224,6 +228,7 @@
     ensureMobileTransitions();
     ensurePriorityFixes();
     ensureMediaCache();
+    ensureFeedCache();
     requestServiceWorkerRefresh();
   }
 
