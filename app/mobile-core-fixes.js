@@ -221,7 +221,7 @@
   }
 
   function ensureFeedCache(){
-    loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260616-5');
+    loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260616-6');
   }
 
   function ensureImagePreview(){
