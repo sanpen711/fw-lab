@@ -200,6 +200,10 @@
     loadScriptOnce('__FW_MOBILE_PRIORITY_FIXES__', 'data-mobile-priority-fixes', './mobile-priority-fixes.js?v=mobile-priority-fixes-20260614-1');
   }
 
+  function ensureMediaCache(){
+    loadScriptOnce('__FW_MOBILE_MEDIA_CACHE__', 'data-mobile-media-cache', './mobile-media-cache.js?v=mobile-media-cache-20260616-1');
+  }
+
   function requestServiceWorkerRefresh(){
     if(!('serviceWorker' in navigator)) return;
     try{
@@ -219,6 +223,7 @@
     ensureMobileSwipeBack();
     ensureMobileTransitions();
     ensurePriorityFixes();
+    ensureMediaCache();
     requestServiceWorkerRefresh();
   }
 
