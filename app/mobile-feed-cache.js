@@ -9,6 +9,7 @@
   var MAX_COMMENTS_PER_POST = 40;
   var patched = false;
   var saveTimer = 0;
+  var refreshing = false;
 
   function app(){ return window.FWApp || null; }
   function feed(){ return window.FWAppFeed || null; }
@@ -20,9 +21,7 @@
     return user && user.id ? String(user.id) : 'anon';
   }
 
-  function cacheKey(){
-    return CACHE_PREFIX + currentUserKey();
-  }
+  function cacheKey(){ return CACHE_PREFIX + currentUserKey(); }
 
   function clone(value){
     try{ return JSON.parse(JSON.stringify(value)); }
@@ -49,10 +48,8 @@
         var data = parseCache(localStorage.getItem(key));
         if(data) return data;
       }
-      return null;
-    }catch(e){
-      return null;
-    }
+    }catch(e){}
+    return null;
   }
 
   function cleanComment(comment){
@@ -90,6 +87,12 @@
     };
   }
 
+  function scanMedia(){
+    if(window.FWMobileMediaCache && typeof window.FWMobileMediaCache.scan === 'function'){
+      try{ window.FWMobileMediaCache.scan(); }catch(e){}
+    }
+  }
+
   function savePostsSoon(){
     clearTimeout(saveTimer);
     saveTimer = setTimeout(savePosts, 300);
@@ -107,50 +110,48 @@
     }catch(e){}
   }
 
-  function showCachedFeed(){
+  function prime(){
     var fw = app();
-    var api = feed();
-    if(!fw || !fw.state || !api || typeof api.renderAll !== 'function') return false;
-    if(fw.state.view !== 'square') return false;
-    if(fw.state.postsLoaded && Array.isArray(fw.state.posts) && fw.state.posts.length) return false;
+    if(!fw || !fw.state) return false;
+    if(fw.state.postsLoaded && Array.isArray(fw.state.posts) && fw.state.posts.length) return true;
     var cached = readCache();
     if(!cached || !cached.posts.length) return false;
     var rows = clone(cached.posts);
     if(!rows || !rows.length) return false;
     fw.state.posts = rows;
     fw.state.postsLoaded = true;
-    api.renderAll();
-    if(window.FWMobileMediaCache && typeof window.FWMobileMediaCache.scan === 'function'){
-      try{ window.FWMobileMediaCache.scan(); }catch(e){}
+    if(fw.state.view === 'square'){
+      var api = feed();
+      if(api && typeof api.renderAll === 'function') api.renderAll();
     }
+    scanMedia();
     return true;
   }
 
-  function patchFeed(){
+  function refresh(){
+    var fw = app();
+    var api = feed();
+    if(refreshing || !fw || !fw.state || fw.state.view !== 'square' || !api || typeof api.load !== 'function') return;
+    refreshing = true;
+    Promise.resolve(api.load(true, {silent:true, preserveScroll:true})).then(function(){
+      savePostsSoon();
+      scanMedia();
+    }).catch(function(){}).then(function(){ refreshing = false; });
+  }
+
+  function patchFeedForSaving(){
     if(patched) return true;
     var api = feed();
     if(!api || typeof api.load !== 'function') return false;
     var originalLoad = api.load;
-
-    api.load = function(force, options){
-      options = options || {};
-      var usedCache = !options.detailPostId && showCachedFeed();
-      var nextForce = usedCache ? true : force;
-      var nextOptions = usedCache ? Object.assign({}, options, {silent:true, preserveScroll:true}) : options;
-      var result = originalLoad.call(this, nextForce, nextOptions);
+    api.load = function(){
+      var result = originalLoad.apply(this, arguments);
       Promise.resolve(result).then(function(){
         savePostsSoon();
-        if(window.FWMobileMediaCache && typeof window.FWMobileMediaCache.scan === 'function'){
-          try{ window.FWMobileMediaCache.scan(); }catch(e){}
-        }
+        scanMedia();
       }).catch(function(){});
       return result;
     };
-
-    api.ensureLoaded = function(){
-      return api.load(false);
-    };
-
     var originalRenderAll = api.renderAll;
     if(typeof originalRenderAll === 'function'){
       api.renderAll = function(){
@@ -159,24 +160,32 @@
         return result;
       };
     }
-
     patched = true;
     return true;
   }
 
   function schedulePatch(){
-    if(patchFeed()) return;
-    [0, 120, 360, 900, 1800].forEach(function(delay){ setTimeout(patchFeed, delay); });
+    if(patchFeedForSaving()) return;
+    [0, 120, 360, 900, 1800].forEach(function(delay){ setTimeout(patchFeedForSaving, delay); });
   }
 
   function bindLifecycle(){
-    document.addEventListener('visibilitychange', function(){ if(!document.hidden) savePostsSoon(); }, {passive:true});
+    document.addEventListener('visibilitychange', function(){
+      if(document.hidden) savePosts();
+      else savePostsSoon();
+    }, {passive:true});
     window.addEventListener('pagehide', savePosts, {passive:true});
   }
 
   function start(){
     schedulePatch();
     bindLifecycle();
+    window.FWMobileFeedCache = {
+      prime:prime,
+      refresh:refresh,
+      save:savePosts,
+      read:readCache
+    };
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
