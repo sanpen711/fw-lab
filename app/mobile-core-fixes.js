@@ -224,6 +224,10 @@
     loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260616-5');
   }
 
+  function ensureImagePreview(){
+    loadScriptOnce('__FW_MOBILE_IMAGE_PREVIEW__', 'data-mobile-image-preview', './mobile-image-preview.js?v=mobile-image-preview-20260616-1');
+  }
+
   function requestServiceWorkerRefresh(){
     if(!('serviceWorker' in navigator)) return;
     try{
@@ -245,6 +249,7 @@
     ensurePriorityFixes();
     ensureMediaCache();
     ensureFeedCache();
+    ensureImagePreview();
     requestServiceWorkerRefresh();
   }
 
