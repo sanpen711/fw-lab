@@ -228,6 +228,10 @@
     loadScriptOnce('__FW_MOBILE_IMAGE_PREVIEW__', 'data-mobile-image-preview', './mobile-image-preview.js?v=mobile-image-preview-20260616-2');
   }
 
+  function ensureModuleCache(){
+    loadScriptOnce('__FW_MOBILE_MODULE_CACHE__', 'data-mobile-module-cache', './mobile-module-cache.js?v=mobile-module-cache-20260616-1');
+  }
+
   function requestServiceWorkerRefresh(){
     if(!('serviceWorker' in navigator)) return;
     try{
@@ -250,6 +254,7 @@
     ensureMediaCache();
     ensureFeedCache();
     ensureImagePreview();
+    ensureModuleCache();
     requestServiceWorkerRefresh();
   }
 
