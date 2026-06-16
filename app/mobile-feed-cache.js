@@ -1,5 +1,3 @@
-// F.w 研究所：精神广场短缓存
-// 作用：进入精神广场时先显示最近一次缓存的帖子列表，再后台刷新服务器数据。
 (function(){
   if(window.__FW_MOBILE_FEED_CACHE__) return;
   window.__FW_MOBILE_FEED_CACHE__ = true;
@@ -115,7 +113,6 @@
     if(!fw || !fw.state || !api || typeof api.renderAll !== 'function') return false;
     if(fw.state.view !== 'square') return false;
     if(fw.state.postsLoaded && Array.isArray(fw.state.posts) && fw.state.posts.length) return false;
-
     var cached = readCache();
     if(!cached || !cached.posts.length) return false;
     var rows = clone(cached.posts);
@@ -137,8 +134,7 @@
 
     api.load = function(force, options){
       options = options || {};
-      var usedCache = false;
-      if(!force) usedCache = showCachedFeed();
+      var usedCache = !options.detailPostId && showCachedFeed();
       var nextForce = usedCache ? true : force;
       var nextOptions = usedCache ? Object.assign({}, options, {silent:true, preserveScroll:true}) : options;
       var result = originalLoad.call(this, nextForce, nextOptions);
@@ -149,6 +145,10 @@
         }
       }).catch(function(){});
       return result;
+    };
+
+    api.ensureLoaded = function(){
+      return api.load(false);
     };
 
     var originalRenderAll = api.renderAll;
