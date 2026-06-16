@@ -15,7 +15,6 @@
   var inFlight = {};
   var activeObjectUrls = [];
 
-  function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
 
   function supported(){
@@ -106,6 +105,14 @@
     return now() - Number(meta.at || 0) <= ttl;
   }
 
+  function hasFreshCache(url, kind){
+    var index = readIndex();
+    var meta = index[url];
+    if(!isFresh(meta)) return false;
+    if(kind && meta.kind && meta.kind !== kind) return true;
+    return true;
+  }
+
   async function cachedBlobUrl(url, kind){
     if(!supported()) return '';
     var index = readIndex();
@@ -116,7 +123,8 @@
       var response = await cache.match(url);
       if(!response || !response.ok) return '';
       var blob = await response.blob();
-      if(!blob || !String(blob.type || '').toLowerCase().indexOf('image/') === 0) return '';
+      var type = String(blob && blob.type || '').toLowerCase();
+      if(!blob || (type && type.indexOf('image/') !== 0 && type.indexOf('application/octet-stream') !== 0)) return '';
       index[url] = Object.assign({}, meta, {last:now(), kind:kind || meta.kind || 'image'});
       writeIndex(index);
       var objectUrl = URL.createObjectURL(blob);
@@ -132,7 +140,7 @@
   }
 
   async function fetchAndStore(url, kind){
-    if(!supported() || inFlight[url]) return;
+    if(!supported() || inFlight[url] || hasFreshCache(url, kind)) return;
     inFlight[url] = true;
     try{
       var request = new Request(url, {mode:'cors', credentials:'omit', cache:'force-cache'});
@@ -179,7 +187,7 @@
       var item = cacheableImage(img);
       if(!item) return;
       applyCachedImage(img, item.url, item.kind);
-      if(prefetchCount < MAX_PREFETCH_PER_SCAN && !inFlight[item.url]){
+      if(prefetchCount < MAX_PREFETCH_PER_SCAN && !inFlight[item.url] && !hasFreshCache(item.url, item.kind)){
         prefetchCount += 1;
         fetchAndStore(item.url, item.kind);
       }
