@@ -1,11 +1,12 @@
 // F.w 研究所：手机端优先修复补丁
-// 作用：补上评论回复回声显示、统一回声角标，并恢复私聊输入提示。
+// 作用：补上评论回复回声显示、统一回声角标，优化发布登录门槛，并恢复私聊输入提示。
 (function(){
   if(window.__FW_MOBILE_PRIORITY_FIXES__) return;
   window.__FW_MOBILE_PRIORITY_FIXES__ = true;
 
   var ECHO_TYPES = ['like','same','tissue','comment','comment_reply','chat_agree','system'];
   var echoPatched = false;
+  var publishGateBound = false;
   var mergeTimer = 0;
   var badgeTimer = 0;
 
@@ -18,6 +19,7 @@
   }
   function app(){ return window.FWApp || null; }
   function client(){ return window.fwDb && window.fwDb.client; }
+  function toast(message){ var fw = app(); if(fw && fw.toast) fw.toast(message); }
 
   async function waitDb(){
     var fw = app();
@@ -25,16 +27,28 @@
     return !!client();
   }
 
+  function storeUser(user){
+    var fw = app();
+    if(user && fw && fw.state && !fw.state.user) fw.state.user = user;
+    return user;
+  }
+
   async function currentUser(){
     var fw = app();
     if(fw && fw.state && fw.state.user) return fw.state.user;
     if(fw && fw.refreshUser){
-      try{ return await fw.refreshUser(); }catch(e){}
+      try{ return storeUser(await fw.refreshUser()); }catch(e){}
     }
     if(window.fwDb && window.fwDb.getCurrentUser){
-      try{ return await window.fwDb.getCurrentUser(); }catch(e){}
+      try{ return storeUser(await window.fwDb.getCurrentUser()); }catch(e){}
     }
     return null;
+  }
+
+  function openLoginProfile(){
+    toast('登录后才能发布内容。');
+    var fw = app();
+    if(fw && fw.setView) fw.setView('profile');
   }
 
   function timeText(value){
@@ -259,11 +273,72 @@
     [0, 180, 600].forEach(function(delay){ setTimeout(polishBuddyInput, delay); });
   }
 
+  function injectPriorityStyle(){
+    if(document.getElementById('fwMobilePriorityFixesStyle')) return;
+    var style = document.createElement('style');
+    style.id = 'fwMobilePriorityFixesStyle';
+    style.textContent = '.mobile-admin-gate{display:none!important}';
+    document.head.appendChild(style);
+  }
+
+  function polishPublishCopy(){
+    var back = $('[data-publish-back-square]');
+    if(back) back.textContent = '‹ 返回广场';
+    var cancel = $('[data-publish-cancel]');
+    if(cancel) cancel.textContent = '放弃发布';
+  }
+
+  function schedulePublishCopyPolish(){
+    [0, 120, 360, 900].forEach(function(delay){ setTimeout(polishPublishCopy, delay); });
+  }
+
+  function bindPublishLoginGate(){
+    if(publishGateBound) return;
+    publishGateBound = true;
+
+    document.addEventListener('click', function(e){
+      var open = e.target && e.target.closest && e.target.closest('[data-publish-open]');
+      if(!open) return;
+      var fw = app();
+      if(fw && fw.state && fw.state.user) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+      currentUser().then(function(user){
+        if(user && user.id){
+          if(window.FWAppPublish && typeof window.FWAppPublish.open === 'function') window.FWAppPublish.open();
+          return;
+        }
+        openLoginProfile();
+      });
+    }, true);
+
+    document.addEventListener('submit', function(e){
+      var form = e.target && e.target.closest && e.target.closest('[data-publish-form]');
+      if(!form) return;
+      var fw = app();
+      if(fw && fw.state && fw.state.user) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+      currentUser().then(function(user){
+        if(user && user.id){
+          form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', {bubbles:true, cancelable:true}));
+          return;
+        }
+        openLoginProfile();
+      });
+    }, true);
+  }
+
   function start(){
+    injectPriorityStyle();
     bindReplyAction();
+    bindPublishLoginGate();
     patchEchoWhenReady();
     scheduleBuddyInputPolish();
-    document.addEventListener('click', scheduleBuddyInputPolish, true);
+    schedulePublishCopyPolish();
+    document.addEventListener('click', function(){ scheduleBuddyInputPolish(); schedulePublishCopyPolish(); }, true);
     document.addEventListener('visibilitychange', function(){ if(!document.hidden){ scheduleMerge(); refreshBadge(); } });
   }
 
