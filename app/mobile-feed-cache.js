@@ -110,16 +110,22 @@
     }catch(e){}
   }
 
+  function hasPosts(){
+    var fw = app();
+    return !!(fw && fw.state && fw.state.postsLoaded && Array.isArray(fw.state.posts) && fw.state.posts.length);
+  }
+
   function prime(){
     var fw = app();
     if(!fw || !fw.state) return false;
-    if(fw.state.postsLoaded && Array.isArray(fw.state.posts) && fw.state.posts.length) return true;
+    if(hasPosts()) return true;
     var cached = readCache();
     if(!cached || !cached.posts.length) return false;
     var rows = clone(cached.posts);
     if(!rows || !rows.length) return false;
     fw.state.posts = rows;
     fw.state.postsLoaded = true;
+    fw.state.postsStale = true;
     if(fw.state.view === 'square'){
       var api = feed();
       if(api && typeof api.renderAll === 'function') api.renderAll();
@@ -133,10 +139,13 @@
     var api = feed();
     if(refreshing || !fw || !fw.state || fw.state.view !== 'square' || !api || typeof api.load !== 'function') return;
     refreshing = true;
+    fw.state.postsStale = false;
     Promise.resolve(api.load(true, {silent:true, preserveScroll:true})).then(function(){
       savePostsSoon();
       scanMedia();
-    }).catch(function(){}).then(function(){ refreshing = false; });
+    }).catch(function(){
+      fw.state.postsStale = true;
+    }).then(function(){ refreshing = false; });
   }
 
   function patchFeedForSaving(){
@@ -144,14 +153,40 @@
     var api = feed();
     if(!api || typeof api.load !== 'function') return false;
     var originalLoad = api.load;
-    api.load = function(){
-      var result = originalLoad.apply(this, arguments);
+    var originalEnsureLoaded = api.ensureLoaded;
+
+    api.load = function(force, options){
+      var fw = app();
+      options = options || {};
+      if(force === true && !options.silent && !options.detailPostId && fw && fw.state){
+        if(fw.state.view === 'square' && hasPosts()){
+          options = Object.assign({}, options, {silent:true, preserveScroll:true});
+        }else if(fw.state.view !== 'square' && fw.state.view !== 'square-detail'){
+          fw.state.postsStale = true;
+          savePostsSoon();
+          return Promise.resolve();
+        }
+      }
+      var result = originalLoad.call(this, force, options);
       Promise.resolve(result).then(function(){
         savePostsSoon();
         scanMedia();
       }).catch(function(){});
       return result;
     };
+
+    api.ensureLoaded = function(){
+      var fw = app();
+      prime();
+      if(fw && fw.state && fw.state.view === 'square' && hasPosts()){
+        if(typeof api.renderAll === 'function') api.renderAll();
+        if(fw.state.postsStale) setTimeout(refresh, 0);
+        return;
+      }
+      if(typeof originalEnsureLoaded === 'function') return originalEnsureLoaded.call(this);
+      return api.load(false);
+    };
+
     var originalRenderAll = api.renderAll;
     if(typeof originalRenderAll === 'function'){
       api.renderAll = function(){
