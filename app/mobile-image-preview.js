@@ -6,7 +6,7 @@
   var image = null;
   var caption = null;
   var openUrl = '';
-  var pushedHistory = false;
+  var fallbackUrl = '';
 
   function isMobileLike(){
     try{
@@ -46,7 +46,7 @@
 
     overlay.addEventListener('click', function(event){
       if(event.target === overlay || event.target.classList.contains('fw-mobile-image-preview-close')){
-        closePreview(true);
+        closePreview();
       }
     });
 
@@ -54,12 +54,14 @@
       event.preventDefault();
     }, {passive:false});
 
-    document.addEventListener('keydown', function(event){
-      if(event.key === 'Escape' && overlay && overlay.classList.contains('show')) closePreview(true);
+    image.addEventListener('error', function(){
+      if(fallbackUrl && image && image.src !== fallbackUrl){
+        image.src = fallbackUrl;
+      }
     });
 
-    window.addEventListener('popstate', function(){
-      if(overlay && overlay.classList.contains('show')) closePreview(false);
+    document.addEventListener('keydown', function(event){
+      if(event.key === 'Escape' && overlay && overlay.classList.contains('show')) closePreview();
     });
 
     return overlay;
@@ -67,7 +69,10 @@
 
   function normalizedUrl(url){
     try{
-      var u = new URL(String(url || ''), window.location.href);
+      var text = String(url || '').trim();
+      if(!text) return '';
+      if(text.indexOf('data:image/') === 0) return text;
+      var u = new URL(text, window.location.href);
       if(u.protocol !== 'http:' && u.protocol !== 'https:' && u.protocol !== 'blob:') return '';
       return u.href;
     }catch(e){
@@ -81,54 +86,42 @@
     if(!link && img && img.closest && !img.closest('.post-card,.detail-comments-card,.bird-feed-mobile,.mobile-bird-detail-view')) return null;
     if(link){
       var linkedImg = link.querySelector && link.querySelector('img');
-      return {
-        original:normalizedUrl(link.getAttribute('href') || ''),
-        display:normalizedUrl((linkedImg && (linkedImg.currentSrc || linkedImg.src)) || link.getAttribute('href') || '')
-      };
+      var href = normalizedUrl(link.getAttribute('href') || '');
+      var current = normalizedUrl((linkedImg && (linkedImg.dataset.fwMediaOriginalSrc || linkedImg.currentSrc || linkedImg.src)) || '');
+      return {original:href || current, display:href || current, fallback:current && current !== href ? current : ''};
     }
     if(img){
-      return {
-        original:normalizedUrl(img.dataset.fwMediaOriginalSrc || img.currentSrc || img.src || ''),
-        display:normalizedUrl(img.currentSrc || img.src || img.dataset.fwMediaOriginalSrc || '')
-      };
+      var original = normalizedUrl(img.dataset.fwMediaOriginalSrc || '');
+      var currentSrc = normalizedUrl(img.currentSrc || img.src || '');
+      return {original:original || currentSrc, display:original || currentSrc, fallback:currentSrc && currentSrc !== original ? currentSrc : ''};
     }
     return null;
   }
 
   function openPreview(item){
     if(!item) return false;
-    var display = item.display || item.original;
-    var original = item.original || item.display;
+    var display = item.display || item.original || item.fallback;
+    var original = item.original || item.display || item.fallback;
     if(!display && !original) return false;
     ensureOverlay();
     openUrl = original || display;
+    fallbackUrl = item.fallback || '';
     image.src = display || original;
     if(caption) caption.href = openUrl;
     overlay.classList.add('show');
     document.documentElement.classList.add('fw-image-preview-open');
     if(document.body) document.body.classList.add('fw-image-preview-open');
-    if(window.history && window.history.pushState && !pushedHistory){
-      try{
-        window.history.pushState({fwImagePreview:true}, document.title, window.location.href);
-        pushedHistory = true;
-      }catch(e){}
-    }
     return true;
   }
 
-  function closePreview(useHistory){
+  function closePreview(){
     if(!overlay || !overlay.classList.contains('show')) return;
     overlay.classList.remove('show');
     document.documentElement.classList.remove('fw-image-preview-open');
     if(document.body) document.body.classList.remove('fw-image-preview-open');
     if(image) image.removeAttribute('src');
     openUrl = '';
-    if(useHistory && pushedHistory && window.history){
-      pushedHistory = false;
-      try{ window.history.back(); }catch(e){}
-      return;
-    }
-    pushedHistory = false;
+    fallbackUrl = '';
   }
 
   function bindClicks(){
@@ -149,7 +142,8 @@
     bindClicks();
     window.FWMobileImagePreview = {
       open:openPreview,
-      close:function(){ closePreview(true); }
+      close:closePreview,
+      isOpen:function(){ return !!(overlay && overlay.classList.contains('show')); }
     };
   }
 
