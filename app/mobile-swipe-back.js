@@ -79,6 +79,12 @@
     return false;
   }
 
+  function stopEvent(event){
+    if(!event) return;
+    try{ event.stopPropagation(); }catch(e){}
+    try{ if(event.stopImmediatePropagation) event.stopImmediatePropagation(); }catch(e){}
+  }
+
   function isEditableOrControl(target){
     return !!(target && target.closest && target.closest('input,textarea,select,[contenteditable="true"],button,a,label'));
   }
@@ -128,7 +134,6 @@
     view = view || currentView();
     var active = activeView();
 
-    // 私聊优先回到搭子列表；搭子一级页再回首页。
     if(view === 'buddy' && isBuddyChatting()){
       if(window.FWAppBuddy && typeof window.FWAppBuddy.closeChat === 'function'){
         window.FWAppBuddy.closeChat(true);
@@ -187,8 +192,11 @@
 
     var horizontal = dx >= MIN_DISTANCE && dx > dy * 1.15;
     if(horizontal && dy <= MAX_VERTICAL && elapsed <= MAX_TIME){
-      goBack(state.view, 'swipe');
-      ensureHistoryGuardSoon();
+      var handled = goBack(state.view, 'swipe');
+      if(handled){
+        stopEvent(event);
+        ensureHistoryGuardSoon();
+      }
     }
   }
 
@@ -259,10 +267,10 @@
   function bind(){
     if(booted) return;
     booted = true;
-    var main = $('#appMain') || document;
-    main.addEventListener('touchstart', onTouchStart, {passive:true});
-    main.addEventListener('touchend', onTouchEnd, {passive:true});
-    main.addEventListener('touchcancel', reset, {passive:true});
+    // 用 document 捕获阶段接管返回手势，防止 feed.js / profile.js 的旧局部滑动先执行，尤其是回声详情返回。
+    document.addEventListener('touchstart', onTouchStart, {passive:true, capture:true});
+    document.addEventListener('touchend', onTouchEnd, {passive:true, capture:true});
+    document.addEventListener('touchcancel', reset, {passive:true, capture:true});
     schedulePatchSetViewForGuard();
     bindAndroidBackGuard();
     bindClicksForGuard();
