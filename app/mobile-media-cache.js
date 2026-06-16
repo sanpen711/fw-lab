@@ -6,10 +6,10 @@
 
   var CACHE_NAME = 'fw-mobile-media-cache-v1';
   var INDEX_KEY = 'fw_mobile_media_cache_index_v1';
-  var MAX_ENTRIES = 180;
+  var MAX_ENTRIES = 500;
   var MAX_PREFETCH_PER_SCAN = 8;
-  var DEFAULT_TTL = 7 * 24 * 60 * 60 * 1000;
-  var LONG_TTL = 21 * 24 * 60 * 60 * 1000;
+  var DEFAULT_TTL = 90 * 24 * 60 * 60 * 1000;
+  var LONG_TTL = 90 * 24 * 60 * 60 * 1000;
   var scanTimer = 0;
   var pruneTimer = 0;
   var inFlight = {};
