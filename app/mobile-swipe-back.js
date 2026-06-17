@@ -175,6 +175,23 @@
     };
   }
 
+  function onTouchMove(event){
+    if(!touchState) return;
+    if(!event.touches || event.touches.length !== 1) return;
+    if(currentView() !== touchState.view) return;
+    if(!(touchState.view === 'buddy' && isBuddyChatting())) return;
+
+    var touch = event.touches[0];
+    if(!touch) return;
+    var dx = touch.clientX - touchState.x;
+    var dy = Math.abs(touch.clientY - touchState.y);
+    var horizontal = dx > 10 && dx > dy * 1.1;
+    if(horizontal && dy <= MAX_VERTICAL){
+      if(event.cancelable) event.preventDefault();
+      stopEvent(event);
+    }
+  }
+
   function onTouchEnd(event){
     if(!touchState) return;
     var state = touchState;
@@ -269,6 +286,7 @@
     booted = true;
     // 用 document 捕获阶段接管返回手势，防止 feed.js / profile.js 的旧局部滑动先执行，尤其是回声详情返回。
     document.addEventListener('touchstart', onTouchStart, {passive:true, capture:true});
+    document.addEventListener('touchmove', onTouchMove, {passive:false, capture:true});
     document.addEventListener('touchend', onTouchEnd, {passive:true, capture:true});
     document.addEventListener('touchcancel', reset, {passive:true, capture:true});
     schedulePatchSetViewForGuard();
