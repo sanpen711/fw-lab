@@ -5,10 +5,11 @@
   window.__FW_MOBILE_SWIPE_BACK__ = true;
   window.__FW_MOBILE_UNIFIED_BACK_ENABLED__ = true;
 
-  var EDGE_LIMIT = 84;
-  var MIN_DISTANCE = 58;
-  var MAX_VERTICAL = 82;
-  var MAX_TIME = 1200;
+  // 这里故意收窄触发区，避免首页和普通横向滑动误触。
+  var EDGE_LIMIT = 36;
+  var MIN_DISTANCE = 74;
+  var MAX_VERTICAL = 54;
+  var MAX_TIME = 850;
   var touchState = null;
   var historyGuardActive = false;
   var suppressGuardOnce = false;
@@ -16,6 +17,7 @@
 
   var FALLBACK_VIEWS = {
     square:'nav',
+    rooms:'nav',
     archive:'nav',
     rules:'nav',
     moderation:'nav',
@@ -37,11 +39,27 @@
   function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
   function app(){ return window.FWApp || null; }
 
+  function isIOS(){
+    var ua = String(navigator.userAgent || '');
+    return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  function isAndroidLike(){
+    var ua = String(navigator.userAgent || '');
+    return /Android|wv/i.test(ua);
+  }
+
   function isLikelyMobileShell(){
     var standalone = !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
     var coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
     var ua = String(navigator.userAgent || '');
     return standalone || coarse || /Android|iPhone|iPad|iPod|Mobile|wv/i.test(ua);
+  }
+
+  function shouldUseHistoryGuard(){
+    // iPhone / iPad 的 PWA 不需要 Android 返回键保护。
+    // 在 iOS 上写入额外 history 反而会让左/右边缘滑动把旧状态滑出来。
+    return isLikelyMobileShell() && isAndroidLike() && !isIOS();
   }
 
   function currentView(){
@@ -130,6 +148,12 @@
     return hasInternalBack(view);
   }
 
+  function shouldBlockEdgeSwipe(view){
+    // 首页也要拦一下左边缘右滑，防止 iOS / 浏览器历史手势把旧页面状态滑出来。
+    if(view === 'nav') return true;
+    return shouldHandleView(view);
+  }
+
   function goBack(view, source){
     view = view || currentView();
     var active = activeView();
@@ -160,18 +184,21 @@
   function reset(){ touchState = null; }
 
   function onTouchStart(event){
-    var view = currentView();
-    if(!shouldHandleView(view)) return;
     if(!event.touches || event.touches.length !== 1) return;
     if(isEditableOrControl(event.target) || isHorizontalControl(event.target)) return;
 
     var touch = event.touches[0];
     if(!touch || touch.clientX > EDGE_LIMIT) return;
+
+    var view = currentView();
+    if(!shouldBlockEdgeSwipe(view)) return;
+
     touchState = {
       x:touch.clientX,
       y:touch.clientY,
       at:Date.now(),
-      view:view
+      view:view,
+      blockOnly:!shouldHandleView(view)
     };
   }
 
@@ -179,13 +206,12 @@
     if(!touchState) return;
     if(!event.touches || event.touches.length !== 1) return;
     if(currentView() !== touchState.view) return;
-    if(!(touchState.view === 'buddy' && isBuddyChatting())) return;
 
     var touch = event.touches[0];
     if(!touch) return;
     var dx = touch.clientX - touchState.x;
     var dy = Math.abs(touch.clientY - touchState.y);
-    var horizontal = dx > 10 && dx > dy * 1.1;
+    var horizontal = dx > 12 && dx > dy * 1.25;
     if(horizontal && dy <= MAX_VERTICAL){
       if(event.cancelable) event.preventDefault();
       stopEvent(event);
@@ -197,7 +223,6 @@
     var state = touchState;
     reset();
 
-    if(!shouldHandleView(state.view)) return;
     if(currentView() !== state.view) return;
     if(!event.changedTouches || event.changedTouches.length !== 1) return;
 
@@ -207,18 +232,18 @@
     var dy = Math.abs(touch.clientY - state.y);
     var elapsed = Date.now() - state.at;
 
-    var horizontal = dx >= MIN_DISTANCE && dx > dy * 1.15;
+    var horizontal = dx >= MIN_DISTANCE && dx > dy * 1.35;
     if(horizontal && dy <= MAX_VERTICAL && elapsed <= MAX_TIME){
+      stopEvent(event);
+      if(state.blockOnly) return;
+      if(!shouldHandleView(state.view)) return;
       var handled = goBack(state.view, 'swipe');
-      if(handled){
-        stopEvent(event);
-        ensureHistoryGuardSoon();
-      }
+      if(handled) ensureHistoryGuardSoon();
     }
   }
 
   function ensureHistoryGuard(){
-    if(!isLikelyMobileShell()) return;
+    if(!shouldUseHistoryGuard()) return;
     if(!window.history || !window.history.pushState || !window.history.replaceState) return;
     if(historyGuardActive || suppressGuardOnce) return;
     try{
@@ -232,12 +257,12 @@
   }
 
   function ensureHistoryGuardSoon(){
-    if(!isLikelyMobileShell()) return;
+    if(!shouldUseHistoryGuard()) return;
     [30, 160, 420].forEach(function(delay){ setTimeout(ensureHistoryGuard, delay); });
   }
 
   function bindAndroidBackGuard(){
-    if(!isLikelyMobileShell()) return;
+    if(!shouldUseHistoryGuard()) return;
     ensureHistoryGuardSoon();
     window.addEventListener('popstate', function(){
       historyGuardActive = false;
@@ -254,6 +279,7 @@
   }
 
   function patchSetViewForGuard(){
+    if(!shouldUseHistoryGuard()) return true;
     var fw = app();
     if(!fw || fw.__mobileUnifiedBackGuardPatched || typeof fw.setView !== 'function') return false;
     var original = fw.setView;
@@ -272,6 +298,7 @@
   }
 
   function bindClicksForGuard(){
+    if(!shouldUseHistoryGuard()) return;
     document.addEventListener('click', function(event){
       var target = event.target;
       if(!target || !target.closest) return;
