@@ -1,15 +1,15 @@
-// F.w 研究所：手机端搭子私聊进入位置与左滑返回修正
+// F.w 研究所：手机端搭子私聊进入位置修正
+// 说明：当前临时关闭搭子私聊自己的左滑返回，只保留点击返回按钮和进入私聊后滚动到底部。
+// 左滑返回先交给 mobile-swipe-back.js 全局返回系统测试。
 (function(){
   if(window.__FW_MOBILE_BUDDY_CHAT_ENTRY_FIX__) return;
   window.__FW_MOBILE_BUDDY_CHAT_ENTRY_FIX__ = true;
 
   var wasChatting = false;
   var activeChatKey = '';
-  var edgeTouch = null;
   var pending = false;
 
   function $(selector, root){ return (root || document).querySelector(selector); }
-  function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
 
   function isChatting(){
     var view = $('[data-app-view="buddy"]');
@@ -29,12 +29,12 @@
   }
 
   function resetMotionResidue(){
-    $$('[data-app-view="buddy"], [data-app-view].is-active').forEach(function(node){
-      if(!node) return;
-      node.classList.remove('fw-view-edge-peek','fw-view-edge-release','fw-view-enter-forward','fw-view-enter-back','fw-view-enter-tab');
-      node.style.transform = '';
-      node.style.opacity = '';
-    });
+    var buddy = $('[data-app-view="buddy"]');
+    if(buddy){
+      buddy.classList.remove('fw-view-edge-peek','fw-view-edge-release','fw-view-enter-forward','fw-view-enter-back','fw-view-enter-tab');
+      buddy.style.transform = '';
+      buddy.style.opacity = '';
+    }
     var main = $('#appMain');
     if(main){
       main.style.transform = '';
@@ -98,49 +98,6 @@
       if(e.stopImmediatePropagation) e.stopImmediatePropagation();
       closeChatToList();
     }, true);
-
-    document.addEventListener('touchstart', function(e){
-      if(!isChatting()) return;
-      var touch = e.touches && e.touches[0];
-      if(!touch || touch.clientX > 42) return;
-      edgeTouch = {x:touch.clientX, y:touch.clientY, at:Date.now()};
-      resetMotionResidue();
-    }, {capture:true, passive:true});
-
-    document.addEventListener('touchmove', function(e){
-      if(!edgeTouch || !isChatting()) return;
-      var touch = e.touches && e.touches[0];
-      if(!touch) return;
-      var dx = touch.clientX - edgeTouch.x;
-      var dy = Math.abs(touch.clientY - edgeTouch.y);
-      if(dx > 10 && dy <= Math.max(55, dx * .9)) resetMotionResidue();
-    }, {capture:true, passive:true});
-
-    document.addEventListener('touchend', function(e){
-      if(!edgeTouch || !isChatting()){
-        edgeTouch = null;
-        resetMotionResidue();
-        return;
-      }
-      var touch = e.changedTouches && e.changedTouches[0];
-      if(!touch){ edgeTouch = null; resetMotionResidue(); return; }
-      var dx = touch.clientX - edgeTouch.x;
-      var dy = Math.abs(touch.clientY - edgeTouch.y);
-      var elapsed = Date.now() - edgeTouch.at;
-      edgeTouch = null;
-      resetMotionResidue();
-      if(dx >= 72 && dy <= 55 && elapsed <= 900){
-        e.preventDefault();
-        e.stopPropagation();
-        if(e.stopImmediatePropagation) e.stopImmediatePropagation();
-        closeChatToList();
-      }
-    }, {capture:true, passive:false});
-
-    document.addEventListener('touchcancel', function(){
-      edgeTouch = null;
-      resetMotionResidue();
-    }, {capture:true, passive:true});
   }
 
   function boot(){
