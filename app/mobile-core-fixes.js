@@ -232,6 +232,10 @@
     loadScriptOnce('__FW_MOBILE_MODULE_CACHE__', 'data-mobile-module-cache', './mobile-module-cache.js?v=mobile-module-cache-20260616-1');
   }
 
+  function ensureGlobalFixes(){
+    loadScriptOnce('__FW_MOBILE_GLOBAL_FIXES_20260617__', 'data-mobile-global-fixes', './mobile-global-fixes.js?v=mobile-global-fixes-20260617-1');
+  }
+
   function requestServiceWorkerRefresh(){
     if(!('serviceWorker' in navigator)) return;
     try{
@@ -255,6 +259,7 @@
     ensureFeedCache();
     ensureImagePreview();
     ensureModuleCache();
+    ensureGlobalFixes();
     requestServiceWorkerRefresh();
   }
 
