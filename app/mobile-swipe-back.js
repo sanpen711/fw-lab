@@ -14,6 +14,8 @@
   var historyGuardActive = false;
   var suppressGuardOnce = false;
   var booted = false;
+  var RETURN_KEY = 'fw_mobile_feed_detail_return_view';
+  var OLD_ECHO_RETURN_KEY = 'fw_mobile_echo_detail_return';
 
   var FALLBACK_VIEWS = {
     square:'nav',
@@ -38,6 +40,58 @@
   function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
   function app(){ return window.FWApp || null; }
+
+  function normalizeReturnView(value){
+    value = String(value || '').trim();
+    if(value === 'echo') return 'echo';
+    if(value === 'buddy') return 'buddy';
+    if(value === 'profile') return 'profile';
+    if(value === 'square') return 'square';
+    return '';
+  }
+
+  function readFeedReturnView(){
+    try{
+      var direct = normalizeReturnView(sessionStorage.getItem(RETURN_KEY));
+      if(direct) return direct;
+      if(sessionStorage.getItem(OLD_ECHO_RETURN_KEY) === '1') return 'echo';
+    }catch(e){}
+    return '';
+  }
+
+  function clearFeedReturnView(){
+    try{
+      sessionStorage.removeItem(RETURN_KEY);
+      sessionStorage.removeItem(OLD_ECHO_RETURN_KEY);
+    }catch(e){}
+  }
+
+  function refreshReturnTarget(name){
+    if(name === 'echo' && window.FWAppEcho){
+      try{ if(typeof window.FWAppEcho.load === 'function') window.FWAppEcho.load(true); }catch(e){}
+      try{ if(typeof window.FWAppEcho.refreshBadges === 'function') window.FWAppEcho.refreshBadges(); }catch(e){}
+      return;
+    }
+    if(name === 'buddy' && window.FWAppBuddy && typeof window.FWAppBuddy.ensureLoaded === 'function'){
+      try{ window.FWAppBuddy.ensureLoaded(); }catch(e){}
+      return;
+    }
+    if(name === 'profile' && window.FWAppProfile && typeof window.FWAppProfile.render === 'function'){
+      try{ window.FWAppProfile.render(); }catch(e){}
+    }
+  }
+
+  function returnFromFeedDetailSource(){
+    var target = readFeedReturnView();
+    if(!target || target === 'square') return false;
+    clearFeedReturnView();
+    if(setView(target)){
+      setTimeout(function(){ refreshReturnTarget(target); }, 0);
+      setTimeout(function(){ refreshReturnTarget(target); }, 180);
+      return true;
+    }
+    return false;
+  }
 
   function isIOS(){
     var ua = String(navigator.userAgent || '');
@@ -157,6 +211,9 @@
   function goBack(view, source){
     view = view || currentView();
     var active = activeView();
+
+    // 回声 / 搭子 / 我的 打开帖子详情时，必须优先回来源页，不能被旧 feed.js 带回精神广场。
+    if(view === 'square-detail' && returnFromFeedDetailSource()) return true;
 
     if(view === 'buddy' && isBuddyChatting()){
       if(window.FWAppBuddy && typeof window.FWAppBuddy.closeChat === 'function'){
