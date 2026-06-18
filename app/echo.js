@@ -39,7 +39,6 @@
     return String(value || '')
       .replace(/\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]/g, '动画表情')
       .replace(/\[\[FW_MEDIA_IMAGE:[A-Za-z0-9+/=]+\]\]/g, '图片')
-      .replace(/\[\[FW_MEDIA_VIDEO:[A-Za-z0-9+/=]+\]\]/g, '视频')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -77,6 +76,25 @@
     return '<span class="list-avatar">' + esc(app().initials(name)) + '</span>';
   }
 
+  function prefetchProfileAvatars(profiles){
+    if(!window.FWMobileMediaCache || typeof window.FWMobileMediaCache.prefetch !== 'function') return;
+    try{
+      var urls = [];
+      Object.keys(profiles || {}).forEach(function(id){
+        var url = profiles[id] && profiles[id].avatar_url || '';
+        if(url) urls.push(url);
+      });
+      if(urls.length) window.FWMobileMediaCache.prefetch(urls, 'avatar');
+    }catch(e){}
+  }
+
+  function scanMediaSoon(){
+    if(window.FWMobileMediaCache && typeof window.FWMobileMediaCache.scan === 'function'){
+      setTimeout(function(){ try{ window.FWMobileMediaCache.scan(); }catch(e){} }, 0);
+      setTimeout(function(){ try{ window.FWMobileMediaCache.scan(); }catch(e){} }, 220);
+    }
+  }
+
   async function fetchProfiles(ids){
     var unique = Array.from(new Set((ids || []).filter(Boolean)));
     if(!unique.length) return {};
@@ -84,6 +102,7 @@
       var rows = fail(await client().from('profiles').select('id,nickname,avatar_url,lab_code').in('id', unique), '资料读取失败') || [];
       var map = {};
       rows.forEach(function(row){ map[row.id] = row; });
+      prefetchProfileAvatars(map);
       return map;
     }catch(e){ return {}; }
   }
@@ -162,7 +181,7 @@
   async function load(force){
     var list = $('[data-echo-list]');
     if(!list) return;
-    if(!force && loaded && Date.now() - lastLoadAt < 15000){ refreshBadges(); return; }
+    if(!force && loaded && Date.now() - lastLoadAt < 15000){ refreshBadges(); scanMediaSoon(); return; }
     list.innerHTML = '<div class="loading">正在读取回声...</div>';
     try{
       if(!(await app().waitForDb())) throw new Error('暂时无法连接数据服务。');
@@ -174,6 +193,7 @@
       var profiles = await fetchProfiles(rows.map(function(row){ return row.actor_id; }));
       var toolbar = '<div class="mobile-echo-toolbar"><b>回声通知</b><div class="mobile-echo-actions">' + (unreadIds.length ? '<button class="mobile-echo-mark-all" type="button" data-mobile-echo-mark-all>全部已读</button>' : '') + '<button class="mobile-echo-refresh" type="button" data-mobile-echo-refresh>刷新</button></div></div>';
       list.innerHTML = toolbar + (rows.length ? rows.map(function(row){ return noticeHtml(row, profiles[row.actor_id] || {}); }).join('') : '<div class="empty">暂时没有新的回声。安静也是一种运行状态。</div>');
+      scanMediaSoon();
       setEchoBadge(unreadIds.length);
       refreshBadges();
       loaded = true;
