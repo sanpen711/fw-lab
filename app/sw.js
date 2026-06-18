@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260618-5';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260618-6';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -26,6 +26,7 @@ const APP_SHELL = [
   appPath('buddy-chat-scroll-fix.js'),
   appPath('buddy-contacts-actions.js'),
   appPath('buddy-chat-entry-fix.js'),
+  appPath('mobile-buddy-chat-swipe.js'),
   assetPath('fw-emoji-panel.js'),
   assetPath('icons/apple-touch-icon.png'),
   assetPath('icons/icon-192.png'),
