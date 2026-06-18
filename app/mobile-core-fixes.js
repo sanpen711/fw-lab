@@ -229,7 +229,7 @@
   }
 
   function ensureModuleCache(){
-    loadScriptOnce('__FW_MOBILE_MODULE_CACHE__', 'data-mobile-module-cache', './mobile-module-cache.js?v=mobile-module-cache-20260616-1');
+    loadScriptOnce('__FW_MOBILE_MODULE_CACHE__', 'data-mobile-module-cache', './mobile-module-cache.js?v=mobile-module-cache-20260618-visible-1');
   }
 
   function ensureGlobalFixes(){
