@@ -5,11 +5,14 @@
   var CACHE_PREFIX = 'fw_mobile_feed_cache_v1:';
   var PUBLIC_KEY = CACHE_PREFIX + 'public';
   var TTL = 30 * 24 * 60 * 60 * 1000;
+  var REFRESH_THROTTLE = 25 * 1000;
   var MAX_POSTS = 80;
   var MAX_COMMENTS_PER_POST = 40;
   var patched = false;
   var saveTimer = 0;
   var refreshing = false;
+  var warming = false;
+  var lastRefreshAt = 0;
 
   function app(){ return window.FWApp || null; }
   function feed(){ return window.FWAppFeed || null; }
@@ -115,6 +118,12 @@
     return !!(fw && fw.state && fw.state.postsLoaded && Array.isArray(fw.state.posts) && fw.state.posts.length);
   }
 
+  function markFresh(){
+    lastRefreshAt = now();
+    var fw = app();
+    if(fw && fw.state) fw.state.postsStale = false;
+  }
+
   function prime(){
     var fw = app();
     if(!fw || !fw.state) return false;
@@ -138,14 +147,44 @@
     var fw = app();
     var api = feed();
     if(refreshing || !fw || !fw.state || fw.state.view !== 'square' || !api || typeof api.load !== 'function') return;
+    if(hasPosts() && now() - lastRefreshAt < REFRESH_THROTTLE) return;
     refreshing = true;
     fw.state.postsStale = false;
     Promise.resolve(api.load(true, {silent:true, preserveScroll:true})).then(function(){
+      markFresh();
       savePostsSoon();
       scanMedia();
     }).catch(function(){
       fw.state.postsStale = true;
     }).then(function(){ refreshing = false; });
+  }
+
+  function warm(reason){
+    var fw = app();
+    var api = feed();
+    if(warming || hasPosts() || !fw || !fw.state || !api || typeof api.load !== 'function') return;
+    warming = true;
+    var wait = fw.waitForDb ? fw.waitForDb(4500) : Promise.resolve(true);
+    Promise.resolve(wait).then(function(ok){
+      if(!ok || hasPosts()) return;
+      return api.load(false, {silent:true, preserveScroll:true, prewarm:true});
+    }).then(function(){
+      if(hasPosts()){
+        markFresh();
+        savePostsSoon();
+        scanMedia();
+      }
+    }).catch(function(e){
+      var state = fw && fw.state;
+      if(state) state.postsStale = true;
+      console.warn('[FW mobile feed cache] warm failed', e);
+    }).then(function(){ warming = false; });
+  }
+
+  function scheduleWarm(){
+    [700, 1600, 3200].forEach(function(delay){
+      setTimeout(function(){ warm('boot'); }, delay);
+    });
   }
 
   function patchFeedForSaving(){
@@ -169,6 +208,7 @@
       }
       var result = originalLoad.call(this, force, options);
       Promise.resolve(result).then(function(){
+        if(force || options.prewarm) markFresh();
         savePostsSoon();
         scanMedia();
       }).catch(function(){});
@@ -180,7 +220,7 @@
       prime();
       if(fw && fw.state && fw.state.view === 'square' && hasPosts()){
         if(typeof api.renderAll === 'function') api.renderAll();
-        if(fw.state.postsStale) setTimeout(refresh, 0);
+        if(fw.state.postsStale || now() - lastRefreshAt >= REFRESH_THROTTLE) setTimeout(refresh, 120);
         return;
       }
       if(typeof originalEnsureLoaded === 'function') return originalEnsureLoaded.call(this);
@@ -207,17 +247,19 @@
   function bindLifecycle(){
     document.addEventListener('visibilitychange', function(){
       if(document.hidden) savePosts();
-      else savePostsSoon();
+      else { savePostsSoon(); setTimeout(function(){ warm('visible'); }, 600); }
     }, {passive:true});
     window.addEventListener('pagehide', savePosts, {passive:true});
   }
 
   function start(){
     schedulePatch();
+    scheduleWarm();
     bindLifecycle();
     window.FWMobileFeedCache = {
       prime:prime,
       refresh:refresh,
+      warm:warm,
       save:savePosts,
       read:readCache
     };
