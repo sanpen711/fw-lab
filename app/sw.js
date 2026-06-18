@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260618-3';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260618-4';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -54,6 +54,7 @@ const APP_SHELL = [
   appPath('mobile-image-preview.js'),
   appPath('mobile-module-cache.js'),
   appPath('mobile-global-fixes.js'),
+  appPath('mobile-cache-settings.js'),
   appPath('manifest.webmanifest')
 ];
 
