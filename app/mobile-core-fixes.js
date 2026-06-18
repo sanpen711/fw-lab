@@ -217,11 +217,11 @@
   }
 
   function ensureMediaCache(){
-    loadScriptOnce('__FW_MOBILE_MEDIA_CACHE__', 'data-mobile-media-cache', './mobile-media-cache.js?v=mobile-media-cache-20260616-2');
+    loadScriptOnce('__FW_MOBILE_MEDIA_CACHE__', 'data-mobile-media-cache', './mobile-media-cache.js?v=mobile-media-cache-20260618-avatar-1');
   }
 
   function ensureFeedCache(){
-    loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260618-speed-1');
+    loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260618-speed-2');
   }
 
   function ensureImagePreview(){
