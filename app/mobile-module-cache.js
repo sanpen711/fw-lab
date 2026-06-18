@@ -1,12 +1,12 @@
 // F.w 研究所：手机端页面数据缓存
-// 作用：为观鸟台、回声、搭子列表、学术研讨提供本地快速显示；真实状态仍以后端静默刷新为准。
+// 作用：为观鸟台、回声、搭子、学术研讨提供本地快速显示；真实状态仍以后端静默刷新为准。
 (function(){
   if(window.__FW_MOBILE_MODULE_CACHE__) return;
   window.__FW_MOBILE_MODULE_CACHE__ = true;
 
   var PREFIX = 'fw_mobile_module_cache_v1:';
   var DAY = 24 * 60 * 60 * 1000;
-  var SAVE_DELAY = 360;
+  var SAVE_DELAY = 260;
   var restoreTimers = {};
   var saveTimers = {};
   var patched = {};
@@ -35,8 +35,7 @@
       selector:'[data-buddy-list]',
       loading:/正在读取搭子/,
       ttl:30 * DAY,
-      blockPreviewClicks:true,
-      canUse:function(){ return activeBuddyTab() !== 'messages'; }
+      blockPreviewClicks:true
     },
     {
       name:'rooms',
@@ -90,7 +89,7 @@
     if(!html || html.length < 20) return true;
     if(module.loading && module.loading.test(text)) return true;
     if(/读取失败|暂时失败|请稍后|正在读取|正在打开|正在搜索/.test(text)) return true;
-    if(module.name === 'buddy' && activeBuddyTab() === 'messages') return true;
+    if(module.name === 'buddy' && /暂时还没有搭子消息|先去“新的搭子”/.test(text)) return false;
     return false;
   }
 
@@ -104,6 +103,7 @@
     try{
       localStorage.setItem(key(module), JSON.stringify({
         at:now(),
+        tab:module.name === 'buddy' ? activeBuddyTab() : '',
         html:html,
         text:text.slice(0, 180)
       }));
@@ -138,6 +138,11 @@
     if(status) status.textContent = '';
     scanMedia();
     return true;
+  }
+
+  function restoreByName(name){
+    var module = MODULES.find(function(item){ return item.name === name; });
+    return module ? restore(module) : false;
   }
 
   function shouldRestore(module){
@@ -224,6 +229,34 @@
     });
   }
 
+  function viewToModule(view){
+    if(view === 'bird') return 'bird';
+    if(view === 'echo') return 'echo';
+    if(view === 'buddy') return 'buddy';
+    if(view === 'rooms') return 'rooms';
+    return '';
+  }
+
+  function bindEarlyRestore(){
+    document.addEventListener('click', function(event){
+      var target = event.target;
+      if(!target || !target.closest) return;
+      var opener = target.closest('[data-app-nav],[data-app-open]');
+      if(!opener || !opener.dataset) return;
+      var view = opener.dataset.appNav || opener.dataset.appOpen || '';
+      var moduleName = viewToModule(view);
+      if(!moduleName) return;
+      setTimeout(function(){ restoreByName(moduleName); }, 0);
+      setTimeout(function(){ restoreByName(moduleName); }, 80);
+    }, true);
+
+    window.addEventListener('hashchange', function(){
+      var view = String(window.location.hash || '').replace(/^#/, '');
+      var moduleName = viewToModule(view);
+      if(moduleName) setTimeout(function(){ restoreByName(moduleName); }, 80);
+    });
+  }
+
   function bindPreviewClickGuard(){
     document.addEventListener('click', function(event){
       var target = event.target;
@@ -257,10 +290,11 @@
   function start(){
     patchAll();
     [120, 500, 1500, 3000].forEach(function(delay){ setTimeout(patchAll, delay); });
+    bindEarlyRestore();
     bindPreviewClickGuard();
     bindLifecycle();
     window.FWMobileModuleCache = {
-      restore:function(name){ var module = MODULES.find(function(item){ return item.name === name; }); return module ? restore(module) : false; },
+      restore:restoreByName,
       save:function(name){ MODULES.filter(function(item){ return !name || item.name === name; }).forEach(save); },
       patch:patchAll
     };
