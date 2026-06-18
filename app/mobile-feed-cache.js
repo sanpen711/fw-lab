@@ -90,7 +90,32 @@
     };
   }
 
+  function avatarUrlsFromPosts(posts){
+    var urls = [];
+    var seen = {};
+    (posts || []).forEach(function(post){
+      var postUrl = post && (post.authorAvatar || post.avatar_url || '');
+      if(postUrl && !seen[postUrl]){ seen[postUrl] = true; urls.push(postUrl); }
+      (post && post.comments || []).forEach(function(comment){
+        var commentUrl = comment && (comment.authorAvatar || comment.avatar_url || '');
+        if(commentUrl && !seen[commentUrl]){ seen[commentUrl] = true; urls.push(commentUrl); }
+        (comment && comment.replies || []).forEach(function(reply){
+          var replyUrl = reply && (reply.authorAvatar || reply.avatar_url || '');
+          if(replyUrl && !seen[replyUrl]){ seen[replyUrl] = true; urls.push(replyUrl); }
+        });
+      });
+    });
+    return urls;
+  }
+
+  function prefetchAvatars(posts){
+    if(window.FWMobileMediaCache && typeof window.FWMobileMediaCache.prefetch === 'function'){
+      try{ window.FWMobileMediaCache.prefetch(avatarUrlsFromPosts(posts || (app() && app().state && app().state.posts) || []), 'avatar'); }catch(e){}
+    }
+  }
+
   function scanMedia(){
+    prefetchAvatars();
     if(window.FWMobileMediaCache && typeof window.FWMobileMediaCache.scan === 'function'){
       try{ window.FWMobileMediaCache.scan(); }catch(e){}
     }
@@ -110,6 +135,7 @@
       var payload = JSON.stringify({at:now(), posts:rows});
       localStorage.setItem(cacheKey(), payload);
       localStorage.setItem(PUBLIC_KEY, payload);
+      prefetchAvatars(rows);
     }catch(e){}
   }
 
@@ -127,7 +153,10 @@
   function prime(){
     var fw = app();
     if(!fw || !fw.state) return false;
-    if(hasPosts()) return true;
+    if(hasPosts()){
+      prefetchAvatars(fw.state.posts);
+      return true;
+    }
     var cached = readCache();
     if(!cached || !cached.posts.length) return false;
     var rows = clone(cached.posts);
@@ -135,6 +164,7 @@
     fw.state.posts = rows;
     fw.state.postsLoaded = true;
     fw.state.postsStale = true;
+    prefetchAvatars(rows);
     if(fw.state.view === 'square'){
       var api = feed();
       if(api && typeof api.renderAll === 'function') api.renderAll();
@@ -152,6 +182,7 @@
     fw.state.postsStale = false;
     Promise.resolve(api.load(true, {silent:true, preserveScroll:true})).then(function(){
       markFresh();
+      prefetchAvatars(fw.state.posts || []);
       savePostsSoon();
       scanMedia();
     }).catch(function(){
@@ -171,6 +202,7 @@
     }).then(function(){
       if(hasPosts()){
         markFresh();
+        prefetchAvatars(fw.state.posts || []);
         savePostsSoon();
         scanMedia();
       }
@@ -209,6 +241,7 @@
       var result = originalLoad.call(this, force, options);
       Promise.resolve(result).then(function(){
         if(force || options.prewarm) markFresh();
+        prefetchAvatars((fw && fw.state && fw.state.posts) || []);
         savePostsSoon();
         scanMedia();
       }).catch(function(){});
@@ -220,6 +253,7 @@
       prime();
       if(fw && fw.state && fw.state.view === 'square' && hasPosts()){
         if(typeof api.renderAll === 'function') api.renderAll();
+        prefetchAvatars(fw.state.posts || []);
         if(fw.state.postsStale || now() - lastRefreshAt >= REFRESH_THROTTLE) setTimeout(refresh, 120);
         return;
       }
@@ -231,6 +265,7 @@
     if(typeof originalRenderAll === 'function'){
       api.renderAll = function(){
         var result = originalRenderAll.apply(this, arguments);
+        prefetchAvatars((app() && app().state && app().state.posts) || []);
         savePostsSoon();
         return result;
       };
