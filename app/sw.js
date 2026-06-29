@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260629-stability-cleanup-1';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260629-buddy-return-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -20,6 +20,7 @@ const APP_SHELL = [
   appPath('buddy.js'),
   appPath('buddy-read-tweaks.js'),
   appPath('buddy-chat-read-fix.js'),
+  appPath('buddy-return-stability.js'),
   appPath('buddy-chat-tweaks.js'),
   appPath('buddy-chat-polish.js'),
   appPath('buddy-chat-bottom-fix.js'),
