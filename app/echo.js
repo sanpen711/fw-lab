@@ -9,7 +9,7 @@
   var FEED_RETURN_KEY = 'fw_mobile_feed_detail_return_view';
   var PROFILE_CACHE_KEY = 'fw_mobile_echo_profile_cache_v1';
   var PROFILE_CACHE_LIMIT = 260;
-  var ECHO_TYPES = ['like','same','tissue','comment','chat_agree','system'];
+  var ECHO_TYPES = ['like','same','tissue','comment','comment_reply','chat_agree','system'];
 
   function app(){ return window.FWApp; }
   function $(selector, root){ return app().$(selector, root); }
@@ -17,7 +17,12 @@
   function client(){ return app().db() && app().db().client; }
   function fail(result, message){ if(result && result.error) throw new Error(message || result.error.message || '读取失败'); return result ? result.data : null; }
   function isEchoType(type){ return ECHO_TYPES.indexOf(String(type || '')) >= 0; }
-  function isPostNotice(notice){ return !!(notice && notice.target_id && (notice.target_type === 'post' || ['like','same','tissue','comment'].indexOf(notice.type) >= 0)); }
+  function postTargetId(notice){ return String((notice && (notice.__post_id || notice.target_id)) || ''); }
+  function isPostNotice(notice){
+    if(!notice) return false;
+    if(notice.type === 'comment_reply') return !!notice.__post_id;
+    return !!(notice.target_id && (notice.target_type === 'post' || ['like','same','tissue','comment'].indexOf(notice.type) >= 0));
+  }
   function writeFeedReturnView(value){ try{ if(value) sessionStorage.setItem(FEED_RETURN_KEY, value); else sessionStorage.removeItem(FEED_RETURN_KEY); }catch(e){} }
 
   function timeText(value){
@@ -34,13 +39,14 @@
   }
 
   function typeText(type){
-    return ({like:'点赞了你的帖子',same:'对你说：俺也一样',tissue:'给你递了纸巾',comment:'评论了你的帖子',chat_agree:'赞同了你的房间消息',system:'系统通知'})[type] || '给你发来一条回声';
+    return ({like:'点赞了你的帖子',same:'对你说：俺也一样',tissue:'给你递了纸巾',comment:'评论了你的帖子',comment_reply:'回复了你的评论',chat_agree:'赞同了你的房间消息',system:'系统通知'})[type] || '给你发来一条回声';
   }
 
   function noticePreview(value){
     return String(value || '')
       .replace(/\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]/g, '动画表情')
       .replace(/\[\[FW_MEDIA_IMAGE:[A-Za-z0-9+/=]+\]\]/g, '图片')
+      .replace(/\[\[FW_MEDIA_VIDEO:[A-Za-z0-9+/=]+\]\]/g, '视频')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -103,13 +109,7 @@
     var changed = false;
     (rows || []).forEach(function(row){
       if(!row || !row.id) return;
-      cache[row.id] = {
-        id:row.id,
-        nickname:row.nickname || '',
-        avatar_url:row.avatar_url || '',
-        lab_code:row.lab_code || '',
-        cached_at:Date.now()
-      };
+      cache[row.id] = {id:row.id,nickname:row.nickname || '',avatar_url:row.avatar_url || '',lab_code:row.lab_code || '',cached_at:Date.now()};
       changed = true;
     });
     if(changed) writeProfileCache(cache);
@@ -118,9 +118,7 @@
   function avatar(profile){
     var name = profile && profile.nickname || '研究员';
     var url = profile && profile.avatar_url || '';
-    if(url){
-      return '<span class="list-avatar"><img src="' + esc(url) + '" alt="' + esc(name) + '" loading="eager" decoding="async" data-echo-avatar></span>';
-    }
+    if(url) return '<span class="list-avatar"><img src="' + esc(url) + '" alt="' + esc(name) + '" loading="eager" decoding="async" data-echo-avatar></span>';
     return '<span class="list-avatar">' + esc(app().initials(name)) + '</span>';
   }
 
@@ -128,10 +126,7 @@
     if(!window.FWMobileMediaCache || typeof window.FWMobileMediaCache.prefetch !== 'function') return;
     try{
       var urls = [];
-      Object.keys(profiles || {}).forEach(function(id){
-        var url = profiles[id] && profiles[id].avatar_url || '';
-        if(url) urls.push(url);
-      });
+      Object.keys(profiles || {}).forEach(function(id){ var url = profiles[id] && profiles[id].avatar_url || ''; if(url) urls.push(url); });
       if(urls.length) window.FWMobileMediaCache.prefetch(urls, 'avatar');
     }catch(e){}
   }
@@ -162,6 +157,18 @@
     }
   }
 
+  async function resolveReplyPostIds(rows){
+    var commentIds = Array.from(new Set((rows || []).filter(function(row){ return row && row.type === 'comment_reply' && row.target_id; }).map(function(row){ return row.target_id; })));
+    if(!commentIds.length) return rows || [];
+    var map = {};
+    try{
+      var comments = fail(await client().from('comments').select('id,post_id').in('id', commentIds), '回复目标读取失败') || [];
+      comments.forEach(function(comment){ if(comment && comment.id && comment.post_id) map[comment.id] = comment.post_id; });
+    }catch(e){ console.warn('[FW mobile app] echo reply target resolve failed', e); }
+    (rows || []).forEach(function(row){ if(row && row.type === 'comment_reply' && row.target_id && map[row.target_id]) row.__post_id = map[row.target_id]; });
+    return rows || [];
+  }
+
   function setEchoBadge(count){
     var button = document.querySelector('[data-app-nav="echo"]');
     if(!button) return;
@@ -181,13 +188,8 @@
     }
   }
 
-  function visibleUnreadCount(){
-    return document.querySelectorAll('[data-echo-list] .mobile-echo-item.unread').length;
-  }
-
-  function updateBadgeFromVisibleItems(){
-    setEchoBadge(visibleUnreadCount());
-  }
+  function visibleUnreadCount(){ return document.querySelectorAll('[data-echo-list] .mobile-echo-item.unread').length; }
+  function updateBadgeFromVisibleItems(){ setEchoBadge(visibleUnreadCount()); }
 
   async function currentUser(){
     if(app().state && app().state.user) return app().state.user;
@@ -207,28 +209,23 @@
   async function markRead(ids){
     ids = Array.from(new Set((ids || []).map(function(id){ return String(id || '').trim(); }).filter(Boolean)));
     if(!ids.length) return;
-
-    ids.forEach(function(id){
-      var item = document.querySelector('[data-mobile-echo-item="' + id.replace(/"/g, '') + '"]');
-      if(item) item.classList.remove('unread');
-    });
+    ids.forEach(function(id){ var item = document.querySelector('[data-mobile-echo-item="' + id.replace(/"/g, '') + '"]'); if(item) item.classList.remove('unread'); });
     updateBadgeFromVisibleItems();
-
     try{
       if(!(await app().waitForDb())) return;
       await client().from('notifications').update({is_read:true}).in('id', ids);
       refreshBadges();
-    }catch(e){
-      console.warn('[FW mobile app] echo mark read failed', e);
-      refreshBadges();
-    }
+    }catch(e){ console.warn('[FW mobile app] echo mark read failed', e); refreshBadges(); }
   }
 
   function noticeHtml(notice, profile){
     var action = typeText(notice.type);
     var content = noticePreview(notice.content || '对你的低功耗发言产生了回应。') || '对你的低功耗发言产生了回应。';
     var actions = '';
-    if(isPostNotice(notice)) actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-post="' + esc(notice.target_id) + '" data-mobile-echo-notice="' + esc(notice.id) + '" data-mobile-echo-type="' + esc(notice.type || '') + '" data-mobile-echo-actor="' + esc(notice.actor_id || '') + '" data-mobile-echo-time="' + esc(notice.created_at || '') + '" data-open-comments="' + (notice.type === 'comment' ? '1' : '0') + '">查看帖子</button>';
+    var targetPost = postTargetId(notice);
+    if(isPostNotice(notice)){
+      actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-post="' + esc(targetPost) + '" data-mobile-echo-notice="' + esc(notice.id) + '" data-mobile-echo-type="' + esc(notice.type || '') + '" data-mobile-echo-actor="' + esc(notice.actor_id || '') + '" data-mobile-echo-time="' + esc(notice.created_at || '') + '" data-open-comments="' + ((notice.type === 'comment' || notice.type === 'comment_reply') ? '1' : '0') + '">查看帖子</button>';
+    }
     if(notice.type === 'chat_agree') actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-rooms data-mobile-echo-notice="' + esc(notice.id) + '">去学术研讨</button>';
     return '<article class="notice-item mobile-echo-item ' + (notice.is_read ? '' : 'unread') + '" data-mobile-echo-item="' + esc(notice.id) + '">' + avatar(profile) + '<div class="list-main"><b>' + esc((profile && profile.nickname || '某位研究员') + ' ' + action) + '</b><span>' + esc(content) + '</span><small>' + esc(timeText(notice.created_at)) + '</small>' + (actions ? '<div class="notice-actions">' + actions + '</div>' : '') + '</div></article>';
   }
@@ -244,6 +241,7 @@
       if(!me || !me.id){ list.innerHTML = '<div class="empty">请先登录后查看回声。</div>'; loaded = true; lastLoadAt = Date.now(); refreshBadges(); return; }
       var rows = fail(await client().from('notifications').select('id,actor_id,type,target_type,target_id,content,is_read,created_at').eq('user_id', me.id).in('type', ECHO_TYPES).order('created_at', {ascending:false}).limit(100), '回声读取失败') || [];
       rows = rows.filter(function(row){ return isEchoType(row.type); });
+      rows = await resolveReplyPostIds(rows);
       var unreadIds = rows.filter(function(row){ return !row.is_read; }).map(function(row){ return row.id; });
       var profiles = await fetchProfiles(rows.map(function(row){ return row.actor_id; }));
       var toolbar = '<div class="mobile-echo-toolbar"><b>回声通知</b><div class="mobile-echo-actions">' + (unreadIds.length ? '<button class="mobile-echo-mark-all" type="button" data-mobile-echo-mark-all>全部已读</button>' : '') + '<button class="mobile-echo-refresh" type="button" data-mobile-echo-refresh>刷新</button></div></div>';
