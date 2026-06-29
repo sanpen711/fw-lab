@@ -13,40 +13,10 @@
   var observers = {};
 
   var MODULES = [
-    {
-      name:'bird',
-      api:'FWAppBird',
-      selector:'[data-mobile-bird-feed]',
-      loading:/正在打开观鸟镜/,
-      ttl:90 * DAY,
-      blockPreviewClicks:true
-    },
-    {
-      name:'echo',
-      api:'FWAppEcho',
-      selector:'[data-echo-list]',
-      loading:/正在读取回声/,
-      ttl:7 * DAY,
-      blockPreviewClicks:false
-    },
-    {
-      name:'buddy',
-      api:'FWAppBuddy',
-      selector:'[data-buddy-list]',
-      loading:/正在读取搭子/,
-      ttl:30 * DAY,
-      blockPreviewClicks:true
-    },
-    {
-      name:'rooms',
-      api:'FWAppRooms',
-      selector:'[data-mobile-polls-list]',
-      statusSelector:'[data-mobile-polls-status]',
-      loading:/正在读取学术研讨课题/,
-      ttl:7 * DAY,
-      blockPreviewClicks:true,
-      quietOptions:true
-    }
+    {name:'bird',api:'FWAppBird',selector:'[data-mobile-bird-feed]',loading:/正在打开观鸟镜/,ttl:90 * DAY,blockPreviewClicks:true},
+    {name:'echo',api:'FWAppEcho',selector:'[data-echo-list]',loading:/正在读取回声/,ttl:7 * DAY,blockPreviewClicks:true},
+    {name:'buddy',api:'FWAppBuddy',selector:'[data-buddy-list]',loading:/正在读取搭子/,ttl:30 * DAY,blockPreviewClicks:true},
+    {name:'rooms',api:'FWAppRooms',selector:'[data-mobile-polls-list]',statusSelector:'[data-mobile-polls-status]',loading:/正在读取学术研讨课题/,ttl:7 * DAY,blockPreviewClicks:true,quietOptions:true}
   ];
 
   function app(){ return window.FWApp || null; }
@@ -173,6 +143,11 @@
     attach();
   }
 
+  function currentScrollSnapshot(){
+    var main = document.querySelector('#appMain') || document.querySelector('.app-main') || document.scrollingElement || document.documentElement;
+    return main ? {node:main, top:main.scrollTop || 0} : null;
+  }
+
   function buildArgs(module, args, usedCache){
     args = Array.prototype.slice.call(args || []);
     if(module.quietOptions && usedCache){
@@ -182,11 +157,6 @@
       args[1] = options;
     }
     return args;
-  }
-
-  function currentScrollSnapshot(){
-    var main = document.querySelector('#appMain') || document.querySelector('.app-main') || document.scrollingElement || document.documentElement;
-    return main ? {node:main, top:main.scrollTop || 0} : null;
   }
 
   function patchApi(module){
