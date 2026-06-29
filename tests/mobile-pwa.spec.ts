@@ -18,6 +18,10 @@ async function gotoApp(page: Page) {
   await page.waitForTimeout(900);
 }
 
+async function waitForDbReady(page: Page) {
+  await page.waitForFunction(() => Boolean((window as any).fwDb && (window as any).fwDb.enabled), null, { timeout: 12_000 });
+}
+
 async function openView(page: Page, view: string) {
   if (view === 'nav') {
     await page.locator('[data-app-nav="nav"]').click();
@@ -144,26 +148,23 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
   });
 });
 
-test.describe('可选登录测试', () => {
-  test('有测试账号 Secret 时可检查登录后回声/搭子基础状态', async ({ page }) => {
+test.describe('登录态测试', () => {
+  test('测试账号可登录并检查回声/搭子基础状态', async ({ page }) => {
     const email = process.env.FW_TEST_EMAIL;
     const password = process.env.FW_TEST_PASSWORD;
     test.skip(!email || !password, '未配置 FW_TEST_EMAIL / FW_TEST_PASSWORD，跳过登录态测试。');
 
     await gotoApp(page);
+    await waitForDbReady(page);
     await openView(page, 'profile');
-    await page.locator('[data-profile-mode="login"], [data-auth-view="login"]').first().click().catch(() => undefined);
+    await page.locator('[data-profile-mode="login"]').first().click();
     await expect(page.locator('[data-login-form]')).toBeVisible({ timeout: 8_000 });
-    await page.locator('[data-login-form] input[name="email"], [data-login-form] input[type="email"]').first().fill(email!);
-    await page.locator('[data-login-form] input[name="password"], [data-login-form] input[type="password"]').first().fill(password!);
-    await page.locator('[data-login-form] button[type="submit"]').first().click();
+    await page.locator('[data-login-form] input[name="email"]').fill(email!);
+    await page.locator('[data-login-form] input[name="password"]').fill(password!);
+    await page.locator('[data-login-form] button[type="submit"]').click();
 
-    await page.waitForTimeout(2_000);
-    const userLabel = await page.locator('[data-app-user-label]').first().textContent().catch(() => '');
-    const toastText = await page.locator('[data-app-toast]').first().textContent().catch(() => '');
-    if (!userLabel || /未登录/.test(userLabel)) {
-      test.skip(true, `测试账号未登录成功，跳过登录态检查。当前状态：${userLabel || '无'}；提示：${toastText || '无'}`);
-    }
+    await expect(page.locator('[data-app-toast]')).toContainText(/已登录/, { timeout: 20_000 });
+    await expect(page.locator('[data-app-user-label]')).not.toHaveText(/未登录/, { timeout: 20_000 });
 
     await openView(page, 'echo');
     await expect(page.locator('[data-echo-list]')).toBeVisible();
