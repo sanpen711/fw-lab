@@ -7,6 +7,8 @@
   var badgeTimer = 0;
   var pendingEchoFocus = null;
   var FEED_RETURN_KEY = 'fw_mobile_feed_detail_return_view';
+  var PROFILE_CACHE_KEY = 'fw_mobile_echo_profile_cache_v1';
+  var PROFILE_CACHE_LIMIT = 260;
   var ECHO_TYPES = ['like','same','tissue','comment','chat_agree','system'];
 
   function app(){ return window.FWApp; }
@@ -70,9 +72,55 @@
     document.head.appendChild(style);
   }
 
+  function readProfileCache(){
+    try{
+      var raw = window.localStorage && localStorage.getItem(PROFILE_CACHE_KEY);
+      var parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    }catch(e){ return {}; }
+  }
+
+  function writeProfileCache(cache){
+    try{
+      var rows = Object.keys(cache || {}).map(function(id){ return cache[id]; }).filter(function(row){ return row && row.id; });
+      rows.sort(function(a,b){ return Number(b.cached_at || 0) - Number(a.cached_at || 0); });
+      var kept = {};
+      rows.slice(0, PROFILE_CACHE_LIMIT).forEach(function(row){ kept[row.id] = row; });
+      if(window.localStorage) localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(kept));
+    }catch(e){}
+  }
+
+  function profileFromCache(id, cache){
+    id = String(id || '');
+    if(!id) return null;
+    var row = (cache || readProfileCache())[id];
+    if(!row) return null;
+    return {id:row.id, nickname:row.nickname || '', avatar_url:row.avatar_url || '', lab_code:row.lab_code || ''};
+  }
+
+  function mergeProfileCache(rows){
+    var cache = readProfileCache();
+    var changed = false;
+    (rows || []).forEach(function(row){
+      if(!row || !row.id) return;
+      cache[row.id] = {
+        id:row.id,
+        nickname:row.nickname || '',
+        avatar_url:row.avatar_url || '',
+        lab_code:row.lab_code || '',
+        cached_at:Date.now()
+      };
+      changed = true;
+    });
+    if(changed) writeProfileCache(cache);
+  }
+
   function avatar(profile){
     var name = profile && profile.nickname || '研究员';
-    if(profile && profile.avatar_url) return '<span class="list-avatar"><img src="' + esc(profile.avatar_url) + '" alt="' + esc(name) + '"></span>';
+    var url = profile && profile.avatar_url || '';
+    if(url){
+      return '<span class="list-avatar"><img src="' + esc(url) + '" alt="' + esc(name) + '" loading="eager" decoding="async" data-echo-avatar></span>';
+    }
     return '<span class="list-avatar">' + esc(app().initials(name)) + '</span>';
   }
 
@@ -92,19 +140,26 @@
     if(window.FWMobileMediaCache && typeof window.FWMobileMediaCache.scan === 'function'){
       setTimeout(function(){ try{ window.FWMobileMediaCache.scan(); }catch(e){} }, 0);
       setTimeout(function(){ try{ window.FWMobileMediaCache.scan(); }catch(e){} }, 220);
+      setTimeout(function(){ try{ window.FWMobileMediaCache.scan(); }catch(e){} }, 800);
     }
   }
 
   async function fetchProfiles(ids){
     var unique = Array.from(new Set((ids || []).filter(Boolean)));
     if(!unique.length) return {};
+    var local = readProfileCache();
+    var map = {};
+    unique.forEach(function(id){ var cached = profileFromCache(id, local); if(cached) map[id] = cached; });
     try{
       var rows = fail(await client().from('profiles').select('id,nickname,avatar_url,lab_code').in('id', unique), '资料读取失败') || [];
-      var map = {};
       rows.forEach(function(row){ map[row.id] = row; });
+      mergeProfileCache(rows);
       prefetchProfileAvatars(map);
       return map;
-    }catch(e){ return {}; }
+    }catch(e){
+      prefetchProfileAvatars(map);
+      return map;
+    }
   }
 
   function setEchoBadge(count){
@@ -283,8 +338,8 @@
       var item = e.target.closest && e.target.closest('[data-mobile-echo-item]');
       if(item && item.classList.contains('unread')) markRead([item.dataset.mobileEchoItem]);
     });
-    window.addEventListener('focus', function(){ refreshBadges(); });
-    document.addEventListener('visibilitychange', function(){ if(!document.hidden) refreshBadges(); });
+    window.addEventListener('focus', function(){ refreshBadges(); scanMediaSoon(); });
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden){ refreshBadges(); scanMediaSoon(); } });
   }
 
   function init(){ injectStyle(); bind(); refreshBadges(); clearInterval(badgeTimer); badgeTimer = setInterval(refreshBadges, 45000); }
