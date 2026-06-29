@@ -183,26 +183,50 @@
     parent.classList.add('avatar-fallback-ready');
   }
 
-  async function applyCachedImage(img, url, kind){
-    if(!img || img.dataset.fwMediaCacheApplied === url) return;
-    img.dataset.fwMediaOriginalSrc = url;
-    if(kind === 'avatar' && !img.dataset.fwMediaErrorBound){
-      img.dataset.fwMediaErrorBound = '1';
-      img.addEventListener('error', function(){ fallbackAvatar(img); }, {once:true});
+  function isBrokenImage(img){
+    try{
+      return !!(img && img.complete && img.naturalWidth === 0);
+    }catch(e){
+      return false;
     }
+  }
+
+  function ensureAvatarErrorFallback(img){
+    if(!img || img.dataset.fwMediaErrorBound) return;
+    img.dataset.fwMediaErrorBound = '1';
+    img.addEventListener('error', function(){ fallbackAvatar(img); });
+  }
+
+  async function applyCachedImage(img, url, kind){
+    if(!img) return;
+    img.dataset.fwMediaOriginalSrc = url;
+    if(kind === 'avatar') ensureAvatarErrorFallback(img);
+
+    if(img.dataset.fwMediaCacheApplied === url){
+      if(kind === 'avatar' && isBrokenImage(img)) fallbackAvatar(img);
+      return;
+    }
+
     var cached = await cachedBlobUrl(url, kind);
-    if(!cached) return;
     if(!document.documentElement.contains(img)){
-      try{ URL.revokeObjectURL(cached); }catch(e){}
+      if(cached) try{ URL.revokeObjectURL(cached); }catch(e){}
       return;
     }
     if((img.dataset.fwMediaOriginalSrc || '') !== url) return;
-    try{
-      if(img.dataset.fwMediaCacheBlobUrl) URL.revokeObjectURL(img.dataset.fwMediaCacheBlobUrl);
-    }catch(e){}
-    img.dataset.fwMediaCacheBlobUrl = cached;
-    img.dataset.fwMediaCacheApplied = url;
-    img.src = cached;
+
+    if(cached){
+      try{
+        if(img.dataset.fwMediaCacheBlobUrl) URL.revokeObjectURL(img.dataset.fwMediaCacheBlobUrl);
+      }catch(e){}
+      img.dataset.fwMediaCacheBlobUrl = cached;
+      img.dataset.fwMediaCacheApplied = url;
+      img.src = cached;
+      return;
+    }
+
+    // 头像图片可能在缓存扫描/错误监听绑定前已经加载失败。
+    // 这种情况下要立刻兜底，避免回声来回切换后停在破图图标。
+    if(kind === 'avatar' && isBrokenImage(img)) fallbackAvatar(img);
   }
 
   function processImages(root){
@@ -216,6 +240,7 @@
       if(item.kind === 'avatar'){
         img.loading = 'eager';
         img.decoding = 'async';
+        ensureAvatarErrorFallback(img);
       }
       applyCachedImage(img, item.url, item.kind);
       var limit = item.kind === 'avatar' ? MAX_AVATAR_PREFETCH_PER_SCAN : MAX_PREFETCH_PER_SCAN;
