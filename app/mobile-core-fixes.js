@@ -217,7 +217,7 @@
   }
 
   function ensureMediaCache(){
-    loadScriptOnce('__FW_MOBILE_MEDIA_CACHE__', 'data-mobile-media-cache', './mobile-media-cache.js?v=mobile-media-cache-20260618-avatar-1');
+    loadScriptOnce('__FW_MOBILE_MEDIA_CACHE__', 'data-mobile-media-cache', './mobile-media-cache.js?v=mobile-media-cache-20260629-avatar-repair-1');
   }
 
   function ensureFeedCache(){
