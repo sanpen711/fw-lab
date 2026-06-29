@@ -29,6 +29,17 @@
     profile:'nav'
   };
 
+  var DIRECT_FALLBACK_VIEWS = {
+    square:true,
+    rooms:true,
+    bird:true,
+    archive:true,
+    rules:true,
+    moderation:true,
+    echo:true,
+    buddy:true
+  };
+
   var PARENT_VIEWS = {
     'square-detail':'square',
     'square-publish':'square',
@@ -224,6 +235,12 @@
         return true;
       }
       if(clickFirst('[data-buddy-chat-back]', active || document)) return true;
+    }
+
+    // 顶层页面直接回首页，不再模拟点击顶部返回按钮。
+    // 这样可避免从详情页刚返回列表后，第二次左滑只出现位移动画但未真正切页。
+    if(DIRECT_FALLBACK_VIEWS[view] && Object.prototype.hasOwnProperty.call(FALLBACK_VIEWS, view)){
+      return setView(FALLBACK_VIEWS[view]);
     }
 
     // 详情页、发布页、个人中心二级页优先点自己的返回按钮。
