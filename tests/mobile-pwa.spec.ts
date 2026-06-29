@@ -160,14 +160,18 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
     await openView(page, 'echo');
     await waitForModuleCacheReady(page);
 
-    await page.evaluate(() => {
+    const blocked = await page.evaluate(() => {
       const list = document.querySelector('[data-echo-list]') as HTMLElement | null;
       if (!list) throw new Error('missing echo list');
       list.setAttribute('data-fw-cache-preview', 'echo');
       list.innerHTML = '<article class="notice-item mobile-echo-item unread" data-mobile-echo-item="test"><span class="list-avatar">测</span><div class="list-main"><b>测试回声</b><span>缓存预览按钮</span><div class="notice-actions"><button class="mobile-echo-mini dark" type="button" data-mobile-echo-post="fake-post">查看帖子</button></div></div></article>';
+      const button = list.querySelector('[data-mobile-echo-post="fake-post"]') as HTMLElement | null;
+      if (!button) throw new Error('missing cache preview button');
+      const event = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true });
+      return !button.dispatchEvent(event);
     });
 
-    await page.locator('[data-mobile-echo-post="fake-post"]').click();
+    expect(blocked).toBe(true);
     await page.waitForTimeout(350);
     await expect(page.locator('[data-app-view="echo"].is-active')).toBeVisible();
     await expect(page.locator('[data-echo-list][data-fw-cache-preview="echo"]')).toBeAttached();
@@ -204,7 +208,6 @@ test.describe('登录态测试', () => {
     await page.locator('[data-login-form] button[type="submit"]').click();
 
     await waitForLoggedInUser(page);
-    await expect(page.locator('[data-app-user-label]')).not.toHaveText(/未登录/, { timeout: 12_000 });
     await page.waitForTimeout(800);
 
     await openViewStable(page, 'echo');
