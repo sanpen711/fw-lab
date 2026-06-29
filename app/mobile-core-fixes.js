@@ -225,7 +225,7 @@
   }
 
   function ensureImagePreview(){
-    loadScriptOnce('__FW_MOBILE_IMAGE_PREVIEW__', 'data-mobile-image-preview', './mobile-image-preview.js?v=mobile-image-preview-20260616-2');
+    loadScriptOnce('__FW_MOBILE_IMAGE_PREVIEW__', 'data-mobile-image-preview', './mobile-image-preview.js?v=mobile-image-preview-20260629-sticker-1');
   }
 
   function ensureModuleCache(){
