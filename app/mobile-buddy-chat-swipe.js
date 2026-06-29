@@ -1,5 +1,5 @@
-// F.w 研究所：搭子私聊左滑返回补丁
-// 只在“搭子 > 私聊”内生效，避免影响首页和其它页面的左滑逻辑。
+// F.w 研究所：搭子私聊左滑返回兼容层
+// 统一左滑已交给 mobile-swipe-back.js；本文件只在统一主控未加载时兜底。
 (function(){
   if(window.__FW_MOBILE_BUDDY_CHAT_SWIPE__) return;
   window.__FW_MOBILE_BUDDY_CHAT_SWIPE__ = true;
@@ -11,6 +11,7 @@
   var state = null;
 
   function $(selector, root){ return (root || document).querySelector(selector); }
+  function unifiedEnabled(){ return !!window.__FW_MOBILE_UNIFIED_BACK_ENABLED__; }
 
   function isBuddyChatting(){
     var buddy = $('[data-app-view="buddy"].is-active') || $('[data-app-view="buddy"]');
@@ -48,6 +49,7 @@
   }
 
   function onStart(event){
+    if(unifiedEnabled()) return;
     if(!event.touches || event.touches.length !== 1) return;
     if(!isBuddyChatting()) return;
     if(isBlockedTarget(event.target)) return;
@@ -57,6 +59,7 @@
   }
 
   function onMove(event){
+    if(unifiedEnabled()){ state = null; return; }
     if(!state) return;
     if(!event.touches || event.touches.length !== 1) return;
     if(!isBuddyChatting()){ state = null; return; }
@@ -70,6 +73,7 @@
   }
 
   function onEnd(event){
+    if(unifiedEnabled()){ state = null; return; }
     if(!state) return;
     var start = state;
     state = null;
