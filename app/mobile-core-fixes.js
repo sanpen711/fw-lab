@@ -15,9 +15,7 @@
     profile:'#profile'
   };
 
-  function $(selector, root){
-    return (root || document).querySelector(selector);
-  }
+  function $(selector, root){ return (root || document).querySelector(selector); }
 
   function normalizeViewport(){
     var meta = $('meta[name="viewport"]');
@@ -26,24 +24,17 @@
     if(meta.getAttribute('content') !== next) meta.setAttribute('content', next);
   }
 
-  function routeHashForView(view){
-    return Object.prototype.hasOwnProperty.call(ROUTABLE_VIEWS, view) ? ROUTABLE_VIEWS[view] : null;
-  }
-
+  function routeHashForView(view){ return Object.prototype.hasOwnProperty.call(ROUTABLE_VIEWS, view) ? ROUTABLE_VIEWS[view] : null; }
   function hasAppView(view){
     var views = document.querySelectorAll('[data-app-view]');
-    for(var i = 0; i < views.length; i += 1){
-      if(views[i].dataset && views[i].dataset.appView === view) return true;
-    }
+    for(var i = 0; i < views.length; i += 1){ if(views[i].dataset && views[i].dataset.appView === view) return true; }
     return false;
   }
-
   function normalizeView(view){
     view = view || 'nav';
     if(routeHashForView(view) != null) return view;
     return hasAppView(view) ? view : 'nav';
   }
-
   function replaceHashForView(view){
     var hash = routeHashForView(view);
     if(hash == null || !window.history || !window.history.replaceState) return;
@@ -55,14 +46,9 @@
   function resetProfileHome(){
     var panel = $('[data-profile-panel]');
     var back = panel && $('[data-profile-back]', panel);
-    if(back){
-      try{ back.click(); }catch(e){}
-    }
+    if(back){ try{ back.click(); }catch(e){} }
   }
-
-  function scheduleProfileHomeReset(){
-    [0, 80, 220].forEach(function(delay){ setTimeout(resetProfileHome, delay); });
-  }
+  function scheduleProfileHomeReset(){ [0, 80, 220].forEach(function(delay){ setTimeout(resetProfileHome, delay); }); }
 
   function patchSetView(){
     if(!window.FWApp || window.FWApp.__mobileCoreFixesPatched) return false;
@@ -93,27 +79,17 @@
     return true;
   }
 
-  function patchAppViewApi(){
-    var patched = patchSetView();
-    var opened = ensureOpenView();
-    return patched && opened;
-  }
-
+  function patchAppViewApi(){ return patchSetView() && ensureOpenView(); }
   function schedulePatchSetView(){
     if(patchAppViewApi()) return;
-    [0, 80, 240, 700, 1500].forEach(function(delay){
-      setTimeout(patchAppViewApi, delay);
-    });
+    [0, 80, 240, 700, 1500].forEach(function(delay){ setTimeout(patchAppViewApi, delay); });
   }
 
   function openAppView(view, options){
     var api = window.FWApp;
     view = normalizeView(view || 'nav');
     if(!api) return false;
-    if(typeof api.openView === 'function'){
-      api.openView(view, options);
-      return true;
-    }
+    if(typeof api.openView === 'function'){ api.openView(view, options); return true; }
     if(typeof api.setView === 'function'){
       api.setView(view);
       if(!options || options.updateHash !== false) replaceHashForView(view);
@@ -128,25 +104,20 @@
     }
     return false;
   }
-
   function refreshFeedCache(){
     if(window.FWMobileFeedCache && typeof window.FWMobileFeedCache.refresh === 'function'){
       try{ window.FWMobileFeedCache.refresh(); }catch(e){}
     }
   }
-
   function suppressNextViewMotion(){
     window.__FW_MOBILE_SKIP_NEXT_VIEW_MOTION__ = true;
-    setTimeout(function(){
-      if(window.__FW_MOBILE_SKIP_NEXT_VIEW_MOTION__) window.__FW_MOBILE_SKIP_NEXT_VIEW_MOTION__ = false;
-    }, 180);
+    setTimeout(function(){ if(window.__FW_MOBILE_SKIP_NEXT_VIEW_MOTION__) window.__FW_MOBILE_SKIP_NEXT_VIEW_MOTION__ = false; }, 180);
   }
 
   function bindClickSync(){
     document.addEventListener('click', function(event){
       var target = event.target;
       if(!target || !target.closest) return;
-
       var nav = target.closest('[data-app-nav]');
       if(nav){
         var navView = normalizeView(nav.dataset.appNav || 'nav');
@@ -161,18 +132,12 @@
         setTimeout(function(){ replaceHashForView(navView); if(navView === 'square') refreshFeedCache(); }, 0);
         return;
       }
-
       var profile = target.closest('[data-app-profile-trigger]');
       if(profile){
-        if(openAppView('profile')){
-          event.preventDefault();
-          event.stopPropagation();
-          return;
-        }
+        if(openAppView('profile')){ event.preventDefault(); event.stopPropagation(); return; }
         setTimeout(function(){ replaceHashForView('profile'); }, 0);
         return;
       }
-
       var opener = target.closest('[data-app-open]');
       if(opener){
         var openView = normalizeView(opener.dataset.appOpen || 'nav');
@@ -192,60 +157,23 @@
     document.body.appendChild(script);
   }
 
-  function ensureReportBridge(){
-    loadScriptOnce('__FW_MOBILE_REPORT_BRIDGE__', 'data-mobile-report-bridge', './report.js?v=mobile-report-20260609-1');
-  }
-
-  function ensureBuddyChatReadFix(){
-    loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4');
-  }
-
-  function ensureFeedDetailReturnBridge(){
-    loadScriptOnce('__FW_MOBILE_FEED_DETAIL_RETURN__', 'data-mobile-feed-detail-return', './feed-detail-return.js?v=mobile-feed-detail-return-20260614-1');
-  }
-
-  function ensureMobileSwipeBack(){
-    loadScriptOnce('__FW_MOBILE_SWIPE_BACK__', 'data-mobile-swipe-back', './mobile-swipe-back.js?v=mobile-swipe-back-20260629-direct-1');
-  }
-
-  function ensureMobileTransitions(){
-    loadScriptOnce('__FW_MOBILE_TRANSITIONS__', 'data-mobile-transitions', './mobile-transitions.js?v=mobile-transitions-20260614-1');
-  }
-
-  function ensurePriorityFixes(){
-    loadScriptOnce('__FW_MOBILE_PRIORITY_FIXES__', 'data-mobile-priority-fixes', './mobile-priority-fixes.js?v=mobile-priority-fixes-20260614-1');
-  }
-
-  function ensureMediaCache(){
-    loadScriptOnce('__FW_MOBILE_MEDIA_CACHE__', 'data-mobile-media-cache', './mobile-media-cache.js?v=mobile-media-cache-20260629-avatar-repair-1');
-  }
-
-  function ensureFeedCache(){
-    loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260618-speed-2');
-  }
-
-  function ensureImagePreview(){
-    loadScriptOnce('__FW_MOBILE_IMAGE_PREVIEW__', 'data-mobile-image-preview', './mobile-image-preview.js?v=mobile-image-preview-20260629-sticker-1');
-  }
-
-  function ensureModuleCache(){
-    loadScriptOnce('__FW_MOBILE_MODULE_CACHE__', 'data-mobile-module-cache', './mobile-module-cache.js?v=mobile-module-cache-20260618-visible-1');
-  }
-
-  function ensureGlobalFixes(){
-    loadScriptOnce('__FW_MOBILE_GLOBAL_FIXES_20260617__', 'data-mobile-global-fixes', './mobile-global-fixes.js?v=mobile-global-fixes-20260617-1');
-  }
-
-  function ensureCacheSettings(){
-    loadScriptOnce('__FW_MOBILE_CACHE_SETTINGS__', 'data-mobile-cache-settings', './mobile-cache-settings.js?v=mobile-cache-settings-20260618-1');
-  }
+  function ensureReportBridge(){ loadScriptOnce('__FW_MOBILE_REPORT_BRIDGE__', 'data-mobile-report-bridge', './report.js?v=mobile-report-20260609-1'); }
+  function ensureBuddyChatReadFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4'); }
+  function ensureFeedDetailReturnBridge(){ loadScriptOnce('__FW_MOBILE_FEED_DETAIL_RETURN__', 'data-mobile-feed-detail-return', './feed-detail-return.js?v=mobile-feed-detail-return-20260614-1'); }
+  function ensureMobileSwipeBack(){ loadScriptOnce('__FW_MOBILE_SWIPE_BACK__', 'data-mobile-swipe-back', './mobile-swipe-back.js?v=mobile-swipe-back-20260629-direct-1'); }
+  function ensureMobileTransitions(){ loadScriptOnce('__FW_MOBILE_TRANSITIONS__', 'data-mobile-transitions', './mobile-transitions.js?v=mobile-transitions-20260629-unified-1'); }
+  function ensurePriorityFixes(){ loadScriptOnce('__FW_MOBILE_PRIORITY_FIXES__', 'data-mobile-priority-fixes', './mobile-priority-fixes.js?v=mobile-priority-fixes-20260629-echo-core-1'); }
+  function ensureMediaCache(){ loadScriptOnce('__FW_MOBILE_MEDIA_CACHE__', 'data-mobile-media-cache', './mobile-media-cache.js?v=mobile-media-cache-20260629-avatar-repair-1'); }
+  function ensureFeedCache(){ loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260618-speed-2'); }
+  function ensureImagePreview(){ loadScriptOnce('__FW_MOBILE_IMAGE_PREVIEW__', 'data-mobile-image-preview', './mobile-image-preview.js?v=mobile-image-preview-20260629-sticker-1'); }
+  function ensureModuleCache(){ loadScriptOnce('__FW_MOBILE_MODULE_CACHE__', 'data-mobile-module-cache', './mobile-module-cache.js?v=mobile-module-cache-20260629-preview-1'); }
+  function ensureGlobalFixes(){ loadScriptOnce('__FW_MOBILE_GLOBAL_FIXES_20260617__', 'data-mobile-global-fixes', './mobile-global-fixes.js?v=mobile-global-fixes-20260617-1'); }
+  function ensureCacheSettings(){ loadScriptOnce('__FW_MOBILE_CACHE_SETTINGS__', 'data-mobile-cache-settings', './mobile-cache-settings.js?v=mobile-cache-settings-20260618-1'); }
 
   function requestServiceWorkerRefresh(){
     if(!('serviceWorker' in navigator)) return;
     try{
-      navigator.serviceWorker.getRegistration('./').then(function(registration){
-        if(registration && registration.update) registration.update();
-      }).catch(function(){});
+      navigator.serviceWorker.getRegistration('./').then(function(registration){ if(registration && registration.update) registration.update(); }).catch(function(){});
     }catch(e){}
   }
 
