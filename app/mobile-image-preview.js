@@ -80,7 +80,15 @@
     }
   }
 
+  function shouldSkipPreviewTarget(target){
+    if(!target || !target.closest) return false;
+    // 评论输入区里的图片是“待选择/待发送”的交互控件，不能被图片查看器抢先拦截。
+    // 否则精神广场详情页里点击收藏表情会变成查看图片，导致表情无法加入评论。
+    return !!target.closest('[data-comment-form], [data-comment-sticker-panel], [data-comment-selected-stickers], [data-comment-media-preview]');
+  }
+
   function imageUrlFromTarget(target){
+    if(shouldSkipPreviewTarget(target)) return null;
     var link = target && target.closest && target.closest('a.fw-inline-media, a[data-fw-image], a[data-preview-image]');
     var img = target && target.closest && target.closest('.fw-inline-media img, img[data-fw-image], .post-card img, .detail-comments-card img, .bird-feed-mobile img, .mobile-bird-detail-view img');
     if(!link && img && img.closest && !img.closest('.post-card,.detail-comments-card,.bird-feed-mobile,.mobile-bird-detail-view')) return null;
