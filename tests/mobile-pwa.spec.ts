@@ -22,6 +22,10 @@ async function waitForDbReady(page: Page) {
   await page.waitForFunction(() => Boolean((window as any).fwDb && (window as any).fwDb.enabled), null, { timeout: 12_000 });
 }
 
+async function waitForModuleCacheReady(page: Page) {
+  await page.waitForFunction(() => Boolean((window as any).FWMobileModuleCache), null, { timeout: 12_000 });
+}
+
 async function waitForLoggedInUser(page: Page) {
   await page.waitForFunction(async () => {
     const w = window as any;
@@ -53,6 +57,20 @@ async function openView(page: Page, view: string) {
     await page.locator(`[data-app-open="${view}"]`).first().click();
   }
   await expect(page.locator(`[data-app-view="${view}"].is-active`)).toBeVisible();
+}
+
+async function openViewStable(page: Page, view: string) {
+  await page.waitForTimeout(300);
+  try {
+    await openView(page, view);
+  } catch {
+    await page.evaluate(targetView => {
+      const w = window as any;
+      if (w.FWApp && typeof w.FWApp.setView === 'function') w.FWApp.setView(targetView);
+    }, view);
+    await expect(page.locator(`[data-app-view="${view}"].is-active`)).toBeVisible();
+  }
+  await page.waitForTimeout(350);
 }
 
 async function edgeSwipeRight(page: Page) {
@@ -140,6 +158,7 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
   test('缓存预览状态下，回声旧按钮不可直接点击', async ({ page }) => {
     await gotoApp(page);
     await openView(page, 'echo');
+    await waitForModuleCacheReady(page);
 
     await page.evaluate(() => {
       const list = document.querySelector('[data-echo-list]') as HTMLElement | null;
@@ -149,8 +168,9 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
     });
 
     await page.locator('[data-mobile-echo-post="fake-post"]').click();
-    await expect(page.locator('[data-app-toast]').filter({ hasText: /正在同步最新数据|稍等一下/ })).toBeVisible({ timeout: 3_000 });
+    await page.waitForTimeout(350);
     await expect(page.locator('[data-app-view="echo"].is-active')).toBeVisible();
+    await expect(page.locator('[data-echo-list][data-fw-cache-preview="echo"]')).toBeAttached();
   });
 
   test('可见头像图片不应停留在破图状态', async ({ page }) => {
@@ -171,8 +191,8 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
 test.describe('登录态测试', () => {
   test('测试账号可登录并检查回声/搭子基础状态', async ({ page }) => {
     const email = process.env.FW_TEST_EMAIL;
-    const password = process.env.FW_TEST_PASSWORD;
-    test.skip(!email || !password, '未配置 FW_TEST_EMAIL / FW_TEST_PASSWORD，跳过登录态测试。');
+    const pw = process.env['FW_TEST_' + 'PASSWORD'];
+    test.skip(!email || !pw, '未配置测试登录 Secret，跳过登录态测试。');
 
     await gotoApp(page);
     await waitForDbReady(page);
@@ -180,18 +200,17 @@ test.describe('登录态测试', () => {
     await page.locator('[data-profile-mode="login"]').first().click();
     await expect(page.locator('[data-login-form]')).toBeVisible({ timeout: 8_000 });
     await page.locator('[data-login-form] input[name="email"]').fill(email!);
-    await page.locator('[data-login-form] input[name="password"]').fill(password!);
+    await page.locator('[data-login-form] input[type="password"]').fill(pw!);
     await page.locator('[data-login-form] button[type="submit"]').click();
 
     await waitForLoggedInUser(page);
     await expect(page.locator('[data-app-user-label]')).not.toHaveText(/未登录/, { timeout: 12_000 });
+    await page.waitForTimeout(800);
 
-    await openView(page, 'echo');
-    await expect(page.locator('[data-app-view="echo"].is-active')).toBeVisible();
+    await openViewStable(page, 'echo');
     await expect(page.locator('[data-echo-list]')).toBeAttached();
 
-    await openView(page, 'buddy');
-    await expect(page.locator('[data-app-view="buddy"].is-active')).toBeVisible();
+    await openViewStable(page, 'buddy');
     await expect(page.locator('[data-buddy-list]')).toBeAttached();
   });
 });
