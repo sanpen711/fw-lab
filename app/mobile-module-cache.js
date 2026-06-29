@@ -66,7 +66,7 @@
   function save(module){
     if(!canUse(module)) return;
     var el = node(module);
-    if(!el) return;
+    if(!el || el.hasAttribute('data-fw-cache-preview')) return;
     var html = el.innerHTML || '';
     var text = el.textContent || '';
     if(isBadContent(module, html, text)) return;
@@ -98,10 +98,16 @@
     else el.removeAttribute('data-fw-cache-preview');
   }
 
+  function isPreviewing(module){
+    var el = node(module);
+    return !!(el && el.hasAttribute('data-fw-cache-preview'));
+  }
+
   function restore(module){
     var data = read(module);
     var el = node(module);
     if(!data || !el) return false;
+    el.setAttribute('data-fw-cache-preview', module.name);
     el.innerHTML = data.html;
     markPreview(module, true);
     var status = statusNode(module);
@@ -133,7 +139,9 @@
           restoreTimers[module.name] = setTimeout(function(){ restore(module); }, 0);
           return;
         }
-        markPreview(module, false);
+        // 缓存预览期间不要因为 restore() 触发的 DOM mutation 立刻清掉预览标记。
+        // 标记只在真实 load() 完成后由 patchApi() 清除。
+        if(isPreviewing(module)) return;
         scheduleSave(module);
       });
       observer.observe(el, {childList:true, subtree:true, characterData:true});
