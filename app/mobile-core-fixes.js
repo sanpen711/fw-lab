@@ -167,7 +167,7 @@
   function ensureMediaCache(){ loadScriptOnce('__FW_MOBILE_MEDIA_CACHE__', 'data-mobile-media-cache', './mobile-media-cache.js?v=mobile-media-cache-20260629-avatar-repair-1'); }
   function ensureFeedCache(){ loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260618-speed-2'); }
   function ensureImagePreview(){ loadScriptOnce('__FW_MOBILE_IMAGE_PREVIEW__', 'data-mobile-image-preview', './mobile-image-preview.js?v=mobile-image-preview-20260629-sticker-1'); }
-  function ensureModuleCache(){ loadScriptOnce('__FW_MOBILE_MODULE_CACHE__', 'data-mobile-module-cache', './mobile-module-cache.js?v=mobile-module-cache-20260629-preview-1'); }
+  function ensureModuleCache(){ loadScriptOnce('__FW_MOBILE_MODULE_CACHE__', 'data-mobile-module-cache', './mobile-module-cache.js?v=mobile-module-cache-20260629-quiet-1'); }
   function ensureGlobalFixes(){ loadScriptOnce('__FW_MOBILE_GLOBAL_FIXES_20260617__', 'data-mobile-global-fixes', './mobile-global-fixes.js?v=mobile-global-fixes-20260617-1'); }
   function ensureCacheSettings(){ loadScriptOnce('__FW_MOBILE_CACHE_SETTINGS__', 'data-mobile-cache-settings', './mobile-cache-settings.js?v=mobile-cache-settings-20260618-1'); }
 
