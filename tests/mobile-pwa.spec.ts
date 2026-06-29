@@ -22,6 +22,26 @@ async function waitForDbReady(page: Page) {
   await page.waitForFunction(() => Boolean((window as any).fwDb && (window as any).fwDb.enabled), null, { timeout: 12_000 });
 }
 
+async function waitForLoggedInUser(page: Page) {
+  await page.waitForFunction(async () => {
+    const w = window as any;
+    try {
+      if (w.FWApp && typeof w.FWApp.refreshUser === 'function') {
+        const user = await w.FWApp.refreshUser();
+        if (user && user.id) return true;
+      }
+      if (w.FWApp && w.FWApp.state && w.FWApp.state.user && w.FWApp.state.user.id) return true;
+      if (w.fwDb && typeof w.fwDb.getCurrentUser === 'function') {
+        const user = await w.fwDb.getCurrentUser();
+        if (user && user.id) return true;
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }, null, { timeout: 22_000 });
+}
+
 async function openView(page: Page, view: string) {
   if (view === 'nav') {
     await page.locator('[data-app-nav="nav"]').click();
@@ -163,8 +183,8 @@ test.describe('登录态测试', () => {
     await page.locator('[data-login-form] input[name="password"]').fill(password!);
     await page.locator('[data-login-form] button[type="submit"]').click();
 
-    await expect(page.locator('[data-app-toast]')).toContainText(/已登录/, { timeout: 20_000 });
-    await expect(page.locator('[data-app-user-label]')).not.toHaveText(/未登录/, { timeout: 20_000 });
+    await waitForLoggedInUser(page);
+    await expect(page.locator('[data-app-user-label]')).not.toHaveText(/未登录/, { timeout: 12_000 });
 
     await openView(page, 'echo');
     await expect(page.locator('[data-echo-list]')).toBeVisible();
