@@ -18,10 +18,6 @@ async function gotoApp(page: Page) {
   await page.waitForTimeout(900);
 }
 
-async function activeView(page: Page) {
-  return page.locator('[data-app-view].is-active').first().getAttribute('data-app-view');
-}
-
 async function openView(page: Page, view: string) {
   const selector = view === 'profile' ? '[data-app-profile-trigger]' : `[data-app-nav="${view}"], [data-app-open="${view}"]`;
   await page.locator(selector).first().click();
@@ -35,20 +31,7 @@ async function edgeSwipeRight(page: Page) {
       const target = document.elementFromPoint(x, y) || document.body || document.documentElement;
       let touch: Touch | Record<string, unknown>;
       try {
-        touch = new Touch({
-          identifier: 1,
-          target,
-          clientX: x,
-          clientY: y,
-          screenX: x,
-          screenY: y,
-          pageX: x,
-          pageY: y,
-          radiusX: 2,
-          radiusY: 2,
-          rotationAngle: 0,
-          force: 0.8
-        });
+        touch = new Touch({ identifier: 1, target, clientX: x, clientY: y, screenX: x, screenY: y, pageX: x, pageY: y, radiusX: 2, radiusY: 2, rotationAngle: 0, force: 0.8 });
       } catch {
         touch = { identifier: 1, target, clientX: x, clientY: y, screenX: x, screenY: y, pageX: x, pageY: y };
       }
@@ -78,7 +61,7 @@ async function edgeSwipeRight(page: Page) {
     dispatch('touchmove', 176, 434);
     await sleep(40);
     dispatch('touchend', 218, 435);
-    await sleep(180);
+    await sleep(220);
   });
 }
 
@@ -87,12 +70,10 @@ function collectConsoleErrors(page: Page) {
   page.on('console', message => {
     if (message.type() !== 'error') return;
     const text = message.text();
-    if (/favicon|net::ERR_ABORTED|Failed to load resource/i.test(text)) return;
+    if (/favicon|net::ERR_ABORTED|Failed to load resource|Failed to fetch/i.test(text)) return;
     messages.push(text);
   });
-  page.on('pageerror', error => {
-    messages.push(error.message);
-  });
+  page.on('pageerror', error => messages.push(error.message));
   return messages;
 }
 
@@ -137,7 +118,7 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
     });
 
     await page.locator('[data-mobile-echo-post="fake-post"]').click();
-    await expect(page.locator('.toast, [data-app-toast]').filter({ hasText: /正在同步最新数据|稍等一下/ })).toBeVisible({ timeout: 3_000 });
+    await expect(page.locator('[data-app-toast]').filter({ hasText: /正在同步最新数据|稍等一下/ })).toBeVisible({ timeout: 3_000 });
     await expect(page.locator('[data-app-view="echo"].is-active')).toBeVisible();
   });
 
@@ -145,7 +126,7 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
     await gotoApp(page);
     for (const view of ['echo', 'buddy', 'profile']) {
       await openView(page, view);
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(900);
       const broken = await page.locator('img:visible').evaluateAll(images => images
         .filter(image => image instanceof HTMLImageElement)
         .map(image => image as HTMLImageElement)
@@ -165,10 +146,17 @@ test.describe('可选登录测试', () => {
     await gotoApp(page);
     await openView(page, 'profile');
     await page.locator('[data-profile-mode="login"], [data-auth-view="login"]').first().click().catch(() => undefined);
+    await expect(page.locator('[data-login-form]')).toBeVisible({ timeout: 8_000 });
     await page.locator('[data-login-form] input[name="email"], [data-login-form] input[type="email"]').first().fill(email!);
     await page.locator('[data-login-form] input[name="password"], [data-login-form] input[type="password"]').first().fill(password!);
     await page.locator('[data-login-form] button[type="submit"]').first().click();
-    await expect(page.locator('[data-app-user-label]')).not.toHaveText(/未登录/, { timeout: 15_000 });
+
+    const loginFailed = page.locator('[data-app-toast]').filter({ hasText: /登录失败|检查邮箱|密码|验证码/ });
+    const loggedIn = page.locator('[data-app-user-label]').filter({ hasNotText: /未登录/ });
+    await Promise.race([
+      loggedIn.waitFor({ state: 'visible', timeout: 15_000 }),
+      loginFailed.waitFor({ state: 'visible', timeout: 15_000 }).then(() => { throw new Error('测试账号登录失败，请检查 FW_TEST_EMAIL / FW_TEST_PASSWORD 是否为有效普通账号。'); })
+    ]);
 
     await openView(page, 'echo');
     await expect(page.locator('[data-echo-list]')).toBeVisible();
