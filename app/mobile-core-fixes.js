@@ -159,6 +159,7 @@
 
   function ensureReportBridge(){ loadScriptOnce('__FW_MOBILE_REPORT_BRIDGE__', 'data-mobile-report-bridge', './report.js?v=mobile-report-20260609-1'); }
   function ensureBuddyChatReadFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4'); }
+  function ensureBuddyReturnStability(){ loadScriptOnce('__FW_BUDDY_RETURN_STABILITY__', 'data-buddy-return-stability', './buddy-return-stability.js?v=buddy-return-stability-20260629-1'); }
   function ensureFeedDetailReturnBridge(){ loadScriptOnce('__FW_MOBILE_FEED_DETAIL_RETURN__', 'data-mobile-feed-detail-return', './feed-detail-return.js?v=mobile-feed-detail-return-20260614-1'); }
   function ensureMobileSwipeBack(){ loadScriptOnce('__FW_MOBILE_SWIPE_BACK__', 'data-mobile-swipe-back', './mobile-swipe-back.js?v=mobile-swipe-back-20260629-direct-1'); }
   function ensureMobileTransitions(){ loadScriptOnce('__FW_MOBILE_TRANSITIONS__', 'data-mobile-transitions', './mobile-transitions.js?v=mobile-transitions-20260629-unified-1'); }
@@ -183,6 +184,7 @@
     bindClickSync();
     ensureReportBridge();
     ensureBuddyChatReadFix();
+    ensureBuddyReturnStability();
     ensureFeedDetailReturnBridge();
     ensureMobileSwipeBack();
     ensureMobileTransitions();
