@@ -12,6 +12,22 @@
   var patched = {};
   var observers = {};
 
+  var PREVIEW_ACTION_SELECTOR = [
+    'button',
+    'a',
+    '[role="button"]',
+    '[data-mobile-echo-post]',
+    '[data-mobile-echo-item]',
+    '[data-buddy-open-chat]',
+    '[data-buddy-contact-more]',
+    '[data-buddy-add]',
+    '[data-buddy-accept]',
+    '[data-buddy-reject]',
+    '[data-buddy-remove]',
+    '[data-mobile-poll-vote]',
+    '[data-mobile-poll-detail]'
+  ].join(',');
+
   var MODULES = [
     {name:'bird',api:'FWAppBird',selector:'[data-mobile-bird-feed]',loading:/正在打开观鸟镜/,ttl:90 * DAY,blockPreviewClicks:true},
     {name:'echo',api:'FWAppEcho',selector:'[data-echo-list]',loading:/正在读取回声/,ttl:7 * DAY,blockPreviewClicks:true},
@@ -244,12 +260,11 @@
         if(!module.blockPreviewClicks) continue;
         var el = node(module);
         if(!el || !el.hasAttribute('data-fw-cache-preview')) continue;
-        if(el.contains(target)){
+        var action = target.closest(PREVIEW_ACTION_SELECTOR);
+        if(action && el.contains(action)){
           event.preventDefault();
           event.stopPropagation();
           if(event.stopImmediatePropagation) event.stopImmediatePropagation();
-          var fw = app();
-          if(fw && fw.toast) fw.toast('正在同步最新数据，稍等一下。');
           return;
         }
       }
