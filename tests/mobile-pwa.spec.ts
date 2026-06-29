@@ -187,8 +187,8 @@ test.describe('登录态测试', () => {
     await expect(page.locator('[data-app-user-label]')).not.toHaveText(/未登录/, { timeout: 12_000 });
 
     await openView(page, 'echo');
-    await expect(page.locator('[data-echo-list]')).toBeVisible();
+    await expect(page.locator('[data-app-view="echo"].is-active [data-echo-list]')).toBeAttached();
     await openView(page, 'buddy');
-    await expect(page.locator('[data-buddy-list]')).toBeVisible();
+    await expect(page.locator('[data-app-view="buddy"].is-active [data-buddy-list]')).toBeAttached();
   });
 });
