@@ -1,5 +1,5 @@
 // F.w 研究所：手机端页面数据缓存
-// 作用：为观鸟台、回声、搭子、学术研讨提供本地快速显示；真实状态仍以后端静默刷新为准。
+// 作用：只为适合静态预览的模块提供本地快速显示；搭子/回声不再缓存整段 HTML，避免旧 DOM 导致按钮失效和头像退回文字。
 (function(){
   if(window.__FW_MOBILE_MODULE_CACHE__) return;
   window.__FW_MOBILE_MODULE_CACHE__ = true;
@@ -16,22 +16,14 @@
     'button',
     'a',
     '[role="button"]',
-    '[data-mobile-echo-post]',
-    '[data-mobile-echo-item]',
-    '[data-buddy-open-chat]',
-    '[data-buddy-contact-more]',
-    '[data-buddy-add]',
-    '[data-buddy-accept]',
-    '[data-buddy-reject]',
-    '[data-buddy-remove]',
     '[data-mobile-poll-vote]',
     '[data-mobile-poll-detail]'
   ].join(',');
 
+  var DISABLED_HTML_CACHE_MODULES = ['echo','buddy'];
+
   var MODULES = [
     {name:'bird',api:'FWAppBird',selector:'[data-mobile-bird-feed]',loading:/正在打开观鸟镜/,ttl:90 * DAY,blockPreviewClicks:true},
-    {name:'echo',api:'FWAppEcho',selector:'[data-echo-list]',loading:/正在读取回声/,ttl:7 * DAY,blockPreviewClicks:true},
-    {name:'buddy',api:'FWAppBuddy',selector:'[data-buddy-list]',loading:/正在读取搭子/,ttl:30 * DAY,blockPreviewClicks:true},
     {name:'rooms',api:'FWAppRooms',selector:'[data-mobile-polls-list]',statusSelector:'[data-mobile-polls-status]',loading:/正在读取学术研讨课题/,ttl:7 * DAY,blockPreviewClicks:true,quietOptions:true}
   ];
 
@@ -45,15 +37,30 @@
   function key(module){ return PREFIX + module.name + ':' + userKey(); }
   function node(module){ return document.querySelector(module.selector); }
   function statusNode(module){ return module.statusSelector ? document.querySelector(module.statusSelector) : null; }
-  function activeBuddyTab(){
-    var active = document.querySelector('[data-buddy-tab].active');
-    return active && active.dataset ? active.dataset.buddyTab || 'messages' : 'messages';
-  }
   function canUse(module){
     if(module.canUse){
       try{ return !!module.canUse(); }catch(e){ return false; }
     }
     return true;
+  }
+
+  function clearDisabledModuleCache(){
+    try{
+      if(window.localStorage){
+        Object.keys(localStorage).forEach(function(itemKey){
+          for(var i = 0; i < DISABLED_HTML_CACHE_MODULES.length; i += 1){
+            if(itemKey.indexOf(PREFIX + DISABLED_HTML_CACHE_MODULES[i] + ':') === 0){
+              localStorage.removeItem(itemKey);
+              break;
+            }
+          }
+        });
+      }
+    }catch(e){}
+    var echo = document.querySelector('[data-echo-list]');
+    var buddy = document.querySelector('[data-buddy-list]');
+    if(echo) echo.removeAttribute('data-fw-cache-preview');
+    if(buddy) buddy.removeAttribute('data-fw-cache-preview');
   }
 
   function read(module){
@@ -75,7 +82,6 @@
     if(!html || html.length < 20) return true;
     if(module.loading && module.loading.test(text)) return true;
     if(/读取失败|暂时失败|请稍后|正在读取|正在打开|正在搜索/.test(text)) return true;
-    if(module.name === 'buddy' && /暂时还没有搭子消息|先去“新的搭子”/.test(text)) return false;
     return false;
   }
 
@@ -89,7 +95,6 @@
     try{
       localStorage.setItem(key(module), JSON.stringify({
         at:now(),
-        tab:module.name === 'buddy' ? activeBuddyTab() : '',
         html:html,
         text:text.slice(0, 180)
       }));
@@ -155,8 +160,6 @@
           restoreTimers[module.name] = setTimeout(function(){ restore(module); }, 0);
           return;
         }
-        // 缓存预览期间不要因为 restore() 触发的 DOM mutation 立刻清掉预览标记。
-        // 标记只在真实 load() 完成后由 patchApi() 清除。
         if(isPreviewing(module)) return;
         scheduleSave(module);
       });
@@ -208,8 +211,7 @@
 
     api.ensureLoaded = function(){
       var usedCache = restore(module);
-      var result = api.load(false, module.quietOptions && usedCache ? {quiet:true, preserveScroll:currentScrollSnapshot()} : undefined);
-      return result;
+      return api.load(false, module.quietOptions && usedCache ? {quiet:true, preserveScroll:currentScrollSnapshot()} : undefined);
     };
 
     patched[module.name] = true;
@@ -217,6 +219,7 @@
   }
 
   function patchAll(){
+    clearDisabledModuleCache();
     MODULES.forEach(function(module){
       bindObserver(module);
       patchApi(module);
@@ -225,8 +228,6 @@
 
   function viewToModule(view){
     if(view === 'bird') return 'bird';
-    if(view === 'echo') return 'echo';
-    if(view === 'buddy') return 'buddy';
     if(view === 'rooms') return 'rooms';
     return '';
   }
@@ -281,6 +282,7 @@
   }
 
   function start(){
+    clearDisabledModuleCache();
     patchAll();
     [120, 500, 1500, 3000].forEach(function(delay){ setTimeout(patchAll, delay); });
     bindEarlyRestore();
@@ -289,7 +291,8 @@
     window.FWMobileModuleCache = {
       restore:restoreByName,
       save:function(name){ MODULES.filter(function(item){ return !name || item.name === name; }).forEach(save); },
-      patch:patchAll
+      patch:patchAll,
+      clearSocialCache:clearDisabledModuleCache
     };
   }
 
