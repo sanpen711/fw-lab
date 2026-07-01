@@ -20,7 +20,7 @@
   function normalizeViewport(){
     var meta = $('meta[name="viewport"]');
     if(!meta) return;
-    var next = 'width=device-width, initial-scale=1, viewport-fit=cover';
+    var next = 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover';
     if(meta.getAttribute('content') !== next) meta.setAttribute('content', next);
   }
 
