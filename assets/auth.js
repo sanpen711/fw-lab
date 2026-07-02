@@ -19,5 +19,5 @@
     document.body.appendChild(script);
   }
 
-  loadDesktopOnly('assets/fw-echo-center-desktop.js?v=desktop-echo-center-20260702-1');
+  loadDesktopOnly('assets/fw-echo-center-desktop.js?v=desktop-echo-center-20260702-3');
 })();
