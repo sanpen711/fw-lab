@@ -1,4 +1,4 @@
-// F.w 研究所：下载客户端入口（Windows / iOS / Android）
+// F.w 研究所：下载客户端入口（Windows / IOS / Android）
 (function(){
   if(window.__FW_DOWNLOAD_CLIENT_MODAL__) return;
   window.__FW_DOWNLOAD_CLIENT_MODAL__ = true;
@@ -98,7 +98,7 @@
       return '<section class="fw-download-card' + (current ? ' is-current' : '') + '"><h3>Windows</h3><p>适用于电脑端使用</p><span class="fw-download-spacer"></span><a class="fw-download-file" href="' + DOWNLOADS.windows + '" download>下载安装包</a></section>';
     }
     if(type === 'ios'){
-      return '<section class="fw-download-card' + (current ? ' is-current' : '') + '"><h3>iOS</h3><div class="fw-download-ios-note">使用 Safari 打开本站，点击底部分享按钮，选择“添加到主屏幕”。</div></section>';
+      return '<section class="fw-download-card' + (current ? ' is-current' : '') + '"><h3>IOS</h3><div class="fw-download-ios-note">使用 Safari 打开本站，点击底部分享按钮，选择“添加到主屏幕”。</div></section>';
     }
     return '<section class="fw-download-card' + (current ? ' is-current' : '') + '"><h3>Android</h3><p>适用于安卓手机</p><span class="fw-download-spacer"></span><a class="fw-download-file" href="' + DOWNLOADS.android + '" download>下载安装包</a></section>';
   }
