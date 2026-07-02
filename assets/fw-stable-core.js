@@ -1,11 +1,10 @@
 // F.w 研究所：前台稳定核心（合并版）
 // 合并范围：弹窗层级、回声固定面板、搭子未读红点、退出登录兜底、右上角资料卡遮挡修复。
-// 目的：替代多个临时补丁脚本，减少重复监听和重复数据库查询，让点击更顺滑。
+// 回声面板按通知中心逻辑展示：不自动全量已读，支持刷新、全部已读、单条已读。
 (function(){
   if(window.__FW_STABLE_CORE__) return;
   window.__FW_STABLE_CORE__ = true;
 
-  // 阻止旧补丁在缓存情况下重复启动。
   window.__FW_FRONTEND_POLISH__ = true;
   window.__FW_PRIVATE_ROUTING__ = true;
   window.__FW_PRIVATE_ROUTING_LITE__ = true;
@@ -60,30 +59,25 @@
       button,a.btn,.chip,.fw-social-mini-btn,.fw-wx-mini{transition:transform .12s ease,opacity .12s ease,background-color .12s ease,border-color .12s ease,color .12s ease;}
       button:active,a.btn:active,.chip:active,.fw-social-mini-btn:active,.fw-wx-mini:active{transform:translateY(1px) scale(.99);}
       button:disabled{opacity:.58!important;cursor:not-allowed!important;transform:none!important;}
-
       .fw-profile-popover,.fw-userbar:hover .fw-profile-popover,.fw-userbar:focus-within .fw-profile-popover{display:none!important;opacity:0!important;pointer-events:none!important;}
       .fw-has-badge{position:relative!important;overflow:visible!important;}
       .fw-top-badge{position:absolute;right:-7px;top:-8px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#df7676;color:#fff;border:2px solid #161611;display:none;place-items:center;font-size:10px;line-height:14px;font-weight:1000;box-shadow:0 4px 12px rgba(0,0,0,.25);}
       .fw-has-badge.show .fw-top-badge{display:grid;}
       .fw-toast{z-index:var(--fw-z-toast)!important;}
-
       [data-sb-auth].show,.sb-auth.show,.auth-modal.show{z-index:var(--fw-z-auth)!important;}
       .fw-wx-modal.show{z-index:var(--fw-z-buddy)!important;}
       .fw-wx-panel{z-index:calc(var(--fw-z-buddy) + 1)!important;}
       .fw-social-modal.show,[data-fw-social-modal].show,[data-fw-private-modal].show{z-index:var(--fw-z-social)!important;}
-
       .square-main .post-card{padding:14px 18px!important;min-height:0!important;}
       .square-main .post-content{margin:8px 0 0!important;font-size:18px!important;line-height:1.34!important;}
       .square-main .interactions{margin-top:12px!important;gap:8px!important;}
       .square-main .interactions button{min-height:30px!important;padding:5px 11px!important;font-size:12px!important;}
       [data-post-form] .form-tip:empty{display:none!important;}
-
       .fw-wx-avatar-wrap{position:relative;overflow:visible!important;}
       .fw-wx-unread-badge{position:absolute;left:-5px;top:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#df7676;color:#fff;border:2px solid #fffdf7;display:none;place-items:center;font-size:10px;line-height:14px;font-weight:1000;box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:5;}
       .fw-wx-item.fw-wx-unread{background:rgba(255,253,247,.78);border-color:rgba(217,121,121,.32);}
       .fw-wx-item.fw-wx-unread .fw-wx-name{font-weight:1000;color:#171715;}
       .fw-wx-item .fw-wx-sub{max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-
       @media (min-width:761px){
         .fw-wx-modal.show{pointer-events:none!important;}
         .fw-wx-panel{display:grid!important;grid-template-rows:auto minmax(0,1fr)!important;max-height:calc(100dvh - 96px)!important;overflow:hidden!important;pointer-events:auto!important;}
@@ -93,10 +87,9 @@
         .fw-wx-messages{min-height:0!important;height:auto!important;overflow-y:auto!important;overscroll-behavior:contain;padding-bottom:22px!important;scroll-behavior:auto!important;}
         .fw-wx-compose{position:relative!important;z-index:5!important;flex-shrink:0!important;background:#fffdf7!important;box-shadow:0 -8px 18px rgba(0,0,0,.035)!important;}
         .fw-wx-list{min-height:0!important;overflow-y:auto!important;}
-
         .fw-stable-echo-modal{position:fixed;inset:0;z-index:var(--fw-z-social);display:none;pointer-events:none;background:transparent;}
         .fw-stable-echo-modal.show{display:block;}
-        .fw-stable-echo-panel{position:fixed;right:28px;top:88px;width:min(460px,calc(100vw - 56px));height:min(620px,calc(100dvh - 112px));min-height:420px;display:grid;grid-template-rows:auto minmax(0,1fr);background:#f5f1e8;color:#171715;border:1px solid rgba(217,121,121,.55);box-shadow:0 24px 90px rgba(0,0,0,.26);pointer-events:auto;overflow:hidden;}
+        .fw-stable-echo-panel{position:fixed;right:28px;top:88px;width:min(500px,calc(100vw - 56px));height:min(640px,calc(100dvh - 112px));min-height:420px;display:grid;grid-template-rows:auto minmax(0,1fr);background:#f5f1e8;color:#171715;border:1px solid rgba(217,121,121,.55);box-shadow:0 24px 90px rgba(0,0,0,.26);pointer-events:auto;overflow:hidden;}
       }
       @media(max-width:760px){.fw-stable-echo-modal.show{display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,8,6,.72);pointer-events:auto;}.fw-stable-echo-panel{position:relative;width:100%;height:86dvh;right:auto;top:auto;}}
       .fw-stable-echo-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:22px 24px;border-bottom:1px solid rgba(28,28,24,.12);background:rgba(255,255,255,.45);}
@@ -104,11 +97,16 @@
       .fw-stable-echo-head h2{margin:0;font-size:32px;line-height:1;letter-spacing:-.06em;font-weight:1000;}
       .fw-stable-echo-close{width:42px;height:42px;border:0;background:transparent;font-size:31px;line-height:1;cursor:pointer;}
       .fw-stable-echo-body{min-height:0;overflow:auto;padding:18px;display:grid;align-content:start;gap:12px;}
-      .fw-stable-echo-item{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:12px;padding:13px;border:1px solid rgba(28,28,24,.12);background:rgba(255,253,247,.76);}
+      .fw-stable-echo-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border:1px solid rgba(28,28,24,.12);background:rgba(255,253,247,.72);}
+      .fw-stable-echo-toolbar b{display:block;font-size:14px;font-weight:1000;}.fw-stable-echo-toolbar small{display:block;margin-top:3px;color:#746b5d;font-size:12px;font-weight:850;}
+      .fw-stable-echo-tools{display:flex;gap:8px;flex-wrap:wrap;}.fw-stable-echo-tools button{min-height:30px;border:1px solid rgba(28,28,24,.16);border-radius:999px;background:#fffdf7;color:#171715;font-size:12px;font-weight:1000;padding:0 10px;cursor:pointer;}.fw-stable-echo-tools .dark{background:#171715;color:#fff;border-color:#171715;}
+      .fw-stable-echo-item{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:12px;padding:13px;border:1px solid rgba(28,28,24,.12);background:rgba(255,253,247,.76);position:relative;}
       .fw-stable-echo-item.unread{border-color:rgba(217,121,121,.55);background:#fffdf7;}
+      .fw-stable-echo-item.unread:before{content:"";position:absolute;left:7px;top:7px;width:9px;height:9px;border-radius:999px;background:#df7676;border:2px solid #fffdf7;}
       .fw-stable-echo-avatar{width:38px;height:38px;border-radius:999px;display:grid;place-items:center;overflow:hidden;background:#171715;color:#fff;font-size:12px;font-weight:1000;border:1px solid rgba(217,121,121,.55);}
       .fw-stable-echo-avatar img{width:100%;height:100%;object-fit:cover;}
       .fw-stable-echo-main{min-width:0;}.fw-stable-echo-main b{display:block;font-size:14px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.fw-stable-echo-main span{display:block;margin-top:4px;color:#6f6a5f;font-size:12px;font-weight:850;line-height:1.45;}
+      .fw-stable-echo-main time{display:block;margin-top:4px;color:#9d4a4a;font-size:11px;font-weight:1000;}
       .fw-stable-echo-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}.fw-stable-echo-actions button{min-height:30px;border:1px solid rgba(28,28,24,.16);border-radius:999px;background:#171715;color:#fff;font-size:12px;font-weight:1000;padding:0 10px;cursor:pointer;}
       .fw-stable-echo-empty{padding:18px;border:1px dashed rgba(28,28,24,.18);background:rgba(255,255,255,.45);color:#746b5d;font-weight:900;}
     `;
@@ -150,7 +148,7 @@
     modal = document.createElement('div');
     modal.className = 'fw-stable-echo-modal';
     modal.dataset.fwStableEchoModal = '1';
-    modal.innerHTML = `<section class="fw-stable-echo-panel" role="dialog" aria-modal="false" aria-label="回声"><header class="fw-stable-echo-head"><div><small>ECHO CENTER</small><h2>回声</h2></div><button class="fw-stable-echo-close" type="button" data-fw-stable-echo-close>×</button></header><div class="fw-stable-echo-body" data-fw-stable-echo-body><div class="fw-stable-echo-empty">正在读取回声...</div></div></section>`;
+    modal.innerHTML = `<section class="fw-stable-echo-panel" role="dialog" aria-modal="false" aria-label="回声通知"><header class="fw-stable-echo-head"><div><small>ECHO CENTER</small><h2>回声通知</h2></div><button class="fw-stable-echo-close" type="button" data-fw-stable-echo-close>×</button></header><div class="fw-stable-echo-body" data-fw-stable-echo-body><div class="fw-stable-echo-empty">正在读取回声...</div></div></section>`;
     document.body.appendChild(modal);
     return modal;
   }
@@ -172,7 +170,61 @@
   }
 
   function typeText(type){
-    return ({like:'点赞了你的帖子',same:'对你说：俺也一样',tissue:'给你递了纸巾',comment:'评论了你的帖子',friend_request:'想加你为搭子',friend_accept:'通过了你的搭子申请',chat_agree:'赞同了你的房间消息',system:'系统通知'})[type] || '给你发来一条回声';
+    return ({like:'点赞了你的帖子',same:'对你说：俺也一样',tissue:'给你递了纸巾',comment:'评论了你的帖子',comment_reply:'回复了你的评论',friend_request:'想加你为搭子',friend_accept:'通过了你的搭子申请',chat_agree:'赞同了你的房间消息',system:'系统通知'})[type] || '给你发来一条回声';
+  }
+
+  function timeText(value){
+    if(!value) return '刚刚';
+    const d = new Date(value);
+    if(Number.isNaN(d.getTime())) return '刚刚';
+    const min = Math.floor(Math.max(0, Date.now() - d.getTime()) / 60000);
+    if(min < 1) return '刚刚';
+    if(min < 60) return min + '分钟前';
+    const h = Math.floor(min / 60);
+    if(h < 24) return h + '小时前';
+    const day = Math.floor(h / 24);
+    return day < 7 ? day + '天前' : d.toLocaleDateString('zh-CN');
+  }
+
+  async function markEchoRead(ids){
+    ids = Array.from(new Set((ids || []).map(String).filter(Boolean)));
+    if(!ids.length) return;
+    ids.forEach(id => {
+      const item = document.querySelector(`[data-fw-stable-notice="${window.CSS && CSS.escape ? CSS.escape(id) : id.replace(/"/g,'')}"]`);
+      if(item) item.classList.remove('unread');
+    });
+    try{ await window.fwDb.client.from('notifications').update({is_read:true}).in('id', ids); }catch(e){}
+    setTimeout(refreshBadges, 200);
+  }
+
+  function postIdOf(n){
+    if(!n) return '';
+    if(n.__post_id) return String(n.__post_id);
+    if(n.target_type === 'post' && n.target_id) return String(n.target_id);
+    if(['like','same','tissue','comment'].includes(n.type) && n.target_id) return String(n.target_id);
+    return '';
+  }
+
+  async function resolveReplyPosts(rows){
+    const ids = Array.from(new Set((rows || []).filter(n => n.type === 'comment_reply' && n.target_id).map(n => n.target_id)));
+    if(!ids.length) return rows || [];
+    try{
+      const {data, error} = await window.fwDb.client.from('comments').select('id,post_id').in('id', ids);
+      if(error) throw error;
+      const map = {};
+      (data || []).forEach(x => { if(x.id && x.post_id) map[x.id] = x.post_id; });
+      (rows || []).forEach(n => { if(n.type === 'comment_reply' && map[n.target_id]) n.__post_id = map[n.target_id]; });
+    }catch(e){}
+    return rows || [];
+  }
+
+  function previewText(value){
+    return String(value || '对你的低功耗发言产生了回应。')
+      .replace(/\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]/g, '动画表情')
+      .replace(/\[\[FW_MEDIA_IMAGE:[A-Za-z0-9+/=]+\]\]/g, '图片')
+      .replace(/\[\[FW_MEDIA_VIDEO:[A-Za-z0-9+/=]+\]\]/g, '视频')
+      .replace(/\s+/g, ' ')
+      .trim() || '对你的低功耗发言产生了回应。';
   }
 
   async function openEcho(){
@@ -188,19 +240,19 @@
     modal.classList.add('show');
     body.innerHTML = '<div class="fw-stable-echo-empty">正在读取回声...</div>';
     try{
-      const {data, error} = await window.fwDb.client.from('notifications').select('id,actor_id,type,target_type,target_id,content,is_read,created_at').eq('user_id', me.id).neq('type', 'private_message').order('created_at', {ascending:false}).limit(80);
+      const {data, error} = await window.fwDb.client.from('notifications').select('id,actor_id,type,target_type,target_id,content,is_read,created_at').eq('user_id', me.id).neq('type', 'private_message').order('created_at', {ascending:false}).limit(100);
       if(error) throw error;
-      const rows = data || [];
+      const rows = await resolveReplyPosts(data || []);
       const profiles = await fetchProfiles(rows.map(x => x.actor_id));
-      if(!rows.length){ body.innerHTML = '<div class="fw-stable-echo-empty">暂时没有新的回声。私聊消息已经移到“搭子”里了。</div>'; return; }
-      body.innerHTML = rows.map(n => {
+      const unread = rows.filter(n => !n.is_read).map(n => n.id);
+      const toolbar = `<div class="fw-stable-echo-toolbar"><div><b>回声通知</b><small>${unread.length ? `还有 ${unread.length} 条未读` : '没有未读回声'}</small></div><div class="fw-stable-echo-tools">${unread.length ? '<button class="dark" type="button" data-fw-stable-mark-all>全部已读</button>' : ''}<button type="button" data-fw-stable-refresh>刷新</button></div></div>`;
+      if(!rows.length){ body.innerHTML = toolbar + '<div class="fw-stable-echo-empty">暂时没有新的回声。私聊消息已经移到“搭子”里了。</div>'; return; }
+      body.innerHTML = toolbar + rows.map(n => {
         const p = profiles[n.actor_id] || {};
         const name = p.nickname || '某位研究员';
-        const isPost = (n.target_type === 'post' || ['like','same','tissue','comment'].includes(n.type)) && n.target_id;
-        return `<article class="fw-stable-echo-item ${n.is_read ? '' : 'unread'}"><span data-fw-profile-user="${esc(n.actor_id || '')}">${avatarHtml(p)}</span><div class="fw-stable-echo-main"><b>${esc(name)} ${esc(typeText(n.type))}</b><span>${esc(n.content || '对你的低功耗发言产生了回应。')}</span></div><div class="fw-stable-echo-actions">${isPost ? `<button type="button" data-fw-stable-post="${esc(n.target_id)}" data-open-comments="${n.type === 'comment' ? '1' : '0'}">查看帖子</button>` : ''}${n.type === 'friend_request' || n.type === 'friend_accept' ? `<button type="button" data-fw-stable-buddy>去搭子</button>` : ''}</div></article>`;
+        const postId = postIdOf(n);
+        return `<article class="fw-stable-echo-item ${n.is_read ? '' : 'unread'}" data-fw-stable-notice="${esc(n.id)}"><span data-fw-profile-user="${esc(n.actor_id || '')}">${avatarHtml(p)}</span><div class="fw-stable-echo-main"><b>${esc(name)} ${esc(typeText(n.type))}</b><span>${esc(previewText(n.content))}</span><time>${esc(timeText(n.created_at))}</time></div><div class="fw-stable-echo-actions">${postId ? `<button type="button" data-fw-stable-post="${esc(postId)}" data-open-comments="${n.type === 'comment' || n.type === 'comment_reply' ? '1' : '0'}" data-fw-stable-read="${esc(n.id)}">查看帖子</button>` : ''}${n.type === 'friend_request' || n.type === 'friend_accept' ? `<button type="button" data-fw-stable-buddy data-fw-stable-read="${esc(n.id)}">去搭子</button>` : ''}</div></article>`;
       }).join('');
-      await window.fwDb.client.from('notifications').update({is_read:true}).eq('user_id', me.id).eq('is_read', false).neq('type', 'private_message');
-      setTimeout(refreshBadges, 300);
     }catch(e){ body.innerHTML = '<div class="fw-stable-echo-empty">回声读取失败，请稍后重试。</div>'; }
   }
   window.fwOpenStableEcho = openEcho;
@@ -372,11 +424,17 @@
       const echo = e.target.closest('[data-fw-open-echo]');
       if(echo){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); openEcho(); return; }
       if(e.target.closest('[data-fw-stable-echo-close]')){ $('[data-fw-stable-echo-modal]')?.classList.remove('show'); return; }
+      const markAll = e.target.closest('[data-fw-stable-mark-all]');
+      if(markAll){ const ids = $$('[data-fw-stable-notice].unread').map(x => x.dataset.fwStableNotice); markEchoRead(ids).then(openEcho); return; }
+      if(e.target.closest('[data-fw-stable-refresh]')){ openEcho(); return; }
+      const readBtn = e.target.closest('[data-fw-stable-read]');
+      if(readBtn?.dataset.fwStableRead) markEchoRead([readBtn.dataset.fwStableRead]);
+      const notice = e.target.closest('[data-fw-stable-notice]');
+      if(notice?.classList.contains('unread')) markEchoRead([notice.dataset.fwStableNotice]);
       const post = e.target.closest('[data-fw-stable-post]');
       if(post){ focusPost(post.dataset.fwStablePost, post.dataset.openComments === '1'); return; }
       if(e.target.closest('[data-fw-stable-buddy]')){ $('[data-fw-stable-echo-modal]')?.classList.remove('show'); $('[data-fw-open-buddy]')?.click(); return; }
       if(e.target.matches('[data-fw-stable-echo-modal]')) e.target.classList.remove('show');
-
       const chat = e.target.closest('[data-fw-wx-chat-user], [data-fw-wx-chat-direct], [data-fw-start-chat]');
       if(chat){ const id = chat.dataset.fwWxChatUser || chat.dataset.fwWxChatDirect || chat.dataset.fwStartChat || ''; if(id) markPrivateReadFrom(id); }
       if(e.target.closest('[data-fw-open-buddy], [data-fw-wx-tab], [data-fw-wx-chat-user], [data-fw-wx-chat-direct], [data-fw-wx-reset]')){
