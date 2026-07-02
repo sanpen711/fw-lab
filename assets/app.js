@@ -33,6 +33,7 @@
 
 window.FW_USE_SUPABASE_AUTH = true;
 const STORE_KEY = "fw_lab_posts_v1";
+let supabaseBridgeFailed = false;
 
 const defaultPosts = [
   {id:1,status:"精神离岗",content:"今天开了三个会，最后决定下次再讨论。",time:"3分钟前",resonance:128,same:67,tissue:42,comments:["这句话应该打印出来贴会议室。"]},
@@ -42,7 +43,65 @@ const defaultPosts = [
 ];
 
 function usingSupabase(){
-  return Boolean(window.fwDb && window.fwDb.enabled);
+  return Boolean(window.fwDb && window.fwDb.enabled && window.fwDb.client);
+}
+
+function isLocalFallbackAllowed(){
+  const host = window.location.hostname || "";
+  return window.FW_ALLOW_LOCAL_FALLBACK === true ||
+    window.location.protocol === "file:" ||
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "::1";
+}
+
+function requiresSupabaseData(){
+  return window.FW_USE_SUPABASE_AUTH !== false && !isLocalFallbackAllowed();
+}
+
+function dataUnavailableText(){
+  return supabaseBridgeFailed
+    ? "数据连接失败，请刷新页面后重试。"
+    : "数据连接中，请稍后再试。";
+}
+
+function toast(msg){
+  let t = document.querySelector(".fw-toast");
+
+  if(!t){
+    t = document.createElement("div");
+    t.className = "fw-toast";
+    document.body.appendChild(t);
+  }
+
+  t.textContent = msg;
+  t.classList.add("show");
+
+  clearTimeout(window.__fwAppToast);
+  window.__fwAppToast = setTimeout(() => {
+    t.classList.remove("show");
+  }, 3200);
+}
+
+function showDataUnavailable(target){
+  const msg = dataUnavailableText();
+
+  if(target && target.querySelector){
+    const notice = target.querySelector("[data-notice]");
+
+    if(notice){
+      notice.textContent = msg;
+      return;
+    }
+  }
+
+  toast(msg);
+}
+
+function renderDataUnavailableFeeds(){
+  document.querySelectorAll("[data-feed]").forEach(container => {
+    container.innerHTML = `<div class="empty">${escapeHtml(dataUnavailableText())}</div>`;
+  });
 }
 
 function isSquarePage(){
@@ -50,6 +109,10 @@ function isSquarePage(){
 }
 
 function getPosts(){
+  if(requiresSupabaseData() && !usingSupabase()){
+    return [];
+  }
+
   try{
     const raw = localStorage.getItem(STORE_KEY);
     if(!raw){
@@ -63,6 +126,7 @@ function getPosts(){
 }
 
 function savePosts(posts){
+  if(requiresSupabaseData()) return;
   localStorage.setItem(STORE_KEY, JSON.stringify(posts));
 }
 
@@ -108,6 +172,11 @@ function renderFeeds(){
     return;
   }
 
+  if(requiresSupabaseData() && !usingSupabase()){
+    renderDataUnavailableFeeds();
+    return;
+  }
+
   const posts = getPosts();
 
   containers.forEach(container => {
@@ -143,6 +212,11 @@ function initPostForm(){
       if(usingSupabase()) return;
 
       e.preventDefault();
+
+      if(requiresSupabaseData()){
+        showDataUnavailable(form);
+        return;
+      }
 
       const textarea = form.querySelector("textarea");
       const content = textarea.value.trim();
@@ -186,6 +260,13 @@ function initInteractions(){
 
     const btn = e.target.closest("button[data-action]");
     if(!btn) return;
+
+    if(requiresSupabaseData()){
+      e.preventDefault();
+      e.stopPropagation();
+      showDataUnavailable();
+      return;
+    }
 
     const card = btn.closest(".post-card");
     if(!card) return;
@@ -279,8 +360,16 @@ document.addEventListener("DOMContentLoaded", () => {
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
     "assets/supabase-db.js?v=feed-visibility-20260518-2",
-    "assets/supabase-live.js?v=auth-live-20260518-profile-save-1"
+    "assets/supabase-live.js?v=auth-live-password-recovery-20260702-2"
   ];
+
+  function fail(src){
+    supabaseBridgeFailed = true;
+    console.warn("Supabase bridge failed to load:", src);
+    if(requiresSupabaseData()){
+      renderDataUnavailableFeeds();
+    }
+  }
 
   function loadNext(i){
     if(i >= scripts.length) return;
@@ -289,12 +378,19 @@ document.addEventListener("DOMContentLoaded", () => {
     s.src = scripts[i];
     s.defer = false;
     s.onload = () => loadNext(i + 1);
-    s.onerror = () => console.warn("Supabase bridge failed to load:", scripts[i]);
+    s.onerror = () => fail(scripts[i]);
 
     document.head.appendChild(s);
   }
 
   loadNext(0);
+
+  setTimeout(() => {
+    if(requiresSupabaseData() && !usingSupabase()){
+      supabaseBridgeFailed = true;
+      renderDataUnavailableFeeds();
+    }
+  }, 12000);
 })();
 
 (function loadFwSocialModules(){
@@ -329,41 +425,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadCss("assets/fw-social.css?v=wechat-buddy-center-20260511-4");
 
-loadJs("assets/fw-echo-stable-route.js?v=echo-stable-route-20260529-1");
-loadJs("assets/fw-social.js?v=social-clean-private-chat-20260529-1");
-loadJs("assets/fw-logout-home-fix.js?v=logout-home-fix-20260513-1");
-loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
-if(isHome) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
-loadJs("assets/fw-login-submit-fix.js?v=login-submit-fix-20260515-1");
-loadJs("assets/fw-register-disclaimer-link.js?v=register-disclaimer-link-20260513-1");
-loadJs("assets/fw-avatar-mobile-fix.js?v=avatar-mobile-fix-20260514-2");
-loadJs("assets/fw-avatar-upload-stage-fix.js?v=avatar-upload-stage-fix-20260514-1");
-loadJs("assets/fw-avatar-save-guard.js?v=avatar-save-guard-20260514-1");
-loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
+  loadJs("assets/fw-echo-stable-route.js?v=echo-stable-route-20260529-1");
+  loadJs("assets/fw-social.js?v=social-clean-private-chat-20260529-1");
+  loadJs("assets/fw-logout-home-fix.js?v=logout-home-fix-20260513-1");
+  loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
+  if(isHome) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
+  loadJs("assets/fw-login-submit-fix.js?v=login-submit-fix-20260515-1");
+  loadJs("assets/fw-register-disclaimer-link.js?v=register-disclaimer-link-20260513-1");
+  loadJs("assets/fw-avatar-mobile-fix.js?v=avatar-mobile-fix-20260514-2");
+  loadJs("assets/fw-avatar-upload-stage-fix.js?v=avatar-upload-stage-fix-20260514-1");
+  loadJs("assets/fw-avatar-save-guard.js?v=avatar-save-guard-20260514-1");
+  loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
 
-/*
-  手机端已经迁移到 /app/ 独立 PWA。
-  旧电脑端手机壳脚本不再加载，避免和 /app/ 的底部导航、搭子、回声、我的入口重复抢控制权。
-  桌面端社交、登录、头像、房间聊天等模块保留。
-*/
-loadJs("assets/fw-stable-core.js?v=stable-core-20260524-pages-1");
-loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260524-pages-1");
-loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
-loadJs("assets/fw-sticker-direct-render.js?v=sticker-direct-render-20260514-1");
-loadJs("assets/fw-chat-media-upload.js?v=chat-media-upload-20260514-1");
+  /*
+    手机端已经迁移到 /app/ 独立 PWA。
+    旧电脑端手机壳脚本不再加载，避免和 /app/ 的底部导航、搭子、回声、我的入口重复抢控制权。
+    桌面端社交、登录、头像、房间聊天等模块保留。
+  */
+  loadJs("assets/fw-stable-core.js?v=stable-core-20260524-pages-1");
+  loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260524-pages-1");
+  loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
+  loadJs("assets/fw-sticker-direct-render.js?v=sticker-direct-render-20260514-1");
+  loadJs("assets/fw-chat-media-upload.js?v=chat-media-upload-20260514-1");
 
-if(hasFeedSurface) loadJs("assets/fw-post-media-tools.js?v=post-media-tools-20260518-4");
+  if(hasFeedSurface) loadJs("assets/fw-post-media-tools.js?v=post-media-tools-20260518-4");
 
-loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
-loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
-loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
-loadJs("assets/fw-admin-buddy-lock.js?v=admin-buddy-lock-20260513-1");
-loadJs("assets/fw-report-rpc.js?v=report-rpc-20260513-1");
-if(isAdmin) loadJs("assets/fw-admin-polish.js?v=admin-polish-20260513-1");
-loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
-loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260513-1");
+  loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
+  loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
+  loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
+  loadJs("assets/fw-admin-buddy-lock.js?v=admin-buddy-lock-20260513-1");
+  loadJs("assets/fw-report-rpc.js?v=report-rpc-20260513-1");
+  if(isAdmin) loadJs("assets/fw-admin-polish.js?v=admin-polish-20260513-1");
+  loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
+  loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260513-1");
 
-if(document.querySelector("[data-weekly-grid]")){
-  loadJs("assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1");
-}
+  if(document.querySelector("[data-weekly-grid]")){
+    loadJs("assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1");
+  }
 })();
