@@ -1,9 +1,74 @@
-// F.w 研究所：电脑端旧回声双浮窗清理开关
-// 放在 app.js 前面执行，优先压掉旧的右侧回声小窗缓存。
+// F.w 研究所：电脑端旧回声双浮窗清理开关 + 回声通知布局修正
+// 放在 app.js 前面执行，优先压掉旧的右侧回声小窗缓存，并修正新版回声面板横向溢出。
 (function(){
   if(window.__FW_DESKTOP_ECHO_LEGACY_KILL__) return;
   window.__FW_DESKTOP_ECHO_LEGACY_KILL__ = true;
   if(/\/app\//.test(window.location.pathname || '')) return;
+
+  function injectEchoLayoutFix(){
+    if(document.getElementById('fw-desktop-echo-layout-fix')) return;
+
+    var style = document.createElement('style');
+    style.id = 'fw-desktop-echo-layout-fix';
+    style.textContent = `
+      @media (min-width:761px){
+        .fw-stable-echo-panel{
+          width:min(520px, calc(100vw - 56px))!important;
+          overflow:hidden!important;
+        }
+        .fw-stable-echo-head{
+          padding:20px 24px 18px!important;
+          align-items:flex-start!important;
+        }
+        .fw-stable-echo-head h2{
+          font-size:30px!important;
+          letter-spacing:-.035em!important;
+          white-space:nowrap!important;
+        }
+        .fw-stable-echo-body{
+          overflow-y:auto!important;
+          overflow-x:hidden!important;
+          padding:18px!important;
+        }
+        .fw-stable-echo-item{
+          grid-template-columns:38px minmax(0, 1fr) auto!important;
+          align-items:center!important;
+          width:100%!important;
+          box-sizing:border-box!important;
+          overflow:hidden!important;
+        }
+        .fw-stable-echo-main{
+          min-width:0!important;
+          max-width:100%!important;
+          overflow:hidden!important;
+        }
+        .fw-stable-echo-main b{
+          max-width:100%!important;
+          white-space:normal!important;
+          overflow-wrap:anywhere!important;
+          word-break:break-word!important;
+        }
+        .fw-stable-echo-main span{
+          max-width:100%!important;
+          overflow-wrap:anywhere!important;
+          word-break:break-word!important;
+          white-space:normal!important;
+        }
+        .fw-stable-echo-actions{
+          min-width:max-content!important;
+        }
+        .fw-stable-echo-actions button{
+          white-space:nowrap!important;
+        }
+        .fw-stable-echo-toolbar{
+          width:100%!important;
+          box-sizing:border-box!important;
+          overflow:hidden!important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
 
   function removeLegacyEcho(){
     try{
@@ -24,11 +89,13 @@
   }
 
   window.__FW_DISABLE_DUAL_ECHO__ = true;
+  injectEchoLayoutFix();
   removeLegacyEcho();
 
   window.addEventListener('click', function(e){
     var echo = e.target && e.target.closest && e.target.closest('[data-fw-open-echo]');
     if(!echo) return;
+    injectEchoLayoutFix();
     removeLegacyEcho();
     setTimeout(removeLegacyEcho, 0);
     setTimeout(removeLegacyEcho, 80);
@@ -36,10 +103,12 @@
   }, true);
 
   var obs = new MutationObserver(function(){
+    injectEchoLayoutFix();
     if(window.__FW_DISABLE_DUAL_ECHO__) hideLegacyEcho();
   });
 
   function start(){
+    injectEchoLayoutFix();
     removeLegacyEcho();
     try{ obs.observe(document.documentElement, {childList:true, subtree:true}); }catch(e){}
   }
