@@ -1,4 +1,4 @@
-// F.w 研究所：电脑端旧回声双浮窗清理开关 + 回声通知布局修正
+// F.w 研究所：电脑端旧回声双浮窗清理开关 + 回声通知布局修正 + 搭子选中态修正
 // 放在 app.js 前面执行，优先压掉旧的右侧回声小窗缓存，并修正新版回声面板横向溢出。
 (function(){
   if(window.__FW_DESKTOP_ECHO_LEGACY_KILL__) return;
@@ -64,6 +64,25 @@
           width:100%!important;
           box-sizing:border-box!important;
           overflow:hidden!important;
+        }
+
+        /* 搭子中心：红色只表示未读，当前选中不再用红框，避免误判为未读 */
+        .fw-wx-item:hover:not(.unread){
+          background:#fffdf7!important;
+          border-color:rgba(28,28,24,.14)!important;
+        }
+        .fw-wx-item.active:not(.unread){
+          background:#fffdf7!important;
+          border-color:rgba(28,28,24,.24)!important;
+          box-shadow:inset 4px 0 0 #1b1b18, 0 8px 20px rgba(0,0,0,.045)!important;
+        }
+        .fw-wx-item.unread{
+          background:#fffdf7!important;
+          border-color:rgba(217,121,121,.55)!important;
+        }
+        .fw-wx-item.unread.active{
+          border-color:rgba(217,121,121,.55)!important;
+          box-shadow:inset 4px 0 0 #df7676, 0 8px 20px rgba(0,0,0,.045)!important;
         }
       }
     `;
