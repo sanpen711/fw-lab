@@ -1,8 +1,10 @@
 // F.w 研究所：微信式搭子中心
-// 目标：电脑端保留左右分栏私聊体验，左侧信息架构对齐手机端：消息 / 全部搭子 / 新的搭子。
+// 电脑端保留左右分栏私聊体验；左侧对齐手机端：消息 / 全部搭子 / 新的搭子。
+// 未读状态以 notifications 表的 private_message 为准，打开对应私聊后标记已读并刷新顶部“搭子”红点。
 (function(){
   if(window.__FW_BUDDY_WECHAT_CENTER__) return;
   window.__FW_BUDDY_WECHAT_CENTER__ = true;
+  if(/\/app\//.test(window.location.pathname || '')) return;
 
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
@@ -18,33 +20,21 @@
 
   function esc(v){
     return String(v ?? '').replace(/[&<>"']/g, c => ({
-      '&':'&amp;',
-      '<':'&lt;',
-      '>':'&gt;',
-      '"':'&quot;',
-      "'":'&#39;'
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
     }[c]));
   }
 
-  function ini(v){
-    return String(v || 'FW').trim().slice(0, 2).toUpperCase();
-  }
+  function ini(v){ return String(v || 'FW').trim().slice(0, 2).toUpperCase(); }
 
   function avatar(name, url, cls){
     const c = cls || 'fw-social-avatar';
-    if(url){
-      return `<span class="${c}"><img src="${esc(url)}" alt="${esc(name || '')}"></span>`;
-    }
+    if(url) return `<span class="${c}"><img src="${esc(url)}" alt="${esc(name || '')}"></span>`;
     return `<span class="${c}">${esc(ini(name))}</span>`;
   }
 
   function toast(msg){
     let t = $('.fw-toast');
-    if(!t){
-      t = document.createElement('div');
-      t.className = 'fw-toast';
-      document.body.appendChild(t);
-    }
+    if(!t){ t = document.createElement('div'); t.className = 'fw-toast'; document.body.appendChild(t); }
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(window.__fwWechatBuddyToast);
@@ -53,11 +43,6 @@
 
   function hasLink(txt){
     return /(https?:\/\/|www\.|[a-z0-9][a-z0-9-]*\.(com|net|org|xyz|top|cn|cc|io|me|vip|club|site|info|online|shop|live|app)(\/|$|\s))/i.test(txt || '');
-  }
-
-  function isMobile(){
-    try{ return window.matchMedia && window.matchMedia('(max-width:760px)').matches; }
-    catch(e){ return window.innerWidth <= 760; }
   }
 
   function isStickerPayload(text){
@@ -86,10 +71,7 @@
       if(!window.fwDb || !window.fwDb.enabled) return null;
       me = await window.fwDb.getCurrentUser();
       return me;
-    }catch(e){
-      me = null;
-      return null;
-    }
+    }catch(e){ me = null; return null; }
   }
 
   async function needLogin(){
@@ -103,14 +85,16 @@
   async function fetchProfiles(ids){
     const unique = Array.from(new Set((ids || []).filter(Boolean)));
     if(!unique.length) return {};
-    const {data, error} = await window.fwDb.client
-      .from('profiles')
-      .select('id,nickname,avatar_url,lab_code')
-      .in('id', unique);
-    if(error) return {};
-    const map = {};
-    (data || []).forEach(p => map[p.id] = p);
-    return map;
+    try{
+      const {data, error} = await window.fwDb.client
+        .from('profiles')
+        .select('id,nickname,avatar_url,lab_code')
+        .in('id', unique);
+      if(error) return {};
+      const map = {};
+      (data || []).forEach(p => map[p.id] = p);
+      return map;
+    }catch(e){ return {}; }
   }
 
   async function getFriendships(){
@@ -127,21 +111,10 @@
     return {rows:lastRows, profiles:lastProfiles};
   }
 
-  function otherId(f){
-    return f.requester_id === me.id ? f.receiver_id : f.requester_id;
-  }
-
-  function acceptedRows(){
-    return (lastRows || []).filter(f => f.status === 'accepted');
-  }
-
-  function incomingRows(){
-    return (lastRows || []).filter(f => f.status === 'pending' && f.receiver_id === me.id);
-  }
-
-  function outgoingRows(){
-    return (lastRows || []).filter(f => f.status === 'pending' && f.requester_id === me.id);
-  }
+  function otherId(f){ return f.requester_id === me.id ? f.receiver_id : f.requester_id; }
+  function incomingRows(){ return (lastRows || []).filter(f => f.status === 'pending' && f.receiver_id === me.id); }
+  function outgoingRows(){ return (lastRows || []).filter(f => f.status === 'pending' && f.requester_id === me.id); }
+  function acceptedRows(){ return (lastRows || []).filter(f => f.status === 'accepted'); }
 
   function friendshipBetween(userId){
     return (lastRows || []).find(f =>
@@ -161,6 +134,87 @@
     if(hours < 24) return hours + '小时前';
     const days = Math.floor(hours / 24);
     return days < 7 ? days + '天前' : date.toLocaleDateString('zh-CN');
+  }
+
+  function setTopBadge(count){
+    const n = Number(count || 0);
+    $$('[data-fw-open-buddy]').forEach(btn => {
+      btn.classList.add('fw-has-badge');
+      let badge = btn.querySelector('.fw-top-badge');
+      if(!badge){
+        badge = document.createElement('span');
+        badge.className = 'fw-top-badge';
+        btn.appendChild(badge);
+      }
+      if(n > 0){ badge.textContent = n > 99 ? '99+' : String(n); btn.classList.add('show'); }
+      else{ badge.textContent = ''; btn.classList.remove('show'); }
+    });
+    $$('[data-fw-buddy-count]').forEach(el => {
+      el.textContent = n > 99 ? '99+' : String(n);
+      el.classList.toggle('show', n > 0);
+    });
+  }
+
+  async function unreadPrivateMap(buddyIds){
+    const map = {};
+    const ids = Array.from(new Set((buddyIds || []).filter(Boolean).map(String)));
+    if(!me?.id || !ids.length) return map;
+    try{
+      const {data, error} = await window.fwDb.client
+        .from('notifications')
+        .select('id,actor_id,created_at')
+        .eq('user_id', me.id)
+        .eq('is_read', false)
+        .eq('type', 'private_message')
+        .in('actor_id', ids);
+      if(error) throw error;
+      (data || []).forEach(n => {
+        const key = String(n.actor_id || '');
+        if(!key) return;
+        map[key] = (map[key] || 0) + 1;
+      });
+    }catch(e){}
+    return map;
+  }
+
+  async function refreshBuddyBadge(){
+    if(!me?.id) return setTopBadge(0);
+    try{
+      const [msg, req] = await Promise.all([
+        window.fwDb.client
+          .from('notifications')
+          .select('id', {count:'exact', head:true})
+          .eq('user_id', me.id)
+          .eq('is_read', false)
+          .eq('type', 'private_message'),
+        window.fwDb.client
+          .from('friendships')
+          .select('id', {count:'exact', head:true})
+          .eq('receiver_id', me.id)
+          .eq('status', 'pending')
+      ]);
+      setTopBadge((msg.count || 0) + (req.count || 0));
+    }catch(e){}
+  }
+
+  async function markPrivateReadFrom(userId){
+    if(!me?.id || !userId) return;
+    try{
+      await window.fwDb.client
+        .from('notifications')
+        .update({is_read:true})
+        .eq('user_id', me.id)
+        .eq('is_read', false)
+        .eq('type', 'private_message')
+        .eq('actor_id', userId);
+    }catch(e){}
+
+    $$(`[data-fw-wx-chat-user="${window.CSS && CSS.escape ? CSS.escape(String(userId)) : String(userId).replace(/"/g,'')}"]`).forEach(item => {
+      item.classList.remove('unread');
+      item.querySelectorAll('.fw-wx-unread-dot,.fw-wx-unread-badge').forEach(x => x.remove());
+    });
+
+    await refreshBuddyBadge();
   }
 
   function injectStyle(){
@@ -196,7 +250,7 @@
         .fw-wx-item:hover{background:#fffdf7;border-color:rgba(217,121,121,.28);}
         .fw-wx-item.active{background:#fffdf7;border-color:rgba(217,121,121,.65);box-shadow:0 8px 20px rgba(0,0,0,.05);}
         .fw-wx-item.unread{background:#fffdf7;border-color:rgba(217,121,121,.42);}
-        .fw-wx-unread-dot{position:absolute;left:9px;top:9px;width:10px;height:10px;border-radius:999px;background:#df7676;border:2px solid #fffdf7;box-shadow:0 3px 10px rgba(217,83,83,.25);}
+        .fw-wx-unread-dot{position:absolute;left:9px;top:9px;width:10px;height:10px;border-radius:999px;background:#df7676;border:2px solid #fffdf7;box-shadow:0 3px 10px rgba(217,83,83,.25);z-index:4;}
         .fw-wx-avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:#1b1b18;color:#fff;font-weight:1000;font-size:12px;}
         .fw-wx-avatar img{width:100%;height:100%;object-fit:cover;}
         .fw-wx-name{font-weight:1000;color:#1d1d1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -250,8 +304,7 @@
             <form class="fw-wx-compose" data-fw-wx-compose><input name="message" maxlength="300" autocomplete="off" placeholder="说一句只给搭子看的话，最多 300 字..."><button type="submit">发送</button></form>
           </section>
         </div>
-      </div>
-    `;
+      </div>`;
     document.body.appendChild(modal);
     return modal;
   }
@@ -279,46 +332,6 @@
     $$('[data-fw-wx-tab]').forEach(btn => btn.classList.toggle('active', btn.dataset.fwWxTab === activeTab));
   }
 
-  function renderFriendRows(rows, profiles, mode){
-    const list = $('[data-fw-wx-list]');
-    if(!list) return;
-    if(!rows.length){
-      list.innerHTML = `<div class="fw-wx-empty">${mode === 'friends' ? '暂时还没有搭子。可以到“新的搭子”里搜索实验品。' : '暂无搭子申请。'}</div>`;
-      return;
-    }
-    list.innerHTML = rows.map(f => {
-      const oid = otherId(f);
-      const p = profiles[oid] || {};
-      const name = p.nickname || '低功耗研究员';
-      const incoming = f.receiver_id === me.id && f.status === 'pending';
-      const outgoing = f.requester_id === me.id && f.status === 'pending';
-      const accepted = f.status === 'accepted';
-      let sub = accepted ? '点击进入私聊' : incoming ? '对方想加你为搭子' : outgoing ? '等待对方低功耗处理' : '关系已失效';
-      let actions = '';
-      if(incoming){
-        actions = `<div class="fw-wx-actions"><button class="fw-wx-mini dark" data-fw-wx-accept="${f.id}">同意</button><button class="fw-wx-mini danger" data-fw-wx-reject="${f.id}">拒绝</button></div>`;
-      }else if(outgoing){
-        actions = `<div class="fw-wx-actions"><button class="fw-wx-mini danger" data-fw-wx-remove="${f.id}">撤回</button></div>`;
-      }else if(accepted){
-        actions = `<div class="fw-wx-actions"><button class="fw-wx-mini danger" data-fw-wx-remove="${f.id}">解除</button></div>`;
-      }
-      return `<div class="fw-wx-item ${activeTargetId === oid ? 'active' : ''}" data-fw-wx-chat-user="${esc(oid)}">
-        ${avatar(name, p.avatar_url, 'fw-wx-avatar')}
-        <div><div class="fw-wx-name">${esc(name)}</div><div class="fw-wx-sub">实验品编号：${esc(p.lab_code || '未设置')} · ${esc(sub)}</div>${actions}</div>
-      </div>`;
-    }).join('');
-  }
-
-  function renderNewTab(profiles){
-    const list = $('[data-fw-wx-list]');
-    if(!list) return;
-    const incoming = incomingRows();
-    const outgoing = outgoingRows();
-    const incomingHtml = incoming.length ? incoming.map(f => friendCardHtml(f, profiles)).join('') : '<div class="fw-wx-empty">暂时没有收到新的搭子申请。</div>';
-    const outgoingHtml = outgoing.length ? outgoing.map(f => friendCardHtml(f, profiles)).join('') : '<div class="fw-wx-empty">暂时没有发出的搭子申请。</div>';
-    list.innerHTML = `<section class="fw-wx-section"><h3 class="fw-wx-section-title">收到申请</h3>${incomingHtml}</section><section class="fw-wx-section"><h3 class="fw-wx-section-title">发出申请</h3>${outgoingHtml}</section>`;
-  }
-
   function friendCardHtml(f, profiles){
     const oid = otherId(f);
     const p = profiles[oid] || {};
@@ -334,6 +347,31 @@
     return `<div class="fw-wx-item" data-fw-wx-chat-user="${esc(oid)}">${avatar(name, p.avatar_url, 'fw-wx-avatar')}<div><div class="fw-wx-name">${esc(name)}</div><div class="fw-wx-sub">实验品编号：${esc(p.lab_code || '未设置')} · ${incoming ? '对方想加你为搭子' : '等待对方处理'}</div>${actions}</div></div>`;
   }
 
+  function renderFriendRows(rows, profiles){
+    const list = $('[data-fw-wx-list]');
+    if(!list) return;
+    if(!rows.length){
+      list.innerHTML = '<div class="fw-wx-empty">暂时还没有搭子。可以到“新的搭子”里搜索实验品。</div>';
+      return;
+    }
+    list.innerHTML = rows.map(f => {
+      const oid = otherId(f);
+      const p = profiles[oid] || {};
+      const name = p.nickname || '低功耗研究员';
+      return `<div class="fw-wx-item ${activeTargetId === oid ? 'active' : ''}" data-fw-wx-chat-user="${esc(oid)}">${avatar(name, p.avatar_url, 'fw-wx-avatar')}<div><div class="fw-wx-name">${esc(name)}</div><div class="fw-wx-sub">实验品编号：${esc(p.lab_code || '未设置')} · 点击进入私聊</div><div class="fw-wx-actions"><button class="fw-wx-mini danger" data-fw-wx-remove="${f.id}">解除</button></div></div></div>`;
+    }).join('');
+  }
+
+  function renderNewTab(profiles){
+    const list = $('[data-fw-wx-list]');
+    if(!list) return;
+    const incoming = incomingRows();
+    const outgoing = outgoingRows();
+    const incomingHtml = incoming.length ? incoming.map(f => friendCardHtml(f, profiles)).join('') : '<div class="fw-wx-empty">暂时没有收到新的搭子申请。</div>';
+    const outgoingHtml = outgoing.length ? outgoing.map(f => friendCardHtml(f, profiles)).join('') : '<div class="fw-wx-empty">暂时没有发出的搭子申请。</div>';
+    list.innerHTML = `<section class="fw-wx-section"><h3 class="fw-wx-section-title">收到申请</h3>${incomingHtml}</section><section class="fw-wx-section"><h3 class="fw-wx-section-title">发出申请</h3>${outgoingHtml}</section>`;
+  }
+
   async function renderMessages(accepted, profiles){
     const list = $('[data-fw-wx-list]');
     if(!list) return;
@@ -341,27 +379,30 @@
       list.innerHTML = '<div class="fw-wx-empty">暂时还没有搭子消息。先去“新的搭子”加一个搭子吧。</div>';
       return;
     }
+
     list.innerHTML = '<div class="fw-wx-empty">正在读取搭子消息...</div>';
-    const buddyIds = accepted.map(f => otherId(f)).filter(Boolean);
+    const buddyIds = accepted.map(f => otherId(f)).filter(Boolean).map(String);
     const allowed = {};
-    buddyIds.forEach(id => allowed[String(id)] = true);
+    buddyIds.forEach(id => allowed[id] = true);
+
     try{
+      const unreadMap = await unreadPrivateMap(buddyIds);
       const conv = await window.fwDb.client
         .from('conversations')
         .select('id,user_one_id,user_two_id,updated_at')
         .or(`user_one_id.eq.${me.id},user_two_id.eq.${me.id}`)
         .order('updated_at', {ascending:false});
       if(conv.error) throw conv.error;
+
       const convMap = {};
       (conv.data || []).forEach(row => {
         const other = String(row.user_one_id) === String(me.id) ? row.user_two_id : row.user_one_id;
-        if(allowed[String(other)]) convMap[row.id] = other;
+        if(allowed[String(other)]) convMap[row.id] = String(other);
       });
+
       const convIds = Object.keys(convMap).map(Number).filter(id => Number.isFinite(id) && id > 0);
-      if(!convIds.length){
-        list.innerHTML = '<div class="fw-wx-empty">暂时没有搭子消息。</div>';
-        return;
-      }
+      if(!convIds.length){ list.innerHTML = '<div class="fw-wx-empty">暂时没有搭子消息。</div>'; return; }
+
       const msg = await window.fwDb.client
         .from('private_messages')
         .select('id,conversation_id,sender_id,content,is_deleted,created_at')
@@ -370,29 +411,32 @@
         .order('created_at', {ascending:false})
         .limit(Math.max(160, convIds.length * 8));
       if(msg.error) throw msg.error;
+
       const latestByBuddy = {};
       (msg.data || []).forEach(row => {
         const userId = convMap[row.conversation_id];
         if(!userId || latestByBuddy[userId]) return;
         latestByBuddy[userId] = row;
       });
-      const rows = Object.keys(latestByBuddy).map(id => ({userId:id, message:latestByBuddy[id]})).sort((a,b) => new Date(b.message.created_at).getTime() - new Date(a.message.created_at).getTime());
-      if(!rows.length){
-        list.innerHTML = '<div class="fw-wx-empty">暂时没有搭子消息。</div>';
-        return;
-      }
+
+      const rows = Object.keys(latestByBuddy)
+        .map(id => ({userId:id, message:latestByBuddy[id], unread:Number(unreadMap[id] || 0)}))
+        .sort((a,b) => {
+          if(Boolean(a.unread) !== Boolean(b.unread)) return b.unread - a.unread;
+          return new Date(b.message.created_at).getTime() - new Date(a.message.created_at).getTime();
+        });
+
+      if(!rows.length){ list.innerHTML = '<div class="fw-wx-empty">暂时没有搭子消息。</div>'; return; }
+
       list.innerHTML = rows.map(row => {
         const p = profiles[row.userId] || {};
         const name = p.nickname || '低功耗搭子';
         const mine = String(row.message.sender_id) === String(me.id);
-        const unread = !mine;
-        return `<div class="fw-wx-item ${activeTargetId === row.userId ? 'active' : ''} ${unread ? 'unread' : ''}" data-fw-wx-chat-user="${esc(row.userId)}" data-fw-wx-last-message-id="${esc(row.message.id)}">
-          ${unread ? '<i class="fw-wx-unread-dot" aria-hidden="true"></i>' : ''}
-          ${avatar(name, p.avatar_url, 'fw-wx-avatar')}
-          <div><div class="fw-wx-name">${esc(name)}</div><div class="fw-wx-sub">${esc(mine ? '我：' + messagePreview(row.message.content) : messagePreview(row.message.content))}</div><span class="fw-wx-time">${esc(timeText(row.message.created_at))}</span></div>
-        </div>`;
+        const unread = row.unread > 0;
+        return `<div class="fw-wx-item ${activeTargetId === row.userId ? 'active' : ''} ${unread ? 'unread' : ''}" data-fw-wx-chat-user="${esc(row.userId)}" data-fw-wx-last-message-id="${esc(row.message.id)}">${unread ? '<i class="fw-wx-unread-dot" aria-hidden="true"></i>' : ''}${avatar(name, p.avatar_url, 'fw-wx-avatar')}<div><div class="fw-wx-name">${esc(name)}</div><div class="fw-wx-sub">${esc(mine ? '我：' + messagePreview(row.message.content) : messagePreview(row.message.content))}</div><span class="fw-wx-time">${esc(unread ? `未读 ${row.unread} 条 · ` + timeText(row.message.created_at) : timeText(row.message.created_at))}</span></div></div>`;
       }).join('');
-      if(window.FWAppBuddyUnread && typeof window.FWAppBuddyUnread.apply === 'function') window.FWAppBuddyUnread.apply();
+
+      await refreshBuddyBadge();
     }catch(e){
       list.innerHTML = '<div class="fw-wx-empty">搭子消息暂时读取失败，请稍后再试。</div>';
     }
@@ -409,9 +453,10 @@
       const accepted = rows.filter(f => f.status === 'accepted');
       const sortedAccepted = accepted.slice().sort((a,b) => String((profiles[otherId(a)] || {}).nickname || '').localeCompare(String((profiles[otherId(b)] || {}).nickname || ''), 'zh-CN'));
       if(activeTab === 'messages') await renderMessages(accepted, profiles);
-      else if(activeTab === 'friends') renderFriendRows(sortedAccepted, profiles, 'friends');
+      else if(activeTab === 'friends') renderFriendRows(sortedAccepted, profiles);
       else renderNewTab(profiles);
-      if(selectId){ await selectChat(selectId); }
+      if(selectId) await selectChat(selectId);
+      await refreshBuddyBadge();
     }catch(e){
       if(list) list.innerHTML = `<div class="fw-wx-empty">搭子读取失败：${esc(e.message || '请稍后重试。')}</div>`;
     }
@@ -419,30 +464,30 @@
 
   async function selectChat(targetId){
     if(!targetId) return;
-    activeTargetId = targetId;
+    activeTargetId = String(targetId);
     setTabs();
-    $$('.fw-wx-item').forEach(x => x.classList.toggle('active', x.dataset.fwWxChatUser === targetId));
+    $$('.fw-wx-item').forEach(x => x.classList.toggle('active', String(x.dataset.fwWxChatUser) === activeTargetId));
+    await markPrivateReadFrom(activeTargetId);
+
     const title = $('[data-fw-wx-chat-title]');
     const sub = $('[data-fw-wx-chat-sub]');
     const box = $('[data-fw-wx-messages]');
     if(box) box.innerHTML = '<div class="fw-wx-empty">正在打开私聊...</div>';
+
     try{
-      const profiles = await fetchProfiles([targetId]);
-      const p = profiles[targetId] || lastProfiles[targetId] || {};
+      const profiles = await fetchProfiles([activeTargetId]);
+      const p = profiles[activeTargetId] || lastProfiles[activeTargetId] || {};
       if(title) title.textContent = '和 ' + (p.nickname || '摸鱼搭子') + ' 私聊';
       if(sub) sub.textContent = p.lab_code ? '实验品编号：' + p.lab_code : '实验品编号：未设置';
-      const {data, error} = await window.fwDb.client.rpc('fw_get_or_create_conversation', {target_user_id:targetId});
+      const {data, error} = await window.fwDb.client.rpc('fw_get_or_create_conversation', {target_user_id:activeTargetId});
       if(error) throw error;
       const convId = Number(data);
       if(!Number.isFinite(convId) || convId <= 0) throw new Error('私聊会话创建失败。');
       activeConversationId = convId;
-      if(isMobile()) $('.fw-wx-modal')?.classList.add('fw-wx-mobile-chatting');
       await loadMessages();
       clearInterval(chatTimer);
-      chatTimer = setInterval(() => {
-        if($('.fw-wx-modal.show')) loadMessages();
-      }, 4500);
-      if(!isMobile()) $('[data-fw-wx-compose] input')?.focus();
+      chatTimer = setInterval(() => { if($('.fw-wx-modal.show')) loadMessages(); }, 4500);
+      $('[data-fw-wx-compose] input')?.focus();
     }catch(e){
       if(box) box.innerHTML = `<div class="fw-wx-empty">私聊打开失败：${esc(e.message || '请稍后重试。')}</div>`;
     }
@@ -461,10 +506,7 @@
         .limit(200);
       if(error) throw error;
       const profiles = await fetchProfiles((data || []).map(m => m.sender_id));
-      if(!data || !data.length){
-        box.innerHTML = '<div class="fw-wx-empty">还没有私聊消息。可以先低功耗地打个招呼。</div>';
-        return;
-      }
+      if(!data || !data.length){ box.innerHTML = '<div class="fw-wx-empty">还没有私聊消息。可以先低功耗地打个招呼。</div>'; return; }
       box.innerHTML = data.map(m => {
         const mine = me && m.sender_id === me.id;
         const p = profiles[m.sender_id] || {};
@@ -472,9 +514,7 @@
       }).join('');
       if(typeof window.fwRenderStickerMessages === 'function') window.fwRenderStickerMessages();
       box.scrollTop = box.scrollHeight;
-    }catch(e){
-      box.innerHTML = '<div class="fw-wx-empty">私聊读取失败。</div>';
-    }
+    }catch(e){ box.innerHTML = '<div class="fw-wx-empty">私聊读取失败。</div>'; }
   }
 
   async function sendMessage(form){
@@ -487,8 +527,7 @@
     if(!stickerPayload && hasLink(text)){ toast('私聊第一版暂不支持链接。'); return; }
     const btn = form.querySelector('button');
     const old = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = '发送中...';
+    btn.disabled = true; btn.textContent = '发送中...';
     try{
       const {data, error} = await window.fwDb.client.rpc('fw_send_private_message_to_user', {target_user_id:activeTargetId, message_text:text});
       if(error) throw error;
@@ -497,12 +536,8 @@
       input.value = '';
       await loadMessages();
       if(activeTab === 'messages') setTimeout(() => loadBuddyList(activeTargetId), 200);
-    }catch(e){
-      toast(e.message || '发送失败。');
-    }finally{
-      btn.disabled = false;
-      btn.textContent = old;
-    }
+    }catch(e){ toast(e.message || '发送失败。'); }
+    finally{ btn.disabled = false; btn.textContent = old; }
   }
 
   async function renderSearch(q){
@@ -510,8 +545,7 @@
     if(!list) return;
     const keyword = String(q || '').trim();
     if(keyword.length < 2){ toast('至少输入 2 个字符；邮箱需要输入完整邮箱。'); return; }
-    activeTab = 'new';
-    setTabs();
+    activeTab = 'new'; setTabs();
     list.innerHTML = '<div class="fw-wx-empty">正在搜索实验品...</div>';
     try{
       if(!lastRows.length) await getFriendships();
@@ -528,8 +562,7 @@
           actions = `<button class="fw-wx-mini dark" data-fw-wx-chat-direct="${esc(p.id)}">打开私聊</button>`;
           sub = '已是搭子';
         }else if(f && f.status === 'pending' && f.requester_id === me.id){
-          actions = '<button class="fw-wx-mini" disabled>等待处理</button>';
-          sub = '申请已发出';
+          actions = '<button class="fw-wx-mini" disabled>等待处理</button>'; sub = '申请已发出';
         }else if(f && f.status === 'pending' && f.receiver_id === me.id){
           actions = `<button class="fw-wx-mini dark" data-fw-wx-accept="${f.id}">同意</button><button class="fw-wx-mini danger" data-fw-wx-reject="${f.id}">拒绝</button>`;
           sub = '对方想加你为搭子';
@@ -537,9 +570,7 @@
         html.push(`<div class="fw-wx-item"><span>${avatar(p.nickname, p.avatar_url, 'fw-wx-avatar')}</span><div><div class="fw-wx-name">${esc(p.nickname || '低功耗研究员')}</div><div class="fw-wx-sub">实验品编号：${esc(p.lab_code || '未设置')} · ${esc(sub)}</div><div class="fw-wx-actions">${actions}</div></div></div>`);
       }
       list.innerHTML = html.join('');
-    }catch(e){
-      list.innerHTML = '<div class="fw-wx-empty">搜索失败。</div>';
-    }
+    }catch(e){ list.innerHTML = '<div class="fw-wx-empty">搜索失败。</div>'; }
   }
 
   async function rpc(name, args){
@@ -548,56 +579,53 @@
   }
 
   function startDrag(e){
-    if(isMobile()) return;
     const head = e.target.closest('.fw-wx-head');
-    if(!head) return;
-    if(e.target.closest('button,input,textarea,a,select')) return;
+    if(!head || e.target.closest('button,input,textarea,a,select')) return;
     const panel = $('[data-fw-wx-panel]');
     if(!panel) return;
     const rect = panel.getBoundingClientRect();
     const p = e.touches ? e.touches[0] : e;
-    drag = {panel,startX:p.clientX,startY:p.clientY,left:rect.left,top:rect.top,width:rect.width,height:rect.height};
+    drag = {panel,startX:p.clientX,startY:p.clientY,left:rect.left,top:rect.top};
     document.body.style.userSelect = 'none';
     e.preventDefault();
   }
 
   function moveDrag(e){
-    if(isMobile()) return;
     if(!drag) return;
     const p = e.touches ? e.touches[0] : e;
-    const dx = p.clientX - drag.startX;
-    const dy = p.clientY - drag.startY;
-    drag.panel.style.left = drag.left + dx + 'px';
-    drag.panel.style.top = drag.top + dy + 'px';
-    drag.panel.style.right = 'auto';
-    drag.panel.style.bottom = 'auto';
+    drag.panel.style.left = drag.left + p.clientX - drag.startX + 'px';
+    drag.panel.style.top = drag.top + p.clientY - drag.startY + 'px';
+    drag.panel.style.right = 'auto'; drag.panel.style.bottom = 'auto';
   }
 
-  function endDrag(){
-    drag = null;
-    document.body.style.userSelect = '';
-  }
+  function endDrag(){ drag = null; document.body.style.userSelect = ''; }
 
   async function openBuddyCenter(selectId){
     if(!(await waitForDb()) || !(await needLogin())) return;
     openHub();
-    if(selectId){ activeTab = 'messages'; }
+    if(selectId) activeTab = 'messages';
     await loadBuddyList(selectId || '');
   }
 
   window.FWMobileActions = window.FWMobileActions || {};
-  window.FWMobileActions.openBuddy = function(){
-    openBuddyCenter('');
-    return true;
-  };
+  window.FWMobileActions.openBuddy = function(){ openBuddyCenter(''); return true; };
+
+  function resetRightPane(){
+    activeTargetId = ''; activeConversationId = null; clearInterval(chatTimer); chatTimer = null;
+    $$('.fw-wx-item').forEach(x => x.classList.remove('active'));
+    const title = $('[data-fw-wx-chat-title]');
+    const sub = $('[data-fw-wx-chat-sub]');
+    const box = $('[data-fw-wx-messages]');
+    if(title) title.textContent = '选择一个搭子';
+    if(sub) sub.textContent = '左侧点一个消息或搭子，右侧开始低功耗私聊。';
+    if(box) box.innerHTML = '<div class="fw-wx-empty">还没有选择聊天对象。</div>';
+  }
 
   function intercept(e){
     const buddyBtn = e.target.closest('[data-fw-open-buddy]');
     const startChat = e.target.closest('[data-fw-start-chat], [data-fw-dual-chat]');
     if(!buddyBtn && !startChat) return;
-    e.preventDefault();
-    e.stopPropagation();
-    if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.();
     const id = startChat ? (startChat.dataset.fwStartChat || startChat.dataset.fwDualChat || '') : '';
     openBuddyCenter(id);
   }
@@ -607,49 +635,11 @@
 
     window.addEventListener('click', async e => {
       const close = e.target.closest('[data-fw-wx-close]');
-      if(close){
-        $('.fw-wx-modal')?.classList.remove('show');
-        $('.fw-wx-modal')?.classList.remove('fw-wx-mobile-chatting');
-        document.body.classList.remove('fw-wx-modal-open');
-        clearInterval(chatTimer);
-        chatTimer = null;
-        return;
-      }
-      const backList = e.target.closest('[data-fw-wx-back-list]');
-      if(backList){
-        const modal = $('.fw-wx-modal');
-        if(modal) modal.classList.remove('fw-wx-mobile-chatting');
-        activeTargetId = '';
-        activeConversationId = null;
-        clearInterval(chatTimer);
-        chatTimer = null;
-        $$('.fw-wx-item').forEach(x => x.classList.remove('active'));
-        const title = $('[data-fw-wx-chat-title]');
-        const sub = $('[data-fw-wx-chat-sub]');
-        const box = $('[data-fw-wx-messages]');
-        if(title) title.textContent = '选择一个搭子';
-        if(sub) sub.textContent = '左侧点一个消息或搭子，右侧开始低功耗私聊。';
-        if(box) box.innerHTML = '<div class="fw-wx-empty">还没有选择聊天对象。</div>';
-        return;
-      }
+      if(close){ $('.fw-wx-modal')?.classList.remove('show'); document.body.classList.remove('fw-wx-modal-open'); clearInterval(chatTimer); chatTimer = null; return; }
       const reset = e.target.closest('[data-fw-wx-reset]');
       if(reset){ openHub(); return; }
       const tab = e.target.closest('[data-fw-wx-tab]');
-      if(tab){
-        activeTab = tab.dataset.fwWxTab || 'messages';
-        activeTargetId = '';
-        activeConversationId = null;
-        clearInterval(chatTimer);
-        chatTimer = null;
-        const title = $('[data-fw-wx-chat-title]');
-        const sub = $('[data-fw-wx-chat-sub]');
-        const box = $('[data-fw-wx-messages]');
-        if(title) title.textContent = '选择一个搭子';
-        if(sub) sub.textContent = '左侧点一个消息或搭子，右侧开始低功耗私聊。';
-        if(box) box.innerHTML = '<div class="fw-wx-empty">还没有选择聊天对象。</div>';
-        loadBuddyList();
-        return;
-      }
+      if(tab){ activeTab = tab.dataset.fwWxTab || 'messages'; resetRightPane(); loadBuddyList(); return; }
       const item = e.target.closest('[data-fw-wx-chat-user]');
       if(item && !e.target.closest('button')){ selectChat(item.dataset.fwWxChatUser); return; }
       const direct = e.target.closest('[data-fw-wx-chat-direct]');
@@ -667,26 +657,14 @@
         const ok = !/解除/.test(String(remove.textContent || '')) || window.confirm('确定解除这个搭子关系吗？');
         if(!ok) return;
         try{ await rpc('fw_remove_friendship', {target_friendship_id:Number(remove.dataset.fwWxRemove)}); toast('已处理搭子关系。'); await loadBuddyList(); }catch(err){ toast(err.message || '操作失败。'); }
-        return;
       }
     }, true);
 
     window.addEventListener('submit', e => {
       const search = e.target.closest('[data-fw-wx-search]');
-      if(search){
-        e.preventDefault();
-        e.stopPropagation();
-        if(e.stopImmediatePropagation) e.stopImmediatePropagation();
-        renderSearch(search.querySelector('input[name="q"]')?.value || '');
-        return;
-      }
+      if(search){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); renderSearch(search.querySelector('input[name="q"]')?.value || ''); return; }
       const compose = e.target.closest('[data-fw-wx-compose]');
-      if(compose){
-        e.preventDefault();
-        e.stopPropagation();
-        if(e.stopImmediatePropagation) e.stopImmediatePropagation();
-        sendMessage(compose);
-      }
+      if(compose){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); sendMessage(compose); }
     }, true);
 
     document.addEventListener('mousedown', startDrag, true);
@@ -697,10 +675,7 @@
     document.addEventListener('touchend', endDrag, true);
   }
 
-  function boot(){
-    injectStyle();
-    bind();
-  }
+  function boot(){ injectStyle(); bind(); waitForDb().then(refreshMe).then(refreshBuddyBadge); }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
