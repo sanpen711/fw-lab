@@ -423,7 +423,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const isAdmin = page === "admin.html";
   const hasFeedSurface = Boolean(document.querySelector("[data-post-form], [data-feed]"));
 
-  loadCss("assets/fw-social.css?v=wechat-buddy-center-20260511-4");
+  loadCss("assets/fw-social.css?v=desktop-social-slim-20260702-1");
 
   loadJs("assets/fw-echo-stable-route.js?v=echo-stable-route-20260529-1");
   loadJs("assets/fw-social.js?v=social-desktop-echo-20260702-1");
@@ -442,8 +442,9 @@ document.addEventListener("DOMContentLoaded", () => {
     旧电脑端手机壳脚本不再加载，避免和 /app/ 的底部导航、搭子、回声、我的入口重复抢控制权。
     桌面端社交、登录、头像、房间聊天等模块保留。
   */
-  loadJs("assets/fw-stable-core.js?v=stable-core-20260524-pages-1");
-  loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-center-20260524-pages-1");
+  loadJs("assets/fw-stable-core.js?v=stable-core-echo-notice-20260702-1");
+  loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-unread-20260702-1");
+  loadJs("assets/fw-desktop-echo-legacy-kill.js?v=desktop-fixes-lite-20260702-1");
   loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
   loadJs("assets/fw-sticker-direct-render.js?v=sticker-direct-render-20260514-1");
   loadJs("assets/fw-chat-media-upload.js?v=chat-media-upload-20260514-1");
