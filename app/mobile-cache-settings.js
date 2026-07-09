@@ -23,12 +23,16 @@
     'fw-mobile-media-cache-v2'
   ];
 
+  var INDEXED_DB_NAMES = [
+    'fw-mobile-data-cache-v1'
+  ];
+
   function app(){ return window.FWApp || null; }
   function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
   function toast(message){ var fw = app(); if(fw && fw.toast) fw.toast(message); }
   function esc(value){
-    return String(value == null ? '' : value).replace(/[&<>"']/g, function(c){
+    return String(value == null ? '' : '').replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
   }
@@ -77,6 +81,7 @@
           '<li>精神广场、回声、搭子、观鸟台等页面的本地列表缓存</li>' +
           '<li>头像、表情、帖子图片等媒体缓存</li>' +
           '<li>私聊本地快速显示缓存</li>' +
+          '<li>IndexedDB 结构化缓存：帖子、评论、最近私聊</li>' +
         '</ul>' +
       '</div>' +
       '<div class="mobile-cache-card">' +
@@ -126,6 +131,28 @@
     return removed;
   }
 
+  async function removeIndexedDbCaches(){
+    var removed = 0;
+    try{
+      if(window.FWMobileDataCache && typeof window.FWMobileDataCache.clearAll === 'function'){
+        var ok = await window.FWMobileDataCache.clearAll();
+        if(ok) return 1;
+      }
+    }catch(e){}
+    if(!window.indexedDB) return removed;
+    for(var i = 0; i < INDEXED_DB_NAMES.length; i += 1){
+      try{
+        await new Promise(function(resolve){
+          var request = indexedDB.deleteDatabase(INDEXED_DB_NAMES[i]);
+          request.onsuccess = function(){ removed += 1; resolve(); };
+          request.onerror = function(){ resolve(); };
+          request.onblocked = function(){ resolve(); };
+        });
+      }catch(e){}
+    }
+    return removed;
+  }
+
   function resetRuntimeFlags(){
     var fw = app();
     if(fw && fw.state){
@@ -147,8 +174,9 @@
     try{
       var localCount = removeMatchingLocalStorage();
       var cacheCount = await removeNamedCaches();
+      var dbCount = await removeIndexedDbCaches();
       resetRuntimeFlags();
-      setStatus('已清理：本地记录 ' + localCount + ' 项，图片缓存 ' + cacheCount + ' 组。');
+      setStatus('已清理：本地记录 ' + localCount + ' 项，图片缓存 ' + cacheCount + ' 组，结构化缓存 ' + dbCount + ' 组。');
       toast('缓存已清理');
     }catch(e){
       console.warn('[FW mobile cache settings] clear failed', e);
