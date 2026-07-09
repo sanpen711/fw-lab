@@ -102,6 +102,9 @@
     if(window.FWMobileFeedCache && typeof window.FWMobileFeedCache.prime === 'function'){
       try{ return !!window.FWMobileFeedCache.prime(); }catch(e){}
     }
+    if(window.FWMobileFeedIDBBridge && typeof window.FWMobileFeedIDBBridge.prime === 'function'){
+      try{ window.FWMobileFeedIDBBridge.prime(); }catch(e){}
+    }
     return false;
   }
   function refreshFeedCache(){
@@ -157,6 +160,7 @@
     document.body.appendChild(script);
   }
 
+  function ensureMobileDataCache(){ loadScriptOnce('FWMobileDataCache', 'data-mobile-data-cache', './mobile-data-cache.js?v=mobile-data-cache-20260709-1'); }
   function ensureReportBridge(){ loadScriptOnce('__FW_MOBILE_REPORT_BRIDGE__', 'data-mobile-report-bridge', './report.js?v=mobile-report-20260609-1'); }
   function ensureBuddyChatReadFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4'); }
   function ensureBuddyReturnStability(){ loadScriptOnce('__FW_BUDDY_RETURN_STABILITY__', 'data-buddy-return-stability', './buddy-return-stability.js?v=buddy-return-stability-20260629-1'); }
@@ -166,10 +170,12 @@
   function ensurePriorityFixes(){ loadScriptOnce('__FW_MOBILE_PRIORITY_FIXES__', 'data-mobile-priority-fixes', './mobile-priority-fixes.js?v=mobile-priority-fixes-20260629-echo-core-1'); }
   function ensureMediaCache(){ loadScriptOnce('__FW_MOBILE_MEDIA_CACHE__', 'data-mobile-media-cache', './mobile-media-cache.js?v=mobile-media-cache-20260629-avatar-repair-1'); }
   function ensureFeedCache(){ loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260618-speed-2'); }
+  function ensureFeedIDBBridge(){ loadScriptOnce('__FW_MOBILE_FEED_IDB_BRIDGE__', 'data-mobile-feed-idb-bridge', './mobile-feed-idb-bridge.js?v=mobile-feed-idb-bridge-20260709-1'); }
+  function ensureChatIDBBridge(){ loadScriptOnce('__FW_MOBILE_CHAT_IDB_BRIDGE__', 'data-mobile-chat-idb-bridge', './mobile-chat-idb-bridge.js?v=mobile-chat-idb-bridge-20260709-1'); }
   function ensureImagePreview(){ loadScriptOnce('__FW_MOBILE_IMAGE_PREVIEW__', 'data-mobile-image-preview', './mobile-image-preview.js?v=mobile-image-preview-20260629-sticker-1'); }
   function ensureModuleCache(){ loadScriptOnce('__FW_MOBILE_MODULE_CACHE__', 'data-mobile-module-cache', './mobile-module-cache.js?v=mobile-module-cache-20260629-social-off-1'); }
   function ensureGlobalFixes(){ loadScriptOnce('__FW_MOBILE_GLOBAL_FIXES_20260617__', 'data-mobile-global-fixes', './mobile-global-fixes.js?v=mobile-global-fixes-20260617-1'); }
-  function ensureCacheSettings(){ loadScriptOnce('__FW_MOBILE_CACHE_SETTINGS__', 'data-mobile-cache-settings', './mobile-cache-settings.js?v=mobile-cache-settings-20260618-1'); }
+  function ensureCacheSettings(){ loadScriptOnce('__FW_MOBILE_CACHE_SETTINGS__', 'data-mobile-cache-settings', './mobile-cache-settings.js?v=mobile-cache-settings-20260709-1'); }
 
   function requestServiceWorkerRefresh(){
     if(!('serviceWorker' in navigator)) return;
@@ -182,6 +188,7 @@
     normalizeViewport();
     schedulePatchSetView();
     bindClickSync();
+    ensureMobileDataCache();
     ensureReportBridge();
     ensureBuddyChatReadFix();
     ensureBuddyReturnStability();
@@ -191,6 +198,8 @@
     ensurePriorityFixes();
     ensureMediaCache();
     ensureFeedCache();
+    ensureFeedIDBBridge();
+    ensureChatIDBBridge();
     ensureImagePreview();
     ensureModuleCache();
     ensureGlobalFixes();
