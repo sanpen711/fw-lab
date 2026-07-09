@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260629-social-cache-off-1';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260709-idb-cache-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -51,8 +51,11 @@ const APP_SHELL = [
   appPath('mobile-priority-fixes.js'),
   appPath('mobile-swipe-back.js'),
   appPath('mobile-transitions.js'),
+  appPath('mobile-data-cache.js'),
   appPath('mobile-media-cache.js'),
   appPath('mobile-feed-cache.js'),
+  appPath('mobile-feed-idb-bridge.js'),
+  appPath('mobile-chat-idb-bridge.js'),
   appPath('mobile-image-preview.js'),
   appPath('mobile-module-cache.js'),
   appPath('mobile-global-fixes.js'),
