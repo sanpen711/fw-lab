@@ -5,6 +5,9 @@
 
   var imageUploading = false;
   var lastChatState = false;
+  var MY_AVATAR_KEY = 'fw_mobile_buddy_chat_my_avatar_html';
+  var TARGET_KEY = 'fw_mobile_buddy_chat_target_id';
+  var TARGET_AVATAR_KEY = 'fw_mobile_buddy_chat_target_avatar';
 
   function $(selector, root){ return (root || document).querySelector(selector); }
   function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
@@ -19,6 +22,14 @@
     if(fw && fw.toast) fw.toast(message);
     else console.warn(message);
   }
+  function hasImg(html){ return /<img\b/i.test(String(html || '')); }
+  function initials(name){
+    var fw = app();
+    if(fw && typeof fw.initials === 'function') return fw.initials(name || 'FW');
+    return String(name || 'FW').trim().slice(0, 2).toUpperCase() || 'FW';
+  }
+  function safeStore(key, value){ try{ if(window.localStorage && value) localStorage.setItem(key, value); }catch(e){} }
+  function safeRead(key){ try{ return window.localStorage ? (localStorage.getItem(key) || '') : ''; }catch(e){ return ''; } }
 
   function injectStyle(){
     if($('#fwMobileBuddyChatTweaksStyle')) return;
@@ -71,25 +82,68 @@
     if(match && match[1]) title.textContent = match[1];
   }
 
-  function getMyAvatarHtml(){
-    var pillAvatar = $('.user-pill .user-avatar');
-    if(pillAvatar) return pillAvatar.innerHTML;
+  function rememberMyAvatar(){
     var fw = app();
-    var name = fw && fw.state && fw.state.profile && fw.state.profile.nickname || '我';
-    return esc(String(name).slice(0, 2));
+    var user = fw && fw.state && fw.state.user;
+    if(user && user.avatar_url){
+      safeStore(MY_AVATAR_KEY, '<img src="' + esc(user.avatar_url) + '" alt="' + esc(user.nickname || '我') + '">');
+      return;
+    }
+    var pillAvatar = $('.user-pill .user-avatar');
+    var html = pillAvatar && pillAvatar.innerHTML || '';
+    if(hasImg(html)) safeStore(MY_AVATAR_KEY, html);
+  }
+
+  function getMyAvatarHtml(){
+    var fw = app();
+    var user = fw && fw.state && fw.state.user;
+    if(user && user.avatar_url){
+      var htmlFromUser = '<img src="' + esc(user.avatar_url) + '" alt="' + esc(user.nickname || '我') + '">';
+      safeStore(MY_AVATAR_KEY, htmlFromUser);
+      return htmlFromUser;
+    }
+    var pillAvatar = $('.user-pill .user-avatar');
+    var html = pillAvatar && String(pillAvatar.innerHTML || '').trim();
+    if(hasImg(html)){ safeStore(MY_AVATAR_KEY, html); return html; }
+    var stored = safeRead(MY_AVATAR_KEY);
+    if(stored) return stored;
+    return esc(initials(user && (user.nickname || user.email) || '我'));
+  }
+
+  function storeTargetAvatarFromElement(root, targetId){
+    if(!root || !targetId) return;
+    var avatar = $('.list-avatar', root) || $('.user-avatar', root) || $('.buddy-profile-top .list-avatar');
+    if(!avatar) return;
+    var html = String(avatar.innerHTML || '').trim();
+    if(!html) return;
+    var key = TARGET_AVATAR_KEY + ':' + String(targetId);
+    var old = safeRead(key) || safeRead(TARGET_AVATAR_KEY + ':last');
+    if(!hasImg(html) && hasImg(old)) return;
+    safeStore(TARGET_KEY, String(targetId));
+    safeStore(key, html);
+    safeStore(TARGET_AVATAR_KEY + ':last', html);
+  }
+
+  function getOtherAvatarHtml(row){
+    var targetId = safeRead(TARGET_KEY);
+    var stored = (targetId && safeRead(TARGET_AVATAR_KEY + ':' + targetId)) || safeRead(TARGET_AVATAR_KEY + ':last');
+    if(stored) return stored;
+    var name = $('.buddy-message-name', row);
+    return esc(initials(name && name.textContent ? name.textContent.trim() : '搭子'));
   }
 
   function addMessageAvatars(){
+    rememberMyAvatar();
     $$('.buddy-message').forEach(function(row){
-      if($('.buddy-message-avatar', row)) return;
-      var avatar = document.createElement('span');
-      avatar.className = 'buddy-message-avatar';
-      if(row.classList.contains('mine')){
-        avatar.innerHTML = getMyAvatarHtml();
-      }else{
-        var name = $('.buddy-message-name', row);
-        avatar.textContent = name && name.textContent ? name.textContent.trim().slice(0, 2) : '搭子';
+      var avatar = $('.buddy-message-avatar', row);
+      var html = row.classList.contains('mine') ? getMyAvatarHtml() : getOtherAvatarHtml(row);
+      if(avatar){
+        if(hasImg(html) && !hasImg(avatar.innerHTML)) avatar.innerHTML = html;
+        return;
       }
+      avatar = document.createElement('span');
+      avatar.className = 'buddy-message-avatar';
+      avatar.innerHTML = html;
       row.appendChild(avatar);
     });
   }
@@ -250,6 +304,13 @@
 
   function bind(){
     document.addEventListener('click', function(e){
+      var open = e.target.closest && e.target.closest('[data-buddy-open-chat]');
+      if(open){
+        var targetId = open.getAttribute('data-buddy-open-chat') || open.dataset.buddyOpenChat || '';
+        var root = open.closest('.buddy-message-row,.buddy-row,.buddy-contact-card,.buddy-profile-card,.buddy-profile-panel') || open;
+        storeTargetAvatarFromElement(root, targetId);
+        rememberMyAvatar();
+      }
       var imageBtn = e.target.closest && e.target.closest('[data-buddy-chat-image]');
       if(imageBtn){
         e.preventDefault();
