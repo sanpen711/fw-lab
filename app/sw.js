@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260709-idb-cache-1';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260709-idb-cache-2';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -77,6 +77,13 @@ function cacheAppShell(cache){
   }));
 }
 
+function matchCachedRequest(request, url){
+  return caches.match(request).then(cached => {
+    if(cached) return cached;
+    return caches.match(url.origin + url.pathname);
+  });
+}
+
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cacheAppShell).then(() => self.skipWaiting()));
 });
@@ -114,6 +121,6 @@ self.addEventListener('fetch', event => {
         caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
       }
       return response;
-    }).catch(() => caches.match(request))
+    }).catch(() => matchCachedRequest(request, url))
   );
 });
