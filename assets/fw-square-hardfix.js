@@ -93,7 +93,7 @@
     var list = [
       ['[[FW_USER_STICKER:', 'sticker'],
       ['[[FW_MEDIA_IMAGE:', 'image'],
-      ['[[FW_MEDIA_VIDEO:', 'video']]
+      ['[[FW_MEDIA_VIDEO:', 'video']
     ];
     for(var i=0;i<list.length;i++){
       var prefix = list[i][0];

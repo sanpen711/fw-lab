@@ -266,6 +266,8 @@
 
             <button class="btn dark full" type="submit">保存资料</button>
             <button class="btn full" data-sb-logout type="button" style="margin-top:10px">退出登录</button>
+            <p class="form-tip" style="margin-top:14px"><a href="rules.html" target="_blank" rel="noopener">用户规则</a> · <a href="privacy.html" target="_blank" rel="noopener">隐私政策</a></p>
+            <button class="btn full" data-delete-own-account type="button" style="margin-top:10px;border-color:#9d3d3d;color:#8f3636">永久注销账号</button>
           </form>
         </section>
       </div>
@@ -958,6 +960,15 @@
         logout();
       }
 
+      const deleteAccountButton = e.target.closest('[data-delete-own-account]');
+
+      if(deleteAccountButton){
+        e.preventDefault();
+        e.stopPropagation();
+        deleteOwnAccount(deleteAccountButton);
+        return;
+      }
+
       const go = e.target.closest('[data-go]');
 
       if(go){
@@ -1043,6 +1054,43 @@
       toast('找回密码邮件已发送。');
       show('login');
 
+    }catch(e){
+      toast(authMsg(e));
+    }finally{
+      setLoading(btn, false);
+    }
+  }
+
+  async function deleteOwnAccount(btn){
+    if(!me){
+      toast('请先登录。');
+      return;
+    }
+
+    if(me.isAdmin){
+      toast('管理员账号不能直接注销，请先转移管理员身份。');
+      return;
+    }
+
+    if(!window.confirm('注销后，账号、帖子、评论、互动、搭子关系和个人文件将被永久删除。是否继续？')) return;
+    const phrase = window.prompt('请输入“删除账号”确认永久注销：', '');
+    if(String(phrase || '').trim() !== '删除账号'){
+      toast('确认文字不正确，已取消注销。');
+      return;
+    }
+
+    setLoading(btn, true, '注销中...');
+    try{
+      if(!db().deleteOwnAccount){
+        throw new Error('账号注销功能尚未启用，请更新数据库补丁。');
+      }
+      await db().deleteOwnAccount();
+      me = null;
+      const modalEl = $('[data-sb-auth]');
+      if(modalEl) modalEl.classList.remove('show');
+      await refreshUser();
+      await loadRemotePosts();
+      toast('账号已注销。');
     }catch(e){
       toast(authMsg(e));
     }finally{

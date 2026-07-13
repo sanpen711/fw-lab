@@ -359,8 +359,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const scripts = [
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
-    "assets/supabase-db.js?v=feed-visibility-20260518-2",
-    "assets/supabase-live.js?v=auth-live-password-recovery-20260702-2"
+    "assets/supabase-db.js?v=critical-relations-20260710-1",
+    "assets/supabase-live.js?v=critical-account-privacy-20260710-1"
   ];
 
   function fail(src){
@@ -431,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
   if(isHome) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
   loadJs("assets/fw-login-submit-fix.js?v=login-submit-fix-20260515-1");
-  loadJs("assets/fw-register-disclaimer-link.js?v=register-disclaimer-link-20260513-1");
+  loadJs("assets/fw-register-disclaimer-link.js?v=privacy-consent-20260710-1");
   loadJs("assets/fw-avatar-mobile-fix.js?v=avatar-mobile-fix-20260514-2");
   loadJs("assets/fw-avatar-upload-stage-fix.js?v=avatar-upload-stage-fix-20260514-1");
   loadJs("assets/fw-avatar-save-guard.js?v=avatar-save-guard-20260514-1");

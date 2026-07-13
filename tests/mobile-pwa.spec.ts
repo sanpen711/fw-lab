@@ -190,6 +190,37 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
       expect(broken, `${view} visible broken images: ${broken.join(', ')}`).toEqual([]);
     }
   });
+
+  test('手机端提供找回密码、规则和隐私政策入口', async ({ page }) => {
+    await gotoApp(page);
+    await openView(page, 'profile');
+    await page.locator('[data-profile-mode="login"]').first().click();
+
+    await expect(page.locator('[data-auth-view="reset"]')).toBeVisible();
+    await page.locator('[data-auth-view="reset"]').click();
+    await expect(page.locator('[data-reset-form]')).toBeVisible();
+
+    await page.locator('[data-auth-view="login"]').click();
+    await page.locator('[data-auth-view="register1"]').first().click();
+    await expect(page.locator('[data-register-form] a[href="../rules.html"]')).toBeVisible();
+    await expect(page.locator('[data-register-form] a[href="../privacy.html"]')).toBeVisible();
+  });
+
+  test('隐私政策页面可以直接打开', async ({ page }) => {
+    await page.goto('/privacy.html', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: '隐私政策', level: 1 })).toBeVisible();
+    await expect(page.getByText('YSP启元工作室')).toBeVisible();
+  });
+});
+
+test.describe('电脑端关键脚本', () => {
+  test('精神广场评论回复脚本没有语法错误', async ({ page }) => {
+    const consoleErrors = collectConsoleErrors(page);
+    await page.goto('/square.html', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(900);
+    const syntaxErrors = consoleErrors.filter(text => /SyntaxError|Unexpected token/i.test(text));
+    expect(syntaxErrors, syntaxErrors.join('\n')).toEqual([]);
+  });
 });
 
 test.describe('登录态测试', () => {

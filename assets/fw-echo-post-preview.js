@@ -291,7 +291,7 @@
     const [commentRes, reactionRes] = await Promise.all([
       window.fwDb.client
         .from('comments')
-        .select('id,user_id,content,created_at,profiles(nickname,avatar_url)')
+        .select('id,user_id,content,created_at,profiles!comments_user_id_fkey(nickname,avatar_url)')
         .eq('post_id', postId)
         .eq('is_deleted', false)
         .order('created_at', {ascending:true}),
