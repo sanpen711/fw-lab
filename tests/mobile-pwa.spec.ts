@@ -211,6 +211,13 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
     await expect(page.getByRole('heading', { name: '隐私政策', level: 1 })).toBeVisible();
     await expect(page.getByText('YSP启元工作室')).toBeVisible();
   });
+
+  test('手机端精神广场不再显示精神状态', async ({ page }) => {
+    await gotoApp(page);
+    await openView(page, 'square');
+    await expect(page.getByText('今天的精神状态')).toHaveCount(0);
+    await expect(page.locator('[data-publish-status],[data-status-filter],[data-filter-status],.status-tag')).toHaveCount(0);
+  });
 });
 
 test.describe('电脑端关键脚本', () => {
@@ -220,6 +227,13 @@ test.describe('电脑端关键脚本', () => {
     await page.waitForTimeout(900);
     const syntaxErrors = consoleErrors.filter(text => /SyntaxError|Unexpected token/i.test(text));
     expect(syntaxErrors, syntaxErrors.join('\n')).toEqual([]);
+  });
+
+  test('电脑端精神广场不再显示精神状态', async ({ page }) => {
+    await page.goto('/square.html?desktop=1', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByText('今天的精神状态')).toHaveCount(0);
+    await expect(page.locator('[data-status],[data-filter]')).toHaveCount(0);
+    await expect(page.locator('.square-main .status:visible')).toHaveCount(0);
   });
 });
 
