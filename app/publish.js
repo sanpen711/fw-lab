@@ -1,7 +1,7 @@
 (function(){
   if(window.FWAppPublish) return;
 
-  var selectedStatus = '已疲惫';
+  var selectedStatus = '今日无效';
   var bound = false;
   var squareScrollTop = 0;
   var pendingImage = null;
@@ -221,14 +221,11 @@
       textarea.value = '';
       textarea.blur();
     }
-    selectedStatus = '已疲惫';
+    selectedStatus = '今日无效';
     selectedStickers = [];
     revokeLocalImage();
     pendingImage = null;
     uploadingImage = false;
-    $$('[data-publish-status] [data-status]').forEach(function(item){
-      item.classList.toggle('active', item.dataset.status === selectedStatus);
-    });
     var panel = stickerPanelNode();
     if(panel) panel.hidden = true;
     renderImagePreview();
@@ -540,12 +537,6 @@
         return;
       }
 
-      var btn = e.target.closest && e.target.closest('[data-status]');
-      if(!btn || !btn.closest('[data-publish-status]')) return;
-      selectedStatus = btn.dataset.status || '已疲惫';
-      $$('[data-publish-status] [data-status]').forEach(function(item){
-        item.classList.toggle('active', item === btn);
-      });
     });
 
     document.addEventListener('input', function(e){

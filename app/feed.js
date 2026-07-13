@@ -500,7 +500,7 @@
       ? '<button class="post-action-count" type="button" disabled>评论 ' + (post.comments || []).length + '</button>'
       : '<button type="button" data-app-comments data-post-id="' + esc(post.id) + '">评论 ' + (post.comments || []).length + '</button>';
     return '<article class="post-card' + (mode === 'detail' ? ' detail-post-card' : '') + '" data-post-id="' + esc(post.id) + '">' +
-      '<div class="post-top"><div class="post-author">' + avatar(post) + '<div class="post-name"><b>' + esc(post.authorName || '匿名研究员') + '</b><span>' + esc(post.time || '刚刚') + '</span></div></div><div class="post-tools"><span class="status-tag">' + esc(post.status || '今日无效') + '</span>' + deleteButton + '</div></div>' +
+      '<div class="post-top"><div class="post-author">' + avatar(post) + '<div class="post-name"><b>' + esc(post.authorName || '匿名研究员') + '</b><span>' + esc(post.time || '刚刚') + '</span></div></div><div class="post-tools">' + deleteButton + '</div></div>' +
       '<div class="post-content fw-rich-content">' + richHtml(post.content || '') + '</div>' +
       '<div class="post-actions">' +
         '<button class="' + (mine.resonance ? 'active' : '') + '" type="button" data-app-react="resonance" aria-pressed="' + (mine.resonance ? 'true' : 'false') + '">点赞 ' + Number(post.resonance || 0) + '</button>' +
@@ -553,8 +553,7 @@
     var node = $('[data-feed-list="square"]');
     if(!node) return;
     var posts = app().state.posts || [];
-    var filter = app().state.filterStatus || '全部';
-    var rows = filter === '全部' ? posts : posts.filter(function(post){ return post.status === filter; });
+    var rows = posts;
     if(!rows.length){
       node.innerHTML = '<div class="empty">今天这里还很安静。</div>';
       return;
@@ -1175,14 +1174,6 @@
         var index = Number(stickerRemove.dataset.commentStickerRemove);
         if(index >= 0) removeStickerDraft.selectedStickers.splice(index, 1);
         renderDraftAreas(stickerRemoveForm);
-        return;
-      }
-
-      var filter = e.target.closest && e.target.closest('[data-filter-status]');
-      if(filter){
-        app().state.filterStatus = filter.dataset.filterStatus || '全部';
-        $$('[data-filter-status]').forEach(function(btn){ btn.classList.toggle('active', btn === filter); });
-        renderList();
         return;
       }
 

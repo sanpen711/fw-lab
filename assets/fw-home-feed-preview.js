@@ -78,7 +78,7 @@
     post = norm(post);
     var comments = commentsHtml(post.comments);
     return '<article class="post-card fw-home-feed-card" data-id="' + esc(post.id || '') + '" data-status="' + esc(post.status) + '">' +
-      '<div class="post-top"><span class="status">' + esc(post.status) + '</span><span class="time">' + esc(post.time) + '</span></div>' +
+      '<div class="post-top"><span class="time">' + esc(post.time) + '</span></div>' +
       '<p class="fw-author">' + avatar(post.authorName, post.authorAvatar) + '<span>' + esc(post.authorName) + '</span></p>' +
       '<p class="post-content">' + esc(post.content) + '</p>' +
       '<div class="interactions">' +
@@ -135,6 +135,8 @@
     style.textContent =
       '#live .feed-grid.fw-home-feed-classic{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important}' +
       '#live .fw-home-feed-card{display:flex;flex-direction:column;min-height:240px;padding:24px}' +
+      '#live .feed-grid .post-card .status{display:none!important}' +
+      '#live .feed-grid .post-card .post-top{justify-content:flex-end}' +
       '#live .fw-home-feed-card .interactions{margin-top:auto}' +
       '#live .fw-home-feed-empty{grid-column:1/-1;padding:22px;border:1px solid rgba(255,255,255,.18);background:rgba(246,243,235,.78);font-weight:950;color:#151513}' +
       '@media(max-width:1100px){#live .feed-grid.fw-home-feed-classic{grid-template-columns:repeat(2,minmax(0,1fr))!important}}' +
