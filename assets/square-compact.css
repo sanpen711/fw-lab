@@ -71,9 +71,14 @@
   gap:14px;
 }
 .square-main .post-card{
+  position:relative;
   min-height:0;
   padding:16px 20px;
   border-color:rgba(30,30,28,.52);
+}
+.square-main .fw-author{
+  margin-top:0;
+  padding-right:88px;
 }
 .square-main .post-content{
   margin-top:10px;
@@ -92,6 +97,9 @@
   display:none!important;
 }
 .square-main .post-top{
+  position:absolute;
+  top:16px;
+  right:20px;
   justify-content:flex-end;
 }
 .square-main .time{
