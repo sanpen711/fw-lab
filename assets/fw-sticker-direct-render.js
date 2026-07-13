@@ -57,9 +57,9 @@
     var selectors = '.fw-wx-pm-bubble,.fw-bubble p,.fw-bubble,.fw-msg p,.fw-room-message,.room-message,[data-message-content]';
     $$(selectors, root).forEach(renderBubble);
     if(root.nodeType === 1){
-      renderBubble(root);
+      if(root.matches && root.matches(selectors)) renderBubble(root);
       var closest = root.closest && root.closest(selectors);
-      if(closest) renderBubble(closest);
+      if(closest && closest !== root) renderBubble(closest);
     }
   }
 

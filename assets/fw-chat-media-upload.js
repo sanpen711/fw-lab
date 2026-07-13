@@ -368,9 +368,9 @@
     var selectors = '.fw-wx-pm-bubble,.fw-bubble p,.fw-bubble,.fw-msg p,.fw-room-message,.room-message,[data-message-content]';
     $$(selectors, root).forEach(renderOne);
     if(root.nodeType === 1){
-      renderOne(root);
+      if(root.matches && root.matches(selectors)) renderOne(root);
       var closest = root.closest && root.closest(selectors);
-      if(closest) renderOne(closest);
+      if(closest && closest !== root) renderOne(closest);
     }
   }
 
