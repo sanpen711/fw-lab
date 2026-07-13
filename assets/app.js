@@ -446,8 +446,8 @@ document.addEventListener("DOMContentLoaded", () => {
   loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-unread-20260702-1");
   loadJs("assets/fw-desktop-echo-legacy-kill.js?v=desktop-fixes-lite-20260702-1");
   loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
-  loadJs("assets/fw-sticker-direct-render.js?v=sticker-direct-render-20260514-1");
-  loadJs("assets/fw-chat-media-upload.js?v=chat-media-upload-20260514-1");
+  loadJs("assets/fw-sticker-direct-render.js?v=home-feed-scope-20260713-1");
+  loadJs("assets/fw-chat-media-upload.js?v=home-feed-scope-20260713-1");
 
   if(hasFeedSurface) loadJs("assets/fw-post-media-tools.js?v=post-media-tools-20260518-4");
 
