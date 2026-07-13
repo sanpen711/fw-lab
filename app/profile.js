@@ -13,6 +13,8 @@
   var stickersLoaded = false;
   var stickersLoading = false;
   var stickerUploading = false;
+  var recoveryBound = false;
+  var recoveryRequested = /(?:[?#&])type=recovery(?:[&#]|$)/i.test(window.location.href);
   var registerState = readRegisterState();
   var loginDraftEmail = '';
 
@@ -114,7 +116,15 @@
       '.mobile-disclaimer{border:1px solid rgba(16,23,15,.10);border-radius:12px;background:#fffaf1;padding:10px;display:grid;gap:6px;color:var(--muted);font-size:12px;line-height:1.5;font-weight:850}',
       '.mobile-disclaimer label{display:flex;gap:8px;align-items:flex-start;color:var(--deep)!important}',
       '.mobile-disclaimer input{width:auto;margin-top:2px}',
-      '.mobile-auth-note{margin:0;color:var(--muted);font-size:12px;line-height:1.55;font-weight:850}'
+      '.mobile-disclaimer a{color:var(--accent-dark);font-weight:1000;text-decoration:underline;text-underline-offset:3px}',
+      '.mobile-auth-note{margin:0;color:var(--muted);font-size:12px;line-height:1.55;font-weight:850}',
+      '.mobile-auth-link{border:0;background:transparent;color:var(--accent-dark);font-size:13px;font-weight:1000;text-decoration:underline;text-underline-offset:3px;padding:4px 0;text-align:left}',
+      '.mobile-policy-links{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}',
+      '.mobile-policy-links a{color:var(--accent-dark);font-size:12px;font-weight:1000;text-decoration:underline;text-underline-offset:3px}',
+      '.mobile-account-danger{border:1px solid rgba(157,61,61,.28);border-radius:12px;background:#fff5f1;padding:12px;display:grid;gap:9px}',
+      '.mobile-account-danger b{color:#8f3636;font-size:14px}',
+      '.mobile-account-danger p{margin:0;color:var(--muted);font-size:12px;line-height:1.55;font-weight:850}',
+      '.mobile-account-danger .danger{background:#8f3636;color:#fff;border-color:#8f3636}'
     ].join('\n');
     document.head.appendChild(style);
   }
@@ -176,7 +186,8 @@
           '<button class="app-btn dark" type="submit">保存资料</button>' +
         '</form>' +
         '<div class="subtle-line"></div>' +
-        '<div class="module-note">修改密码稍后单独处理。</div>' +
+        '<div class="mobile-policy-links"><a href="../rules.html" target="_blank" rel="noopener">用户规则</a><a href="../privacy.html" target="_blank" rel="noopener">隐私政策</a></div>' +
+        (user.isAdmin ? '<div class="module-note">管理员账号不能直接注销，请先转移管理员身份。</div>' : '<div class="mobile-account-danger"><b>注销账号</b><p>账号、帖子、评论、互动、搭子关系和个人文件将被删除，操作不可恢复。</p><button class="app-btn danger" type="button" data-delete-own-account>永久注销账号</button></div>') +
         '<button class="app-btn" type="button" data-app-signout>退出登录</button>' +
       '</section>' +
     '</section>';
@@ -196,6 +207,7 @@
       '<label for="loginPassword">密码</label>' +
       '<input id="loginPassword" name="password" type="password" autocomplete="current-password" placeholder="输入账号密码" required>' +
       '<button class="app-btn dark" type="submit">登录</button>' +
+      '<button class="mobile-auth-link" type="button" data-auth-view="reset">忘记密码？</button>' +
       '<p class="mobile-auth-note">如果你已经在电脑端注册过，请直接用邮箱和密码登录。</p>' +
     '</form>';
   }
@@ -212,7 +224,7 @@
       '<input id="regPassword" name="password" type="password" autocomplete="new-password" placeholder="至少 6 位，以后用它登录" required>' +
       '<label for="regPassword2">确认密码</label>' +
       '<input id="regPassword2" name="password2" type="password" autocomplete="new-password" placeholder="再输入一次密码" required>' +
-      '<div class="mobile-disclaimer"><label><input type="checkbox" name="agree" value="1"><span>我已阅读并同意《F.w研究所声明》</span></label><p>勾选后，才能发送邮箱验证码并继续注册。</p></div>' +
+      '<div class="mobile-disclaimer"><label><input type="checkbox" name="agree" value="1"><span>我已阅读并同意 <a href="../rules.html" target="_blank" rel="noopener">《用户规则》</a> 和 <a href="../privacy.html" target="_blank" rel="noopener">《隐私政策》</a></span></label><p>勾选后，才能发送邮箱验证码并继续注册。</p></div>' +
       '<button class="app-btn dark" type="submit">下一步，验证邮箱</button>' +
       '<p class="mobile-auth-note"><button class="profile-back-btn" type="button" data-auth-view="login">已有账号？返回登录</button></p>' +
     '</form>';
@@ -229,15 +241,42 @@
     '</form>';
   }
 
+  function resetFormHtml(){
+    return '<form class="stack" data-reset-form>' +
+      '<p class="mobile-auth-note">输入注册邮箱，我们会发送找回密码邮件。</p>' +
+      '<label for="resetEmail">邮箱</label>' +
+      '<input id="resetEmail" name="email" type="email" autocomplete="email" placeholder="输入绑定邮箱" value="' + esc(loginDraftEmail) + '" required>' +
+      '<button class="app-btn dark" type="submit">发送找回密码邮件</button>' +
+      '<button class="mobile-auth-link" type="button" data-auth-view="login">返回登录</button>' +
+    '</form>';
+  }
+
+  function resetPasswordHtml(){
+    return '<form class="stack" data-reset-password-form>' +
+      '<p class="mobile-auth-note">邮箱验证成功，请设置新的登录密码。</p>' +
+      '<label for="resetPassword">新密码</label>' +
+      '<input id="resetPassword" name="password" type="password" autocomplete="new-password" placeholder="至少 8 位" required>' +
+      '<label for="resetPassword2">确认新密码</label>' +
+      '<input id="resetPassword2" name="password2" type="password" autocomplete="new-password" placeholder="再输入一次新密码" required>' +
+      '<button class="app-btn dark" type="submit">确认修改密码</button>' +
+    '</form>';
+  }
+
   function loginHtml(){
-    var body = authView === 'register2' ? registerStep2Html() : (authView === 'register1' ? registerStep1Html() : loginFormHtml());
+    var isRegister = /^register/.test(authView);
+    var isReset = /^reset/.test(authView);
+    var body = authView === 'register2' ? registerStep2Html()
+      : (authView === 'register1' ? registerStep1Html()
+      : (authView === 'resetNew' ? resetPasswordHtml()
+      : (authView === 'reset' ? resetFormHtml() : loginFormHtml())));
+    var title = isRegister ? '注册账号' : (isReset ? '找回密码' : '账号登录');
     return '<section class="profile-detail-card profile-login-entry">' +
-      '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>' + (/^register/.test(authView) ? '注册账号' : '账号登录') + '</h2></div>' +
+      '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>' + title + '</h2></div>' +
       '<section class="login-card"><div class="stack">' +
         '<p class="mobile-login-kicker">FW ACCOUNT</p>' +
-        '<h1 class="mobile-login-title">' + (/^register/.test(authView) ? '注册账号' : '账号登录') + '</h1>' +
-        '<p class="mobile-login-desc">' + (/^register/.test(authView) ? '填写账号信息并验证邮箱，完成正式注册。' : '输入邮箱和密码，进入研究所。') + '</p>' +
-        authTabs() + body +
+        '<h1 class="mobile-login-title">' + title + '</h1>' +
+        '<p class="mobile-login-desc">' + (isRegister ? '填写账号信息并验证邮箱，完成正式注册。' : (isReset ? '验证邮箱并重新设置密码。' : '输入邮箱和密码，进入研究所。')) + '</p>' +
+        (isReset ? '' : authTabs()) + body +
       '</div></section>' +
     '</section>';
   }
@@ -399,6 +438,7 @@
     if(/User already registered/i.test(msg)) return '这个邮箱已经注册过，请直接登录。';
     if(/Email rate limit exceeded|rate limit|too many/i.test(msg)) return '验证码发送太频繁，请稍后再试。';
     if(/duplicate key|unique|duplicate/i.test(msg)) return '该资料已被占用，请换一个。';
+    if(/fw_delete_own_account|function.*not found|could not find.*function/i.test(msg)) return '账号注销功能尚未启用，请先执行数据库注销补丁。';
     if(/Could not|relationship|schema|violates/i.test(msg)) return fallback;
     if(/bucket|storage|not found/i.test(msg)) return '表情存储还没初始化，请先检查表情包 SQL。';
     if(/row-level security|permission|policy|denied/i.test(msg)) return '没有权限执行这个操作，请检查登录状态。';
@@ -525,6 +565,90 @@
     }
   }
 
+  async function sendPasswordReset(form){
+    var btn = form.querySelector('button[type="submit"]');
+    setBusy(btn, true, '发送中...');
+    try{
+      await waitForDb();
+      var email = normEmail(form.email && form.email.value);
+      if(!email) throw new Error('请填写邮箱。');
+      loginDraftEmail = email;
+      await withTimeout(window.fwDb.sendPasswordReset({email:email}), 18000, '找回密码邮件发送超时，请稍后重试。');
+      authView = 'login';
+      render();
+      app().toast('找回密码邮件已发送，请打开邮件继续。');
+    }catch(err){
+      app().toast(safeMessage(err, '找回密码邮件发送失败。'));
+    }finally{
+      setBusy(btn, false);
+    }
+  }
+
+  async function saveResetPassword(form){
+    var btn = form.querySelector('button[type="submit"]');
+    setBusy(btn, true, '修改中...');
+    try{
+      await waitForDb();
+      var password = String(form.password && form.password.value || '').trim();
+      var password2 = String(form.password2 && form.password2.value || '').trim();
+      if(password.length < 8) throw new Error('新密码至少 8 位。');
+      if(password !== password2) throw new Error('两次密码不一致。');
+      await withTimeout(window.fwDb.updatePassword({password:password}), 18000, '密码修改超时，请稍后重试。');
+      await window.fwDb.signOut().catch(function(){});
+      recoveryRequested = false;
+      authView = 'login';
+      mode = 'login';
+      await app().refreshUser();
+      render();
+      app().toast('密码已修改，请重新登录。');
+    }catch(err){
+      app().toast(safeMessage(err, '密码修改失败。'));
+    }finally{
+      setBusy(btn, false);
+    }
+  }
+
+  async function deleteOwnAccount(btn){
+    var first = window.confirm('注销后，账号、帖子、评论、互动、搭子关系和个人文件将被永久删除。是否继续？');
+    if(!first) return;
+    var phrase = window.prompt('请输入“删除账号”确认永久注销：', '');
+    if(String(phrase || '').trim() !== '删除账号'){
+      app().toast('确认文字不正确，已取消注销。');
+      return;
+    }
+
+    setBusy(btn, true, '注销中...');
+    try{
+      await waitForDb();
+      if(!window.fwDb.deleteOwnAccount) throw new Error('账号注销功能尚未启用，请更新数据库补丁。');
+      await withTimeout(window.fwDb.deleteOwnAccount(), 30000, '账号注销超时，请稍后重试。');
+      stickers = [];
+      stickersLoaded = false;
+      mode = 'home';
+      await app().refreshUser();
+      render();
+      app().setView('nav');
+      app().toast('账号已注销。');
+    }catch(err){
+      app().toast(safeMessage(err, '账号注销失败。'));
+    }finally{
+      setBusy(btn, false);
+    }
+  }
+
+  function bindRecoveryAuth(){
+    if(recoveryBound || !db() || !window.fwDb.onAuthChange) return;
+    recoveryBound = true;
+    window.fwDb.onAuthChange(function(event){
+      if(event !== 'PASSWORD_RECOVERY') return;
+      recoveryRequested = true;
+      authView = 'resetNew';
+      mode = 'login';
+      if(app() && app().setView) app().setView('profile');
+      render();
+    });
+  }
+
   function bindSwipeBack(){
     if(swipeBound) return;
     swipeBound = true;
@@ -594,6 +718,20 @@
       if(verifyForm){
         e.preventDefault();
         await registerStep2(verifyForm);
+        return;
+      }
+
+      var resetForm = e.target.closest && e.target.closest('[data-reset-form]');
+      if(resetForm){
+        e.preventDefault();
+        await sendPasswordReset(resetForm);
+        return;
+      }
+
+      var resetPasswordForm = e.target.closest && e.target.closest('[data-reset-password-form]');
+      if(resetPasswordForm){
+        e.preventDefault();
+        await saveResetPassword(resetPasswordForm);
         return;
       }
 
@@ -668,6 +806,13 @@
         return;
       }
 
+      var deleteAccount = e.target.closest && e.target.closest('[data-delete-own-account]');
+      if(deleteAccount){
+        e.preventDefault();
+        await deleteOwnAccount(deleteAccount);
+        return;
+      }
+
       var signout = e.target.closest && e.target.closest('[data-app-signout]');
       if(signout){
         setBusy(signout, true, '退出中...');
@@ -693,6 +838,15 @@
     injectStyle();
     bind();
     bindSwipeBack();
+    bindRecoveryAuth();
+    if(recoveryRequested){
+      authView = 'resetNew';
+      mode = 'login';
+      setTimeout(function(){
+        if(app() && app().setView) app().setView('profile');
+        render();
+      }, 0);
+    }
     render();
   }
 

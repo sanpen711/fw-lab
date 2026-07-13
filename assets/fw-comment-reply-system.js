@@ -60,7 +60,7 @@
     var specs = [
       ['[[FW_USER_STICKER:', 'sticker'],
       ['[[FW_MEDIA_IMAGE:', 'image'],
-      ['[[FW_MEDIA_VIDEO:', 'video']]
+      ['[[FW_MEDIA_VIDEO:', 'video']
     ];
     for(var i = 0; i < specs.length; i += 1){
       var prefix = specs[i][0];
@@ -126,7 +126,7 @@
 
     var commentsRes = await client
       .from('comments')
-      .select('id,post_id,user_id,content,created_at,parent_comment_id,reply_to_user_id,profiles(nickname,avatar_url)')
+      .select('id,post_id,user_id,content,created_at,parent_comment_id,reply_to_user_id,profiles!comments_user_id_fkey(nickname,avatar_url)')
       .in('post_id', ids)
       .or('is_deleted.eq.false,is_deleted.is.null')
       .order('created_at', {ascending:true});
@@ -136,7 +136,7 @@
       comments = fail(
         await client
           .from('comments')
-          .select('id,post_id,user_id,content,created_at,profiles(nickname,avatar_url)')
+          .select('id,post_id,user_id,content,created_at,profiles!comments_user_id_fkey(nickname,avatar_url)')
           .in('post_id', ids)
           .or('is_deleted.eq.false,is_deleted.is.null')
           .order('created_at', {ascending:true}),

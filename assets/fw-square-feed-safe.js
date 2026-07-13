@@ -73,7 +73,7 @@
     var specs = [
       ['[[FW_USER_STICKER:', 'sticker'],
       ['[[FW_MEDIA_IMAGE:', 'image'],
-      ['[[FW_MEDIA_VIDEO:', 'video']]
+      ['[[FW_MEDIA_VIDEO:', 'video']
     ];
     for(var i = 0; i < specs.length; i += 1){
       var prefix = specs[i][0];
@@ -141,7 +141,7 @@
     if(!ids.length) return [];
     var r = await db().client
       .from('comments')
-      .select('id,post_id,user_id,content,created_at,is_deleted,profiles(nickname,avatar_url)')
+      .select('id,post_id,user_id,content,created_at,is_deleted,profiles!comments_user_id_fkey(nickname,avatar_url)')
       .in('post_id', ids)
       .or('is_deleted.eq.false,is_deleted.is.null')
       .order('created_at', {ascending:true});
@@ -152,7 +152,7 @@
     if(/is_deleted|schema cache|column/i.test(msg)){
       var r2 = await db().client
         .from('comments')
-        .select('id,post_id,user_id,content,created_at,profiles(nickname,avatar_url)')
+        .select('id,post_id,user_id,content,created_at,profiles!comments_user_id_fkey(nickname,avatar_url)')
         .in('post_id', ids)
         .order('created_at', {ascending:true});
       if(r2.error) throw r2.error;

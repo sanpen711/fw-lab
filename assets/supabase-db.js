@@ -181,6 +181,93 @@
     return {ok:true};
   }
 
+  async function listOwnStorageFiles(bucket, prefix, depth){
+    if(depth > 10){
+      throw new Error('账号文件目录层级异常，请联系管理员处理。');
+    }
+
+    const storage = client.storage.from(bucket);
+    const rows = fail(
+      await storage.list(prefix, {
+        limit:1000,
+        offset:0,
+        sortBy:{column:'name', order:'asc'}
+      }),
+      '读取账号文件失败'
+    ) || [];
+    let files = [];
+
+    for(const row of rows){
+      const path = prefix ? `${prefix}/${row.name}` : row.name;
+      const isFile = !!(row.id || row.metadata || row.created_at || row.updated_at);
+
+      if(isFile){
+        files.push(path);
+      }else{
+        files = files.concat(await listOwnStorageFiles(bucket, path, depth + 1));
+      }
+    }
+
+    return files;
+  }
+
+  async function removeOwnStorageFiles(userId){
+    const buckets = ['avatars', 'stickers', 'chat-media'];
+    let removed = 0;
+
+    for(const bucket of buckets){
+      let files = [];
+
+      try{
+        files = await listOwnStorageFiles(bucket, String(userId), 0);
+      }catch(e){
+        if(/bucket.*not found|not found.*bucket/i.test(String(e && e.message || e))){
+          continue;
+        }
+        throw e;
+      }
+
+      for(let i = 0; i < files.length; i += 100){
+        const batch = files.slice(i, i + 100);
+        fail(
+          await client.storage.from(bucket).remove(batch),
+          '删除账号文件失败'
+        );
+        removed += batch.length;
+      }
+    }
+
+    return removed;
+  }
+
+  async function deleteOwnAccount(){
+    if(!enabled){
+      throw new Error('数据库连接未就绪。');
+    }
+
+    const user = await getCurrentUser();
+
+    if(!user){
+      throw new Error('请先登录。');
+    }
+
+    if(user.isAdmin){
+      throw new Error('管理员账号不能直接注销，请先转移管理员身份。');
+    }
+
+    const removedFiles = await removeOwnStorageFiles(user.id);
+    fail(
+      await client.rpc('fw_delete_own_account'),
+      '注销账号失败'
+    );
+
+    try{
+      await client.auth.signOut({scope:'local'});
+    }catch(e){}
+
+    return {ok:true, removedFiles};
+  }
+
   async function signOut(){
     if(enabled){
       await client.auth.signOut();
@@ -267,7 +354,7 @@
     const comments = fail(
       await client
         .from('comments')
-        .select('id,post_id,user_id,parent_comment_id,content,created_at,profiles(nickname,avatar_url)')
+        .select('id,post_id,user_id,parent_comment_id,content,created_at,profiles!comments_user_id_fkey(nickname,avatar_url)')
         .in('post_id', ids)
         .or('is_deleted.eq.false,is_deleted.is.null')
         .order('created_at', {ascending:true}),
@@ -527,6 +614,7 @@
     signInPassword,
     updatePassword,
     sendPasswordReset,
+    deleteOwnAccount,
     signOut,
     updateProfile,
     loadPosts,

@@ -108,13 +108,19 @@
         margin-top:20px;
       }
 
-      .fw-register-statement-actions button{
+      .fw-register-statement-actions button,
+      .fw-register-statement-actions a{
         min-height:42px;
         border-radius:999px;
         border:1px solid rgba(23,23,21,.18);
         padding:0 20px;
         font-weight:1000;
         cursor:pointer;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        color:#171715;
+        text-decoration:none;
       }
 
       .fw-register-statement-ok{
@@ -186,10 +192,13 @@
           </ul>
 
           <p style="margin-top:16px">
-            勾选“我已阅读并同意”即代表你理解并接受以上规则。
+            注册时会收集邮箱、实验品编号和账号资料，用于登录、找回密码与提供站内互动功能。
+            具体处理方式、保存范围和账号删除说明请查看隐私政策。
           </p>
 
           <div class="fw-register-statement-actions">
+            <a href="rules.html" target="_blank" rel="noopener">查看用户规则</a>
+            <a href="privacy.html" target="_blank" rel="noopener">查看隐私政策</a>
             <button type="button" class="fw-register-statement-ok" data-fw-register-statement-close>
               我知道了
             </button>
@@ -233,8 +242,8 @@
       if(el.dataset.fwDisclaimerEnhanced === '1') return;
 
       el.dataset.fwDisclaimerEnhanced = '1';
-      el.innerHTML = '我已阅读并同意 <span class="fw-disclaimer-open-text">《F.w研究所声明》</span>';
-      el.setAttribute('title', '点击查看 F.w研究所声明');
+      el.innerHTML = '我已阅读并同意 <span class="fw-disclaimer-open-text">《用户规则与隐私政策》</span>';
+      el.setAttribute('title', '点击查看用户规则与隐私政策');
     });
   }
 

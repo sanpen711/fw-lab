@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260709-chat-avatar-fix-1';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260710-critical-auth-privacy-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
