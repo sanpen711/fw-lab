@@ -1,22 +1,174 @@
 (function(){
   if(window.__FW_HOME_FEED_PREVIEW__) return;
-  window.__FW_HOME_FEED_PREVIEW__=true;
-  var KEY='fw_lab_posts_v1', last='', rendering=false;
-  function q(s,r){return (r||document).querySelector(s)}
-  function feed(){return q('#live [data-feed]')}
-  function db(){return window.fwDb&&fwDb.enabled&&fwDb.client&&fwDb.loadPosts}
-  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-  function rel(v){var d=new Date(v||'');if(isNaN(d))return'刚刚';var m=Math.floor(Math.max(0,Date.now()-d.getTime())/60000);if(m<1)return'刚刚';if(m<60)return m+'分钟前';var h=Math.floor(m/60);if(h<24)return h+'小时前';return Math.floor(h/24)+'天前'}
-  function norm(p){p=p||{};return {id:p.id,status:p.status||p.status_tag||'今日无效',content:p.content||'',authorName:p.authorName||p.nickname||'匿名研究员',createdAt:p.createdAt||p.created_at||p.rawCreatedAt||'',time:p.time||'刚刚'}}
-  function read(){try{return (JSON.parse(localStorage.getItem(KEY)||'[]')||[]).map(norm)}catch(e){return[]}}
-  function save(a){try{localStorage.setItem(KEY,JSON.stringify(a||[]))}catch(e){}}
-  function b64(s){try{return atob(s)}catch(e){return''}}
-  function firstMedia(t){var m=String(t||'').match(/\[\[FW_(USER_STICKER|MEDIA_IMAGE|MEDIA_VIDEO):([^\]]+)\]\]/);if(!m)return'';var u=b64(m[2]);if(!/^https?:/i.test(u))return'';return m[1]==='MEDIA_VIDEO'?'<span class="fw-home-feed-thumb fw-home-feed-thumb-video">视频</span>':'<span class="fw-home-feed-thumb"><img src="'+esc(u)+'" alt="预览图"></span>'}
-  function cleanText(t){return String(t||'').replace(/\[\[FW_(USER_STICKER|MEDIA_IMAGE|MEDIA_VIDEO):([^\]]+)\]\]/g,'').trim()||'只发了一张图。'}
-  function card(x){x=norm(x);return '<a class="fw-home-feed-card" href="square.html#post-'+encodeURIComponent(x.id||'')+'"><div class="fw-home-feed-main"><div class="fw-home-feed-top"><span class="status">'+esc(x.status)+'</span><span class="fw-home-feed-time">'+esc(x.createdAt?rel(x.createdAt):x.time)+'</span></div><div class="fw-home-feed-author">'+esc(x.authorName)+'</div><p>'+esc(cleanText(x.content))+'</p><span class="fw-home-feed-more">去围观 →</span></div>'+firstMedia(x.content)+'</a>'}
-  function render(list){var f=feed();if(!f||rendering)return;list=(list&&list.length?list:read()).map(norm).slice(0,6);var html=list.length?list.map(card).join(''):'<div class="fw-home-feed-empty">还没有最新牢骚，先去精神广场投递一条。</div>';if(html===last)return;rendering=true;f.classList.add('fw-home-feed-preview');f.removeAttribute('data-limit');f.innerHTML=html;last=html;setTimeout(function(){rendering=false},0)}
-  async function sync(){if(!feed())return;if(!db()){render(read());return}try{var a=(await fwDb.loadPosts()||[]).map(norm);save(a);render(a)}catch(e){render(read())}}
-  function css(){if(q('#fw-home-feed-preview-style'))return;var s=document.createElement('style');s.id='fw-home-feed-preview-style';s.textContent='#live .feed-grid.fw-home-feed-preview{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important}.fw-home-feed-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;min-height:126px;padding:18px;border:1px solid rgba(255,255,255,.18);background:rgba(246,243,235,.86);color:#151513;text-decoration:none;transition:.16s}.fw-home-feed-card:hover{transform:translateY(-2px);background:rgba(255,252,244,.94);border-color:rgba(224,112,118,.55)}.fw-home-feed-main{min-width:0;display:flex;flex-direction:column;gap:6px}.fw-home-feed-top{display:flex;justify-content:space-between;gap:10px}.fw-home-feed-time{font-size:12px;font-weight:900;color:#5f635e;white-space:nowrap}.fw-home-feed-author{font-size:12px;font-weight:950;color:#a84249;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fw-home-feed-card p{margin:0;font-size:17px;line-height:1.45;font-weight:950;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.fw-home-feed-more{margin-top:auto;font-size:12px;font-weight:950;color:#9d4148}.fw-home-feed-thumb{width:96px;height:96px;border-radius:14px;overflow:hidden;background:#fff8ef;border:1px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;flex:0 0 auto}.fw-home-feed-thumb img{width:100%;height:100%;object-fit:cover;display:block}.fw-home-feed-thumb-video{font-size:13px;font-weight:950;color:#fff;background:#171714}.fw-home-feed-empty{grid-column:1/-1;padding:22px;border:1px solid rgba(255,255,255,.18);background:rgba(246,243,235,.78);font-weight:950;color:#151513}@media(max-width:980px){#live .feed-grid.fw-home-feed-preview{grid-template-columns:repeat(2,minmax(0,1fr))!important}.fw-home-feed-thumb{width:82px;height:82px}}@media(max-width:620px){#live .feed-grid.fw-home-feed-preview{grid-template-columns:1fr!important}.fw-home-feed-card{padding:14px;min-height:104px}.fw-home-feed-card p{font-size:15px}.fw-home-feed-thumb{width:72px;height:72px}}';document.head.appendChild(s)}
-  function boot(){css();render(read());sync();var n=0,t=setInterval(function(){n++;if(db()){clearInterval(t);sync()}if(n>120)clearInterval(t)},100);var f=feed();if(f){new MutationObserver(function(){if(rendering)return;clearTimeout(window.__fwHomeFeedPreviewTimer);window.__fwHomeFeedPreviewTimer=setTimeout(function(){render(read())},80)}).observe(f,{childList:true})}setInterval(sync,20000)}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+  window.__FW_HOME_FEED_PREVIEW__ = true;
+
+  var KEY = 'fw_lab_posts_v1';
+  var last = '';
+  var rendering = false;
+
+  function q(selector, root){
+    return (root || document).querySelector(selector);
+  }
+
+  function feed(){
+    return q('#live [data-feed]');
+  }
+
+  function dbReady(){
+    return window.fwDb && window.fwDb.enabled && window.fwDb.client && window.fwDb.loadPosts;
+  }
+
+  function esc(value){
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(character){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character];
+    });
+  }
+
+  function norm(post){
+    post = post || {};
+    return {
+      id:post.id,
+      status:post.status || post.status_tag || '今日无效',
+      content:post.content || '',
+      authorName:post.authorName || post.nickname || '匿名研究员',
+      authorAvatar:post.authorAvatar || post.avatar_url || '',
+      createdAt:post.createdAt || post.created_at || post.rawCreatedAt || '',
+      time:post.time || '刚刚',
+      resonance:Number(post.resonance || 0),
+      same:Number(post.same || 0),
+      tissue:Number(post.tissue || 0),
+      comments:Array.isArray(post.comments) ? post.comments : []
+    };
+  }
+
+  function read(){
+    try{
+      return (JSON.parse(localStorage.getItem(KEY) || '[]') || []).map(norm);
+    }catch(e){
+      return [];
+    }
+  }
+
+  function save(posts){
+    try{
+      localStorage.setItem(KEY, JSON.stringify(posts || []));
+    }catch(e){}
+  }
+
+  function avatar(name, url){
+    var safeName = name || '匿名研究员';
+    if(url){
+      return '<span class="fw-avatar mini"><img src="' + esc(url) + '" alt="' + esc(safeName) + '"></span>';
+    }
+    return '<span class="fw-avatar mini">' + esc(String(safeName).slice(0, 2)) + '</span>';
+  }
+
+  function commentsHtml(comments){
+    return comments.map(function(comment){
+      var name = comment.authorName || '匿名回声';
+      return '<li data-comment-id="' + esc(comment.id || '') + '">' +
+        avatar(name, comment.authorAvatar || '') +
+        '<strong>' + esc(name) + '</strong>' +
+        '<span>' + esc(comment.content || '') + '</span>' +
+      '</li>';
+    }).join('');
+  }
+
+  function card(post){
+    post = norm(post);
+    var comments = commentsHtml(post.comments);
+    return '<article class="post-card fw-home-feed-card" data-id="' + esc(post.id || '') + '" data-status="' + esc(post.status) + '">' +
+      '<div class="post-top"><span class="status">' + esc(post.status) + '</span><span class="time">' + esc(post.time) + '</span></div>' +
+      '<p class="fw-author">' + avatar(post.authorName, post.authorAvatar) + '<span>' + esc(post.authorName) + '</span></p>' +
+      '<p class="post-content">' + esc(post.content) + '</p>' +
+      '<div class="interactions">' +
+        '<button type="button" data-sb-action="resonance">点赞 ' + post.resonance + '</button>' +
+        '<button type="button" data-sb-action="comment-toggle">评论 ' + post.comments.length + '</button>' +
+        '<button type="button" data-sb-action="same">俺也一样 ' + post.same + '</button>' +
+        '<button type="button" data-sb-action="tissue">递纸巾 ' + post.tissue + '</button>' +
+      '</div>' +
+      '<div class="comment-box"><ul class="comment-list">' + (comments || '<li><span>还没有回声，可以先留一句。</span></li>') + '</ul>' +
+        '<input placeholder="留一句回声，评论不限量">' +
+        '<button class="btn dark full" type="button" data-sb-action="comment-submit" style="margin-top:10px">发送回声</button>' +
+      '</div>' +
+    '</article>';
+  }
+
+  function render(posts){
+    var container = feed();
+    if(!container || rendering) return;
+    var list = (posts && posts.length ? posts : read()).map(norm).slice(0, 6);
+    var html = list.length
+      ? list.map(card).join('')
+      : '<div class="fw-home-feed-empty">还没有最新牢骚，先去精神广场投递一条。</div>';
+
+    if(html === last && container.children.length <= 6) return;
+
+    rendering = true;
+    container.classList.remove('fw-home-feed-preview');
+    container.classList.add('fw-home-feed-classic');
+    container.dataset.limit = '6';
+    container.innerHTML = html;
+    last = html;
+    setTimeout(function(){ rendering = false; }, 0);
+  }
+
+  async function sync(){
+    if(!feed()) return;
+    if(!dbReady()){
+      render(read());
+      return;
+    }
+    try{
+      var posts = (await window.fwDb.loadPosts() || []).map(norm).slice(0, 6);
+      save(posts);
+      render(posts);
+    }catch(e){
+      render(read());
+    }
+  }
+
+  function css(){
+    if(q('#fw-home-feed-preview-style')) return;
+    var style = document.createElement('style');
+    style.id = 'fw-home-feed-preview-style';
+    style.textContent =
+      '#live .feed-grid.fw-home-feed-classic{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important}' +
+      '#live .fw-home-feed-card{display:flex;flex-direction:column;min-height:240px;padding:24px}' +
+      '#live .fw-home-feed-card .interactions{margin-top:auto}' +
+      '#live .fw-home-feed-empty{grid-column:1/-1;padding:22px;border:1px solid rgba(255,255,255,.18);background:rgba(246,243,235,.78);font-weight:950;color:#151513}' +
+      '@media(max-width:1100px){#live .feed-grid.fw-home-feed-classic{grid-template-columns:repeat(2,minmax(0,1fr))!important}}' +
+      '@media(max-width:720px){#live .feed-grid.fw-home-feed-classic{grid-template-columns:1fr!important}}';
+    document.head.appendChild(style);
+  }
+
+  function boot(){
+    css();
+    render(read());
+    sync();
+
+    var attempts = 0;
+    var timer = setInterval(function(){
+      attempts += 1;
+      if(dbReady()){
+        clearInterval(timer);
+        sync();
+      }
+      if(attempts > 120) clearInterval(timer);
+    }, 100);
+
+    var container = feed();
+    if(container){
+      new MutationObserver(function(){
+        if(rendering) return;
+        clearTimeout(window.__fwHomeFeedPreviewTimer);
+        window.__fwHomeFeedPreviewTimer = setTimeout(function(){ render(read()); }, 80);
+      }).observe(container, {childList:true});
+    }
+
+    setInterval(sync, 20000);
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
