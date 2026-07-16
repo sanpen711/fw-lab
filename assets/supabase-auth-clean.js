@@ -350,6 +350,12 @@
     }, 80);
   }
 
+  function openAuth(){
+    show(me ? 'profile' : 'login');
+  }
+
+  window.__FW_OPEN_AUTH__ = openAuth;
+
   function userbar(){
     $$('.header').forEach(h => {
       if(h.querySelector('.fw-userbar')) return;
@@ -956,7 +962,7 @@
   function bind(){
     document.body.addEventListener('click', e => {
       if(e.target.closest('[data-fw-open], [data-login-cta]')){
-        me ? show('profile') : show('login');
+        openAuth();
       }
 
       if(e.target.closest('[data-sb-close]')){
@@ -1137,6 +1143,11 @@
     userbar();
     renderOverride();
     bind();
+
+    if(window.__FW_AUTH_OPEN_PENDING__){
+      window.__FW_AUTH_OPEN_PENDING__ = false;
+      openAuth();
+    }
 
     const ok = await waitForDb();
 

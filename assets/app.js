@@ -32,6 +32,23 @@
 })();
 
 window.FW_USE_SUPABASE_AUTH = true;
+
+(function primeAuthLauncher(){
+  if(window.__FW_AUTH_LAUNCHER_PRIMED__) return;
+  window.__FW_AUTH_LAUNCHER_PRIMED__ = true;
+
+  document.addEventListener("click", event => {
+    const opener = event.target.closest && event.target.closest("[data-fw-open], [data-login-cta]");
+    if(!opener) return;
+
+    if(typeof window.__FW_OPEN_AUTH__ === "function"){
+      window.__FW_OPEN_AUTH__();
+    }else{
+      window.__FW_AUTH_OPEN_PENDING__ = true;
+    }
+  }, true);
+})();
+
 const STORE_KEY = "fw_lab_posts_v1";
 let supabaseBridgeFailed = false;
 
@@ -357,7 +374,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 (function loadSupabaseBridge(){
   const scripts = [
-    "assets/supabase-live.js?v=desktop-auth-ready-20260716-1",
+    "assets/supabase-live.js?v=desktop-auth-ready-20260716-2",
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
     "assets/supabase-db.js?v=critical-relations-20260710-1"
