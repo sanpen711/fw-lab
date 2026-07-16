@@ -103,6 +103,23 @@ button{cursor:pointer}
 }
 .mobile-nav.show{display:block}
 
+[data-desktop-loading]{
+  position:relative;
+  overflow:hidden;
+}
+[data-desktop-loading]::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(217,121,121,.12),transparent);
+  animation:fwDesktopLoading 1.35s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes fwDesktopLoading{
+  to{transform:translateX(100%)}
+}
+
 .hero{
   position:relative;
   min-height:760px;

@@ -463,6 +463,18 @@ input[name="lab_code"]:disabled{
   }
 }
 
+/* 窄屏电脑上，完整导航会与右侧账号区重叠，提前切换为菜单。 */
+@media (min-width:981px) and (max-width:1180px){
+  .header .nav{
+    display:none;
+  }
+  .header .menu-btn{
+    display:block;
+    margin-left:12px;
+    cursor:pointer;
+  }
+}
+
 
 /* F.w 研究所：登录 / 注册表单间距优化 */
 .fw-auth-panel .fw-form input + button,

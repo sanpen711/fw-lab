@@ -12,6 +12,7 @@
   let me = null;
   let registerState = { email:'', password:'', labCode:'' };
   let busy = false;
+  let lastFocused = null;
 
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;',
@@ -137,6 +138,7 @@
       .fw-auth-view h3{margin:8px 0 16px;font-size:24px;letter-spacing:-.04em}
       .fw-auth-panel input{box-sizing:border-box}
       .fw-btn-loading{opacity:.65;pointer-events:none}
+      body.fw-auth-open{overflow:hidden}
     `;
 
     document.head.appendChild(s);
@@ -150,13 +152,17 @@
     const m = document.createElement('div');
     m.className = 'fw-auth sb-auth';
     m.dataset.sbAuth = '1';
+    m.setAttribute('role', 'dialog');
+    m.setAttribute('aria-modal', 'true');
+    m.setAttribute('aria-labelledby', 'fw-auth-title');
+    m.setAttribute('aria-hidden', 'true');
 
     m.innerHTML = `
       <div class="fw-auth-panel">
-        <button class="fw-close" data-sb-close type="button">×</button>
+        <button class="fw-close" data-sb-close type="button" aria-label="关闭账号窗口">×</button>
 
         <p class="fw-kicker">FW ACCOUNT</p>
-        <h2 data-title>账号登录</h2>
+        <h2 id="fw-auth-title" data-title>账号登录</h2>
         <p class="fw-muted" data-desc>输入邮箱和密码，进入研究所。</p>
 
         <div class="fw-auth-progress" data-progress style="display:none">
@@ -276,13 +282,28 @@
     document.body.appendChild(m);
   }
 
+  function closeAuth(){
+    const authModal = $('[data-sb-auth]');
+    if(!authModal) return;
+    authModal.classList.remove('show');
+    authModal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('fw-auth-open');
+    if(lastFocused && document.contains(lastFocused) && typeof lastFocused.focus === 'function'){
+      lastFocused.focus();
+    }
+    lastFocused = null;
+  }
+
   function show(view){
     modal();
 
     const authModal = $('[data-sb-auth]');
 
     if(authModal){
+      if(!authModal.classList.contains('show')) lastFocused = document.activeElement;
       authModal.classList.add('show');
+      authModal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('fw-auth-open');
     }
 
     $$('[data-view]').forEach(x => {
@@ -759,11 +780,7 @@
 
       toast('登录成功，正在进入研究所。');
 
-      const modalEl = $('[data-sb-auth]');
-
-      if(modalEl){
-        modalEl.classList.remove('show');
-      }
+      closeAuth();
 
       setTimeout(() => {
         window.location.reload();
@@ -825,11 +842,7 @@
       toast('资料已保存。');
       await refreshUser();
 
-      const modalEl = $('[data-sb-auth]');
-
-      if(modalEl){
-        modalEl.classList.remove('show');
-      }
+      closeAuth();
 
     }catch(e){
       toast(authMsg(e));
@@ -947,12 +960,10 @@
       }
 
       if(e.target.closest('[data-sb-close]')){
-        const modalEl = $('[data-sb-auth]');
-
-        if(modalEl){
-          modalEl.classList.remove('show');
-        }
+        closeAuth();
       }
+
+      if(e.target.matches && e.target.matches('[data-sb-auth].show')) closeAuth();
 
       if(e.target.closest('[data-sb-logout]')){
         e.preventDefault();
@@ -1086,8 +1097,7 @@
       }
       await db().deleteOwnAccount();
       me = null;
-      const modalEl = $('[data-sb-auth]');
-      if(modalEl) modalEl.classList.remove('show');
+      closeAuth();
       await refreshUser();
       await loadRemotePosts();
       toast('账号已注销。');
@@ -1097,6 +1107,29 @@
       setLoading(btn, false);
     }
   }
+
+  document.addEventListener('keydown', e => {
+    const authModal = $('[data-sb-auth].show');
+    if(!authModal) return;
+    if(e.key === 'Escape'){
+      e.preventDefault();
+      closeAuth();
+      return;
+    }
+    if(e.key !== 'Tab') return;
+    const focusable = $$('button:not([disabled]),a[href],input:not([disabled]),textarea:not([disabled]),select:not([disabled])')
+      .filter(x => authModal.contains(x) && x.offsetParent !== null);
+    if(!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if(e.shiftKey && document.activeElement === first){
+      e.preventDefault();
+      last.focus();
+    }else if(!e.shiftKey && document.activeElement === last){
+      e.preventDefault();
+      first.focus();
+    }
+  });
 
   async function boot(){
     css();

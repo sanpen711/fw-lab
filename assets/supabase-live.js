@@ -12,6 +12,6 @@
     document.head.appendChild(script);
   }
 
-  load('assets/supabase-auth-clean.js?v=critical-account-privacy-20260710-1');
+  load('assets/supabase-auth-clean.js?v=desktop-auth-a11y-20260716-1');
   load('assets/fw-password-recovery.js?v=password-recovery-20260702-2');
 })();
