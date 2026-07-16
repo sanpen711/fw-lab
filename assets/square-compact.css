@@ -5,6 +5,12 @@
 .home-hero-clean > div{
   max-width:980px;
 }
+.home-hero{
+  min-height:620px;
+}
+.home-hero .home-hero-clean{
+  padding-bottom:54px;
+}
 .square-hero{
   min-height:430px;
 }
@@ -111,6 +117,14 @@
 }
 .square-main .comment-box input{
   height:42px;
+}
+.fw-square-load-more-wrap{
+  display:flex;
+  justify-content:center;
+  padding:10px 0 4px;
+}
+.fw-square-load-more-wrap .btn{
+  min-width:220px;
 }
 .square-side .side-card{
   padding:24px;

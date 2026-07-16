@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
   <title>废话档案｜F.w 研究所</title>
   <meta name="description" content="F.w 研究所：废话档案榜单。" />
-  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/styles.css?v=desktop-priority-20260716-1" />
   <link rel="stylesheet" href="assets/auth.css" />
   <style>
     :root{
@@ -460,6 +460,10 @@
       text-align:center;
       background:rgba(255,255,255,.35);
     }
+    .empty-list a{
+      color:var(--archive-red);
+      text-decoration:underline;
+    }
     .archive-note{
       border:1px solid rgba(255,255,255,.12);
       background:var(--archive-night);
@@ -626,7 +630,7 @@
         <p>三个奖项 · 领奖台前三名</p>
       </div>
       <div class="weekly-grid" data-weekly-grid>
-        <div class="archive-loading">正在整理上周榜单...</div>
+        <div class="archive-loading" data-desktop-loading>正在整理上周榜单...</div>
       </div>
     </section>
 
@@ -645,7 +649,7 @@
           <button class="tab" type="button" data-type="tissue">纸巾榜</button>
         </div>
         <div class="daily-list" data-daily-list>
-          <div class="empty-list">正在整理昨日榜单...</div>
+          <div class="empty-list" data-desktop-loading>正在整理昨日榜单...</div>
         </div>
       </div>
 
@@ -671,7 +675,7 @@
         <p>先显示最近一周的前三名，后续会继续完善展示。</p>
       </div>
       <div class="history-grid" data-history-grid>
-        <div class="archive-loading">正在整理本周归档预览...</div>
+        <div class="archive-loading" data-desktop-loading>正在整理本周归档预览...</div>
       </div>
     </section>
 
@@ -681,7 +685,7 @@
     </footer>
   </main>
 
-  <script src="assets/app.js?v=social-clean-private-chat-20260510-2"></script>
+  <script src="assets/app.js?v=desktop-priority-20260716-1"></script>
   <script src="assets/auth.js"></script>
   <script>
   (function(){
@@ -853,7 +857,7 @@
       const rows=dailyRankings[type]||[];
       if(!list) return;
       if(!rows.length){
-        list.innerHTML='<div class="empty-list">昨日还没有产生这个榜单。今天先去精神广场点一点。</div>';
+        list.innerHTML='<div class="empty-list">昨日还没有产生这个榜单。<a href="square.html">去精神广场互动一下 →</a></div>';
         return;
       }
       list.innerHTML=rows.map((row,i)=>`<div class="daily-row">

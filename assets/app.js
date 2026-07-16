@@ -357,10 +357,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 (function loadSupabaseBridge(){
   const scripts = [
+    "assets/supabase-live.js?v=desktop-auth-ready-20260716-1",
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
-    "assets/supabase-db.js?v=critical-relations-20260710-1",
-    "assets/supabase-live.js?v=critical-account-privacy-20260710-1"
+    "assets/supabase-db.js?v=critical-relations-20260710-1"
   ];
 
   function fail(src){
@@ -423,7 +423,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const isAdmin = page === "admin.html";
   const hasFeedSurface = Boolean(document.querySelector("[data-post-form], [data-feed]"));
 
-  loadCss("assets/fw-social.css?v=desktop-social-slim-20260702-1");
+  loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
 
   loadJs("assets/fw-echo-stable-route.js?v=echo-stable-route-20260529-1");
   loadJs("assets/fw-social.js?v=social-desktop-echo-20260702-1");

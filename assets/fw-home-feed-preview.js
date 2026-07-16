@@ -5,6 +5,7 @@
   var KEY = 'fw_lab_posts_v1';
   var last = '';
   var rendering = false;
+  var resolved = false;
 
   function q(selector, root){
     return (root || document).querySelector(selector);
@@ -94,13 +95,21 @@
     '</article>';
   }
 
-  function render(posts){
+  function loadingHtml(){
+    return [0, 1, 2].map(function(){
+      return '<div class="fw-home-feed-loading" aria-hidden="true"><span></span><span></span><span></span></div>';
+    }).join('');
+  }
+
+  function render(posts, allowEmpty){
     var container = feed();
     if(!container || rendering) return;
     var list = (posts && posts.length ? posts : read()).map(norm).slice(0, 6);
     var html = list.length
       ? list.map(card).join('')
-      : '<div class="fw-home-feed-empty">还没有最新牢骚，先去精神广场投递一条。</div>';
+      : (allowEmpty
+        ? '<div class="fw-home-feed-empty">还没有最新牢骚，<a href="square.html">去精神广场投递第一条 →</a></div>'
+        : loadingHtml());
 
     if(html === last && container.children.length <= 6) return;
 
@@ -116,15 +125,17 @@
   async function sync(){
     if(!feed()) return;
     if(!dbReady()){
-      render(read());
+      render(read(), false);
       return;
     }
     try{
       var posts = (await window.fwDb.loadPosts() || []).map(norm).slice(0, 6);
       save(posts);
-      render(posts);
+      resolved = true;
+      render(posts, true);
     }catch(e){
-      render(read());
+      resolved = true;
+      render(read(), true);
     }
   }
 
@@ -141,6 +152,13 @@
       '#live .feed-grid .post-card .post-content{margin-top:16px}' +
       '#live .feed-grid .post-card .interactions{margin-top:auto}' +
       '#live .fw-home-feed-empty{grid-column:1/-1;padding:22px;border:1px solid rgba(255,255,255,.18);background:rgba(246,243,235,.78);font-weight:950;color:#151513}' +
+      '#live .fw-home-feed-empty a{color:#8f3f3f;text-decoration:underline}' +
+      '#live .fw-home-feed-loading{min-height:200px;padding:20px;border:1px solid rgba(255,255,255,.16);background:rgba(246,243,235,.72);overflow:hidden}' +
+      '#live .fw-home-feed-loading span{display:block;height:14px;margin:13px 0;border-radius:999px;background:linear-gradient(90deg,rgba(30,30,28,.08),rgba(30,30,28,.18),rgba(30,30,28,.08));background-size:220% 100%;animation:fwHomeLoading 1.25s linear infinite}' +
+      '#live .fw-home-feed-loading span:nth-child(1){width:38%}' +
+      '#live .fw-home-feed-loading span:nth-child(2){width:72%;height:22px;margin-top:28px}' +
+      '#live .fw-home-feed-loading span:nth-child(3){width:55%;margin-top:34px}' +
+      '@keyframes fwHomeLoading{to{background-position:-220% 0}}' +
       '@media(max-width:1100px){#live .feed-grid.fw-home-feed-classic{grid-template-columns:repeat(2,minmax(0,1fr))!important}}' +
       '@media(max-width:720px){#live .feed-grid.fw-home-feed-classic{grid-template-columns:1fr!important}}';
     document.head.appendChild(style);
@@ -148,7 +166,7 @@
 
   function boot(){
     css();
-    render(read());
+    render(read(), false);
     sync();
 
     var attempts = 0;
@@ -166,7 +184,7 @@
       new MutationObserver(function(){
         if(rendering) return;
         clearTimeout(window.__fwHomeFeedPreviewTimer);
-        window.__fwHomeFeedPreviewTimer = setTimeout(function(){ render(read()); }, 80);
+        window.__fwHomeFeedPreviewTimer = setTimeout(function(){ render(read(), resolved); }, 80);
       }).observe(container, {childList:true});
     }
 
