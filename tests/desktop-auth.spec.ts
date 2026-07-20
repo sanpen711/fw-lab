@@ -49,7 +49,8 @@ test.describe('电脑端账号流程', () => {
     await dialog.locator('[data-sb-close]').click();
     await expect(dialog).not.toHaveClass(/\bshow\b/);
 
-    const headerLogin = page.locator('.header [data-fw-open]');
+    const headerLogin = page.locator('.header .fw-login-pill[data-fw-open]');
+    await expect(headerLogin).toHaveCount(1);
     await expect(headerLogin).toBeVisible();
     await headerLogin.click();
     await expect(dialog).toHaveClass(/\bshow\b/);
