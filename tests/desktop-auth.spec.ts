@@ -18,6 +18,13 @@ async function waitForLoggedInUser(page: Page) {
 }
 
 test.describe('电脑端账号流程', () => {
+  test.beforeEach(async ({ page }) => {
+    // 首页首次访问说明会覆盖页面；账号专项测试预先标记已读，避免正常引导遮挡账号入口。
+    await page.addInitScript(() => {
+      window.sessionStorage.setItem('fw_home_intro_seen_v1', '1');
+    });
+  });
+
   test('登录、注册和找回密码入口可稳定切换', async ({ page }) => {
     await page.goto('/index.html?desktop=1', { waitUntil: 'domcontentloaded' });
 
