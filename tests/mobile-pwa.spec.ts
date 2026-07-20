@@ -196,14 +196,23 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
     await openView(page, 'profile');
     await page.locator('[data-profile-mode="login"]').first().click();
 
-    await expect(page.locator('[data-auth-view="reset"]')).toBeVisible();
-    await page.locator('[data-auth-view="reset"]').click();
+    const registerEntry = page.locator('[data-login-form] [data-auth-view="register1"]');
+    await expect(registerEntry).toHaveCount(1);
+    await expect(registerEntry).toBeVisible();
+    await expect(page.locator('[data-login-form] [data-auth-view="reset"]')).toBeVisible();
+
+    await page.locator('[data-login-form] [data-auth-view="reset"]').click();
     await expect(page.locator('[data-reset-form]')).toBeVisible();
 
-    await page.locator('[data-auth-view="login"]').click();
-    await page.locator('[data-auth-view="register1"]').first().click();
+    await page.locator('[data-reset-form] [data-auth-view="login"]').click();
+    await expect(page.locator('[data-login-form]')).toBeVisible();
+    await page.locator('[data-login-form] [data-auth-view="register1"]').click();
+    await expect(page.locator('[data-register-form]')).toBeVisible();
     await expect(page.locator('[data-register-form] a[href="../rules.html"]')).toBeVisible();
     await expect(page.locator('[data-register-form] a[href="../privacy.html"]')).toBeVisible();
+
+    await page.locator('[data-register-form] [data-auth-view="login"]').click();
+    await expect(page.locator('[data-login-form]')).toBeVisible();
   });
 
   test('隐私政策页面可以直接打开', async ({ page }) => {

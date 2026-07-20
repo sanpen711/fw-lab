@@ -24,12 +24,23 @@ export default defineConfig({
   projects: [
     {
       name: 'mobile-chromium-pwa',
+      testMatch: /.*(?:mobile-pwa|buddy-return)\.spec\.ts/,
       use: {
         ...devices['Pixel 7'],
         viewport: { width: 412, height: 915 },
         isMobile: true,
         hasTouch: true,
         deviceScaleFactor: 2,
+        locale: 'zh-CN',
+        timezoneId: 'Asia/Shanghai'
+      }
+    },
+    {
+      name: 'desktop-chromium',
+      testMatch: /.*desktop-auth\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 1000 },
         locale: 'zh-CN',
         timezoneId: 'Asia/Shanghai'
       }

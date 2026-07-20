@@ -193,13 +193,6 @@
     '</section>';
   }
 
-  function authTabs(){
-    return '<div class="mobile-auth-tabs">' +
-      '<button type="button" data-auth-view="login" class="' + (authView === 'login' ? 'active' : '') + '">登录</button>' +
-      '<button type="button" data-auth-view="register1" class="' + (/^register/.test(authView) ? 'active' : '') + '">注册</button>' +
-    '</div>';
-  }
-
   function loginFormHtml(){
     return '<form class="stack" data-login-form>' +
       '<label for="loginEmail">邮箱</label>' +
@@ -209,6 +202,7 @@
       '<button class="app-btn dark" type="submit">登录</button>' +
       '<button class="mobile-auth-link" type="button" data-auth-view="reset">忘记密码？</button>' +
       '<p class="mobile-auth-note">如果你已经在电脑端注册过，请直接用邮箱和密码登录。</p>' +
+      '<div class="mobile-auth-simple-entry" data-mobile-auth-simple-entry="1"><span>还没有账号？先注册，再用邮箱和密码登录。</span><button type="button" data-auth-view="register1">注册账号</button></div>' +
     '</form>';
   }
 
@@ -276,7 +270,7 @@
         '<p class="mobile-login-kicker">FW ACCOUNT</p>' +
         '<h1 class="mobile-login-title">' + title + '</h1>' +
         '<p class="mobile-login-desc">' + (isRegister ? '填写账号信息并验证邮箱，完成正式注册。' : (isReset ? '验证邮箱并重新设置密码。' : '输入邮箱和密码，进入研究所。')) + '</p>' +
-        (isReset ? '' : authTabs()) + body +
+        body +
       '</div></section>' +
     '</section>';
   }
