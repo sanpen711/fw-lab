@@ -1,4 +1,4 @@
-name: Mobile PWA Tests
+name: Website Smoke Tests
 
 on:
   push:
@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  mobile-pwa:
-    name: Playwright mobile PWA smoke
+  website-smoke:
+    name: Playwright mobile and desktop smoke
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -33,8 +33,8 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run mobile PWA tests
-        run: npm run test:mobile
+      - name: Run website smoke tests
+        run: npm test
 
       - name: Upload Playwright report
         if: always()

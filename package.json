@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "test": "playwright test",
-    "test:mobile": "playwright test tests/mobile-pwa.spec.ts tests/buddy-return.spec.ts"
+    "test:mobile": "playwright test --project=mobile-chromium-pwa",
+    "test:desktop": "playwright test --project=desktop-chromium"
   },
   "devDependencies": {
     "@playwright/test": "^1.53.0",

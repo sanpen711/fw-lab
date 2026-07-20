@@ -356,6 +356,13 @@
 
   window.__FW_OPEN_AUTH__ = openAuth;
 
+  // 用户可能在账号控制器完成初始化前就点击入口。
+  // openAuth 一就绪便立即消费早期点击，避免按钮第一次无反应。
+  if(window.__FW_AUTH_OPEN_PENDING__){
+    window.__FW_AUTH_OPEN_PENDING__ = false;
+    openAuth();
+  }
+
   function userbar(){
     $$('.header').forEach(h => {
       if(h.querySelector('.fw-userbar')) return;
@@ -1143,11 +1150,6 @@
     userbar();
     renderOverride();
     bind();
-
-    if(window.__FW_AUTH_OPEN_PENDING__){
-      window.__FW_AUTH_OPEN_PENDING__ = false;
-      openAuth();
-    }
 
     const ok = await waitForDb();
 
