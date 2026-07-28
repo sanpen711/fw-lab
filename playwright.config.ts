@@ -37,7 +37,7 @@ export default defineConfig({
     },
     {
       name: 'desktop-chromium',
-      testMatch: /.*desktop-auth\.spec\.ts/,
+      testMatch: /.*desktop-(?:auth|account-security)\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1440, height: 1000 },
