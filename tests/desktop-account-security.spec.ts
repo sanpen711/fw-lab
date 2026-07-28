@@ -28,7 +28,20 @@ function testCredentials() {
 
 async function loginDesktopAccount(page: Page) {
   const credentials = testCredentials();
+  const navigations: string[] = [];
+  page.on('framenavigated', frame => {
+    if (frame === page.mainFrame()) navigations.push(frame.url());
+  });
   await openDesktop(page);
+  await page.evaluate(() => {
+    (window as any).__fwTestAuthEvents = [];
+    (window as any).fwDb.client.auth.onAuthStateChange((event: string, session: any) => {
+      (window as any).__fwTestAuthEvents.push({
+        event,
+        hasSession: Boolean(session?.user?.id)
+      });
+    });
+  });
   await page.locator('[data-login-cta]').click();
   await expect(page.locator('[data-sb-auth] [data-view="login"]')).toBeVisible();
   await page.locator('[data-login] input[name="email"]').fill(credentials.email);
@@ -37,6 +50,19 @@ async function loginDesktopAccount(page: Page) {
   await page.waitForFunction(async () => Boolean(
     (await (window as any).fwDb.client.auth.getSession()).data?.session?.user?.id
   ), null, { timeout: 22_000 });
+  await page.waitForTimeout(900);
+  const persisted = await page.evaluate(async () => {
+    const session = (await (window as any).fwDb.client.auth.getSession()).data?.session;
+    return {
+      userId: session?.user?.id || '',
+      href: window.location.href,
+      events: (window as any).__fwTestAuthEvents || [],
+      authStorageKeys: Object.keys(window.localStorage).filter(key => /^sb-|supabase/i.test(key))
+    };
+  });
+  if (!persisted.userId) {
+    throw new Error(`登录 Session 未保持：${JSON.stringify({ ...persisted, navigations })}`);
+  }
 }
 
 test.describe('账号功能闭环与数据库权限', () => {
