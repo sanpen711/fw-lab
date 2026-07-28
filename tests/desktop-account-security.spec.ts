@@ -23,10 +23,20 @@ function testCredentials() {
   const password = process.env.FW_TEST_PASSWORD;
   test.skip(!email || !password, '未配置测试登录 Secret，跳过登录后闭环与权限测试。');
 
-  return {
-    email: email!.trim().toLowerCase(),
-    password: password!.trim()
-  };
+  return { email: email!, password: password! };
+}
+
+async function loginDesktopAccount(page: Page) {
+  const credentials = testCredentials();
+  await openDesktop(page);
+  await page.locator('[data-login-cta]').click();
+  await expect(page.locator('[data-sb-auth] [data-view="login"]')).toBeVisible();
+  await page.locator('[data-login] input[name="email"]').fill(credentials.email);
+  await page.locator('[data-login] input[name="password"]').fill(credentials.password);
+  await page.locator('[data-login] button[type="submit"]').click();
+  await page.waitForFunction(async () => Boolean(
+    (await (window as any).fwDb.client.auth.getSession()).data?.session?.user?.id
+  ), null, { timeout: 22_000 });
 }
 
 test.describe('账号功能闭环与数据库权限', () => {
@@ -89,8 +99,7 @@ test.describe('账号功能闭环与数据库权限', () => {
   });
 
   test('测试账号完成发帖、评论、回复、三种互动、跨端显示与安全清理', async ({ page }) => {
-    const credentials = testCredentials();
-    await openDesktop(page);
+    await loginDesktopAccount(page);
     const marker = `${testPrefix} flow-${Date.now()}`;
     const xssPost = `${marker} <img src="x-security-test" onerror="window.__fwSecurityXss=1">`;
     const xssComment = `${marker}-comment <svg onload="window.__fwSecurityXss=2"></svg>`;
@@ -99,11 +108,9 @@ test.describe('账号功能闭环与数据库权限', () => {
     let auth: { access_token: string; refresh_token: string } | null = null;
 
     try {
-      const created = await page.evaluate(async ({ postContent, commentContent, markerText, credentials }) => {
+      const created = await page.evaluate(async ({ postContent, commentContent, markerText }) => {
         const db = (window as any).fwDb;
-        const signedIn = await db.client.auth.signInWithPassword(credentials);
-        if (signedIn.error) throw signedIn.error;
-        const session = signedIn.data?.session;
+        const session = (await db.client.auth.getSession()).data?.session;
         const userId = session?.user?.id;
         if (!userId) throw new Error('测试账号未登录');
 
@@ -168,7 +175,7 @@ test.describe('账号功能闭环与数据库权限', () => {
             refresh_token: session.refresh_token
           }
         };
-      }, { postContent: xssPost, commentContent: xssComment, markerText: marker, credentials });
+      }, { postContent: xssPost, commentContent: xssComment, markerText: marker });
 
       ids.postId = created.postId;
       ids.commentId = created.commentId;
@@ -240,17 +247,14 @@ test.describe('账号功能闭环与数据库权限', () => {
   });
 
   test('普通账号不能调用管理员能力、直接改帖或举报自己', async ({ page }) => {
-    const credentials = testCredentials();
-    await openDesktop(page);
+    await loginDesktopAccount(page);
     const marker = `${testPrefix} permission-${Date.now()}`;
     let postId = '';
 
     try {
-      const result = await page.evaluate(async ({ markerText, credentials }) => {
+      const result = await page.evaluate(async markerText => {
         const db = (window as any).fwDb;
-        const signedIn = await db.client.auth.signInWithPassword(credentials);
-        if (signedIn.error) throw signedIn.error;
-        const session = signedIn.data?.session;
+        const session = (await db.client.auth.getSession()).data?.session;
         const userId = session?.user?.id;
         if (!userId) throw new Error('测试账号未登录');
         const profileResult = await db.client.rpc('fw_get_current_profile');
@@ -307,7 +311,7 @@ test.describe('账号功能闭环与数据库权限', () => {
           postAfterError: postAfter.error?.message || '',
           cleanupError: cleanup.error?.message || ''
         };
-      }, { markerText: marker, credentials });
+      }, marker);
 
       postId = result.postId;
       expect(result.directUpdateRows).toEqual([]);
@@ -326,14 +330,11 @@ test.describe('账号功能闭环与数据库权限', () => {
   });
 
   test('媒体存储只允许本人目录的图片，并自动删除测试文件', async ({ page }) => {
-    const credentials = testCredentials();
-    await openDesktop(page);
+    await loginDesktopAccount(page);
 
-    const result = await page.evaluate(async ({ prefix, credentials }) => {
+    const result = await page.evaluate(async prefix => {
       const db = (window as any).fwDb;
-      const signedIn = await db.client.auth.signInWithPassword(credentials);
-      if (signedIn.error) throw signedIn.error;
-      const session = signedIn.data?.session;
+      const session = (await db.client.auth.getSession()).data?.session;
       const user = session?.user;
       if (!user?.id) throw new Error('测试账号未登录');
       const stamp = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -371,7 +372,7 @@ test.describe('账号功能闭环与数据库权限', () => {
       }
 
       return { ownPngError, htmlError, spoofError, foreignError, cleanupError };
-    }, { prefix: testPrefix, credentials });
+    }, testPrefix);
 
     expect(result.ownPngError).toBe('');
     expect(result.htmlError).not.toBe('');
@@ -381,14 +382,11 @@ test.describe('账号功能闭环与数据库权限', () => {
   });
 
   test('退出后不能继续发布或互动', async ({ page }) => {
-    const credentials = testCredentials();
-    await openDesktop(page);
+    await loginDesktopAccount(page);
     const marker = `${testPrefix} logout-${Date.now()}`;
 
-    const result = await page.evaluate(async ({ markerText, credentials }) => {
+    const result = await page.evaluate(async markerText => {
       const db = (window as any).fwDb;
-      const signedIn = await db.client.auth.signInWithPassword(credentials);
-      if (signedIn.error) throw signedIn.error;
       await db.client.auth.signOut({ scope: 'local' });
       let createError = '';
       let currentUser = null;
@@ -403,7 +401,7 @@ test.describe('账号功能闭环与数据库权限', () => {
         currentUser = null;
       }
       return { createError, currentUser };
-    }, { markerText: marker, credentials });
+    }, marker);
 
     expect(result.currentUser).toBeNull();
     expect(result.createError).toContain('请先登录');
