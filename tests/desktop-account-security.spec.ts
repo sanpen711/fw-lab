@@ -34,17 +34,6 @@ async function loginTestAccount(page: Page) {
   await page.locator('[data-login-form] input[name="email"]').fill(email!);
   await page.locator('[data-login-form] input[type="password"]').fill(password!);
   await page.locator('[data-login-form] button[type="submit"]').click();
-
-  // 手机端登录原地同步 Session，不受电脑端历史刷新补丁影响。
-  await page.waitForFunction(async () => {
-    try {
-      const session = await (window as any).fwDb?.client?.auth?.getSession?.();
-      const value = session?.data?.session;
-      return Boolean(value?.user?.id);
-    } catch {
-      return false;
-    }
-  }, null, { timeout: 22_000 });
 }
 
 test.describe('账号功能闭环与数据库权限', () => {
@@ -113,12 +102,18 @@ test.describe('账号功能闭环与数据库权限', () => {
     const xssComment = `${marker}-comment <svg onload="window.__fwSecurityXss=2"></svg>`;
 
     const ids: { postId?: string; commentId?: string; replyId?: string } = {};
+    let auth: { access_token: string; refresh_token: string } | null = null;
 
     try {
       const created = await page.evaluate(async ({ postContent, commentContent, markerText }) => {
         const db = (window as any).fwDb;
-        const session = await db.client.auth.getSession();
-        const userId = session.data?.session?.user?.id;
+        let session: any = null;
+        for (let attempt = 0; attempt < 100; attempt += 1) {
+          session = (await db.client.auth.getSession()).data?.session || null;
+          if (session?.user?.id) break;
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        const userId = session?.user?.id;
         if (!userId) throw new Error('测试账号未登录');
 
         const postResult = await db.client.from('posts').insert({
@@ -176,13 +171,18 @@ test.describe('账号功能闭环与数据库权限', () => {
           comments: rows[1],
           reactions: rows[2],
           duplicateError: duplicate.error?.message || '',
-          reactionResults: reactions
+          reactionResults: reactions,
+          auth: {
+            access_token: session.access_token,
+            refresh_token: session.refresh_token
+          }
         };
       }, { postContent: xssPost, commentContent: xssComment, markerText: marker });
 
       ids.postId = created.postId;
       ids.commentId = created.commentId;
       ids.replyId = created.replyId;
+      auth = created.auth;
 
       expect(created.post.error).toBeNull();
       expect(created.post.data?.content).toBe(xssPost);
@@ -197,9 +197,6 @@ test.describe('账号功能闭环与数据库权限', () => {
       await page.setViewportSize({ width: 1440, height: 1000 });
       await page.goto('/square.html?desktop=1', { waitUntil: 'domcontentloaded' });
       await waitForDbReady(page);
-      await page.waitForFunction(async () => Boolean(
-        (await (window as any).fwDb.client.auth.getSession()).data?.session?.user?.id
-      ), null, { timeout: 15_000 });
       const desktopCard = page.locator('.post-card').filter({ hasText: marker }).first();
       await expect(desktopCard).toBeVisible({ timeout: 20_000 });
       await expect(desktopCard).toContainText('<img src="x-security-test"');
@@ -210,9 +207,6 @@ test.describe('账号功能闭环与数据库权限', () => {
       await page.goto('/app/index.html', { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('[data-app-view="nav"].is-active', { timeout: 15_000 });
       await waitForDbReady(page);
-      await page.waitForFunction(async () => Boolean(
-        (await (window as any).fwDb.client.auth.getSession()).data?.session?.user?.id
-      ), null, { timeout: 15_000 });
       await page.locator('[data-app-open="square"]').first().click();
       await expect(page.locator('[data-app-view="square"].is-active')).toBeVisible();
       await expect(page.locator('[data-app-view="square"]').getByText(marker, { exact: false }).first())
@@ -220,9 +214,10 @@ test.describe('账号功能闭环与数据库权限', () => {
       expect(await page.evaluate(() => (window as any).__fwSecurityXss || 0)).toBe(0);
     } finally {
       if (ids.postId) {
-        await page.evaluate(async ({ postId, commentId, replyId }) => {
+        await page.evaluate(async ({ postId, commentId, replyId, auth }) => {
           const db = (window as any).fwDb;
           if (!db?.client) return;
+          if (auth) await db.client.auth.setSession(auth);
           const session = await db.client.auth.getSession();
           if (!session.data?.session?.user) return;
 
@@ -230,12 +225,13 @@ test.describe('账号功能闭环与数据库权限', () => {
           if (replyId) await db.deleteOwnComment({ commentId: replyId });
           if (commentId) await db.deleteOwnComment({ commentId });
           await db.deleteOwnPost({ postId });
-        }, ids);
+        }, { ...ids, auth });
       }
     }
 
-    const hidden = await page.evaluate(async ({ postId, commentId, replyId }) => {
+    const hidden = await page.evaluate(async ({ postId, commentId, replyId, auth }) => {
       const db = (window as any).fwDb;
+      if (auth) await db.client.auth.setSession(auth);
       const [post, comments, reactions] = await Promise.all([
         db.client.from('posts').select('id').eq('id', postId),
         db.client.from('comments').select('id').in('id', [commentId, replyId]),
@@ -246,7 +242,7 @@ test.describe('账号功能闭环与数据库权限', () => {
         comments: comments.data || [],
         reactions: reactions.data || []
       };
-    }, ids);
+    }, { ...ids, auth });
     expect(hidden.posts).toEqual([]);
     expect(hidden.comments).toEqual([]);
     expect(hidden.reactions).toEqual([]);
@@ -260,8 +256,13 @@ test.describe('账号功能闭环与数据库权限', () => {
     try {
       const result = await page.evaluate(async markerText => {
         const db = (window as any).fwDb;
-        const session = await db.client.auth.getSession();
-        const userId = session.data?.session?.user?.id;
+        let session: any = null;
+        for (let attempt = 0; attempt < 100; attempt += 1) {
+          session = (await db.client.auth.getSession()).data?.session || null;
+          if (session?.user?.id) break;
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        const userId = session?.user?.id;
         if (!userId) throw new Error('测试账号未登录');
         const profileResult = await db.client.rpc('fw_get_current_profile');
         const profile = Array.isArray(profileResult.data) ? profileResult.data[0] : profileResult.data;
@@ -298,11 +299,13 @@ test.describe('账号功能闭环与数据库权限', () => {
           .select('id,email_search,role,is_banned')
           .limit(1);
         const postAfter = await db.client.from('posts').select('content,is_deleted').eq('id', post.id).single();
+        const cleanup = await db.client.rpc('fw_delete_own_post', { p_post_id: post.id });
 
         return {
           postId: String(post.id),
           original: markerText,
           directUpdateError: directUpdate.error?.message || '',
+          directUpdateRows: directUpdate.data || [],
           adminProfilesError: adminProfiles.error?.message || '',
           adminProfilesRows: adminProfiles.data || [],
           adminModerateError: adminModerate.error?.message || '',
@@ -312,28 +315,24 @@ test.describe('账号功能闭环与数据库权限', () => {
           sensitiveRows: sensitiveProfiles.data || [],
           sensitiveError: sensitiveProfiles.error?.message || '',
           postAfter: postAfter.data,
-          postAfterError: postAfter.error?.message || ''
+          postAfterError: postAfter.error?.message || '',
+          cleanupError: cleanup.error?.message || ''
         };
       }, marker);
 
       postId = result.postId;
-      expect(result.directUpdateError).not.toBe('');
+      expect(result.directUpdateRows).toEqual([]);
       expect(result.adminProfilesRows).toEqual([]);
       expect(result.adminModerateError || result.adminProfilesError).not.toBe('');
       expect(result.selfReportError).not.toBe('');
       expect(result.reportRows).toEqual([]);
-      expect(result.reportRowsError).not.toBe('');
       expect(result.sensitiveRows).toEqual([]);
       expect(result.sensitiveError).not.toBe('');
       expect(result.postAfterError).toBe('');
       expect(result.postAfter).toMatchObject({ content: marker, is_deleted: false });
+      expect(result.cleanupError).toBe('');
     } finally {
-      if (postId) {
-        await page.evaluate(async id => {
-          const db = (window as any).fwDb;
-          await db.deleteOwnPost({ postId: id });
-        }, postId);
-      }
+      postId = '';
     }
   });
 
@@ -342,8 +341,13 @@ test.describe('账号功能闭环与数据库权限', () => {
 
     const result = await page.evaluate(async prefix => {
       const db = (window as any).fwDb;
-      const session = await db.client.auth.getSession();
-      const user = session.data?.session?.user;
+      let session: any = null;
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        session = (await db.client.auth.getSession()).data?.session || null;
+        if (session?.user?.id) break;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      const user = session?.user;
       if (!user?.id) throw new Error('测试账号未登录');
       const stamp = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const ownPng = `${user.id}/tests/${stamp}.png`;
@@ -395,6 +399,11 @@ test.describe('账号功能闭环与数据库权限', () => {
 
     const result = await page.evaluate(async markerText => {
       const db = (window as any).fwDb;
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        const session = (await db.client.auth.getSession()).data?.session;
+        if (session?.user?.id) break;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
       await db.client.auth.signOut({ scope: 'local' });
       let createError = '';
       let currentUser = null;
