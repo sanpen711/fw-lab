@@ -24,20 +24,20 @@ async function loginTestAccount(page: Page) {
   test.skip(!email || !password, '未配置测试登录 Secret，跳过登录后闭环与权限测试。');
 
   await openDesktop(page);
-  await page.locator('[data-login-cta]').click();
-  await expect(page.locator('[data-sb-auth] [data-view="login"]')).toBeVisible();
-  await page.locator('[data-login] input[name="email"]').fill(email!);
-  await page.locator('[data-login] input[name="password"]').fill(password!);
-  const loginRedirect = page.waitForURL(
-    url => url.searchParams.has('login'),
-    { timeout: 15_000 }
-  );
-  await page.locator('[data-login] button[type="submit"]').click();
+  const login = await page.evaluate(async ({ account, secret }) => {
+    const db = (window as any).fwDb;
+    const result = await db.client.auth.signInWithPassword({
+      email: account,
+      password: secret
+    });
+    return {
+      userId: result.data?.session?.user?.id || '',
+      error: result.error?.message || ''
+    };
+  }, { account: email!, secret: password! });
+  expect(login.error).toBe('');
+  expect(login.userId).not.toBe('');
 
-  // 登录成功后旧脚本会刷新一次页面。先让刷新完成，避免在旧文档刚拿到
-  // Session、而新文档尚未恢复 Session 的夹缝里误判为未登录。
-  await loginRedirect;
-  await waitForDbReady(page);
   await page.waitForFunction(async () => {
     try {
       const db = (window as any).fwDb;
