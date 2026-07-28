@@ -12,14 +12,6 @@
   function $(s){ return document.querySelector(s); }
   function $$(s){ return Array.from(document.querySelectorAll(s)); }
 
-  function isMobileLoginMode(){
-    try{
-      return window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
-    }catch(e){
-      return window.innerWidth <= 760;
-    }
-  }
-
   function esc(v){
     return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
@@ -205,11 +197,11 @@
       return;
     }
 
-    // 手机端如果直接同步失败，再退回原来的刷新方案；这是兜底，不影响桌面端。
-    setTimeout(function(){
-      var cleanPath = window.location.origin + window.location.pathname;
-      window.location.replace(cleanPath + '?login=' + Date.now());
-    }, 300);
+    // 资料读取暂时失败时仍保留已建立的 Session，由账号监听稍后继续同步。
+    loginBusy = false;
+    loginReloading = false;
+    setLoading(btn || $('[data-login] button[type="submit"]'), false);
+    toast('登录成功，账号资料正在同步。');
   }
 
   function goAfterLogin(btn){
