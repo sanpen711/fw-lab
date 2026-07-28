@@ -5,16 +5,19 @@ async function waitForDbReady(page: Page) {
 }
 
 async function waitForLoggedInUser(page: Page) {
-  await page.waitForFunction(async () => {
-    const db = (window as any).fwDb;
-    if (!db || typeof db.getCurrentUser !== 'function') return false;
-    try {
-      const user = await db.getCurrentUser();
-      return Boolean(user && user.id);
-    } catch {
-      return false;
-    }
-  }, null, { timeout: 22_000 });
+  await expect.poll(
+    () => page.evaluate(async () => {
+      const db = (window as any).fwDb;
+      if (!db || typeof db.getCurrentUser !== 'function') return '';
+      try {
+        const user = await db.getCurrentUser();
+        return user?.id || '';
+      } catch {
+        return '';
+      }
+    }),
+    { timeout: 22_000 }
+  ).not.toBe('');
 }
 
 test.describe('电脑端账号流程', () => {
