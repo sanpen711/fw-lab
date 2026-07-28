@@ -30,14 +30,22 @@ async function loginTestAccount(page: Page) {
   await page.locator('[data-login] input[name="password"]').fill(password!);
   await page.locator('[data-login] button[type="submit"]').click();
 
+  // 登录成功后旧脚本会刷新一次页面。先让刷新完成，避免在旧文档刚拿到
+  // Session、而新文档尚未恢复 Session 的夹缝里误判为未登录。
+  await page.waitForTimeout(1_500);
   await page.waitForFunction(async () => {
     try {
-      const user = await (window as any).fwDb?.getCurrentUser?.();
-      return Boolean(user?.id);
+      const db = (window as any).fwDb;
+      if (!db?.client || typeof db.getCurrentUser !== 'function') return false;
+      const session = await db.client.auth.getSession();
+      if (!session.data?.session?.user?.id) return false;
+      const user = await db.getCurrentUser();
+      return Boolean(user?.id && user.id === session.data.session.user.id);
     } catch {
       return false;
     }
   }, null, { timeout: 22_000 });
+  await page.waitForTimeout(500);
 }
 
 test.describe.serial('账号功能闭环与数据库权限', () => {
