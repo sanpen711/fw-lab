@@ -374,7 +374,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 (function loadSupabaseBridge(){
   const scripts = [
-    "assets/supabase-live.js?v=desktop-auth-switch-20260720-1",
+    "assets/supabase-live.js?v=desktop-auth-stable-20260728-1",
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
     "assets/supabase-db.js?v=critical-relations-20260710-1"
