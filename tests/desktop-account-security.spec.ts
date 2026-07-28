@@ -24,16 +24,6 @@ async function loginTestAccount(page: Page) {
   test.skip(!email || !password, '未配置测试登录 Secret，跳过登录后闭环与权限测试。');
 
   await openDesktop(page);
-  await page.evaluate(() => {
-    const nativeSetTimeout = window.setTimeout.bind(window);
-    window.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: any[]) => {
-      const source = typeof handler === 'function'
-        ? Function.prototype.toString.call(handler)
-        : String(handler);
-      if (/location\.(?:reload|replace)/.test(source)) return 0;
-      return nativeSetTimeout(handler, timeout, ...args);
-    }) as typeof window.setTimeout;
-  });
   await page.locator('[data-login-cta]').click();
   await expect(page.locator('[data-sb-auth] [data-view="login"]')).toBeVisible();
   await page.locator('[data-login] input[name="email"]').fill(email!);
@@ -49,19 +39,21 @@ async function loginTestAccount(page: Page) {
       return false;
     }
   }, null, { timeout: 22_000 });
+  const captured = await page.evaluate(async () => {
+    const session = await (window as any).fwDb.client.auth.getSession();
+    const value = session.data?.session;
+    if (!value?.access_token || !value?.refresh_token || !value.user?.id) return '';
+    window.sessionStorage.setItem('fw_security_session_backup', JSON.stringify({
+      access_token: value.access_token,
+      refresh_token: value.refresh_token
+    }));
+    return value.user.id;
+  });
+  expect(captured).not.toBe('');
 
-  await page.waitForFunction(async () => {
-    try {
-      const db = (window as any).fwDb;
-      if (!db?.client || typeof db.getCurrentUser !== 'function') return false;
-      const session = await db.client.auth.getSession();
-      if (!session.data?.session?.user?.id) return false;
-      const user = await db.getCurrentUser();
-      return Boolean(user?.id && user.id === session.data.session.user.id);
-    } catch {
-      return false;
-    }
-  }, null, { timeout: 22_000 });
+  // 允许线上兼容脚本完成可能的刷新；备份保存在同源 sessionStorage 中。
+  await page.waitForTimeout(1_000);
+  await waitForDbReady(page);
 }
 
 test.describe('账号功能闭环与数据库权限', () => {
@@ -134,6 +126,10 @@ test.describe('账号功能闭环与数据库权限', () => {
     try {
       const created = await page.evaluate(async ({ postContent, commentContent, markerText }) => {
         const db = (window as any).fwDb;
+        const backup = JSON.parse(sessionStorage.getItem('fw_security_session_backup') || 'null');
+        if (!backup) throw new Error('测试 Session 备份不存在');
+        const restored = await db.client.auth.setSession(backup);
+        if (restored.error || !restored.data?.session?.user?.id) throw new Error('测试 Session 恢复失败');
         const user = await db.getCurrentUser();
         if (!user?.id) throw new Error('测试账号未登录');
         if (user.isAdmin || user.role === 'admin') throw new Error('安全测试账号必须是普通用户，不能使用管理员账号');
@@ -189,6 +185,11 @@ test.describe('账号功能闭环与数据库权限', () => {
       expect(created.duplicate).toMatchObject({ already: true });
 
       await page.goto('/square.html?desktop=1', { waitUntil: 'domcontentloaded' });
+      await waitForDbReady(page);
+      await page.evaluate(async () => {
+        const backup = JSON.parse(sessionStorage.getItem('fw_security_session_backup') || 'null');
+        if (backup) await (window as any).fwDb.client.auth.setSession(backup);
+      });
       const desktopCard = page.locator('.post-card').filter({ hasText: marker }).first();
       await expect(desktopCard).toBeVisible({ timeout: 20_000 });
       await expect(desktopCard).toContainText('<img src="x-security-test"');
@@ -197,6 +198,11 @@ test.describe('账号功能闭环与数据库权限', () => {
 
       await page.goto('/app/index.html', { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('[data-app-view="nav"].is-active', { timeout: 15_000 });
+      await waitForDbReady(page);
+      await page.evaluate(async () => {
+        const backup = JSON.parse(sessionStorage.getItem('fw_security_session_backup') || 'null');
+        if (backup) await (window as any).fwDb.client.auth.setSession(backup);
+      });
       await page.locator('[data-app-open="square"]').first().click();
       await expect(page.locator('[data-app-view="square"].is-active')).toBeVisible();
       await expect(page.locator('[data-app-view="square"]').getByText(marker, { exact: false }).first())
@@ -207,6 +213,8 @@ test.describe('账号功能闭环与数据库权限', () => {
         await page.evaluate(async ({ postId, commentId, replyId }) => {
           const db = (window as any).fwDb;
           if (!db?.client) return;
+          const backup = JSON.parse(sessionStorage.getItem('fw_security_session_backup') || 'null');
+          if (backup) await db.client.auth.setSession(backup);
           const session = await db.client.auth.getSession();
           if (!session.data?.session?.user) return;
 
@@ -244,6 +252,10 @@ test.describe('账号功能闭环与数据库权限', () => {
     try {
       const result = await page.evaluate(async markerText => {
         const db = (window as any).fwDb;
+        const backup = JSON.parse(sessionStorage.getItem('fw_security_session_backup') || 'null');
+        if (!backup) throw new Error('测试 Session 备份不存在');
+        const restored = await db.client.auth.setSession(backup);
+        if (restored.error || !restored.data?.session?.user?.id) throw new Error('测试 Session 恢复失败');
         const user = await db.getCurrentUser();
         if (!user?.id) throw new Error('测试账号未登录');
         if (user.isAdmin || user.role === 'admin') throw new Error('安全测试账号必须是普通用户');
@@ -305,6 +317,8 @@ test.describe('账号功能闭环与数据库权限', () => {
       if (postId) {
         await page.evaluate(async id => {
           const db = (window as any).fwDb;
+          const backup = JSON.parse(sessionStorage.getItem('fw_security_session_backup') || 'null');
+          if (backup) await db.client.auth.setSession(backup);
           await db.deleteOwnPost({ postId: id });
         }, postId);
       }
@@ -316,6 +330,10 @@ test.describe('账号功能闭环与数据库权限', () => {
 
     const result = await page.evaluate(async prefix => {
       const db = (window as any).fwDb;
+      const backup = JSON.parse(sessionStorage.getItem('fw_security_session_backup') || 'null');
+      if (!backup) throw new Error('测试 Session 备份不存在');
+      const restored = await db.client.auth.setSession(backup);
+      if (restored.error || !restored.data?.session?.user?.id) throw new Error('测试 Session 恢复失败');
       const user = await db.getCurrentUser();
       const stamp = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const ownPng = `${user.id}/tests/${stamp}.png`;
@@ -367,6 +385,7 @@ test.describe('账号功能闭环与数据库权限', () => {
 
     const result = await page.evaluate(async markerText => {
       const db = (window as any).fwDb;
+      sessionStorage.removeItem('fw_security_session_backup');
       await db.client.auth.signOut({ scope: 'local' });
       let createError = '';
       let currentUser = null;
