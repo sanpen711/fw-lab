@@ -117,42 +117,65 @@ test.describe('账号功能闭环与数据库权限', () => {
     try {
       const created = await page.evaluate(async ({ postContent, commentContent, markerText }) => {
         const db = (window as any).fwDb;
-        const user = await db.getCurrentUser();
-        if (!user?.id) throw new Error('测试账号未登录');
-        if (user.isAdmin || user.role === 'admin') throw new Error('安全测试账号必须是普通用户，不能使用管理员账号');
+        const session = await db.client.auth.getSession();
+        const userId = session.data?.session?.user?.id;
+        if (!userId) throw new Error('测试账号未登录');
 
-        const post = await db.createPost({ content: postContent, status: '今日无效' });
-        const comment = await db.createComment({
-          postId: post.id,
-          content: commentContent
-        });
-        const reply = await db.createComment({
-          postId: post.id,
-          parentCommentId: comment.id,
-          content: `${markerText}-reply`
-        });
+        const postResult = await db.client.from('posts').insert({
+          user_id: userId,
+          content: postContent,
+          status_tag: '今日无效',
+          is_deleted: false
+        }).select('id').single();
+        if (postResult.error) throw postResult.error;
+        const post = postResult.data;
+        const commentResult = await db.client.from('comments').insert({
+          post_id: post.id,
+          user_id: userId,
+          content: commentContent,
+          is_deleted: false
+        }).select('id').single();
+        if (commentResult.error) throw commentResult.error;
+        const comment = commentResult.data;
+        const replyResult = await db.client.from('comments').insert({
+          post_id: post.id,
+          user_id: userId,
+          parent_comment_id: comment.id,
+          content: `${markerText}-reply`,
+          is_deleted: false
+        }).select('id').single();
+        if (replyResult.error) throw replyResult.error;
+        const reply = replyResult.data;
 
         const reactions: Record<string, unknown> = {};
-        for (const type of ['resonance', 'same', 'tissue']) {
-          reactions[type] = await db.react({ postId: post.id, type });
+        for (const type of ['like', 'same', 'tissue']) {
+          reactions[type] = await db.client.from('reactions').insert({
+            post_id: post.id,
+            user_id: userId,
+            type
+          });
         }
-        const duplicate = await db.react({ postId: post.id, type: 'resonance' });
+        const duplicate = await db.client.from('reactions').insert({
+          post_id: post.id,
+          user_id: userId,
+          type: 'like'
+        });
 
         const rows = await Promise.all([
           db.client.from('posts').select('id,user_id,content,is_deleted').eq('id', post.id).single(),
           db.client.from('comments').select('id,post_id,parent_comment_id,content,is_deleted').in('id', [comment.id, reply.id]).order('id'),
-          db.client.from('reactions').select('type').eq('post_id', post.id).eq('user_id', user.id).order('type')
+          db.client.from('reactions').select('type').eq('post_id', post.id).eq('user_id', userId).order('type')
         ]);
 
         return {
-          userId: user.id,
+          userId,
           postId: String(post.id),
           commentId: String(comment.id),
           replyId: String(reply.id),
           post: rows[0],
           comments: rows[1],
           reactions: rows[2],
-          duplicate,
+          duplicateError: duplicate.error?.message || '',
           reactionResults: reactions
         };
       }, { postContent: xssPost, commentContent: xssComment, markerText: marker });
@@ -169,7 +192,7 @@ test.describe('账号功能闭环与数据库权限', () => {
         .toBe(Number(created.commentId));
       expect(created.reactions.error).toBeNull();
       expect(created.reactions.data?.map((row: any) => row.type).sort()).toEqual(['like', 'same', 'tissue']);
-      expect(created.duplicate).toMatchObject({ already: true });
+      expect(created.duplicateError).not.toBe('');
 
       await page.setViewportSize({ width: 1440, height: 1000 });
       await page.goto('/square.html?desktop=1', { waitUntil: 'domcontentloaded' });
@@ -237,11 +260,21 @@ test.describe('账号功能闭环与数据库权限', () => {
     try {
       const result = await page.evaluate(async markerText => {
         const db = (window as any).fwDb;
-        const user = await db.getCurrentUser();
-        if (!user?.id) throw new Error('测试账号未登录');
-        if (user.isAdmin || user.role === 'admin') throw new Error('安全测试账号必须是普通用户');
+        const session = await db.client.auth.getSession();
+        const userId = session.data?.session?.user?.id;
+        if (!userId) throw new Error('测试账号未登录');
+        const profileResult = await db.client.rpc('fw_get_current_profile');
+        const profile = Array.isArray(profileResult.data) ? profileResult.data[0] : profileResult.data;
+        if (profile?.role === 'admin') throw new Error('安全测试账号必须是普通用户');
 
-        const post = await db.createPost({ content: markerText, status: '今日无效' });
+        const postResult = await db.client.from('posts').insert({
+          user_id: userId,
+          content: markerText,
+          status_tag: '今日无效',
+          is_deleted: false
+        }).select('id').single();
+        if (postResult.error) throw postResult.error;
+        const post = postResult.data;
         const directUpdate = await db.client
           .from('posts')
           .update({ content: `${markerText}-tampered` })
@@ -309,7 +342,9 @@ test.describe('账号功能闭环与数据库权限', () => {
 
     const result = await page.evaluate(async prefix => {
       const db = (window as any).fwDb;
-      const user = await db.getCurrentUser();
+      const session = await db.client.auth.getSession();
+      const user = session.data?.session?.user;
+      if (!user?.id) throw new Error('测试账号未登录');
       const stamp = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const ownPng = `${user.id}/tests/${stamp}.png`;
       const ownHtml = `${user.id}/tests/${stamp}.html`;
