@@ -34,20 +34,21 @@ async function loginTestAccount(page: Page) {
   await page.waitForFunction(async () => {
     try {
       const session = await (window as any).fwDb?.client?.auth?.getSession?.();
-      return Boolean(session?.data?.session?.user?.id);
+      const value = session?.data?.session;
+      if (!value?.access_token || !value?.refresh_token || !value.user?.id) return false;
+      window.sessionStorage.setItem('fw_security_session_backup', JSON.stringify({
+        access_token: value.access_token,
+        refresh_token: value.refresh_token,
+        user_id: value.user.id
+      }));
+      return true;
     } catch {
       return false;
     }
   }, null, { timeout: 22_000 });
-  const captured = await page.evaluate(async () => {
-    const session = await (window as any).fwDb.client.auth.getSession();
-    const value = session.data?.session;
-    if (!value?.access_token || !value?.refresh_token || !value.user?.id) return '';
-    window.sessionStorage.setItem('fw_security_session_backup', JSON.stringify({
-      access_token: value.access_token,
-      refresh_token: value.refresh_token
-    }));
-    return value.user.id;
+  const captured = await page.evaluate(() => {
+    const backup = JSON.parse(sessionStorage.getItem('fw_security_session_backup') || 'null');
+    return backup?.user_id || '';
   });
   expect(captured).not.toBe('');
 
