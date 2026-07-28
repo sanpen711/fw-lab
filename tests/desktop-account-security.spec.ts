@@ -23,14 +23,19 @@ async function loginTestAccount(page: Page) {
   const password = process.env.FW_TEST_PASSWORD;
   test.skip(!email || !password, '未配置测试登录 Secret，跳过登录后闭环与权限测试。');
 
-  await openDesktop(page);
-  await page.locator('[data-login-cta]').click();
-  await expect(page.locator('[data-sb-auth] [data-view="login"]')).toBeVisible();
-  await page.locator('[data-login] input[name="email"]').fill(email!);
-  await page.locator('[data-login] input[name="password"]').fill(password!);
-  await page.locator('[data-login] button[type="submit"]').click();
+  await page.setViewportSize({ width: 412, height: 915 });
+  await page.goto('/app/index.html', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('[data-app-view="nav"].is-active', { timeout: 15_000 });
+  await waitForDbReady(page);
+  await page.locator('[data-app-nav="profile"], [data-app-profile-trigger]').first().click();
+  await expect(page.locator('[data-app-view="profile"].is-active')).toBeVisible();
+  await page.locator('[data-profile-mode="login"]').first().click();
+  await expect(page.locator('[data-login-form]')).toBeVisible();
+  await page.locator('[data-login-form] input[name="email"]').fill(email!);
+  await page.locator('[data-login-form] input[type="password"]').fill(password!);
+  await page.locator('[data-login-form] button[type="submit"]').click();
 
-  // 安全测试只需要稳定 Session；登录刷新行为由 desktop-auth.spec.ts 单独覆盖。
+  // 手机端登录原地同步 Session，不受电脑端历史刷新补丁影响。
   await page.waitForFunction(async () => {
     try {
       const session = await (window as any).fwDb?.client?.auth?.getSession?.();
@@ -51,10 +56,7 @@ async function loginTestAccount(page: Page) {
     return backup?.user_id || '';
   });
   expect(captured).not.toBe('');
-
-  // 允许线上兼容脚本完成可能的刷新；备份使用不会被退出补丁清理的测试专用键。
-  await page.waitForTimeout(1_000);
-  await waitForDbReady(page);
+  await page.waitForTimeout(500);
 }
 
 test.describe('账号功能闭环与数据库权限', () => {
@@ -185,6 +187,7 @@ test.describe('账号功能闭环与数据库权限', () => {
       expect(created.reactions.data?.map((row: any) => row.type).sort()).toEqual(['like', 'same', 'tissue']);
       expect(created.duplicate).toMatchObject({ already: true });
 
+      await page.setViewportSize({ width: 1440, height: 1000 });
       await page.goto('/square.html?desktop=1', { waitUntil: 'domcontentloaded' });
       await waitForDbReady(page);
       await page.evaluate(async () => {
@@ -197,6 +200,7 @@ test.describe('账号功能闭环与数据库权限', () => {
       expect(await page.evaluate(() => (window as any).__fwSecurityXss || 0)).toBe(0);
       await expect(page.locator('img[src="x-security-test"]')).toHaveCount(0);
 
+      await page.setViewportSize({ width: 412, height: 915 });
       await page.goto('/app/index.html', { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('[data-app-view="nav"].is-active', { timeout: 15_000 });
       await waitForDbReady(page);
