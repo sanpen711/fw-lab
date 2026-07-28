@@ -24,19 +24,24 @@ async function loginTestAccount(page: Page) {
   test.skip(!email || !password, '未配置测试登录 Secret，跳过登录后闭环与权限测试。');
 
   await openDesktop(page);
-  const login = await page.evaluate(async ({ account, secret }) => {
-    const db = (window as any).fwDb;
-    const result = await db.client.auth.signInWithPassword({
-      email: account,
-      password: secret
-    });
-    return {
-      userId: result.data?.session?.user?.id || '',
-      error: result.error?.message || ''
-    };
-  }, { account: email!.trim(), secret: password!.trim() });
-  expect(login.error).toBe('');
-  expect(login.userId).not.toBe('');
+  await page.locator('[data-login-cta]').click();
+  await expect(page.locator('[data-sb-auth] [data-view="login"]')).toBeVisible();
+  await page.locator('[data-login] input[name="email"]').fill(email!);
+  await page.locator('[data-login] input[name="password"]').fill(password!);
+  await page.locator('[data-login] button[type="submit"]').click();
+
+  // 先确认旧页面已经写入 Session，再等待兼容脚本可能触发的页面刷新。
+  // 之前在 Session 写入前开始计时，会把网络耗时误算进刷新等待。
+  await page.waitForFunction(async () => {
+    try {
+      const session = await (window as any).fwDb?.client?.auth?.getSession?.();
+      return Boolean(session?.data?.session?.user?.id);
+    } catch {
+      return false;
+    }
+  }, null, { timeout: 22_000 });
+  await page.waitForTimeout(1_500);
+  await waitForDbReady(page);
 
   await page.waitForFunction(async () => {
     try {
