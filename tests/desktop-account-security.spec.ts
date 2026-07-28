@@ -24,14 +24,23 @@ async function loginTestAccount(page: Page) {
   test.skip(!email || !password, '未配置测试登录 Secret，跳过登录后闭环与权限测试。');
 
   await openDesktop(page);
+  await page.evaluate(() => {
+    const nativeSetTimeout = window.setTimeout.bind(window);
+    window.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: any[]) => {
+      const source = typeof handler === 'function'
+        ? Function.prototype.toString.call(handler)
+        : String(handler);
+      if (/location\.(?:reload|replace)/.test(source)) return 0;
+      return nativeSetTimeout(handler, timeout, ...args);
+    }) as typeof window.setTimeout;
+  });
   await page.locator('[data-login-cta]').click();
   await expect(page.locator('[data-sb-auth] [data-view="login"]')).toBeVisible();
   await page.locator('[data-login] input[name="email"]').fill(email!);
   await page.locator('[data-login] input[name="password"]').fill(password!);
   await page.locator('[data-login] button[type="submit"]').click();
 
-  // 先确认旧页面已经写入 Session，再等待兼容脚本可能触发的页面刷新。
-  // 之前在 Session 写入前开始计时，会把网络耗时误算进刷新等待。
+  // 安全测试只需要稳定 Session；登录刷新行为由 desktop-auth.spec.ts 单独覆盖。
   await page.waitForFunction(async () => {
     try {
       const session = await (window as any).fwDb?.client?.auth?.getSession?.();
@@ -40,8 +49,7 @@ async function loginTestAccount(page: Page) {
       return false;
     }
   }, null, { timeout: 22_000 });
-  await page.waitForTimeout(1_500);
-  await waitForDbReady(page);
+  await page.waitForTimeout(500);
 
   await page.waitForFunction(async () => {
     try {
