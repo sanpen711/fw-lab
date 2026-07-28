@@ -216,20 +216,8 @@
     if(loginReloading) return;
 
     loginReloading = true;
-
-    if(isMobileLoginMode()){
-      finishMobileLogin(btn);
-      return;
-    }
-
-    // 桌面端保留原逻辑，避免误碰电脑端。
-    toast('登录成功，正在进入研究所。');
-    closeModal();
-
-    setTimeout(function(){
-      var cleanPath = window.location.origin + window.location.pathname;
-      window.location.replace(cleanPath + '?login=' + Date.now());
-    }, 350);
+    // 电脑端和手机端都原地完成登录，避免强制刷新导致刚建立的 Session 丢失。
+    finishMobileLogin(btn);
   }
 
   function watchSessionAfterLogin(btn){
