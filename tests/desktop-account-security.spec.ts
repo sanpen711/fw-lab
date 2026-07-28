@@ -47,9 +47,12 @@ async function loginDesktopAccount(page: Page) {
   await page.locator('[data-login] input[name="email"]').fill(credentials.email);
   await page.locator('[data-login] input[name="password"]').fill(credentials.password);
   await page.locator('[data-login] button[type="submit"]').click();
-  await page.waitForFunction(async () => Boolean(
-    (await (window as any).fwDb.client.auth.getSession()).data?.session?.user?.id
-  ), null, { timeout: 22_000 });
+  await expect.poll(
+    () => page.evaluate(async () => (
+      (await (window as any).fwDb.client.auth.getSession()).data?.session?.user?.id || ''
+    )),
+    { timeout: 22_000 }
+  ).not.toBe('');
   await page.waitForTimeout(900);
   const persisted = await page.evaluate(async () => {
     const session = (await (window as any).fwDb.client.auth.getSession()).data?.session;
