@@ -34,7 +34,7 @@ async function loginTestAccount(page: Page) {
       userId: result.data?.session?.user?.id || '',
       error: result.error?.message || ''
     };
-  }, { account: email!, secret: password! });
+  }, { account: email!.trim(), secret: password!.trim() });
   expect(login.error).toBe('');
   expect(login.userId).not.toBe('');
 
