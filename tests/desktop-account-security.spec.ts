@@ -23,7 +23,10 @@ function testCredentials() {
   const password = process.env.FW_TEST_PASSWORD;
   test.skip(!email || !password, '未配置测试登录 Secret，跳过登录后闭环与权限测试。');
 
-  return { email: email!, password: password! };
+  return {
+    email: email!.trim().toLowerCase(),
+    password: password!.trim()
+  };
 }
 
 test.describe('账号功能闭环与数据库权限', () => {
