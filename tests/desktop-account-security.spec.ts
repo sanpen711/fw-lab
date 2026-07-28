@@ -49,7 +49,6 @@ async function loginTestAccount(page: Page) {
       return false;
     }
   }, null, { timeout: 22_000 });
-  await page.waitForTimeout(500);
 
   await page.waitForFunction(async () => {
     try {
@@ -63,10 +62,9 @@ async function loginTestAccount(page: Page) {
       return false;
     }
   }, null, { timeout: 22_000 });
-  await page.waitForTimeout(500);
 }
 
-test.describe.serial('账号功能闭环与数据库权限', () => {
+test.describe('账号功能闭环与数据库权限', () => {
   test('游客不能绕过界面写入，且不能读取敏感账号字段', async ({ page }) => {
     await openDesktop(page);
 
