@@ -601,12 +601,7 @@
 
   function onAuthChange(cb){
     return enabled
-      ? client.auth.onAuthStateChange((e, s) => {
-          // Supabase Auth 回调必须先返回；回调内再次读取 Session 会造成认证死锁。
-          setTimeout(() => {
-            if(cb) cb(e, s);
-          }, 0);
-        })
+      ? client.auth.onAuthStateChange((e, s) => cb && cb(e, s))
       : null;
   }
 
