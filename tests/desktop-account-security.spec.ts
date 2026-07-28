@@ -28,11 +28,16 @@ async function loginTestAccount(page: Page) {
   await expect(page.locator('[data-sb-auth] [data-view="login"]')).toBeVisible();
   await page.locator('[data-login] input[name="email"]').fill(email!);
   await page.locator('[data-login] input[name="password"]').fill(password!);
+  const loginRedirect = page.waitForURL(
+    url => url.searchParams.has('login'),
+    { timeout: 15_000 }
+  );
   await page.locator('[data-login] button[type="submit"]').click();
 
   // 登录成功后旧脚本会刷新一次页面。先让刷新完成，避免在旧文档刚拿到
   // Session、而新文档尚未恢复 Session 的夹缝里误判为未登录。
-  await page.waitForTimeout(1_500);
+  await loginRedirect;
+  await waitForDbReady(page);
   await page.waitForFunction(async () => {
     try {
       const db = (window as any).fwDb;
