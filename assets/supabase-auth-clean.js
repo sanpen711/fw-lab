@@ -791,13 +791,12 @@
 
       if(r.error) throw r.error;
 
-      toast('登录成功，正在进入研究所。');
-
+      await refreshUser();
+      await loadRemotePosts();
       closeAuth();
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 450);
+      setLoading(btn, false);
+      busy = false;
+      toast('登录成功。');
 
     }catch(e){
       toast(authMsg(e));
