@@ -12,6 +12,14 @@
   function $(s){ return document.querySelector(s); }
   function $$(s){ return Array.from(document.querySelectorAll(s)); }
 
+  function isMobileLoginMode(){
+    try{
+      return window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+    }catch(e){
+      return window.innerWidth <= 760;
+    }
+  }
+
   function esc(v){
     return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
@@ -197,19 +205,31 @@
       return;
     }
 
-    // 资料读取暂时失败时仍保留已建立的 Session，由账号监听稍后继续同步。
-    loginBusy = false;
-    loginReloading = false;
-    setLoading(btn || $('[data-login] button[type="submit"]'), false);
-    toast('登录成功，账号资料正在同步。');
+    // 手机端如果直接同步失败，再退回原来的刷新方案；这是兜底，不影响桌面端。
+    setTimeout(function(){
+      var cleanPath = window.location.origin + window.location.pathname;
+      window.location.replace(cleanPath + '?login=' + Date.now());
+    }, 300);
   }
 
   function goAfterLogin(btn){
     if(loginReloading) return;
 
     loginReloading = true;
-    // 电脑端和手机端都原地完成登录，避免强制刷新导致刚建立的 Session 丢失。
-    finishMobileLogin(btn);
+
+    if(isMobileLoginMode()){
+      finishMobileLogin(btn);
+      return;
+    }
+
+    // 桌面端保留原逻辑，避免误碰电脑端。
+    toast('登录成功，正在进入研究所。');
+    closeModal();
+
+    setTimeout(function(){
+      var cleanPath = window.location.origin + window.location.pathname;
+      window.location.replace(cleanPath + '?login=' + Date.now());
+    }, 350);
   }
 
   function watchSessionAfterLogin(btn){
