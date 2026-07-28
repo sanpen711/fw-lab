@@ -377,7 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "assets/supabase-live.js?v=desktop-auth-stable-20260728-1",
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
-    "assets/supabase-db.js?v=critical-relations-20260710-1"
+    "assets/supabase-db.js?v=auth-callback-stable-20260728-1"
   ];
 
   function fail(src){
