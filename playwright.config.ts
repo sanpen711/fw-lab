@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = process.env.FW_TEST_BASE_URL || 'http://127.0.0.1:4173';
+const hasTestCredentials = Boolean(process.env.FW_TEST_EMAIL && process.env.FW_TEST_PASSWORD);
 
 export default defineConfig({
   testDir: './tests',
@@ -12,13 +13,16 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI
-    ? [['html', { outputFolder: 'playwright-report', open: 'never' }], ['list']]
+    ? (hasTestCredentials
+        ? [['list']]
+        : [['html', { outputFolder: 'playwright-report', open: 'never' }], ['list']])
     : [['list']],
   use: {
     baseURL,
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    // 登录测试使用仓库 Secret。包含测试凭据时不生成可回放附件，避免失败报告保留输入值。
+    trace: hasTestCredentials ? 'off' : 'retain-on-failure',
+    screenshot: hasTestCredentials ? 'off' : 'only-on-failure',
+    video: hasTestCredentials ? 'off' : 'retain-on-failure',
     actionTimeout: 12_000,
     navigationTimeout: 20_000
   },
