@@ -27,23 +27,28 @@ async function waitForModuleCacheReady(page: Page) {
 }
 
 async function waitForLoggedInUser(page: Page) {
-  await page.waitForFunction(async () => {
-    const w = window as any;
-    try {
-      if (w.FWApp && typeof w.FWApp.refreshUser === 'function') {
-        const user = await w.FWApp.refreshUser();
-        if (user && user.id) return true;
+  await expect.poll(
+    () => page.evaluate(async () => {
+      const w = window as any;
+      try {
+        if (w.FWApp && typeof w.FWApp.refreshUser === 'function') {
+          const user = await w.FWApp.refreshUser();
+          if (user && user.id) return user.id;
+        }
+        if (w.FWApp && w.FWApp.state && w.FWApp.state.user && w.FWApp.state.user.id) {
+          return w.FWApp.state.user.id;
+        }
+        if (w.fwDb && typeof w.fwDb.getCurrentUser === 'function') {
+          const user = await w.fwDb.getCurrentUser();
+          if (user && user.id) return user.id;
+        }
+      } catch {
+        return '';
       }
-      if (w.FWApp && w.FWApp.state && w.FWApp.state.user && w.FWApp.state.user.id) return true;
-      if (w.fwDb && typeof w.fwDb.getCurrentUser === 'function') {
-        const user = await w.fwDb.getCurrentUser();
-        if (user && user.id) return true;
-      }
-    } catch {
-      return false;
-    }
-    return false;
-  }, null, { timeout: 22_000 });
+      return '';
+    }),
+    { timeout: 22_000 }
+  ).not.toBe('');
 }
 
 async function openView(page: Page, view: string) {
