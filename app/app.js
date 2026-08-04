@@ -424,6 +424,49 @@
     if(node) node.textContent = text;
   }
 
+  function updateHeaderStatus(){
+    if(navigator.onLine === false){
+      setStatus('离线 · 浏览缓存');
+      return;
+    }
+    if(state.user){
+      setStatus('已登录');
+      return;
+    }
+    setStatus(db() ? '可浏览，登录后互动' : '正在连接');
+  }
+
+  function syncNetworkStatus(event){
+    var offline = navigator.onLine === false;
+    var banner = $('[data-app-network-banner]');
+    document.body.classList.toggle('is-offline', offline);
+    if(banner) banner.hidden = !offline;
+    updateHeaderStatus();
+    if(event && event.type === 'online') toast('网络已恢复，正在刷新数据');
+    if(event && event.type === 'offline') toast('网络已断开，当前展示缓存内容');
+    if(!offline && event && event.type === 'online'){
+      if(window.FWAppFeed) window.FWAppFeed.load(true);
+      if(window.FWAppBuddy) window.FWAppBuddy.load(true);
+      if(window.FWAppEcho) window.FWAppEcho.load(true);
+    }
+  }
+
+  function bindNetworkStatus(){
+    window.addEventListener('online', syncNetworkStatus);
+    window.addEventListener('offline', syncNetworkStatus);
+    document.addEventListener('click', function(e){
+      var retry = e.target.closest && e.target.closest('[data-app-network-retry]');
+      if(!retry) return;
+      e.preventDefault();
+      if(navigator.onLine === false){
+        toast('仍未连接网络，请检查 Wi-Fi 或移动数据');
+        return;
+      }
+      window.location.reload();
+    });
+    syncNetworkStatus();
+  }
+
   function renderUser(){
     var label = $('[data-app-user-label]');
     var avatar = $('[data-app-avatar]');
@@ -432,13 +475,13 @@
     if(state.user){
       label.textContent = state.user.nickname || '研究员';
       avatar.innerHTML = avatarHtml(state.user);
-      setStatus('已登录');
+      updateHeaderStatus();
       return;
     }
 
     label.textContent = '未登录';
     avatar.textContent = 'F';
-    setStatus(db() ? '可浏览，登录后互动' : '正在连接');
+    updateHeaderStatus();
   }
 
   async function refreshUser(){
@@ -528,6 +571,7 @@
     registerServiceWorker();
     bindShell();
     setStatus('正在连接');
+    bindNetworkStatus();
     await refreshUser();
     onAuthChange();
     if(window.FWAppNav) window.FWAppNav.init();
@@ -550,6 +594,7 @@
     waitForDb:waitForDb,
     toast:toast,
     setStatus:setStatus,
+    syncNetworkStatus:syncNetworkStatus,
     setView:setView,
     refreshUser:refreshUser,
     renderUser:renderUser,

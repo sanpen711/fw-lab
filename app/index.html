@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png?v=fw-lab-icon-20260529-1">
   <link rel="icon" href="../assets/icons/icon-192.png?v=fw-lab-icon-20260529-1" sizes="192x192" type="image/png">
-  <link rel="stylesheet" href="./app.css?v=mobile-app-shell-20260525-6">
+  <link rel="stylesheet" href="./app.css?v=mobile-release-ready-20260804-1">
   <link rel="stylesheet" href="./rooms.css?v=mobile-app-rooms-layout-20260527-1">
   <link rel="stylesheet" href="./bird.css?v=mobile-app-modules-20260527-1">
 </head>
@@ -30,6 +30,11 @@
         <span data-app-user-label>未登录</span>
       </button>
     </header>
+
+    <div class="app-network-banner" data-app-network-banner role="status" aria-live="polite" hidden>
+      <span><b>当前处于离线状态</b><small>已展示本地缓存；发布、评论和消息暂不可用。</small></span>
+      <button type="button" data-app-network-retry>重新连接</button>
+    </div>
 
     <main class="app-main" id="appMain">
       <section class="app-view is-active" data-app-view="nav" aria-label="导航">
@@ -205,7 +210,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../assets/supabase-config.js"></script>
   <script src="../assets/supabase-db.js?v=critical-relations-account-20260710-1"></script>
-  <script src="./app.js?v=mobile-app-shell-20260525-6"></script>
+  <script src="./app.js?v=mobile-release-ready-20260804-1"></script>
   <script src="./nav.js?v=mobile-app-shell-20260525-6"></script>
   <script src="./feed.js?v=no-mental-status-20260713-1"></script>
   <script src="./publish.js?v=no-mental-status-20260713-1"></script>
@@ -231,6 +236,6 @@
   <script src="./report.js?v=mobile-report-20260611-2"></script>
   <script src="./mobile-buddy-chat-swipe.js?v=mobile-buddy-chat-swipe-20260618-1"></script>
   <script src="./mobile-core-fixes.js?v=mobile-core-fixes-20260617-native-1"></script>
-  <script src="../assets/fw-download-client.js?v=download-client-20260702-1"></script>
+  <script src="../assets/fw-download-client.js?v=download-client-20260804-1"></script>
 </body>
 </html>

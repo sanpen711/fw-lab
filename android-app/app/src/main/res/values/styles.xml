@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.FWYanjiusuo" parent="android:style/Theme.Material.Light.NoActionBar">
+    <style name="Theme.FWYanjiusuo.Base" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowLightStatusBar">false</item>
@@ -8,5 +8,8 @@
         <item name="android:navigationBarColor">@color/fw_bg</item>
         <item name="android:colorAccent">@color/fw_accent</item>
         <item name="android:fontFamily">sans</item>
+    </style>
+    <style name="Theme.FWYanjiusuo" parent="@style/Theme.FWYanjiusuo.Base">
+        <item name="android:windowBackground">@drawable/launch_screen</item>
     </style>
 </resources>

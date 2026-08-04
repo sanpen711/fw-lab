@@ -13,6 +13,14 @@
     return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
   }
 
+  function isAndroidClient(){
+    return /FWYanjiusuoAndroid\//i.test(navigator.userAgent || '');
+  }
+
+  function shouldHideDownloadClient(){
+    return isStandalone() || isAndroidClient();
+  }
+
   function getDeviceType(){
     var ua = navigator.userAgent || '';
     if(/iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
@@ -33,7 +41,7 @@
   var SITE_BASE = getSiteBase();
   var DOWNLOADS = {
     windows: SITE_BASE + 'downloads/fw-lab-windows.exe',
-    android: SITE_BASE + 'downloads/fw-lab-android.apk'
+    android: SITE_BASE + 'download/fw-lab-android-latest.apk'
   };
 
   function injectStyle(){
@@ -75,8 +83,9 @@
   }
 
   function ensureButton(){
-    if(isStandalone()){
+    if(shouldHideDownloadClient()){
       $$('[data-fw-download-client]').forEach(function(btn){ btn.setAttribute('hidden', ''); });
+      closeModal();
       return;
     }
 
@@ -130,6 +139,7 @@
   }
 
   function openModal(){
+    if(shouldHideDownloadClient()) return;
     injectStyle();
     var modal = ensureModal();
     modal.removeAttribute('hidden');

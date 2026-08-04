@@ -132,6 +132,39 @@ function collectConsoleErrors(page: Page) {
 }
 
 test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
+  test('Android 下载入口指向最新版安装包', async ({ page }) => {
+    await gotoApp(page);
+    const trigger = page.locator('[data-fw-download-client]').first();
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+    await expect(page.locator('#fw-download-client-modal')).toBeVisible();
+    await expect(page.locator('a[href$="/download/fw-lab-android-latest.apk"]')).toBeVisible();
+  });
+
+  test('APK 内不显示下载客户端入口', async ({ page }) => {
+    await page.addInitScript(() => {
+      const nativeUserAgent = `${navigator.userAgent} FWYanjiusuoAndroid/1.0.5`;
+      Object.defineProperty(navigator, 'userAgent', { configurable: true, get: () => nativeUserAgent });
+    });
+    await gotoApp(page);
+    await expect(page.locator('[data-fw-download-client]:visible')).toHaveCount(0);
+  });
+
+  test('断网时显示缓存提示并可在恢复后收起', async ({ page, context }) => {
+    await gotoApp(page);
+    const banner = page.locator('[data-app-network-banner]');
+    await expect(banner).toBeHidden();
+
+    await context.setOffline(true);
+    await expect(banner).toBeVisible();
+    await expect(page.locator('[data-app-status]')).toHaveText('离线 · 浏览缓存');
+    await banner.locator('[data-app-network-retry]').click();
+    await expect(page.locator('[data-app-toast]')).toContainText('仍未连接网络');
+
+    await context.setOffline(false);
+    await expect(banner).toBeHidden();
+  });
+
   test('应用入口、底部导航和核心视图可打开', async ({ page }) => {
     const consoleErrors = collectConsoleErrors(page);
     await gotoApp(page);
