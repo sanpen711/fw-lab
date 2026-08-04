@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.FWYanjiusuo" parent="@style/Theme.FWYanjiusuo.Base">
+    <style name="Theme.FWYanjiusuo" parent="@style/Theme.FWYanjiusuoBase">
         <item name="android:windowSplashScreenBackground">@color/fw_bg</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
     </style>
