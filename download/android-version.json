@@ -1,7 +1,7 @@
 {
-  "versionCode": 5,
-  "versionName": "1.0.4",
+  "versionCode": 6,
+  "versionName": "1.0.5",
   "apkUrl": "https://fwyanjiusuo.com/download/",
   "forceUpdate": false,
-  "notes": "修复搭子页安卓返回键。"
+  "notes": "修复客户端内下载入口、断网恢复和启动体验。"
 }
