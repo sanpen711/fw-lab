@@ -45,6 +45,28 @@ jobs:
           FW_RELEASE_KEY_PASSWORD: ${{ secrets.FW_RELEASE_KEY_PASSWORD }}
         run: gradle -p android-app assembleRelease
 
+      - name: Verify release signature
+        run: |
+          RELEASE_APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          test -n "$RELEASE_APKSIGNER"
+          "$RELEASE_APKSIGNER" verify --verbose --print-certs android-app/app/build/outputs/apk/release/app-release.apk
+
+      - name: Prepare Android release metadata
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const metadata = JSON.parse(fs.readFileSync('android-app/app/build/outputs/apk/release/output-metadata.json', 'utf8'));
+          const release = metadata.elements && metadata.elements[0];
+          if (!release || !release.versionCode || !release.versionName) throw new Error('Missing Android release version metadata');
+          const document = JSON.parse(fs.readFileSync('download/android-version.json', 'utf8'));
+          document.versionCode = release.versionCode;
+          document.versionName = release.versionName;
+          document.apkUrl = 'https://fwyanjiusuo.com/download/';
+          document.forceUpdate = false;
+          document.notes = '修复客户端内下载入口、断网恢复和启动体验。';
+          fs.writeFileSync('/tmp/android-version.json', JSON.stringify(document, null, 2) + '\n');
+          NODE
+
       - name: Publish latest APK into download folder
         run: |
           mkdir -p download
@@ -54,7 +76,8 @@ jobs:
           git fetch origin main
           git pull --rebase --autostash origin main
           cp /tmp/fw-lab-android-latest.apk download/fw-lab-android-latest.apk
-          git add download/fw-lab-android-latest.apk
+          cp /tmp/android-version.json download/android-version.json
+          git add download/fw-lab-android-latest.apk download/android-version.json
           if git diff --cached --quiet; then
             echo "No APK changes to commit."
           else

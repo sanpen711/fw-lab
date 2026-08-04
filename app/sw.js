@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260713-no-mental-status-1';
+const CACHE_NAME = 'fw-mobile-app-pwa-stable-20260804-release-ready-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -12,6 +12,7 @@ const APP_SHELL = [
   appPath('bird.css'),
   assetPath('supabase-config.js'),
   assetPath('supabase-db.js'),
+  assetPath('fw-download-client.js'),
   appPath('app.js'),
   appPath('nav.js'),
   appPath('feed.js'),
