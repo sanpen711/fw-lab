@@ -268,6 +268,30 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
 });
 
 test.describe('电脑端关键脚本', () => {
+  test('精神广场不再加载重复补丁或安装高频刷新定时器', async ({ page }) => {
+    await page.addInitScript(() => {
+      const nativeSetInterval = window.setInterval.bind(window);
+      (window as any).__fwRecordedIntervals = [];
+      window.setInterval = ((handler: TimerHandler, timeout?: number, ...args: any[]) => {
+        (window as any).__fwRecordedIntervals.push(Number(timeout || 0));
+        return nativeSetInterval(handler, timeout, ...args);
+      }) as typeof window.setInterval;
+    });
+
+    await page.goto('/square.html?desktop=1', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1800);
+
+    const state = await page.evaluate(() => ({
+      intervals: (window as any).__fwRecordedIntervals || [],
+      scripts: Array.from(document.scripts).map(script => script.src)
+    }));
+    const forbiddenIntervals = state.intervals.filter((delay: number) => [650, 700, 1500, 1800, 15000].includes(delay));
+    const forbiddenScripts = state.scripts.filter((src: string) => /fw-square-comment-tool-guard|fw-comment-reply-system|fw-comment-reply-to-reply|fw-comment-thread-tidy/.test(src));
+
+    expect(forbiddenIntervals).toEqual([]);
+    expect(forbiddenScripts).toEqual([]);
+  });
+
   test('精神广场评论回复脚本没有语法错误', async ({ page }) => {
     const consoleErrors = collectConsoleErrors(page);
     await page.goto('/square.html', { waitUntil: 'domcontentloaded' });

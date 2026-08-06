@@ -12,6 +12,9 @@
   let activeTab = 'friends';
   let currentChat = null;
   let chatTimer = null;
+  let badgeTimer = null;
+  let badgeRefreshTimer = null;
+  let realtimeChannel = null;
 
   const ECHO_TYPES = ['like','same','tissue','comment','comment_reply','friend_request','friend_accept','private_message','chat_agree','system'];
 
@@ -60,18 +63,38 @@
         return;
       }
       let count = 0;
-      const timer = setInterval(() => {
+      function check(){
         count += 1;
         if(window.fwDb && window.fwDb.enabled && window.fwDb.client){
-          clearInterval(timer);
           resolve(true);
+          return;
         }
-        if(count > 120){
-          clearInterval(timer);
+        if(count > 24){
           resolve(false);
+          return;
         }
-      }, 100);
+        setTimeout(check, Math.min(1000, 80 * Math.pow(1.3, count)));
+      }
+      setTimeout(check, 80);
     });
+  }
+
+  function scheduleBadgeRefresh(delay = 120){
+    clearTimeout(badgeRefreshTimer);
+    badgeRefreshTimer = setTimeout(() => {
+      if(!document.hidden) refreshBadges();
+    }, delay);
+  }
+
+  function subscribeBadgeChanges(){
+    if(realtimeChannel || !window.fwDb?.client?.channel) return;
+    try{
+      realtimeChannel = window.fwDb.client
+        .channel('fw-desktop-social-badges')
+        .on('postgres_changes', {event:'*', schema:'public', table:'notifications'}, () => scheduleBadgeRefresh())
+        .on('postgres_changes', {event:'*', schema:'public', table:'friendships'}, () => scheduleBadgeRefresh())
+        .subscribe();
+    }catch(e){ realtimeChannel = null; }
   }
 
   async function refreshMe(){
@@ -825,7 +848,11 @@
     await waitForDb();
     await refreshMe();
     await refreshBadges();
-    setInterval(async () => { await refreshMe(); refreshBadges(); }, 12000);
+    subscribeBadgeChanges();
+    clearInterval(badgeTimer);
+    badgeTimer = setInterval(() => { if(!document.hidden) refreshBadges(); }, 60000);
+    window.addEventListener('focus', () => scheduleBadgeRefresh(80));
+    document.addEventListener('visibilitychange', () => { if(!document.hidden) scheduleBadgeRefresh(80); });
     window.fwDb?.client?.auth?.onAuthStateChange?.(async () => { await refreshMe(); refreshBadges(); });
   }
 

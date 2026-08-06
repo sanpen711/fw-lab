@@ -151,12 +151,12 @@
     return true;
   }
 
-  var tries = 0;
-  var timer = setInterval(function(){
-    tries += 1;
-    install().then(function(ok){ if(ok) clearInterval(timer); });
-    if(tries > 120) clearInterval(timer);
-  }, 100);
+  function waitForDb(attempt){
+    install().then(function(ok){
+      if(ok || attempt >= 22) return;
+      setTimeout(function(){ waitForDb(attempt + 1); }, Math.min(1000, 80 * Math.pow(1.3, attempt)));
+    });
+  }
 
-  install();
+  waitForDb(0);
 })();

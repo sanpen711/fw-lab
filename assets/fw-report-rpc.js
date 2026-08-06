@@ -139,11 +139,22 @@
   function observeSquare(){
     if(!window.MutationObserver) return;
     var timer = 0;
-    var obs = new MutationObserver(function(){
+    var feed = document.querySelector('[data-feed]');
+    if(!feed) return;
+    var obs = new MutationObserver(function(mutations){
+      var relevant = mutations.some(function(mutation){
+        return Array.prototype.some.call(mutation.addedNodes || [], function(node){
+          if(!node || node.nodeType !== 1) return false;
+          if(node.matches && node.matches('.post-card,[data-comment-id]')) return true;
+          return !!(node.querySelector && node.querySelector('.post-card,[data-comment-id]'));
+        });
+      });
+      if(!relevant) return;
       clearTimeout(timer);
       timer = setTimeout(ensureSquareReportButtons, 120);
     });
-    obs.observe(document.body, {childList:true, subtree:true});
+    obs.observe(feed, {childList:true, subtree:true});
+    feed.addEventListener('fw:square-rendered', ensureSquareReportButtons);
   }
 
   function intercept(e){
@@ -182,7 +193,6 @@
     ensureSquareReportButtons();
     observeSquare();
     window.addEventListener('click', intercept, true);
-    setInterval(ensureSquareReportButtons, 1800);
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
