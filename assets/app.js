@@ -444,7 +444,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
 
   loadJs("assets/fw-echo-stable-route.js?v=echo-stable-route-20260529-1");
-  loadJs("assets/fw-social.js?v=social-desktop-echo-20260702-1");
+  loadJs("assets/fw-social.js?v=desktop-performance-20260806-2");
   loadJs("assets/fw-logout-home-fix.js?v=logout-home-fix-20260513-1");
   loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
   if(isHome) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
@@ -467,13 +467,13 @@ document.addEventListener("DOMContentLoaded", () => {
   if(!isSquare) loadJs("assets/fw-sticker-direct-render.js?v=home-feed-scope-20260713-1");
   if(!isSquare) loadJs("assets/fw-chat-media-upload.js?v=home-feed-scope-20260713-1");
 
-  if(hasFeedSurface) loadJs("assets/fw-post-media-tools.js?v=post-media-tools-20260518-4");
+  if(hasFeedSurface) loadJs("assets/fw-post-media-tools.js?v=desktop-performance-20260806-2");
 
   loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
   loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
   if(!isSquare) loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
   if(!isSquare) loadJs("assets/fw-admin-buddy-lock.js?v=admin-buddy-lock-20260513-1");
-  loadJs("assets/fw-report-rpc.js?v=report-rpc-20260513-1");
+  loadJs("assets/fw-report-rpc.js?v=desktop-performance-20260806-2");
   if(isAdmin) loadJs("assets/fw-admin-polish.js?v=admin-polish-20260513-1");
   loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
   if(!isSquare) loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260513-1");
