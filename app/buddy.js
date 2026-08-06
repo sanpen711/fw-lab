@@ -13,6 +13,7 @@
   var chatTimer = null;
   var messageLoading = false;
   var chatOpening = false;
+  var CHAT_REFRESH_DELAY = 12000;
 
   function app(){ return window.FWApp; }
   function $(selector, root){ return app().$(selector, root); }
@@ -266,12 +267,23 @@
     var rows = readChatCache(targetId), box = $('[data-buddy-chat-messages]');
     if(!box || !rows.length) return false;
     box.innerHTML = rows.map(function(row){ return messageHtml(row, profileMap); }).join('');
+    box.dataset.messageSignature = messageSignature(rows);
     if(typeof window.fwRenderStickerMessages === 'function') window.fwRenderStickerMessages();
     box.scrollTop = box.scrollHeight;
     return true;
   }
   function openChatShell(){ var view = $('[data-app-view="buddy"]'); ensureChatPanel(); if(view) view.classList.add('is-chatting'); document.body.classList.add('fw-buddy-chatting'); var input = $('[data-buddy-chat-form] input'); setTimeout(function(){ if(input) input.focus(); }, 80); }
-  function closeChat(clearTarget){ clearInterval(chatTimer); chatTimer = null; activeConversationId = null; chatOpening = false; if(clearTarget !== false){ activeTargetId = ''; } var view = $('[data-app-view="buddy"]'); if(view) view.classList.remove('is-chatting'); document.body.classList.remove('fw-buddy-chatting'); if(activeTab === 'messages') renderMessages(); }
+  function stopChatPolling(){ clearTimeout(chatTimer); chatTimer = null; }
+  function shouldPollChat(){ return !document.hidden && app().state && app().state.view === 'buddy' && !!activeConversationId; }
+  function scheduleChatPolling(delay){
+    stopChatPolling();
+    if(!shouldPollChat()) return;
+    chatTimer = setTimeout(async function(){
+      if(shouldPollChat()) await loadMessages(true);
+      scheduleChatPolling(CHAT_REFRESH_DELAY);
+    }, delay == null ? CHAT_REFRESH_DELAY : delay);
+  }
+  function closeChat(clearTarget){ stopChatPolling(); activeConversationId = null; chatOpening = false; if(clearTarget !== false){ activeTargetId = ''; } var view = $('[data-app-view="buddy"]'); if(view) view.classList.remove('is-chatting'); document.body.classList.remove('fw-buddy-chatting'); if(activeTab === 'messages') renderMessages(); }
   async function getConversationId(targetId){ if(conversationCache[targetId]) return conversationCache[targetId]; var convId = Number(await rpc('fw_get_or_create_conversation', {target_user_id:targetId}, '私聊会话创建失败')); if(Number.isFinite(convId) && convId > 0){ conversationCache[targetId] = convId; return convId; } throw new Error('私聊会话创建失败。'); }
 
   async function openChat(targetId){
@@ -292,22 +304,26 @@
     try{
       activeConversationId = await getConversationId(targetId);
       await loadMessages(true);
-      clearInterval(chatTimer);
-      chatTimer = setInterval(function(){ if(app().state && app().state.view === 'buddy' && activeConversationId) loadMessages(true); }, 4500);
+      scheduleChatPolling();
     }catch(e){ console.warn('[FW mobile app] buddy chat open failed', e); if(box) box.innerHTML = '<div class="buddy-empty-tip">私聊打开失败：' + esc(e.message || '请稍后重试。') + '</div>'; }
     finally{ chatOpening = false; }
   }
   function messageHtml(message, profiles){ var me = app().state.user; var mine = !!(me && message.sender_id === me.id); var p = profiles[message.sender_id] || {}; var name = mine ? '你' : (p.nickname || '搭子'); return '<div class="buddy-message' + (mine ? ' mine' : '') + '"><div class="buddy-message-name">' + esc(name) + '</div><div class="buddy-message-bubble">' + esc(message.content || '') + '</div></div>'; }
+  function messageSignature(rows){ return (rows || []).map(function(row){ return [row.id || '', row.sender_id || '', row.content || '', row.created_at || ''].join(':'); }).join('|'); }
   async function loadMessages(quiet){
     var box = $('[data-buddy-chat-messages]'); if(!box || !activeConversationId) return;
     try{
       var rows = fail(await client().from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id', activeConversationId).eq('is_deleted', false).order('created_at', {ascending:true}).limit(200), '私聊读取失败') || [];
-      if(!rows.length){ box.innerHTML = '<div class="buddy-empty-tip">还没有私聊消息。可以先低功耗地打个招呼。</div>'; return; }
+      if(!rows.length){ if(box.dataset.messageSignature !== 'empty') box.innerHTML = '<div class="buddy-empty-tip">还没有私聊消息。可以先低功耗地打个招呼。</div>'; box.dataset.messageSignature = 'empty'; return; }
       await fetchProfiles(rows.map(function(row){ return row.sender_id; }));
+      var signature = messageSignature(rows);
+      if(box.dataset.messageSignature === signature) return;
+      var nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 72;
       box.innerHTML = rows.map(function(row){ return messageHtml(row, profileMap); }).join('');
+      box.dataset.messageSignature = signature;
       saveChatCache(activeTargetId, rows);
       if(typeof window.fwRenderStickerMessages === 'function') window.fwRenderStickerMessages();
-      box.scrollTop = box.scrollHeight;
+      if(nearBottom) box.scrollTop = box.scrollHeight;
     }catch(e){ console.warn('[FW mobile app] buddy messages load failed', e); if(!quiet) box.innerHTML = '<div class="buddy-empty-tip">私聊读取失败，请稍后重试。</div>'; }
   }
   async function sendMessage(form){
@@ -342,7 +358,18 @@
     });
     document.addEventListener('submit', function(e){ var form = e.target.closest && e.target.closest('[data-buddy-search]'); if(form){ e.preventDefault(); search(form.q.value); return; } var chatForm = e.target.closest && e.target.closest('[data-buddy-chat-form]'); if(chatForm){ e.preventDefault(); sendMessage(chatForm); } });
     window.addEventListener('focus', function(){ if(app().state && app().state.view === 'buddy') setTimeout(function(){ load(true); }, 120); });
-    document.addEventListener('visibilitychange', function(){ if(!document.hidden && app().state && app().state.view === 'buddy') setTimeout(function(){ load(true); }, 120); });
+    document.addEventListener('fw:app-visibility', function(event){
+      var visible = !!(event && event.detail && event.detail.visible);
+      if(!visible){ stopChatPolling(); return; }
+      if(app().state && app().state.view === 'buddy'){
+        setTimeout(function(){ load(true); if(activeConversationId){ loadMessages(true); scheduleChatPolling(); } }, 120);
+      }
+    });
+    document.addEventListener('fw:app-viewchange', function(event){
+      var view = event && event.detail && event.detail.view;
+      if(view !== 'buddy' && activeConversationId) closeChat(true);
+      else if(view === 'buddy' && activeConversationId) scheduleChatPolling(300);
+    });
   }
 
   function init(){ injectStyle(); ensureTabs(); ensureChatPanel(); bind(); }

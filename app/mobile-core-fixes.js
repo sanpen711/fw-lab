@@ -177,6 +177,68 @@
   function ensureGlobalFixes(){ loadScriptOnce('__FW_MOBILE_GLOBAL_FIXES_20260617__', 'data-mobile-global-fixes', './mobile-global-fixes.js?v=mobile-global-fixes-20260617-1'); }
   function ensureCacheSettings(){ loadScriptOnce('__FW_MOBILE_CACHE_SETTINGS__', 'data-mobile-cache-settings', './mobile-cache-settings.js?v=mobile-cache-settings-20260709-1'); }
 
+  function ensureBirdTweaks(){ loadScriptOnce('__FW_MOBILE_BIRD_TWEAKS_LOADED__', 'data-mobile-bird-tweaks', './bird-tweaks.js?v=mobile-direct-tweaks-20260528-1'); }
+  function ensureBuddyReadTweaks(){ loadScriptOnce('__FW_MOBILE_BUDDY_READ_TWEAKS__', 'data-mobile-buddy-read-tweaks', './buddy-read-tweaks.js?v=mobile-performance-20260806-1'); }
+  function ensureBuddyChatTweaks(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_TWEAKS__', 'data-mobile-buddy-chat-tweaks', './buddy-chat-tweaks.js?v=mobile-performance-20260806-1'); }
+  function ensureBuddyChatPolish(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_POLISH__', 'data-mobile-buddy-chat-polish', './buddy-chat-polish.js?v=mobile-performance-20260806-1'); }
+  function ensureBuddyChatBottomFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_BOTTOM_FIX__', 'data-mobile-buddy-chat-bottom-fix', './buddy-chat-bottom-fix.js?v=mobile-performance-20260806-1'); }
+  function ensureBuddyChatScrollFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_SCROLL_FIX__', 'data-mobile-buddy-chat-scroll-fix', './buddy-chat-scroll-fix.js?v=mobile-performance-20260806-1'); }
+  function ensureBuddyContactsActions(){ loadScriptOnce('__FW_MOBILE_BUDDY_CONTACT_ACTIONS__', 'data-mobile-buddy-contacts-actions', './buddy-contacts-actions.js?v=mobile-performance-20260806-1'); }
+  function ensureBuddyChatEntryFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_ENTRY_FIX__', 'data-mobile-buddy-chat-entry-fix', './buddy-chat-entry-fix.js?v=mobile-performance-20260806-1'); }
+  function ensureBuddyChatSwipe(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_SWIPE__', 'data-mobile-buddy-chat-swipe', './mobile-buddy-chat-swipe.js?v=mobile-buddy-chat-swipe-20260618-1'); }
+
+  function ensureSharedMediaModules(){
+    ensureMediaCache();
+    ensureImagePreview();
+  }
+
+  function ensureSquareModules(){
+    ensureReportBridge();
+    ensureFeedDetailReturnBridge();
+    ensureSharedMediaModules();
+    ensureFeedCache();
+    ensureFeedIDBBridge();
+  }
+
+  function ensureBuddyModules(){
+    ensureReportBridge();
+    ensureBuddyReadTweaks();
+    ensureBuddyChatTweaks();
+    ensureBuddyChatPolish();
+    ensureBuddyChatBottomFix();
+    ensureBuddyChatScrollFix();
+    ensureBuddyContactsActions();
+    ensureBuddyChatEntryFix();
+    ensureBuddyChatSwipe();
+    ensureBuddyChatReadFix();
+    ensureBuddyReturnStability();
+    ensureChatIDBBridge();
+    ensureSharedMediaModules();
+  }
+
+  function ensureViewModules(view){
+    view = view || window.FWApp && window.FWApp.state && window.FWApp.state.view || 'nav';
+    if(view === 'square' || view === 'square-detail' || view === 'square-publish') ensureSquareModules();
+    if(view === 'buddy') ensureBuddyModules();
+    if(view === 'echo') ensureSharedMediaModules();
+    if(view === 'profile'){ ensureSharedMediaModules(); ensureCacheSettings(); }
+    if(view === 'rooms'){ ensureModuleCache(); }
+    if(view === 'bird' || view === 'bird-detail' || view === 'bird-compose'){
+      ensureModuleCache();
+      ensureSharedMediaModules();
+      ensureBirdTweaks();
+    }
+  }
+
+  function bindViewModules(){
+    document.addEventListener('fw:app-viewchange', function(event){
+      ensureViewModules(event && event.detail && event.detail.view);
+    });
+    document.addEventListener('fw:app-visibility', function(event){
+      if(event && event.detail && event.detail.visible) ensureViewModules(event.detail.view);
+    });
+  }
+
   function requestServiceWorkerRefresh(){
     if(!('serviceWorker' in navigator)) return;
     try{
@@ -189,21 +251,14 @@
     schedulePatchSetView();
     bindClickSync();
     ensureMobileDataCache();
-    ensureReportBridge();
-    ensureBuddyChatReadFix();
-    ensureBuddyReturnStability();
-    ensureFeedDetailReturnBridge();
     ensureMobileSwipeBack();
     ensureMobileTransitions();
     ensurePriorityFixes();
-    ensureMediaCache();
-    ensureFeedCache();
-    ensureFeedIDBBridge();
-    ensureChatIDBBridge();
-    ensureImagePreview();
+    ensureBuddyReadTweaks();
     ensureModuleCache();
     ensureGlobalFixes();
-    ensureCacheSettings();
+    bindViewModules();
+    ensureViewModules();
     requestServiceWorkerRefresh();
   }
 

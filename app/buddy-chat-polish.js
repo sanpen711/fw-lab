@@ -114,8 +114,9 @@
     injectStyle();
     bindCapture();
     var observer = new MutationObserver(schedulePolish);
-    observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
-    setInterval(function(){ if(document.body.classList.contains('fw-buddy-chatting')) polish(); }, 2000);
+    observer.observe(document.body, {attributes:true, attributeFilter:['class']});
+    var messages = $('[data-buddy-chat-messages]');
+    if(messages) observer.observe(messages, {childList:true, subtree:true});
     polish();
   }
 

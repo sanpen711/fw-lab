@@ -8,7 +8,6 @@
   var feedLoading = false;
   var feedPatched = false;
   var navPatched = false;
-  var buddyPatched = false;
   var echoObserver = null;
 
   function $(selector, root){ return (root || document).querySelector(selector); }
@@ -365,51 +364,23 @@
     tidyEchoList();
   }
 
-  function patchBuddyPolling(){
-    if(buddyPatched || !window.FWAppBuddy || typeof window.FWAppBuddy.openChat !== 'function') return false;
-    buddyPatched = true;
-    var originalOpenChat = window.FWAppBuddy.openChat;
-
-    window.FWAppBuddy.openChat = function(){
-      var nativeSetInterval = window.setInterval;
-      var patchedSetInterval = function(fn, delay){
-        if(delay === 4500 && typeof fn === 'function' && String(fn).indexOf('activeConversationId') >= 0){
-          return nativeSetInterval(function(){
-            if(document.hidden) return;
-            fn();
-          }, 12000);
-        }
-        return nativeSetInterval.apply(window, arguments);
-      };
-      window.setInterval = patchedSetInterval;
-      try{
-        var result = originalOpenChat.apply(this, arguments);
-        Promise.resolve(result).finally(function(){ if(window.setInterval === patchedSetInterval) window.setInterval = nativeSetInterval; });
-        return result;
-      }catch(e){
-        if(window.setInterval === patchedSetInterval) window.setInterval = nativeSetInterval;
-        throw e;
-      }
-    };
-    return true;
-  }
-
   function retryPatches(){
     if(!navPatched) patchChildHistory();
     if(!feedPatched) patchFeedLiteLoad();
-    if(!buddyPatched) patchBuddyPolling();
     patchEchoTidy();
     ensurePollTodayCountNode();
   }
 
   function start(){
     patchReportFallback();
-    schedule(retryPatches, [0, 120, 360, 900, 1800, 3200]);
+    retryPatches();
+    if(!navPatched || !feedPatched) schedule(retryPatches, [120, 360, 900, 1800]);
     schedule(syncPollTodayCount, [0, 600, 1600]);
     document.addEventListener('click', function(){
-      setTimeout(retryPatches, 60);
-      setTimeout(syncPollTodayCount, 180);
-      setTimeout(tidyEchoList, 220);
+      var view = app() && app().state && app().state.view || '';
+      if(!navPatched || !feedPatched) setTimeout(retryPatches, 60);
+      if(view === 'rooms' || view === 'rooms-compose') setTimeout(syncPollTodayCount, 180);
+      if(view === 'echo') setTimeout(tidyEchoList, 220);
     }, true);
     document.addEventListener('visibilitychange', function(){
       if(!document.hidden){

@@ -135,10 +135,9 @@
   function boot(){
     bindClicks();
     observeChatBox();
-    // 兜底检查降频，主要依赖消息区变化触发，减少聊天过程中的重复查询/写入。
-    setInterval(function(){
-      if(activeTargetId && isBuddyChatting()) requestMarkRead(0, false);
-    }, 9000);
+    document.addEventListener('fw:app-visibility', function(event){
+      if(event && event.detail && event.detail.visible && activeTargetId && isBuddyChatting()) requestMarkRead(120, false);
+    });
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

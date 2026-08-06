@@ -63,7 +63,7 @@ jobs:
           document.versionName = release.versionName;
           document.apkUrl = 'https://fwyanjiusuo.com/download/';
           document.forceUpdate = false;
-          document.notes = '修复客户端内下载入口、断网恢复和启动体验。';
+          document.notes = '优化手机端流畅度，减少后台耗电和页面重复刷新。';
           fs.writeFileSync('/tmp/android-version.json', JSON.stringify(document, null, 2) + '\n');
           NODE
 

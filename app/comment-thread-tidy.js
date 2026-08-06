@@ -128,9 +128,16 @@
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedule);
   else schedule();
 
-  document.addEventListener('click', schedule, true);
-  setInterval(tidy, 1200);
+  document.addEventListener('click', function(event){
+    if(event && event.target && event.target.closest && event.target.closest('[data-app-view="square-detail"],.detail-comments-card')) schedule();
+  }, true);
   if(window.MutationObserver){
-    new MutationObserver(schedule).observe(document.body, {childList:true, subtree:true});
+    var target = document.getElementById('appMain') || document.body;
+    new MutationObserver(function(mutations){
+      for(var i = 0; i < mutations.length; i += 1){
+        var node = mutations[i].target;
+        if(node && node.closest && (node.closest('[data-app-view="square-detail"]') || node.closest('.detail-comments-card'))){ schedule(); return; }
+      }
+    }).observe(target, {childList:true, subtree:true});
   }
 })();

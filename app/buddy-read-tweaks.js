@@ -5,6 +5,7 @@
   window.__FW_MOBILE_BUDDY_READ_TWEAKS__ = true;
 
   var badgeRefreshTimer = 0;
+  var badgeLoopTimer = 0;
 
   function app(){ return window.FWApp || null; }
   function $(selector, root){ return (root || document).querySelector(selector); }
@@ -163,6 +164,16 @@
     document.head.appendChild(style);
   }
 
+  function stopBadgeLoop(){ clearTimeout(badgeLoopTimer); badgeLoopTimer = 0; }
+  function scheduleBadgeLoop(delay){
+    stopBadgeLoop();
+    if(document.hidden) return;
+    badgeLoopTimer = setTimeout(function(){
+      applyUnreadDots();
+      refreshBuddyBadge().finally(function(){ scheduleBadgeLoop(30000); });
+    }, delay == null ? 30000 : delay);
+  }
+
   function boot(){
     injectStyle();
     document.addEventListener('click', function(e){
@@ -177,9 +188,15 @@
       if(tab && tab.dataset.buddyTab === 'messages') setTimeout(applyUnreadDots, 220);
     }, true);
     window.addEventListener('focus', function(){ setTimeout(function(){ applyUnreadDots(); requestBadgeRefresh(220); }, 150); });
-    document.addEventListener('visibilitychange', function(){ if(!document.hidden){ setTimeout(applyUnreadDots, 150); requestBadgeRefresh(260); } });
-    setInterval(applyUnreadDots, 7500);
+    document.addEventListener('fw:app-visibility', function(event){
+      if(!(event && event.detail && event.detail.visible)){ stopBadgeLoop(); return; }
+      setTimeout(applyUnreadDots, 150);
+      requestBadgeRefresh(260);
+      scheduleBadgeLoop();
+    });
+    document.addEventListener('fw:app-userchange', function(){ requestBadgeRefresh(0); scheduleBadgeLoop(); });
     refreshBuddyBadge();
+    scheduleBadgeLoop();
   }
 
   window.FWAppBuddyUnread = {apply:applyUnreadDots, refresh:applyUnreadDots, refreshBadge:refreshBuddyBadge, markRead:markReadByUserId, hasUnread:hasUnreadPrivateMessage, requestBadgeRefresh:requestBadgeRefresh};

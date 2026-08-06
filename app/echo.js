@@ -340,7 +340,19 @@
     document.addEventListener('visibilitychange', function(){ if(!document.hidden){ refreshBadges(); scanMediaSoon(); } });
   }
 
-  function init(){ injectStyle(); bind(); refreshBadges(); clearInterval(badgeTimer); badgeTimer = setInterval(refreshBadges, 45000); }
+  function stopBadgeTimer(){ clearTimeout(badgeTimer); badgeTimer = null; }
+  function scheduleBadgeTimer(delay){
+    stopBadgeTimer();
+    if(document.hidden) return;
+    badgeTimer = setTimeout(function(){ Promise.resolve(refreshBadges()).finally(function(){ scheduleBadgeTimer(45000); }); }, delay == null ? 45000 : delay);
+  }
+  function init(){
+    injectStyle();
+    bind();
+    refreshBadges();
+    scheduleBadgeTimer();
+    document.addEventListener('fw:app-visibility', function(event){ if(!(event && event.detail && event.detail.visible)) stopBadgeTimer(); else scheduleBadgeTimer(300); });
+  }
   function ensureLoaded(){ load(false); }
   window.FWAppEcho = {init:init, load:load, ensureLoaded:ensureLoaded, refreshBadges:refreshBadges, openPost:openPost, markRead:markRead};
 })();

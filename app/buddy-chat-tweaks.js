@@ -339,8 +339,10 @@
     injectStyle();
     bind();
     var observer = new MutationObserver(function(){ requestAnimationFrame(syncChatMode); });
-    observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
-    setInterval(syncChatMode, 500);
+    observer.observe(document.body, {attributes:true, attributeFilter:['class']});
+    var buddy = $('[data-app-view="buddy"]');
+    if(buddy) observer.observe(buddy, {childList:true, subtree:true});
+    document.addEventListener('fw:app-viewchange', function(event){ if(event && event.detail && event.detail.view === 'buddy') requestAnimationFrame(syncChatMode); });
     syncChatMode();
   }
 

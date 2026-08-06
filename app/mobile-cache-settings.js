@@ -251,7 +251,8 @@
 
     if(window.MutationObserver){
       var observer = new MutationObserver(function(){ addEntry(); });
-      observer.observe(document.body, {childList:true, subtree:true});
+      var panel = $(PANEL_SELECTOR);
+      if(panel) observer.observe(panel, {childList:true, subtree:true});
     }
   }
 
