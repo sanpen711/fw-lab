@@ -103,8 +103,7 @@
   function boot(){
     bindBackOverride();
     var observer = new MutationObserver(scheduleWatchChatOpen);
-    observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
-    setInterval(function(){ if(isChatting() || wasChatting) watchChatOpen(); }, 1500);
+    observer.observe(document.body, {attributes:true, attributeFilter:['class']});
     watchChatOpen();
   }
 

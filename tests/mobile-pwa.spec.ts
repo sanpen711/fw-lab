@@ -132,6 +132,57 @@ function collectConsoleErrors(page: Page) {
 }
 
 test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
+  test('首页按栏目加载增强脚本且没有高频常驻轮询', async ({ page }) => {
+    await page.addInitScript(() => {
+      const nativeSetInterval = window.setInterval.bind(window);
+      (window as any).__fwMobileIntervals = [];
+      window.setInterval = ((handler: TimerHandler, timeout?: number, ...args: any[]) => {
+        (window as any).__fwMobileIntervals.push(Number(timeout || 0));
+        return nativeSetInterval(handler, timeout, ...args);
+      }) as typeof window.setInterval;
+    });
+    await gotoApp(page);
+
+    const initial = await page.evaluate(() => ({
+      intervals:(window as any).__fwMobileIntervals || [],
+      scripts:Array.from(document.scripts).map(script => script.src)
+    }));
+    expect(initial.intervals.filter((delay: number) => delay >= 500 && delay <= 10_000)).toEqual([]);
+    expect(initial.scripts.filter((src: string) => /buddy-chat-(tweaks|polish|bottom-fix|scroll-fix|entry-fix)|report\.js/.test(src))).toEqual([]);
+
+    await openView(page, 'square');
+    await page.waitForFunction(() => Boolean((window as any).__FW_MOBILE_REPORT_BRIDGE__ && (window as any).__FW_MOBILE_FEED_CACHE__), null, {timeout:8_000});
+    await openView(page, 'nav');
+    await openView(page, 'buddy');
+    await page.waitForFunction(() => Boolean((window as any).__FW_MOBILE_BUDDY_CHAT_TWEAKS__ && (window as any).__FW_MOBILE_BUDDY_CHAT_SCROLL_FIX__), null, {timeout:8_000});
+
+    const intervals = await page.evaluate(() => (window as any).__fwMobileIntervals || []);
+    expect(intervals.filter((delay: number) => [500, 1200, 1500, 1600, 2000, 2500, 3000, 4500, 7500, 9000].includes(delay))).toEqual([]);
+  });
+
+  test('精神广场数据未变时保留帖子节点，只替换变化帖子', async ({ page }) => {
+    await gotoApp(page);
+    const stable = await page.evaluate(() => {
+      const w = window as any;
+      w.FWApp.state.posts = [
+        {id:'perf-a', userId:'u1', authorName:'甲', content:'第一条', createdAt:'2026-08-06T00:00:00Z', time:'刚刚', resonance:0, same:0, tissue:0, comments:[], myReactions:{}},
+        {id:'perf-b', userId:'u2', authorName:'乙', content:'第二条', createdAt:'2026-08-06T00:00:01Z', time:'刚刚', resonance:0, same:0, tissue:0, comments:[], myReactions:{}}
+      ];
+      w.FWApp.state.postsLoaded = true;
+      w.FWAppFeed.renderAll();
+      const first = Array.from(document.querySelectorAll('[data-feed-list="square"] > [data-post-id]'));
+      w.FWAppFeed.renderAll();
+      const unchanged = Array.from(document.querySelectorAll('[data-feed-list="square"] > [data-post-id]'));
+      const unchangedStable = unchanged[0] === first[0] && unchanged[1] === first[1];
+      w.FWApp.state.posts[1] = Object.assign({}, w.FWApp.state.posts[1], {same:1});
+      w.FWAppFeed.renderAll();
+      const changed = Array.from(document.querySelectorAll('[data-feed-list="square"] > [data-post-id]'));
+      return {unchangedStable, partialStable:changed[0] === first[0] && changed[1] !== first[1]};
+    });
+    expect(stable.unchangedStable).toBe(true);
+    expect(stable.partialStable).toBe(true);
+  });
+
   test('Android 下载入口指向最新版安装包', async ({ page }) => {
     await gotoApp(page);
     const trigger = page.locator('[data-fw-download-client]').first();

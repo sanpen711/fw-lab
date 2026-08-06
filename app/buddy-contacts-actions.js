@@ -314,7 +314,6 @@
     var observer = new MutationObserver(function(){ scheduleTransform(80); });
     observer.observe(list, {childList:true, subtree:true});
     document.addEventListener('click', function(){ scheduleTransform(120); });
-    setInterval(function(){ if(isFriendsTabVisible()) scheduleTransform(0); }, 3000);
     transformContacts();
   }
 

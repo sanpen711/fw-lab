@@ -511,6 +511,25 @@
     '</article>';
   }
 
+  function postSignature(post){
+    var mine = post.myReactions || {};
+    return [
+      post.id, post.userId || post.authorId || '', post.authorName || '', post.authorAvatar || '',
+      post.content || '', post.status || '', post.createdAt || '', post.time || '',
+      Number(post.resonance || 0), Number(post.same || 0), Number(post.tissue || 0),
+      mine.resonance ? 1 : 0, mine.same ? 1 : 0, mine.tissue ? 1 : 0,
+      (post.comments || []).length, post.canDelete ? 1 : 0
+    ].join('\u001f');
+  }
+
+  function createPostNode(post){
+    var template = document.createElement('template');
+    template.innerHTML = renderPost(post, 'list');
+    var card = template.content.firstElementChild;
+    if(card) card.dataset.feedSignature = postSignature(post);
+    return card;
+  }
+
   function ensureDetailView(){
     var main = getScroller();
     var view = $('[data-app-view="square-detail"]');
@@ -555,10 +574,38 @@
     var posts = app().state.posts || [];
     var rows = posts;
     if(!rows.length){
-      node.innerHTML = '<div class="empty">今天这里还很安静。</div>';
+      var changedToEmpty = node.dataset.feedState !== 'empty';
+      if(changedToEmpty) node.innerHTML = '<div class="empty">今天这里还很安静。</div>';
+      node.dataset.feedState = 'empty';
+      document.dispatchEvent(new CustomEvent('fw:feed-rendered', {detail:{postIds:[], changed:changedToEmpty}}));
       return;
     }
-    node.innerHTML = rows.map(function(post){ return renderPost(post, 'list'); }).join('');
+    var existing = {};
+    Array.prototype.slice.call(node.children).forEach(function(child){
+      if(child.matches && child.matches('.post-card[data-post-id]')) existing[String(child.dataset.postId)] = child;
+    });
+    var changed = node.dataset.feedState !== 'posts';
+    rows.forEach(function(post, index){
+      var id = String(post.id);
+      var signature = postSignature(post);
+      var card = existing[id];
+      if(!card || card.dataset.feedSignature !== signature){
+        var replacement = createPostNode(post);
+        if(card && replacement){ card.replaceWith(replacement); card = replacement; }
+        else card = replacement;
+        changed = true;
+      }
+      if(!card) return;
+      var atIndex = node.children[index];
+      if(atIndex !== card){ node.insertBefore(card, atIndex || null); changed = true; }
+      delete existing[id];
+    });
+    Object.keys(existing).forEach(function(id){ existing[id].remove(); changed = true; });
+    Array.prototype.slice.call(node.children).forEach(function(child){
+      if(!(child.matches && child.matches('.post-card[data-post-id]'))){ child.remove(); changed = true; }
+    });
+    node.dataset.feedState = 'posts';
+    document.dispatchEvent(new CustomEvent('fw:feed-rendered', {detail:{postIds:rows.map(function(post){ return String(post.id); }), changed:changed}}));
   }
 
   function renderCurrentPreservingScroll(extraPostId){

@@ -445,9 +445,10 @@
     if(event && event.type === 'online') toast('网络已恢复，正在刷新数据');
     if(event && event.type === 'offline') toast('网络已断开，当前展示缓存内容');
     if(!offline && event && event.type === 'online'){
-      if(window.FWAppFeed) window.FWAppFeed.load(true);
-      if(window.FWAppBuddy) window.FWAppBuddy.load(true);
-      if(window.FWAppEcho) window.FWAppEcho.load(true);
+      if((state.view === 'square' || state.view === 'square-detail') && window.FWAppFeed) window.FWAppFeed.load(true, {silent:true, preserveScroll:true});
+      if(state.view === 'buddy' && window.FWAppBuddy) window.FWAppBuddy.load(true);
+      if(state.view === 'echo' && window.FWAppEcho) window.FWAppEcho.load(true);
+      else if(window.FWAppEcho && window.FWAppEcho.refreshBadges) window.FWAppEcho.refreshBadges();
     }
   }
 
@@ -485,9 +486,11 @@
   }
 
   async function refreshUser(){
+    var previousUserId = state.user && state.user.id || '';
     if(!(await waitForDb())){
       state.user = null;
       renderUser();
+      if(previousUserId) document.dispatchEvent(new CustomEvent('fw:app-userchange', {detail:{user:null, previousUserId:previousUserId}}));
       return null;
     }
 
@@ -499,6 +502,10 @@
 
     renderUser();
     if(window.FWAppProfile) window.FWAppProfile.render();
+    var nextUserId = state.user && state.user.id || '';
+    if(previousUserId !== nextUserId){
+      document.dispatchEvent(new CustomEvent('fw:app-userchange', {detail:{user:state.user, previousUserId:previousUserId}}));
+    }
     return state.user;
   }
 
@@ -508,6 +515,7 @@
   }
 
   function setView(name){
+    var previousView = state.view;
     state.view = name || 'nav';
     $$('[data-app-view]').forEach(function(view){
       view.classList.toggle('is-active', view.dataset.appView === state.view);
@@ -524,6 +532,9 @@
     if(state.view === 'buddy' && window.FWAppBuddy) window.FWAppBuddy.ensureLoaded();
     if(state.view === 'echo' && window.FWAppEcho) window.FWAppEcho.ensureLoaded();
     if(state.view === 'profile' && window.FWAppProfile) window.FWAppProfile.render();
+    if(previousView !== state.view){
+      document.dispatchEvent(new CustomEvent('fw:app-viewchange', {detail:{view:state.view, previousView:previousView}}));
+    }
   }
 
   function registerServiceWorker(){
@@ -555,9 +566,10 @@
     try{
       window.fwDb.onAuthChange(function(){
         refreshUser().then(function(){
-          if(window.FWAppFeed) window.FWAppFeed.load(true);
-          if(window.FWAppBuddy) window.FWAppBuddy.load(true);
-          if(window.FWAppEcho) window.FWAppEcho.load(true);
+          if((state.view === 'square' || state.view === 'square-detail') && window.FWAppFeed) window.FWAppFeed.load(true, {silent:true, preserveScroll:true});
+          if(state.view === 'buddy' && window.FWAppBuddy) window.FWAppBuddy.load(true);
+          if(state.view === 'echo' && window.FWAppEcho) window.FWAppEcho.load(true);
+          else if(window.FWAppEcho && window.FWAppEcho.refreshBadges) window.FWAppEcho.refreshBadges();
         });
       });
     }catch(e){}
@@ -602,6 +614,17 @@
     scheduleViewportSync:scheduleViewportSync,
     refreshDebugPanel:refreshDebugPanel
   };
+
+  function emitAppVisibility(visible){
+    document.dispatchEvent(new CustomEvent('fw:app-visibility', {detail:{visible:visible !== false, view:state.view}}));
+  }
+
+  document.addEventListener('visibilitychange', function(){
+    emitAppVisibility(!document.hidden);
+  }, {passive:true});
+  document.addEventListener('fw:app-native-lifecycle', function(event){
+    emitAppVisibility(!!(event && event.detail && event.detail.visible));
+  });
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();

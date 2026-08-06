@@ -53,9 +53,7 @@
   function boot(){
     injectStyle();
     var observer = new MutationObserver(scheduleFix);
-    // 只监听 class，避免 fix() 写 style 后再次触发自己，减少循环重排。
-    observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
-    setInterval(function(){ if(document.body.classList.contains('fw-buddy-chatting')) fix(); }, 2000);
+    observer.observe(document.body, {attributes:true, attributeFilter:['class']});
     fix();
   }
 

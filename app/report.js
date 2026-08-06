@@ -168,12 +168,14 @@
         clearTimeout(timer);
         timer = setTimeout(enhancePostReports, 120);
       });
-      observer.observe(document.body, {childList:true, subtree:true});
+      var target = document.getElementById('appMain') || document.body;
+      observer.observe(target, {childList:true, subtree:true});
     }
-    document.addEventListener('click', function(){
-      setTimeout(enhancePostReports, 90);
+    document.addEventListener('fw:feed-rendered', enhancePostReports);
+    document.addEventListener('fw:app-viewchange', function(event){
+      var view = event && event.detail && event.detail.view;
+      if(view === 'square' || view === 'square-detail') setTimeout(enhancePostReports, 0);
     });
-    setInterval(enhancePostReports, 1600);
   }
 
   function boot(){

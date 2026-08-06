@@ -236,6 +236,32 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void notifyWebLifecycle(boolean visible) {
+        if (webView == null) return;
+        String script = "document.dispatchEvent(new CustomEvent('fw:app-native-lifecycle',{detail:{visible:" + visible + "}}));";
+        webView.evaluateJavascript(script, null);
+    }
+
+    @Override
+    protected void onPause() {
+        if (webView != null) {
+            notifyWebLifecycle(false);
+            webView.onPause();
+            webView.pauseTimers();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            webView.onResume();
+            webView.resumeTimers();
+            notifyWebLifecycle(true);
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);

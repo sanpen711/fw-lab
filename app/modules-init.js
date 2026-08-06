@@ -1,6 +1,5 @@
 (function(){
   var archiveScriptLoading = false;
-  var reportScriptLoading = false;
   var commentReplyScriptLoading = false;
   var initialHashApplied = false;
 
@@ -22,17 +21,6 @@
       }
     };
     script.onerror = function(){ archiveScriptLoading = false; };
-    document.head.appendChild(script);
-  }
-
-  function loadReportModule(){
-    if(window.__FW_MOBILE_REPORT_BRIDGE__) return;
-    if(reportScriptLoading) return;
-    reportScriptLoading = true;
-    var script = document.createElement('script');
-    script.src = './report.js?v=mobile-report-20260602-1';
-    script.onload = function(){ reportScriptLoading = false; };
-    script.onerror = function(){ reportScriptLoading = false; };
     document.head.appendChild(script);
   }
 
@@ -90,8 +78,6 @@
     if(window.FWAppRooms && window.FWAppRooms.init) window.FWAppRooms.init();
     if(window.FWAppBird && window.FWAppBird.init) window.FWAppBird.init();
     if(window.FWAppArchive && window.FWAppArchive.init) window.FWAppArchive.init();
-    loadReportModule();
-    loadCommentReplyModule();
     if(window.__fwMobileModulesWrapped) return;
     window.__fwMobileModulesWrapped = true;
     var originalSetView = window.FWApp.setView;
@@ -101,11 +87,13 @@
       if(name === 'bird' && window.FWAppBird) window.FWAppBird.ensureLoaded();
       if(name === 'bird-detail' && window.FWAppBird) window.FWAppBird.ensureLoaded();
       if(name === 'archive') loadArchiveModule();
+      if(name === 'square' || name === 'square-detail') loadCommentReplyModule();
     };
     var current = window.FWApp.state && window.FWApp.state.view;
     if(current === 'rooms' && window.FWAppRooms) window.FWAppRooms.ensureLoaded();
     if((current === 'bird' || current === 'bird-detail') && window.FWAppBird) window.FWAppBird.ensureLoaded();
     if(current === 'archive') loadArchiveModule();
+    if(current === 'square' || current === 'square-detail') loadCommentReplyModule();
     [0, 80, 240, 700].forEach(function(delay){
       setTimeout(applyInitialHashRoute, delay);
     });

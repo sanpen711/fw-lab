@@ -409,7 +409,21 @@
     bindSwipe();
   }
 
-  function init(){ bind(); clearInterval(renderTimer); renderTimer = setInterval(render, 60000); }
+  function stopRenderTimer(){ clearTimeout(renderTimer); renderTimer = null; }
+  function scheduleRenderTimer(){
+    stopRenderTimer();
+    if(document.hidden || !window.FWApp || !window.FWApp.state || window.FWApp.state.view !== 'rooms') return;
+    renderTimer = setTimeout(function(){ render(); scheduleRenderTimer(); }, 60000);
+  }
+  function init(){
+    bind();
+    document.addEventListener('fw:app-viewchange', function(event){
+      if(event && event.detail && event.detail.view === 'rooms') scheduleRenderTimer();
+      else stopRenderTimer();
+    });
+    document.addEventListener('fw:app-visibility', function(event){ if(!(event && event.detail && event.detail.visible)) stopRenderTimer(); else scheduleRenderTimer(); });
+    scheduleRenderTimer();
+  }
   function ensureLoaded(){ load(false); }
 
   window.FWAppRooms = {init:init, load:load, ensureLoaded:ensureLoaded};

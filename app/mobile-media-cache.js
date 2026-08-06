@@ -303,17 +303,16 @@
     var observer = new MutationObserver(function(mutations){
       for(var i = 0; i < mutations.length; i += 1){
         var m = mutations[i];
-        if(m.type === 'childList' && m.addedNodes && m.addedNodes.length){ scheduleScan(document); return; }
+        if(m.type === 'childList' && m.addedNodes && m.addedNodes.length){ scheduleScan(m.target || document); return; }
         if(m.type === 'attributes' && m.target && String(m.attributeName || '') === 'src'){ scheduleScan(m.target.parentElement || document); return; }
       }
     });
-    observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['src']});
+    observer.observe(document.getElementById('appMain') || document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['src']});
   }
 
   function bindLifecycle(){
     window.addEventListener('pageshow', function(){ scheduleScan(document); schedulePrune(); }, {passive:true});
     document.addEventListener('visibilitychange', function(){ if(!document.hidden){ scheduleScan(document); schedulePrune(); } }, {passive:true});
-    document.addEventListener('click', function(){ scheduleScan(document); }, true);
   }
 
   function start(){

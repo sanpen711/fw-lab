@@ -131,8 +131,7 @@
   function boot(){
     install();
     var bodyObserver = new MutationObserver(scheduleInstall);
-    bodyObserver.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
-    setInterval(function(){ if(isChatting() || box) install(); }, 2500);
+    bodyObserver.observe(document.body, {attributes:true, attributeFilter:['class']});
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
