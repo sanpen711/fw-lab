@@ -27,6 +27,10 @@ for(const file of runtimeFiles){
   }
 }
 
+const emojiPanel = readFileSync(resolve(root, 'assets/fw-emoji-panel.js'), 'utf8');
+assert.ok(!/setInterval\s*\([^\n]*[, ]2500\s*\)/.test(emojiPanel), '表情面板不应恢复 2500ms 常驻扫描');
+assert.match(emojiPanel, /fw:app-viewchange/);
+
 const core = read('mobile-core-fixes.js');
 assert.match(core, /fw:app-viewchange/);
 assert.match(core, /ensureSquareModules/);

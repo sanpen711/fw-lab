@@ -537,7 +537,12 @@
     renderStickerMessages();
     bind();
     observe();
-    setInterval(function(){ if(hasEmojiSurface()) renderStickerMessages(); }, 2500);
+    document.addEventListener('fw:app-viewchange', function(){
+      if(hasEmojiSurface()) requestAnimationFrame(renderStickerMessages);
+    });
+    window.addEventListener('focus', function(){
+      if(hasEmojiSurface()) renderStickerMessages();
+    });
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
