@@ -443,7 +443,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
 
-  loadJs("assets/fw-echo-stable-route.js?v=echo-stable-route-20260529-1");
+  loadJs("assets/fw-echo-stable-route.js?v=echo-on-demand-fix-20260807-1");
   loadJs("assets/fw-social.js?v=desktop-performance-20260806-2");
   loadJs("assets/fw-logout-home-fix.js?v=logout-home-fix-20260513-1");
   loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
