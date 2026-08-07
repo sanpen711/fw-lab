@@ -1,8 +1,12 @@
 // F.w 研究所：电脑端回声入口路由
 // 目的：让顶部“回声”按钮统一交给 fw-stable-core.js 处理，避免旧回声逻辑误清搭子私聊未读。
+// 精神广场为减少首屏负担不预载稳定核心；首次点“回声”时再按需加载。
 (function(){
   if(window.__FW_ECHO_STABLE_ROUTE__) return;
   window.__FW_ECHO_STABLE_ROUTE__ = true;
+
+  var stableCoreSrc = 'assets/fw-stable-core.js?v=stable-core-echo-notice-20260807-1';
+  var stableCorePromise = null;
 
   function toast(msg){
     var t = document.querySelector('.fw-toast');
@@ -19,23 +23,51 @@
     }, 2200);
   }
 
-  function openStableEcho(){
+  function waitForStableEcho(resolve, reject, startedAt){
     if(typeof window.fwOpenStableEcho === 'function'){
-      window.fwOpenStableEcho();
+      resolve(window.fwOpenStableEcho);
       return;
     }
+    if(Date.now() - startedAt >= 5000){
+      reject(new Error('stable echo core timed out'));
+      return;
+    }
+    setTimeout(function(){ waitForStableEcho(resolve, reject, startedAt); }, 80);
+  }
 
-    var tries = 0;
-    var timer = setInterval(function(){
-      tries += 1;
-      if(typeof window.fwOpenStableEcho === 'function'){
-        clearInterval(timer);
-        window.fwOpenStableEcho();
-      }else if(tries >= 10){
-        clearInterval(timer);
-        toast('回声入口还在加载，请稍后再点一次。');
+  function loadStableEcho(){
+    if(typeof window.fwOpenStableEcho === 'function'){
+      return Promise.resolve(window.fwOpenStableEcho);
+    }
+    if(stableCorePromise) return stableCorePromise;
+
+    stableCorePromise = new Promise(function(resolve, reject){
+      var existing = Array.prototype.find.call(document.scripts || [], function(script){
+        return /(?:^|\/)assets\/fw-stable-core\.js(?:[?#]|$)/.test(script.src || '');
+      });
+      if(!existing){
+        existing = document.createElement('script');
+        existing.src = stableCoreSrc;
+        existing.async = true;
+        existing.dataset.fwEchoCoreLoader = '1';
+        existing.addEventListener('error', function(){ reject(new Error('stable echo core failed to load')); }, {once:true});
+        document.body.appendChild(existing);
       }
-    }, 120);
+      waitForStableEcho(resolve, reject, Date.now());
+    }).catch(function(error){
+      stableCorePromise = null;
+      throw error;
+    });
+
+    return stableCorePromise;
+  }
+
+  function openStableEcho(){
+    loadStableEcho().then(function(openEcho){
+      openEcho();
+    }).catch(function(){
+      toast('回声加载失败，请刷新页面后重试。');
+    });
   }
 
   document.addEventListener('click', function(e){
