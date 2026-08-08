@@ -443,8 +443,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
 
+  loadJs("assets/fw-comment-reply-echo.js?v=comment-reply-echo-20260808-1");
   loadJs("assets/fw-echo-stable-route.js?v=echo-on-demand-fix-20260807-1");
-  loadJs("assets/fw-social.js?v=desktop-performance-20260806-2");
+  loadJs("assets/fw-social.js?v=comment-reply-echo-20260808-1");
   loadJs("assets/fw-logout-home-fix.js?v=logout-home-fix-20260513-1");
   loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
   if(isHome) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
@@ -460,7 +461,7 @@ document.addEventListener("DOMContentLoaded", () => {
     旧电脑端手机壳脚本不再加载，避免和 /app/ 的底部导航、搭子、回声、我的入口重复抢控制权。
     桌面端社交、登录、头像、房间聊天等模块保留。
   */
-  if(!isSquare) loadJs("assets/fw-stable-core.js?v=stable-core-echo-notice-20260702-1");
+  if(!isSquare) loadJs("assets/fw-stable-core.js?v=comment-reply-echo-20260808-1");
   if(!isSquare) loadJs("assets/fw-buddy-wechat.js?v=wechat-buddy-unread-20260702-1");
   loadJs("assets/fw-desktop-echo-legacy-kill.js?v=desktop-fixes-lite-20260702-1");
   if(!isSquare) loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");

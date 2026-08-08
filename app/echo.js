@@ -10,6 +10,64 @@
   var PROFILE_CACHE_KEY = 'fw_mobile_echo_profile_cache_v1';
   var PROFILE_CACHE_LIMIT = 260;
   var ECHO_TYPES = ['like','same','tissue','comment','comment_reply','chat_agree','system'];
+  var replyEcho = createReplyEchoFallback();
+
+  function createReplyEchoFallback(){
+    var prefix = 'reply-comment:';
+    var cache = {};
+    function value(v){ return String(v == null ? '' : v); }
+    function commentId(id){ var match = /^reply-comment:(\d+)$/.exec(value(id)); return match ? match[1] : ''; }
+    function key(uid){ return 'fw_comment_reply_echo_read_v1_' + value(uid); }
+    function read(uid){
+      try{ var rows = JSON.parse(localStorage.getItem(key(uid)) || '[]'); return new Set(Array.isArray(rows) ? rows.map(value) : []); }
+      catch(e){ return new Set(); }
+    }
+    function save(uid, rows){ try{ localStorage.setItem(key(uid), JSON.stringify(Array.from(rows).slice(-600))); }catch(e){} }
+    function markRead(uid, ids){
+      if(!uid) return;
+      var rows = read(uid);
+      (ids || []).forEach(function(id){ var cid = commentId(id); if(cid) rows.add(cid); });
+      save(uid, rows);
+    }
+    function databaseNoticeIds(ids){
+      return Array.from(new Set((ids || []).map(value).filter(function(id){ return id && !commentId(id); })));
+    }
+    async function commentsFor(clientValue, uid, force){
+      var saved = cache[uid];
+      if(!force && saved && Date.now() - saved.at < 15000) return saved.rows;
+      try{
+        var own = await clientValue.from('comments').select('id').eq('user_id', uid).or('is_deleted.eq.false,is_deleted.is.null').order('created_at', {ascending:false}).limit(220);
+        if(own.error) throw own.error;
+        var ownIds = (own.data || []).map(function(row){ return row.id; }).filter(Boolean);
+        var filter = 'reply_to_user_id.eq.' + uid + (ownIds.length ? ',parent_comment_id.in.(' + ownIds.join(',') + ')' : '');
+        var replies = await clientValue.from('comments').select('id,post_id,user_id,parent_comment_id,reply_to_user_id,content,is_deleted,created_at').or(filter).neq('user_id', uid).or('is_deleted.eq.false,is_deleted.is.null').order('created_at', {ascending:false}).limit(160);
+        if(replies.error) throw replies.error;
+        var ownSet = new Set(ownIds.map(value));
+        var rows = (replies.data || []).filter(function(row){
+          return row && row.is_deleted !== true && value(row.user_id) !== value(uid)
+            && (value(row.reply_to_user_id) === value(uid) || (!row.reply_to_user_id && ownSet.has(value(row.parent_comment_id))));
+        });
+        cache[uid] = {at:Date.now(), rows:rows};
+        return rows;
+      }catch(e){ console.warn('[FW mobile app] reply echo fallback failed', e); return saved ? saved.rows : []; }
+    }
+    async function merge(clientValue, uid, notices, options){
+      options = options || {};
+      var formal = (notices || []).slice();
+      var targets = new Set(formal.filter(function(row){ return row.type === 'comment_reply' && row.target_id != null; }).map(function(row){ return value(row.target_id); }));
+      var seen = read(uid);
+      var comments = await commentsFor(clientValue, uid, !!options.force);
+      comments.forEach(function(row){
+        var id = value(row.id);
+        if(!id || targets.has(id)) return;
+        var created = new Date(row.created_at || 0).getTime();
+        formal.push({id:prefix + id,actor_id:row.user_id,type:'comment_reply',target_type:'comment',target_id:row.id,content:row.content || '回复了你的评论',is_read:seen.has(id) || !created || Date.now() - created > 259200000,created_at:row.created_at,__post_id:row.post_id,__reply_fallback:true});
+      });
+      formal.sort(function(a,b){ return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime(); });
+      return formal.slice(0, Number(options.limit || 100));
+    }
+    return {merge:merge,markRead:markRead,databaseNoticeIds:databaseNoticeIds,invalidate:function(uid){ if(uid) delete cache[uid]; else cache = {}; }};
+  }
 
   function app(){ return window.FWApp; }
   function $(selector, root){ return app().$(selector, root); }
@@ -201,8 +259,9 @@
     var me = await currentUser();
     if(!me || !me.id){ setEchoBadge(0); return; }
     try{
-      var rows = fail(await client().from('notifications').select('id,type').eq('user_id', me.id).eq('is_read', false).in('type', ECHO_TYPES).limit(300), '回声角标读取失败') || [];
-      setEchoBadge(rows.filter(function(row){ return isEchoType(row.type); }).length);
+      var rows = fail(await client().from('notifications').select('id,type,target_id,is_read,created_at').eq('user_id', me.id).in('type', ECHO_TYPES).order('created_at', {ascending:false}).limit(300), '回声角标读取失败') || [];
+      rows = await replyEcho.merge(client(), me.id, rows, {limit:300});
+      setEchoBadge(rows.filter(function(row){ return isEchoType(row.type) && !row.is_read; }).length);
     }catch(e){ console.warn('[FW mobile app] echo badge refresh failed', e); }
   }
 
@@ -211,9 +270,12 @@
     if(!ids.length) return;
     ids.forEach(function(id){ var item = document.querySelector('[data-mobile-echo-item="' + id.replace(/"/g, '') + '"]'); if(item) item.classList.remove('unread'); });
     updateBadgeFromVisibleItems();
+    var me = await currentUser();
+    replyEcho.markRead(me && me.id, ids);
+    var databaseIds = replyEcho.databaseNoticeIds(ids);
     try{
       if(!(await app().waitForDb())) return;
-      await client().from('notifications').update({is_read:true}).in('id', ids);
+      if(databaseIds.length) await client().from('notifications').update({is_read:true}).in('id', databaseIds);
       refreshBadges();
     }catch(e){ console.warn('[FW mobile app] echo mark read failed', e); refreshBadges(); }
   }
@@ -242,6 +304,7 @@
       var rows = fail(await client().from('notifications').select('id,actor_id,type,target_type,target_id,content,is_read,created_at').eq('user_id', me.id).in('type', ECHO_TYPES).order('created_at', {ascending:false}).limit(100), '回声读取失败') || [];
       rows = rows.filter(function(row){ return isEchoType(row.type); });
       rows = await resolveReplyPostIds(rows);
+      rows = await replyEcho.merge(client(), me.id, rows, {limit:100});
       var unreadIds = rows.filter(function(row){ return !row.is_read; }).map(function(row){ return row.id; });
       var profiles = await fetchProfiles(rows.map(function(row){ return row.actor_id; }));
       var toolbar = '<div class="mobile-echo-toolbar"><b>回声通知</b><div class="mobile-echo-actions">' + (unreadIds.length ? '<button class="mobile-echo-mark-all" type="button" data-mobile-echo-mark-all>全部已读</button>' : '') + '<button class="mobile-echo-refresh" type="button" data-mobile-echo-refresh>刷新</button></div></div>';
@@ -315,7 +378,7 @@
     bound = true;
     document.addEventListener('click', function(e){
       var refresh = e.target.closest && e.target.closest('[data-mobile-echo-refresh]');
-      if(refresh){ e.preventDefault(); loaded = false; load(true); return; }
+      if(refresh){ e.preventDefault(); loaded = false; replyEcho.invalidate(); load(true); return; }
       var markAll = e.target.closest && e.target.closest('[data-mobile-echo-mark-all]');
       if(markAll){
         e.preventDefault();
