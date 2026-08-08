@@ -270,6 +270,10 @@
     if(!ids.length) return;
     ids.forEach(function(id){ var item = document.querySelector('[data-mobile-echo-item="' + id.replace(/"/g, '') + '"]'); if(item) item.classList.remove('unread'); });
     updateBadgeFromVisibleItems();
+    if(!visibleUnreadCount()){
+      var markAll = document.querySelector('[data-echo-list] [data-mobile-echo-mark-all]');
+      if(markAll) markAll.remove();
+    }
     var me = await currentUser();
     replyEcho.markRead(me && me.id, ids);
     var databaseIds = replyEcho.databaseNoticeIds(ids);
@@ -310,10 +314,10 @@
       var toolbar = '<div class="mobile-echo-toolbar"><b>回声通知</b><div class="mobile-echo-actions">' + (unreadIds.length ? '<button class="mobile-echo-mark-all" type="button" data-mobile-echo-mark-all>全部已读</button>' : '') + '<button class="mobile-echo-refresh" type="button" data-mobile-echo-refresh>刷新</button></div></div>';
       list.innerHTML = toolbar + (rows.length ? rows.map(function(row){ return noticeHtml(row, profiles[row.actor_id] || {}); }).join('') : '<div class="empty">暂时没有新的回声。安静也是一种运行状态。</div>');
       scanMediaSoon();
-      setEchoBadge(unreadIds.length);
-      refreshBadges();
       loaded = true;
       lastLoadAt = Date.now();
+      if(unreadIds.length) await markRead(unreadIds);
+      else{ setEchoBadge(0); refreshBadges(); }
     }catch(e){ console.warn('[FW mobile app] echo load failed', e); list.innerHTML = '<div class="error">回声暂时读取失败，请稍后再试。</div>'; }
   }
 
@@ -416,6 +420,6 @@
     scheduleBadgeTimer();
     document.addEventListener('fw:app-visibility', function(event){ if(!(event && event.detail && event.detail.visible)) stopBadgeTimer(); else scheduleBadgeTimer(300); });
   }
-  function ensureLoaded(){ load(false); }
+  function ensureLoaded(){ load(true); }
   window.FWAppEcho = {init:init, load:load, ensureLoaded:ensureLoaded, refreshBadges:refreshBadges, openPost:openPost, markRead:markRead};
 })();
