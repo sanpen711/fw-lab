@@ -133,11 +133,13 @@
     if(!uid){ setTopBadge($('[data-fw-open-echo]'), 0); setTopBadge($('[data-fw-open-buddy]'), 0); return; }
     try{
       const [echo, priv, req] = await Promise.all([
-        window.fwDb.client.from('notifications').select('id', {count:'exact', head:true}).eq('user_id', uid).eq('is_read', false).neq('type', 'private_message'),
+        window.fwDb.client.from('notifications').select('id,type,target_id,is_read,created_at').eq('user_id', uid).neq('type', 'private_message').order('created_at', {ascending:false}).limit(300),
         window.fwDb.client.from('notifications').select('id', {count:'exact', head:true}).eq('user_id', uid).eq('is_read', false).eq('type', 'private_message'),
         window.fwDb.client.from('friendships').select('id', {count:'exact', head:true}).eq('receiver_id', uid).eq('status', 'pending')
       ]);
-      setTopBadge($('[data-fw-open-echo]'), echo.count || 0);
+      let echoRows = echo.data || [];
+      if(window.FWCommentReplyEcho) echoRows = await window.FWCommentReplyEcho.merge(window.fwDb.client, uid, echoRows, {limit:300});
+      setTopBadge($('[data-fw-open-echo]'), echoRows.filter(n => !n.is_read).length);
       setTopBadge($('[data-fw-open-buddy]'), (priv.count || 0) + (req.count || 0));
     }catch(e){}
   }
@@ -193,7 +195,10 @@
       const item = document.querySelector(`[data-fw-stable-notice="${window.CSS && CSS.escape ? CSS.escape(id) : id.replace(/"/g,'')}"]`);
       if(item) item.classList.remove('unread');
     });
-    try{ await window.fwDb.client.from('notifications').update({is_read:true}).in('id', ids); }catch(e){}
+    const uid = await currentUserId();
+    if(window.FWCommentReplyEcho) window.FWCommentReplyEcho.markRead(uid, ids);
+    const databaseIds = window.FWCommentReplyEcho ? window.FWCommentReplyEcho.databaseNoticeIds(ids) : ids;
+    try{ if(databaseIds.length) await window.fwDb.client.from('notifications').update({is_read:true}).in('id', databaseIds); }catch(e){}
     setTimeout(refreshBadges, 200);
   }
 
@@ -242,7 +247,8 @@
     try{
       const {data, error} = await window.fwDb.client.from('notifications').select('id,actor_id,type,target_type,target_id,content,is_read,created_at').eq('user_id', me.id).neq('type', 'private_message').order('created_at', {ascending:false}).limit(100);
       if(error) throw error;
-      const rows = await resolveReplyPosts(data || []);
+      let rows = await resolveReplyPosts(data || []);
+      if(window.FWCommentReplyEcho) rows = await window.FWCommentReplyEcho.merge(window.fwDb.client, me.id, rows, {limit:100});
       const profiles = await fetchProfiles(rows.map(x => x.actor_id));
       const unread = rows.filter(n => !n.is_read).map(n => n.id);
       const toolbar = `<div class="fw-stable-echo-toolbar"><div><b>回声通知</b><small>${unread.length ? `还有 ${unread.length} 条未读` : '没有未读回声'}</small></div><div class="fw-stable-echo-tools">${unread.length ? '<button class="dark" type="button" data-fw-stable-mark-all>全部已读</button>' : ''}<button type="button" data-fw-stable-refresh>刷新</button></div></div>`;
@@ -426,7 +432,7 @@
       if(e.target.closest('[data-fw-stable-echo-close]')){ $('[data-fw-stable-echo-modal]')?.classList.remove('show'); return; }
       const markAll = e.target.closest('[data-fw-stable-mark-all]');
       if(markAll){ const ids = $$('[data-fw-stable-notice].unread').map(x => x.dataset.fwStableNotice); markEchoRead(ids).then(openEcho); return; }
-      if(e.target.closest('[data-fw-stable-refresh]')){ openEcho(); return; }
+      if(e.target.closest('[data-fw-stable-refresh]')){ window.FWCommentReplyEcho?.invalidate(); openEcho(); return; }
       const readBtn = e.target.closest('[data-fw-stable-read]');
       if(readBtn?.dataset.fwStableRead) markEchoRead([readBtn.dataset.fwStableRead]);
       const notice = e.target.closest('[data-fw-stable-notice]');

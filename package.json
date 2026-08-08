@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test:static": "node tests/mobile-performance-static.mjs && node tests/desktop-echo-route-static.mjs",
+    "test:static": "node tests/mobile-performance-static.mjs && node tests/desktop-echo-route-static.mjs && node tests/comment-reply-echo-static.mjs",
     "test": "playwright test",
     "test:mobile": "playwright test --project=mobile-chromium-pwa",
     "test:desktop": "playwright test --project=desktop-chromium"

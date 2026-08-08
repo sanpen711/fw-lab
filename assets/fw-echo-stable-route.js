@@ -5,7 +5,7 @@
   if(window.__FW_ECHO_STABLE_ROUTE__) return;
   window.__FW_ECHO_STABLE_ROUTE__ = true;
 
-  var stableCoreSrc = 'assets/fw-stable-core.js?v=stable-core-echo-notice-20260807-1';
+  var stableCoreSrc = 'assets/fw-stable-core.js?v=comment-reply-echo-20260808-1';
   var stableCorePromise = null;
 
   function toast(msg){

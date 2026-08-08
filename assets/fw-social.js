@@ -93,6 +93,10 @@
         .channel('fw-desktop-social-badges')
         .on('postgres_changes', {event:'*', schema:'public', table:'notifications'}, () => scheduleBadgeRefresh())
         .on('postgres_changes', {event:'*', schema:'public', table:'friendships'}, () => scheduleBadgeRefresh())
+        .on('postgres_changes', {event:'*', schema:'public', table:'comments'}, () => {
+          window.FWCommentReplyEcho?.invalidate(me?.id);
+          scheduleBadgeRefresh();
+        })
         .subscribe();
     }catch(e){ realtimeChannel = null; }
   }
@@ -228,10 +232,11 @@
     try{
       const n = await window.fwDb.client
         .from('notifications')
-        .select('id,type', {count:'exact', head:true})
+        .select('id,type,target_id,is_read,created_at')
         .eq('user_id', me.id)
-        .eq('is_read', false)
-        .in('type', ECHO_TYPES);
+        .in('type', ECHO_TYPES)
+        .order('created_at', {ascending:false})
+        .limit(300);
 
       const f = await window.fwDb.client
         .from('friendships')
@@ -246,7 +251,9 @@
         .eq('is_read', false)
         .eq('type', 'private_message');
 
-      setBadge('[data-fw-echo-count]', n.count || 0);
+      let echoRows = n.data || [];
+      if(window.FWCommentReplyEcho) echoRows = await window.FWCommentReplyEcho.merge(window.fwDb.client, me.id, echoRows, {limit:300});
+      setBadge('[data-fw-echo-count]', echoRows.filter(row => !row.is_read).length);
       setBadge('[data-fw-buddy-count]', (f.count || 0) + (msg.count || 0));
     }catch(e){}
   }
@@ -332,8 +339,10 @@
       const item = document.querySelector(`[data-fw-echo-item="${CSS && CSS.escape ? CSS.escape(id) : id.replace(/"/g, '')}"]`);
       if(item) item.classList.remove('unread');
     });
+    if(window.FWCommentReplyEcho) window.FWCommentReplyEcho.markRead(me && me.id, ids);
+    const databaseIds = window.FWCommentReplyEcho ? window.FWCommentReplyEcho.databaseNoticeIds(ids) : ids;
     try{
-      await window.fwDb.client.from('notifications').update({is_read:true}).in('id', ids);
+      if(databaseIds.length) await window.fwDb.client.from('notifications').update({is_read:true}).in('id', databaseIds);
       refreshBadges();
     }catch(e){ refreshBadges(); }
   }
@@ -365,6 +374,7 @@
       if(error) throw error;
       data = (data || []).filter(n => isEchoType(n.type));
       data = await resolveReplyPostIds(data);
+      if(window.FWCommentReplyEcho) data = await window.FWCommentReplyEcho.merge(window.fwDb.client, me.id, data, {limit:100});
       const unreadIds = data.filter(n => !n.is_read).map(n => n.id);
       const profiles = await fetchProfiles(data.map(n => n.actor_id));
 
