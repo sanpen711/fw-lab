@@ -339,6 +339,13 @@
       const item = document.querySelector(`[data-fw-echo-item="${CSS && CSS.escape ? CSS.escape(id) : id.replace(/"/g, '')}"]`);
       if(item) item.classList.remove('unread');
     });
+    const body = $('[data-fw-social-body]');
+    if(body){
+      const remaining = $$('[data-fw-echo-item].unread').filter(item => body.contains(item)).length;
+      const status = body.querySelector('.fw-echo-toolbar small');
+      if(status) status.textContent = remaining ? `还有 ${remaining} 条未读` : '没有未读回声';
+      if(!remaining) body.querySelector('[data-fw-echo-mark-all]')?.remove();
+    }
     if(window.FWCommentReplyEcho) window.FWCommentReplyEcho.markRead(me && me.id, ids);
     const databaseIds = window.FWCommentReplyEcho ? window.FWCommentReplyEcho.databaseNoticeIds(ids) : ids;
     try{
@@ -432,7 +439,8 @@
         </div>
       `;
 
-      setBadge('[data-fw-echo-count]', unreadIds.length);
+      if(unreadIds.length) await markEchoRead(unreadIds);
+      else setBadge('[data-fw-echo-count]', 0);
     }catch(err){
       body.innerHTML = '<div class="fw-social-empty">回声读取失败，请刷新后重试。</div>';
     }

@@ -1,6 +1,6 @@
 // F.w 研究所：前台稳定核心（合并版）
 // 合并范围：弹窗层级、回声固定面板、搭子未读红点、退出登录兜底、右上角资料卡遮挡修复。
-// 回声面板按通知中心逻辑展示：不自动全量已读，支持刷新、全部已读、单条已读。
+// 回声面板成功展示当前提醒后自动已读；刷新、全部已读、单条跳转仍保留。
 (function(){
   if(window.__FW_STABLE_CORE__) return;
   window.__FW_STABLE_CORE__ = true;
@@ -195,6 +195,13 @@
       const item = document.querySelector(`[data-fw-stable-notice="${window.CSS && CSS.escape ? CSS.escape(id) : id.replace(/"/g,'')}"]`);
       if(item) item.classList.remove('unread');
     });
+    const body = $('[data-fw-stable-echo-body]');
+    if(body){
+      const remaining = $$('.fw-stable-echo-item.unread').filter(item => body.contains(item)).length;
+      const status = body.querySelector('.fw-stable-echo-toolbar small');
+      if(status) status.textContent = remaining ? `还有 ${remaining} 条未读` : '没有未读回声';
+      if(!remaining) body.querySelector('[data-fw-stable-mark-all]')?.remove();
+    }
     const uid = await currentUserId();
     if(window.FWCommentReplyEcho) window.FWCommentReplyEcho.markRead(uid, ids);
     const databaseIds = window.FWCommentReplyEcho ? window.FWCommentReplyEcho.databaseNoticeIds(ids) : ids;
@@ -259,6 +266,7 @@
         const postId = postIdOf(n);
         return `<article class="fw-stable-echo-item ${n.is_read ? '' : 'unread'}" data-fw-stable-notice="${esc(n.id)}"><span data-fw-profile-user="${esc(n.actor_id || '')}">${avatarHtml(p)}</span><div class="fw-stable-echo-main"><b>${esc(name)} ${esc(typeText(n.type))}</b><span>${esc(previewText(n.content))}</span><time>${esc(timeText(n.created_at))}</time></div><div class="fw-stable-echo-actions">${postId ? `<button type="button" data-fw-stable-post="${esc(postId)}" data-open-comments="${n.type === 'comment' || n.type === 'comment_reply' ? '1' : '0'}" data-fw-stable-read="${esc(n.id)}">查看帖子</button>` : ''}${n.type === 'friend_request' || n.type === 'friend_accept' ? `<button type="button" data-fw-stable-buddy data-fw-stable-read="${esc(n.id)}">去搭子</button>` : ''}</div></article>`;
       }).join('');
+      if(unread.length) await markEchoRead(unread);
     }catch(e){ body.innerHTML = '<div class="fw-stable-echo-empty">回声读取失败，请稍后重试。</div>'; }
   }
   window.fwOpenStableEcho = openEcho;
