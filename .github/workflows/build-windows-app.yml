@@ -61,12 +61,10 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows NSIS installer was not generated.' }
-          $updaterBundle = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*.nsis.zip' | Select-Object -First 1
-          if (-not $updaterBundle) { throw 'Windows updater bundle was not generated.' }
-          $signatureFile = Get-Item "$($updaterBundle.FullName).sig" -ErrorAction SilentlyContinue
+          $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
           Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
-          Copy-Item $updaterBundle.FullName 'download/fw-lab-windows-update.nsis.zip' -Force
+          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-latest.exe.sig' -Force
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
@@ -87,7 +85,7 @@ jobs:
             platforms = @{
               'windows-x86_64' = @{
                 signature = $signature
-                url = 'https://fwyanjiusuo.com/download/fw-lab-windows-update.nsis.zip'
+                url = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
               }
             }
           }
@@ -99,7 +97,7 @@ jobs:
           name: fw-lab-windows-1.0.3
           path: |
             download/fw-lab-windows-latest.exe
-            download/fw-lab-windows-update.nsis.zip
+            download/fw-lab-windows-latest.exe.sig
             download/windows-updater.json
             download/windows-version.json
           if-no-files-found: error
@@ -111,7 +109,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
           git pull --rebase --autostash origin main
-          git add download/fw-lab-windows-latest.exe download/fw-lab-windows-update.nsis.zip download/windows-updater.json download/windows-version.json
+          git add download/fw-lab-windows-latest.exe download/fw-lab-windows-latest.exe.sig download/windows-updater.json download/windows-version.json
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
