@@ -1,7 +1,7 @@
-/* F.w 研究所 Windows 客户端专用版式 v1.0.1 */
+/* F.w 研究所 Windows 客户端专用版式 v1.0.2 */
 html.fw-desktop-app{
   --fw-desktop-rail:92px;
-  --fw-desktop-top:68px;
+  --fw-desktop-top:0px;
   --fw-desktop-bg:#eee9df;
   --fw-desktop-paper:#fffdf7;
   --fw-desktop-ink:#1b1b18;
@@ -22,7 +22,7 @@ html.fw-desktop-app body > .page{
   width:auto!important;
   min-height:100vh!important;
   margin:0 0 0 var(--fw-desktop-rail)!important;
-  padding-top:var(--fw-desktop-top)!important;
+  padding-top:0!important;
   background:var(--fw-desktop-bg)!important;
 }
 
@@ -124,27 +124,52 @@ html.fw-desktop-app body > .page{
 .fw-desktop-nav-item b.show{display:grid;}
 .fw-desktop-nav-item.active b{border-color:#f6f1e7;}
 .fw-desktop-more{margin-top:auto;}
+.fw-desktop-account{
+  width:100%;
+  margin:0;
+  border:0;
+  background:transparent;
+  cursor:pointer;
+}
+
+.fw-desktop-connection{
+  position:fixed;
+  z-index:12000;
+  top:12px;
+  left:calc(var(--fw-desktop-rail) + 50%);
+  display:none;
+  align-items:center;
+  gap:12px;
+  max-width:calc(100vw - var(--fw-desktop-rail) - 40px);
+  padding:10px 14px;
+  border:1px solid rgba(164,75,75,.35);
+  border-radius:999px;
+  background:#fff4ec;
+  color:#8f3f3f;
+  box-shadow:0 10px 26px rgba(51,30,20,.14);
+  font-size:12px;
+  font-weight:900;
+  transform:translateX(-50%);
+}
+.fw-desktop-connection.show{display:flex;}
+.fw-desktop-connection button{border:0;border-radius:999px;padding:6px 10px;background:#8f3f3f;color:#fff;font-weight:900;cursor:pointer;}
+
+html.fw-desktop-app body.fw-desktop-navigating:after{
+  content:"";
+  position:fixed;
+  z-index:13000;
+  top:0;
+  left:var(--fw-desktop-rail);
+  width:32%;
+  height:3px;
+  background:var(--fw-desktop-accent);
+  box-shadow:0 0 14px rgba(217,121,121,.55);
+  animation:fwDesktopLoading .55s ease-out both;
+}
+@keyframes fwDesktopLoading{from{width:4%;opacity:.55}to{width:72%;opacity:1}}
 
 html.fw-desktop-app .header{
-  position:fixed!important;
-  z-index:10500!important;
-  top:0!important;
-  right:0!important;
-  left:var(--fw-desktop-rail)!important;
-  width:auto!important;
-  height:var(--fw-desktop-top)!important;
-  min-height:var(--fw-desktop-top)!important;
-  box-sizing:border-box!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:flex-end!important;
-  padding:0 28px!important;
-  color:var(--fw-desktop-ink)!important;
-  background:rgba(255,253,247,.94)!important;
-  border-bottom:1px solid rgba(30,29,25,.1)!important;
-  box-shadow:0 6px 22px rgba(30,28,22,.045)!important;
-  backdrop-filter:blur(14px);
-  -webkit-backdrop-filter:blur(14px);
+  display:none!important;
 }
 
 html.fw-desktop-app .header > .logo,
@@ -171,14 +196,14 @@ html.fw-desktop-app.fw-route-square .square-hero{
   color:var(--fw-desktop-ink)!important;
 }
 html.fw-desktop-app.fw-route-square .square-hero-inner{
-  width:min(1180px,calc(100% - 48px))!important;
+  width:min(900px,calc(100% - 48px))!important;
   max-width:none!important;
   margin:0 auto!important;
-  padding:22px 0 12px!important;
+  padding:14px 0 8px!important;
   display:block!important;
 }
 html.fw-desktop-app.fw-route-square .square-hero-copy{
-  margin:0 0 12px!important;
+  margin:0 0 8px!important;
   display:flex!important;
   align-items:baseline;
   gap:16px;
@@ -186,7 +211,7 @@ html.fw-desktop-app.fw-route-square .square-hero-copy{
 html.fw-desktop-app.fw-route-square .square-hero-copy .hero-title{
   margin:0!important;
   color:var(--fw-desktop-ink)!important;
-  font-size:28px!important;
+  font-size:24px!important;
   line-height:1.1!important;
   white-space:nowrap;
 }
@@ -219,6 +244,9 @@ html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-ready:no
 html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-ready:not(.fw-desktop-compose-open) .form-tip{
   display:none!important;
 }
+html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-ready:not(.fw-desktop-compose-open) > :not(textarea):not(button[type="submit"]){
+  display:none!important;
+}
 html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-ready:not(.fw-desktop-compose-open) textarea{
   grid-column:1;
   width:100%!important;
@@ -239,16 +267,16 @@ html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-open{pad
 html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-open textarea{min-height:104px!important;}
 
 html.fw-desktop-app.fw-route-square .square-layout{
-  width:min(1180px,calc(100% - 48px))!important;
+  width:min(900px,calc(100% - 48px))!important;
   max-width:none!important;
   margin:0 auto!important;
   padding:4px 0 36px!important;
   gap:18px!important;
-  grid-template-columns:minmax(0,1fr) 260px!important;
+  grid-template-columns:minmax(0,1fr)!important;
 }
 html.fw-desktop-app.fw-route-square .square-main,
 html.fw-desktop-app.fw-route-square .feed-list{min-width:0!important;}
-html.fw-desktop-app.fw-route-square .square-side{position:sticky;top:88px;align-self:start;}
+html.fw-desktop-app.fw-route-square .square-side{display:none!important;}
 html.fw-desktop-app.fw-route-square .side-card{border-radius:16px!important;box-shadow:none!important;}
 
 /* 回声：固定为软件内整页，不再作为可拖动浮窗 */
@@ -265,7 +293,7 @@ html.fw-desktop-app.fw-route-echo .fw-stable-echo-modal{
   z-index:10020!important;
   inset:var(--fw-desktop-top) 0 0 var(--fw-desktop-rail)!important;
   box-sizing:border-box!important;
-  padding:22px 28px!important;
+  padding:18px 24px!important;
   background:var(--fw-desktop-bg)!important;
   pointer-events:auto!important;
 }
@@ -291,7 +319,7 @@ html.fw-desktop-app.fw-route-buddy .fw-wx-modal{
   z-index:10020!important;
   inset:var(--fw-desktop-top) 0 0 var(--fw-desktop-rail)!important;
   box-sizing:border-box!important;
-  padding:22px 28px!important;
+  padding:18px 24px!important;
   background:var(--fw-desktop-bg)!important;
   pointer-events:auto!important;
 }
@@ -316,6 +344,51 @@ html.fw-desktop-app.fw-route-buddy [data-fw-wx-reset],
 html.fw-desktop-app.fw-route-buddy [data-fw-wx-close]{display:none!important;}
 html.fw-desktop-app.fw-route-buddy .fw-wx-shell{grid-template-columns:330px minmax(0,1fr)!important;}
 
+/* 学术研讨与观鸟台：桌面软件只保留紧凑栏目说明，第一屏直接进入内容。 */
+html.fw-desktop-app.fw-route-rooms .polls-hero,
+html.fw-desktop-app.fw-route-bird .bird-hero{
+  min-height:0!important;
+  padding:0!important;
+  background:transparent!important;
+  color:var(--fw-desktop-ink)!important;
+}
+html.fw-desktop-app.fw-route-rooms .polls-hero-inner,
+html.fw-desktop-app.fw-route-bird .bird-hero .hero-inner{
+  width:min(1000px,calc(100% - 48px))!important;
+  min-height:0!important;
+  margin:0 auto!important;
+  padding:20px 0 12px!important;
+  display:block!important;
+}
+html.fw-desktop-app.fw-route-rooms .polls-hero .hero-title,
+html.fw-desktop-app.fw-route-bird .bird-hero .hero-title{
+  margin:0!important;
+  color:var(--fw-desktop-ink)!important;
+  font-size:30px!important;
+  line-height:1.1!important;
+}
+html.fw-desktop-app.fw-route-rooms .polls-hero .kicker,
+html.fw-desktop-app.fw-route-bird .bird-motto{display:none!important;}
+html.fw-desktop-app.fw-route-rooms .polls-hero .hero-copy,
+html.fw-desktop-app.fw-route-bird .bird-hero .hero-copy{
+  max-width:760px!important;
+  margin:8px 0 0!important;
+  color:var(--fw-desktop-muted)!important;
+  font-size:13px!important;
+  line-height:1.5!important;
+}
+html.fw-desktop-app.fw-route-rooms .polls-hero-panel,
+html.fw-desktop-app.fw-route-bird .bird-rule-card{display:none!important;}
+html.fw-desktop-app.fw-route-rooms .polls-hero .hero-actions,
+html.fw-desktop-app.fw-route-bird .bird-hero .hero-actions{margin-top:12px!important;}
+html.fw-desktop-app.fw-route-rooms .polls-layout,
+html.fw-desktop-app.fw-route-bird .bird-layout{
+  width:min(1000px,calc(100% - 48px))!important;
+  max-width:none!important;
+  margin:0 auto!important;
+  padding:8px 0 36px!important;
+}
+
 /* 其他栏目仍复用内容，但去掉网页感较强的底部和宽屏导航 */
 html.fw-desktop-app:not(.fw-route-square):not(.fw-route-echo):not(.fw-route-buddy) .page > section{
   width:min(1180px,calc(100% - 48px));
@@ -329,7 +402,7 @@ html.fw-desktop-app:not(.fw-route-square):not(.fw-route-echo):not(.fw-route-budd
   html.fw-desktop-app.fw-route-buddy .fw-wx-shell{grid-template-columns:290px minmax(0,1fr)!important;}
 }
 
-@media(max-width:1040px){
+@media(max-width:920px){
   html.fw-desktop-app{--fw-desktop-rail:68px;}
   .fw-desktop-sidebar{padding-right:7px;padding-left:7px;}
   .fw-desktop-brand small,
@@ -349,4 +422,16 @@ html.fw-desktop-app:not(.fw-route-square):not(.fw-route-echo):not(.fw-route-budd
   html.fw-desktop-app.fw-route-square .square-layout{width:calc(100% - 28px)!important;}
   html.fw-desktop-app.fw-route-square .square-hero-copy .hero-copy{display:none!important;}
   html.fw-desktop-app.fw-route-buddy .fw-wx-shell{grid-template-columns:240px minmax(0,1fr)!important;}
+}
+
+@media(max-width:800px){
+  html.fw-desktop-app.fw-route-buddy .fw-wx-modal,
+  html.fw-desktop-app.fw-route-echo .fw-stable-echo-modal{padding:10px!important;}
+  html.fw-desktop-app.fw-route-buddy .fw-wx-shell{grid-template-columns:215px minmax(0,1fr)!important;}
+  html.fw-desktop-app.fw-route-buddy .fw-wx-head{height:58px!important;padding:10px 16px!important;}
+  html.fw-desktop-app.fw-route-buddy .fw-wx-title h2{font-size:22px!important;}
+  html.fw-desktop-app.fw-route-rooms .polls-hero-inner,
+  html.fw-desktop-app.fw-route-rooms .polls-layout,
+  html.fw-desktop-app.fw-route-bird .bird-hero .hero-inner,
+  html.fw-desktop-app.fw-route-bird .bird-layout{width:calc(100% - 28px)!important;}
 }

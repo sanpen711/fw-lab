@@ -14,6 +14,10 @@
 
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
+  const isWindowsDesktopApp = /FWYanjiusuoDesktop\//i.test(navigator.userAgent || '');
+  const desktopPage = (window.location.pathname.split('/').pop() || '').toLowerCase();
+  const isDedicatedDesktopEcho = isWindowsDesktopApp && desktopPage === 'echo.html';
+  const isDedicatedDesktopBuddy = isWindowsDesktopApp && desktopPage === 'buddy.html';
   const state = { user:null, badgeTimer:0, buddyTimer:0, echoOpening:false, logoutBusy:false, buddyEnhancing:false };
 
   function esc(v){
@@ -267,7 +271,7 @@
         return `<article class="fw-stable-echo-item ${n.is_read ? '' : 'unread'}" data-fw-stable-notice="${esc(n.id)}"><span data-fw-profile-user="${esc(n.actor_id || '')}">${avatarHtml(p)}</span><div class="fw-stable-echo-main"><b>${esc(name)} ${esc(typeText(n.type))}</b><span>${esc(previewText(n.content))}</span><time>${esc(timeText(n.created_at))}</time></div><div class="fw-stable-echo-actions">${postId ? `<button type="button" data-fw-stable-post="${esc(postId)}" data-open-comments="${n.type === 'comment' || n.type === 'comment_reply' ? '1' : '0'}" data-fw-stable-read="${esc(n.id)}">查看帖子</button>` : ''}${n.type === 'friend_request' || n.type === 'friend_accept' ? `<button type="button" data-fw-stable-buddy data-fw-stable-read="${esc(n.id)}">去搭子</button>` : ''}</div></article>`;
       }).join('');
       if(unread.length) await markEchoRead(unread);
-    }catch(e){ body.innerHTML = '<div class="fw-stable-echo-empty">回声读取失败，请稍后重试。</div>'; }
+    }catch(e){ body.innerHTML = '<div class="fw-stable-echo-empty">回声读取失败。<div class="fw-stable-echo-tools"><button class="dark" type="button" data-fw-stable-refresh>重新加载</button></div></div>'; }
   }
   window.fwOpenStableEcho = openEcho;
 
@@ -447,18 +451,22 @@
       if(notice?.classList.contains('unread')) markEchoRead([notice.dataset.fwStableNotice]);
       const post = e.target.closest('[data-fw-stable-post]');
       if(post){ focusPost(post.dataset.fwStablePost, post.dataset.openComments === '1'); return; }
-      if(e.target.closest('[data-fw-stable-buddy]')){ $('[data-fw-stable-echo-modal]')?.classList.remove('show'); $('[data-fw-open-buddy]')?.click(); return; }
+      if(e.target.closest('[data-fw-stable-buddy]')){
+        if(isWindowsDesktopApp){ window.location.href = 'buddy.html'; return; }
+        $('[data-fw-stable-echo-modal]')?.classList.remove('show'); $('[data-fw-open-buddy]')?.click(); return;
+      }
       if(e.target.matches('[data-fw-stable-echo-modal]')) e.target.classList.remove('show');
       const chat = e.target.closest('[data-fw-wx-chat-user], [data-fw-wx-chat-direct], [data-fw-start-chat]');
       if(chat){ const id = chat.dataset.fwWxChatUser || chat.dataset.fwWxChatDirect || chat.dataset.fwStartChat || ''; if(id) markPrivateReadFrom(id); }
       if(e.target.closest('[data-fw-open-buddy], [data-fw-wx-tab], [data-fw-wx-chat-user], [data-fw-wx-chat-direct], [data-fw-wx-reset]')){
-        setTimeout(() => { clampBuddyOnce(); cleanBuddyPreview(); enhanceBuddyList(); refreshBadges(); }, 380);
+        setTimeout(() => { clampBuddyOnce(); cleanBuddyPreview(); if(!isDedicatedDesktopBuddy) enhanceBuddyList(); refreshBadges(); }, 380);
       }
     }, true);
 
     document.addEventListener('keydown', e => {
       if(e.key !== 'Escape') return;
       $$('.fw-wx-more-wrap.open').forEach(x => x.classList.remove('open'));
+      if(isDedicatedDesktopEcho || isDedicatedDesktopBuddy) return;
       const echo = $('[data-fw-stable-echo-modal].show');
       if(echo){ echo.classList.remove('show'); return; }
       const top = $$('.fw-social-modal.show, .fw-wx-modal.show').pop();
@@ -471,7 +479,7 @@
       msg.dataset.fwUserScrolled = (msg.scrollHeight - msg.scrollTop - msg.clientHeight < 80) ? '0' : '1';
     }, true);
     window.addEventListener('resize', () => setTimeout(clampBuddyOnce, 100));
-    document.addEventListener('visibilitychange', () => { if(!document.hidden){ refreshBadges(); enhanceBuddyList(); } });
+    document.addEventListener('visibilitychange', () => { if(!document.hidden){ refreshBadges(); if(!isDedicatedDesktopBuddy) enhanceBuddyList(); } });
   }
 
   function boot(){
@@ -480,8 +488,8 @@
     refreshBadges();
     clearInterval(state.badgeTimer);
     clearInterval(state.buddyTimer);
-    state.badgeTimer = setInterval(refreshBadges, 25000);
-    state.buddyTimer = setInterval(() => { if($('.fw-wx-modal.show')) enhanceBuddyList(); }, 14000);
+    state.badgeTimer = setInterval(refreshBadges, isWindowsDesktopApp ? 45000 : 25000);
+    if(!isDedicatedDesktopBuddy) state.buddyTimer = setInterval(() => { if($('.fw-wx-modal.show')) enhanceBuddyList(); }, 14000);
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

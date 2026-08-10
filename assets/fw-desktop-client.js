@@ -1,4 +1,4 @@
-// F.w 研究所 Windows 客户端外壳 v1.0.1
+// F.w 研究所 Windows 客户端外壳 v1.0.2
 // 仅在 Tauri 自定义 User-Agent 中启用，网页、PWA 与 Android 不受影响。
 (function(){
   'use strict';
@@ -33,6 +33,7 @@
     bell:'<path d="M6 17h12l-1.5-2.5V10a4.5 4.5 0 0 0-9 0v4.5L6 17Z"/><path d="M10 20h4"/>',
     users:'<circle cx="9" cy="8" r="3"/><path d="M3.5 19v-2a5.5 5.5 0 0 1 11 0v2M16 6.5a3 3 0 0 1 0 5.8M17 14a5 5 0 0 1 3.5 4.8"/>',
     archive:'<path d="M4 6h16v14H4zM3 3h18v4H3z"/><path d="M9 11h6"/>',
+    user:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>',
     plus:'<path d="M12 5v14M5 12h14"/>',
     more:'<circle cx="6" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="18" cy="12" r="1"/>'
   };
@@ -65,8 +66,15 @@
         return '<a class="fw-desktop-nav-item' + (route.key === item.key ? ' active' : '') + '" href="' + item.href + '" data-fw-desktop-nav="' + item.key + '" title="' + item.label + '">' +
           icon(item.icon) + '<span>' + item.label + '</span>' + (item.badge ? '<b data-fw-desktop-badge="' + item.badge + '"></b>' : '') + '</a>';
       }).join('') + '</nav>' +
-      '<a class="fw-desktop-nav-item fw-desktop-more' + (route.key === 'more' ? ' active' : '') + '" href="rules.html" title="更多">' + icon('more') + '<span>更多</span></a>';
+      '<a class="fw-desktop-nav-item fw-desktop-more' + (route.key === 'more' ? ' active' : '') + '" href="rules.html" title="更多">' + icon('more') + '<span>更多</span></a>' +
+      '<button class="fw-desktop-nav-item fw-desktop-account" type="button" data-fw-desktop-account title="我的">' + icon('user') + '<span>我的</span></button>';
     document.body.appendChild(aside);
+
+    var connection = document.createElement('div');
+    connection.className = 'fw-desktop-connection';
+    connection.dataset.fwDesktopConnection = '1';
+    connection.innerHTML = '<span>网络已断开，部分内容可能暂时不可用。</span><button type="button" data-fw-desktop-retry>重新连接</button>';
+    document.body.appendChild(connection);
 
   }
 
@@ -125,15 +133,73 @@
     });
   }
 
+  function saveScroll(){
+    try{ sessionStorage.setItem('fw:desktop:scroll:' + pageName(), String(Math.max(0, window.scrollY || 0))); }catch(e){}
+  }
+
+  function restoreScroll(){
+    if(location.search || location.hash) return;
+    var value = 0;
+    try{ value = Number(sessionStorage.getItem('fw:desktop:scroll:' + pageName()) || 0); }catch(e){}
+    if(!Number.isFinite(value) || value < 40) return;
+    var cancelled = false;
+    var stop = function(){ cancelled = true; };
+    window.addEventListener('wheel', stop, {once:true, passive:true});
+    window.addEventListener('touchstart', stop, {once:true, passive:true});
+    window.addEventListener('pointerdown', stop, {once:true, passive:true});
+    function apply(){ if(!cancelled) window.scrollTo(0, value); }
+    requestAnimationFrame(apply);
+    setTimeout(apply, 220);
+    setTimeout(apply, 900);
+    var surface = document.querySelector('[data-feed], [data-polls-list], [data-bird-feed]');
+    if(surface && window.MutationObserver){
+      var observer = new MutationObserver(function(){
+        apply();
+        if(surface.children.length > 0) setTimeout(function(){ observer.disconnect(); }, 250);
+      });
+      observer.observe(surface, {childList:true});
+      setTimeout(function(){ observer.disconnect(); }, 2500);
+    }
+  }
+
+  function prefetchRoutes(){
+    NAV.concat([{href:'rules.html'}]).forEach(function(item){
+      if(item.href === pageName() || document.querySelector('link[data-fw-desktop-prefetch="' + item.href + '"]')) return;
+      var link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = item.href;
+      link.as = 'document';
+      link.dataset.fwDesktopPrefetch = item.href;
+      document.head.appendChild(link);
+    });
+  }
+
+  function syncConnection(){
+    var banner = document.querySelector('[data-fw-desktop-connection]');
+    if(banner) banner.classList.toggle('show', navigator.onLine === false);
+  }
+
   function bind(){
     document.addEventListener('click', function(e){
       var compose = e.target.closest('[data-fw-desktop-compose]');
       if(compose){ e.preventDefault(); openComposer(); return; }
+      var account = e.target.closest('[data-fw-desktop-account]');
+      if(account){
+        e.preventDefault();
+        var opener = document.querySelector('.header [data-fw-open], [data-login-cta], [data-sb-open]');
+        if(opener) opener.click();
+        return;
+      }
+      if(e.target.closest('[data-fw-desktop-retry]')){ e.preventDefault(); location.reload(); return; }
       var current = e.target.closest('.fw-desktop-nav-item.active');
       if(current && current.getAttribute('href') === pageName()){
         e.preventDefault();
         window.scrollTo({top:0, behavior:'smooth'});
+        try{ sessionStorage.setItem('fw:desktop:scroll:' + pageName(), '0'); }catch(err){}
+        return;
       }
+      var next = e.target.closest('.fw-desktop-nav-item[href]');
+      if(next){ saveScroll(); document.body.classList.add('fw-desktop-navigating'); }
     });
 
     document.addEventListener('keydown', function(e){
@@ -147,9 +213,13 @@
       }
     });
 
-    var observer = new MutationObserver(function(){ syncBadges(); });
-    observer.observe(document.body, {subtree:true, childList:true, attributes:true, characterData:true, attributeFilter:['class']});
-    setInterval(syncBadges, 12000);
+    window.addEventListener('pagehide', saveScroll);
+    window.addEventListener('online', syncConnection);
+    window.addEventListener('offline', syncConnection);
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) syncBadges(); });
+    setTimeout(syncBadges, 800);
+    setTimeout(syncBadges, 2600);
+    setInterval(syncBadges, 20000);
   }
 
   function boot(){
@@ -161,6 +231,9 @@
     setupComposer();
     bind();
     syncBadges();
+    syncConnection();
+    restoreScroll();
+    setTimeout(prefetchRoutes, 700);
     if(pageName() === 'echo.html') openDedicatedSocialPage('echo');
     if(pageName() === 'buddy.html') openDedicatedSocialPage('buddy');
   }

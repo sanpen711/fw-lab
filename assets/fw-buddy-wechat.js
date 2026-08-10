@@ -14,6 +14,10 @@
   let activeTargetId = '';
   let activeConversationId = null;
   let chatTimer = null;
+  let chatLoading = false;
+  let chatGeneration = 0;
+  let renderedConversationId = null;
+  let lastMessageSignature = '';
   let drag = null;
   let lastRows = [];
   let lastProfiles = {};
@@ -438,7 +442,7 @@
 
       await refreshBuddyBadge();
     }catch(e){
-      list.innerHTML = '<div class="fw-wx-empty">搭子消息暂时读取失败，请稍后再试。</div>';
+      list.innerHTML = '<div class="fw-wx-empty">搭子消息暂时读取失败。<button class="fw-wx-mini dark" type="button" data-fw-wx-retry-list>重新加载</button></div>';
     }
   }
 
@@ -458,13 +462,17 @@
       if(selectId) await selectChat(selectId);
       await refreshBuddyBadge();
     }catch(e){
-      if(list) list.innerHTML = `<div class="fw-wx-empty">搭子读取失败：${esc(e.message || '请稍后重试。')}</div>`;
+      if(list) list.innerHTML = `<div class="fw-wx-empty">搭子读取失败：${esc(e.message || '请稍后重试。')}<div class="fw-wx-actions"><button class="fw-wx-mini dark" type="button" data-fw-wx-retry-list>重新加载</button></div></div>`;
     }
   }
 
   async function selectChat(targetId){
     if(!targetId) return;
     activeTargetId = String(targetId);
+    chatGeneration += 1;
+    chatLoading = false;
+    renderedConversationId = null;
+    lastMessageSignature = '';
     setTabs();
     $$('.fw-wx-item').forEach(x => x.classList.toggle('active', String(x.dataset.fwWxChatUser) === activeTargetId));
     await markPrivateReadFrom(activeTargetId);
@@ -486,35 +494,52 @@
       activeConversationId = convId;
       await loadMessages();
       clearInterval(chatTimer);
-      chatTimer = setInterval(() => { if($('.fw-wx-modal.show')) loadMessages(); }, 4500);
+      chatTimer = setInterval(() => { if($('.fw-wx-modal.show') && !document.hidden) loadMessages(); }, 6000);
       $('[data-fw-wx-compose] input')?.focus();
     }catch(e){
-      if(box) box.innerHTML = `<div class="fw-wx-empty">私聊打开失败：${esc(e.message || '请稍后重试。')}</div>`;
+      if(box) box.innerHTML = `<div class="fw-wx-empty">私聊打开失败：${esc(e.message || '请稍后重试。')}<div class="fw-wx-actions"><button class="fw-wx-mini dark" type="button" data-fw-wx-retry-chat>重新打开</button></div></div>`;
     }
   }
 
-  async function loadMessages(){
+  async function loadMessages(options){
     const box = $('[data-fw-wx-messages]');
-    if(!box || !activeConversationId) return;
+    if(!box || !activeConversationId || chatLoading) return;
+    const conversationId = activeConversationId;
+    const generation = chatGeneration;
+    const forceScroll = Boolean(options && options.forceScroll);
+    const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 90;
+    chatLoading = true;
     try{
       const {data, error} = await window.fwDb.client
         .from('private_messages')
         .select('id,conversation_id,sender_id,content,is_deleted,created_at')
-        .eq('conversation_id', activeConversationId)
+        .eq('conversation_id', conversationId)
         .eq('is_deleted', false)
         .order('created_at', {ascending:true})
         .limit(200);
       if(error) throw error;
-      const profiles = await fetchProfiles((data || []).map(m => m.sender_id));
-      if(!data || !data.length){ box.innerHTML = '<div class="fw-wx-empty">还没有私聊消息。可以先低功耗地打个招呼。</div>'; return; }
-      box.innerHTML = data.map(m => {
+      if(conversationId !== activeConversationId) return;
+      const rows = data || [];
+      const signature = rows.map(m => String(m.id)).join('|');
+      if(renderedConversationId === conversationId && signature === lastMessageSignature) return;
+      const shouldStick = forceScroll || nearBottom || renderedConversationId !== conversationId;
+      renderedConversationId = conversationId;
+      lastMessageSignature = signature;
+      const profiles = await fetchProfiles(rows.map(m => m.sender_id));
+      if(conversationId !== activeConversationId) return;
+      if(!rows.length){ box.innerHTML = '<div class="fw-wx-empty">还没有私聊消息。可以先低功耗地打个招呼。</div>'; return; }
+      box.innerHTML = rows.map(m => {
         const mine = me && m.sender_id === me.id;
         const p = profiles[m.sender_id] || {};
         return `<div class="fw-wx-pm ${mine ? 'me' : ''}"><div class="fw-wx-pm-name">${mine ? '你' : esc(p.nickname || '搭子')}</div><div class="fw-wx-pm-bubble">${esc(m.content)}</div></div>`;
       }).join('');
       if(typeof window.fwRenderStickerMessages === 'function') window.fwRenderStickerMessages();
-      box.scrollTop = box.scrollHeight;
-    }catch(e){ box.innerHTML = '<div class="fw-wx-empty">私聊读取失败。</div>'; }
+      if(shouldStick){
+        requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
+      }
+    }catch(e){
+      if(!box.querySelector('.fw-wx-pm')) box.innerHTML = '<div class="fw-wx-empty">私聊读取失败。<div class="fw-wx-actions"><button class="fw-wx-mini dark" type="button" data-fw-wx-retry-chat>重新加载</button></div></div>';
+    }finally{ if(generation === chatGeneration) chatLoading = false; }
   }
 
   async function sendMessage(form){
@@ -534,7 +559,7 @@
       const convId = Number(data);
       if(Number.isFinite(convId) && convId > 0) activeConversationId = convId;
       input.value = '';
-      await loadMessages();
+      await loadMessages({forceScroll:true});
       if(activeTab === 'messages') setTimeout(() => loadBuddyList(activeTargetId), 200);
     }catch(e){ toast(e.message || '发送失败。'); }
     finally{ btn.disabled = false; btn.textContent = old; }
@@ -612,6 +637,7 @@
 
   function resetRightPane(){
     activeTargetId = ''; activeConversationId = null; clearInterval(chatTimer); chatTimer = null;
+    chatGeneration += 1; renderedConversationId = null; lastMessageSignature = ''; chatLoading = false;
     $$('.fw-wx-item').forEach(x => x.classList.remove('active'));
     const title = $('[data-fw-wx-chat-title]');
     const sub = $('[data-fw-wx-chat-sub]');
@@ -646,6 +672,8 @@
       if(direct){ selectChat(direct.dataset.fwWxChatDirect); return; }
       const clearSearch = e.target.closest('[data-fw-wx-clear-search]');
       if(clearSearch){ loadBuddyList(); return; }
+      if(e.target.closest('[data-fw-wx-retry-list]')){ loadBuddyList(activeTargetId); return; }
+      if(e.target.closest('[data-fw-wx-retry-chat]')){ if(activeTargetId) selectChat(activeTargetId); return; }
       const add = e.target.closest('[data-fw-wx-add]');
       if(add){ try{ await rpc('fw_send_friend_request', {target_user_id:add.dataset.fwWxAdd}); toast('搭子申请已发出。'); activeTab='new'; await loadBuddyList(); }catch(err){ toast(err.message || '发送申请失败。'); } return; }
       const accept = e.target.closest('[data-fw-wx-accept]');
@@ -667,12 +695,14 @@
       if(compose){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); sendMessage(compose); }
     }, true);
 
-    document.addEventListener('mousedown', startDrag, true);
-    document.addEventListener('touchstart', startDrag, {capture:true, passive:false});
-    document.addEventListener('mousemove', moveDrag, true);
-    document.addEventListener('touchmove', moveDrag, {capture:true, passive:false});
-    document.addEventListener('mouseup', endDrag, true);
-    document.addEventListener('touchend', endDrag, true);
+    if(!window.__FW_DESKTOP_CLIENT_SHELL__){
+      document.addEventListener('mousedown', startDrag, true);
+      document.addEventListener('touchstart', startDrag, {capture:true, passive:false});
+      document.addEventListener('mousemove', moveDrag, true);
+      document.addEventListener('touchmove', moveDrag, {capture:true, passive:false});
+      document.addEventListener('mouseup', endDrag, true);
+      document.addEventListener('touchend', endDrag, true);
+    }
   }
 
   function boot(){ injectStyle(); bind(); waitForDb().then(refreshMe).then(refreshBuddyBadge); }
