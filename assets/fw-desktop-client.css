@@ -1,0 +1,364 @@
+/* F.w 研究所 Windows 客户端专用版式 v1.0.1 */
+html.fw-desktop-app{
+  --fw-desktop-rail:92px;
+  --fw-desktop-top:68px;
+  --fw-desktop-bg:#eee9df;
+  --fw-desktop-paper:#fffdf7;
+  --fw-desktop-ink:#1b1b18;
+  --fw-desktop-muted:#756f64;
+  --fw-desktop-accent:#d97979;
+  background:var(--fw-desktop-bg);
+}
+
+html.fw-desktop-app,
+html.fw-desktop-app body{
+  min-width:0!important;
+  min-height:100%;
+  overflow-x:hidden;
+  background:var(--fw-desktop-bg)!important;
+}
+
+html.fw-desktop-app body > .page{
+  width:auto!important;
+  min-height:100vh!important;
+  margin:0 0 0 var(--fw-desktop-rail)!important;
+  padding-top:var(--fw-desktop-top)!important;
+  background:var(--fw-desktop-bg)!important;
+}
+
+.fw-desktop-sidebar{
+  position:fixed;
+  inset:0 auto 0 0;
+  z-index:11000;
+  width:var(--fw-desktop-rail);
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:8px;
+  padding:16px 10px 12px;
+  color:#f9f5ec;
+  background:#181916;
+  border-right:1px solid rgba(255,255,255,.08);
+  box-shadow:10px 0 32px rgba(25,23,18,.08);
+}
+
+.fw-desktop-brand{
+  display:flex;
+  min-height:54px;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  color:#fff!important;
+  text-decoration:none!important;
+  line-height:1;
+}
+.fw-desktop-brand span{font-size:22px;font-weight:1000;letter-spacing:-.08em;}
+.fw-desktop-brand small{margin-top:5px;color:#d9d2c5;font-size:10px;font-weight:900;letter-spacing:.15em;}
+
+.fw-desktop-compose{
+  min-height:58px;
+  margin:4px 0 8px;
+  padding:7px 4px!important;
+  border:1px solid rgba(255,255,255,.14)!important;
+  border-radius:16px!important;
+  display:flex!important;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  background:var(--fw-desktop-accent)!important;
+  color:#fff!important;
+  font-size:11px!important;
+  font-weight:1000!important;
+  cursor:pointer;
+  box-shadow:0 9px 20px rgba(217,121,121,.2);
+}
+.fw-desktop-compose:hover{background:#e18686!important;transform:translateY(-1px);}
+.fw-desktop-compose svg{width:21px;height:21px;}
+
+.fw-desktop-nav{
+  min-height:0;
+  display:flex;
+  flex:1;
+  flex-direction:column;
+  gap:5px;
+}
+
+.fw-desktop-nav-item{
+  position:relative;
+  min-height:54px;
+  padding:7px 3px;
+  border-radius:14px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  color:#bdb9af!important;
+  text-decoration:none!important;
+  font-size:11px;
+  font-weight:900;
+  line-height:1;
+}
+.fw-desktop-nav-item svg{width:22px;height:22px;}
+.fw-desktop-nav-item:hover{background:rgba(255,255,255,.07);color:#fff!important;}
+.fw-desktop-nav-item.active{background:#f6f1e7;color:#1b1b18!important;box-shadow:0 9px 22px rgba(0,0,0,.18);}
+.fw-desktop-nav-item b{
+  position:absolute;
+  top:4px;
+  right:8px;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  border-radius:999px;
+  display:none;
+  place-items:center;
+  box-sizing:border-box;
+  background:#e26f6f;
+  color:#fff;
+  border:2px solid #181916;
+  font-size:9px;
+  line-height:14px;
+}
+.fw-desktop-nav-item b.show{display:grid;}
+.fw-desktop-nav-item.active b{border-color:#f6f1e7;}
+.fw-desktop-more{margin-top:auto;}
+
+html.fw-desktop-app .header{
+  position:fixed!important;
+  z-index:10500!important;
+  top:0!important;
+  right:0!important;
+  left:var(--fw-desktop-rail)!important;
+  width:auto!important;
+  height:var(--fw-desktop-top)!important;
+  min-height:var(--fw-desktop-top)!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  padding:0 28px!important;
+  color:var(--fw-desktop-ink)!important;
+  background:rgba(255,253,247,.94)!important;
+  border-bottom:1px solid rgba(30,29,25,.1)!important;
+  box-shadow:0 6px 22px rgba(30,28,22,.045)!important;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+
+html.fw-desktop-app .header > .logo,
+html.fw-desktop-app .header > .nav,
+html.fw-desktop-app .header > .menu-btn,
+html.fw-desktop-app .header > .fw-social-actions,
+html.fw-desktop-app .mobile-nav{
+  display:none!important;
+}
+
+html.fw-desktop-app .header .fw-userbar{
+  position:relative!important;
+  z-index:3;
+  margin-left:auto!important;
+}
+
+.fw-desktop-page-title{
+  min-width:0;
+  margin-right:auto;
+  display:flex;
+  align-items:baseline;
+  gap:14px;
+  color:var(--fw-desktop-ink);
+}
+.fw-desktop-page-title strong{font-size:22px;font-weight:1000;letter-spacing:-.04em;white-space:nowrap;}
+.fw-desktop-page-title span{overflow:hidden;color:var(--fw-desktop-muted);font-size:12px;font-weight:800;text-overflow:ellipsis;white-space:nowrap;}
+
+html.fw-desktop-app .footer{display:none!important;}
+
+/* 精神广场：首屏直接进入发帖与信息流 */
+html.fw-desktop-app.fw-route-square .square-hero{
+  min-height:0!important;
+  padding:0!important;
+  background:transparent!important;
+  color:var(--fw-desktop-ink)!important;
+}
+html.fw-desktop-app.fw-route-square .square-hero-inner{
+  width:min(1180px,calc(100% - 48px))!important;
+  max-width:none!important;
+  margin:0 auto!important;
+  padding:22px 0 12px!important;
+  display:block!important;
+}
+html.fw-desktop-app.fw-route-square .square-hero-copy{
+  margin:0 0 12px!important;
+  display:flex!important;
+  align-items:baseline;
+  gap:16px;
+}
+html.fw-desktop-app.fw-route-square .square-hero-copy .hero-title{
+  margin:0!important;
+  color:var(--fw-desktop-ink)!important;
+  font-size:28px!important;
+  line-height:1.1!important;
+  white-space:nowrap;
+}
+html.fw-desktop-app.fw-route-square .square-hero-copy .hero-copy{
+  margin:0!important;
+  color:var(--fw-desktop-muted)!important;
+  font-size:13px!important;
+  line-height:1.45!important;
+}
+html.fw-desktop-app.fw-route-square .square-hero-compose-slot{width:100%!important;}
+html.fw-desktop-app.fw-route-square [data-post-form]{
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:12px!important;
+  box-sizing:border-box!important;
+  border:1px solid rgba(28,28,24,.12)!important;
+  border-radius:16px!important;
+  background:var(--fw-desktop-paper)!important;
+  box-shadow:0 8px 24px rgba(30,28,22,.05)!important;
+}
+html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-ready:not(.fw-desktop-compose-open){
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 104px;
+  align-items:center;
+  gap:10px;
+}
+html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-ready:not(.fw-desktop-compose-open) .form-title,
+html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-ready:not(.fw-desktop-compose-open) .form-label,
+html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-ready:not(.fw-desktop-compose-open) .form-tip{
+  display:none!important;
+}
+html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-ready:not(.fw-desktop-compose-open) textarea{
+  grid-column:1;
+  width:100%!important;
+  height:46px!important;
+  min-height:46px!important;
+  margin:0!important;
+  padding:12px 14px!important;
+  box-sizing:border-box!important;
+  resize:none!important;
+  border-radius:12px!important;
+}
+html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-ready:not(.fw-desktop-compose-open) button[type="submit"]{
+  grid-column:2;
+  min-height:44px!important;
+  margin:0!important;
+}
+html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-open{padding:18px!important;}
+html.fw-desktop-app.fw-route-square [data-post-form].fw-desktop-compose-open textarea{min-height:104px!important;}
+
+html.fw-desktop-app.fw-route-square .square-layout{
+  width:min(1180px,calc(100% - 48px))!important;
+  max-width:none!important;
+  margin:0 auto!important;
+  padding:4px 0 36px!important;
+  gap:18px!important;
+  grid-template-columns:minmax(0,1fr) 260px!important;
+}
+html.fw-desktop-app.fw-route-square .square-main,
+html.fw-desktop-app.fw-route-square .feed-list{min-width:0!important;}
+html.fw-desktop-app.fw-route-square .square-side{position:sticky;top:88px;align-self:start;}
+html.fw-desktop-app.fw-route-square .side-card{border-radius:16px!important;box-shadow:none!important;}
+
+/* 回声：固定为软件内整页，不再作为可拖动浮窗 */
+html.fw-desktop-app.fw-route-echo .hero.bg-night,
+html.fw-desktop-app.fw-route-buddy .hero.bg-night{
+  min-height:calc(100vh - var(--fw-desktop-top))!important;
+  background:var(--fw-desktop-bg)!important;
+}
+html.fw-desktop-app.fw-route-echo .fw-mobile-social-placeholder,
+html.fw-desktop-app.fw-route-buddy .fw-mobile-social-placeholder{display:none!important;}
+
+html.fw-desktop-app.fw-route-echo .fw-stable-echo-modal{
+  position:fixed!important;
+  z-index:10020!important;
+  inset:var(--fw-desktop-top) 0 0 var(--fw-desktop-rail)!important;
+  box-sizing:border-box!important;
+  padding:22px 28px!important;
+  background:var(--fw-desktop-bg)!important;
+  pointer-events:auto!important;
+}
+html.fw-desktop-app.fw-route-echo .fw-stable-echo-modal.show{display:block!important;}
+html.fw-desktop-app.fw-route-echo .fw-stable-echo-panel{
+  position:relative!important;
+  inset:auto!important;
+  width:min(960px,100%)!important;
+  height:100%!important;
+  min-height:0!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0 auto!important;
+  resize:none!important;
+  border-radius:18px!important;
+  box-shadow:0 12px 34px rgba(31,28,22,.08)!important;
+}
+html.fw-desktop-app.fw-route-echo [data-fw-stable-echo-close]{display:none!important;}
+
+/* 搭子：固定左侧列表 + 右侧私聊 */
+html.fw-desktop-app.fw-route-buddy .fw-wx-modal{
+  position:fixed!important;
+  z-index:10020!important;
+  inset:var(--fw-desktop-top) 0 0 var(--fw-desktop-rail)!important;
+  box-sizing:border-box!important;
+  padding:22px 28px!important;
+  background:var(--fw-desktop-bg)!important;
+  pointer-events:auto!important;
+}
+html.fw-desktop-app.fw-route-buddy .fw-wx-modal.show{display:block!important;}
+html.fw-desktop-app.fw-route-buddy .fw-wx-panel{
+  position:relative!important;
+  inset:auto!important;
+  width:min(1160px,100%)!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0 auto!important;
+  resize:none!important;
+  border-radius:18px!important;
+  box-shadow:0 12px 34px rgba(31,28,22,.08)!important;
+}
+html.fw-desktop-app.fw-route-buddy .fw-wx-head{height:72px!important;padding:14px 22px!important;cursor:default!important;}
+html.fw-desktop-app.fw-route-buddy .fw-wx-title h2{font-size:28px!important;}
+html.fw-desktop-app.fw-route-buddy [data-fw-wx-reset],
+html.fw-desktop-app.fw-route-buddy [data-fw-wx-close]{display:none!important;}
+html.fw-desktop-app.fw-route-buddy .fw-wx-shell{grid-template-columns:330px minmax(0,1fr)!important;}
+
+/* 其他栏目仍复用内容，但去掉网页感较强的底部和宽屏导航 */
+html.fw-desktop-app:not(.fw-route-square):not(.fw-route-echo):not(.fw-route-buddy) .page > section{
+  width:min(1180px,calc(100% - 48px));
+  margin-right:auto;
+  margin-left:auto;
+}
+
+@media(max-width:1180px){
+  html.fw-desktop-app.fw-route-square .square-layout{grid-template-columns:minmax(0,1fr)!important;}
+  html.fw-desktop-app.fw-route-square .square-side{display:none!important;}
+  html.fw-desktop-app.fw-route-buddy .fw-wx-shell{grid-template-columns:290px minmax(0,1fr)!important;}
+}
+
+@media(max-width:1040px){
+  html.fw-desktop-app{--fw-desktop-rail:68px;}
+  .fw-desktop-sidebar{padding-right:7px;padding-left:7px;}
+  .fw-desktop-brand small,
+  .fw-desktop-compose span,
+  .fw-desktop-nav-item > span{display:none;}
+  .fw-desktop-brand span{font-size:19px;}
+  .fw-desktop-compose{min-height:48px;border-radius:14px!important;}
+  .fw-desktop-nav-item{min-height:48px;}
+  .fw-desktop-nav-item b{right:2px;top:2px;}
+  .fw-desktop-page-title span{display:none;}
+  html.fw-desktop-app.fw-route-buddy .fw-wx-modal,
+  html.fw-desktop-app.fw-route-echo .fw-stable-echo-modal{padding:16px!important;}
+  html.fw-desktop-app.fw-route-buddy .fw-wx-shell{grid-template-columns:270px minmax(0,1fr)!important;}
+}
+
+@media(max-width:900px){
+  html.fw-desktop-app.fw-route-square .square-hero-inner,
+  html.fw-desktop-app.fw-route-square .square-layout{width:calc(100% - 28px)!important;}
+  html.fw-desktop-app.fw-route-square .square-hero-copy .hero-copy{display:none!important;}
+  html.fw-desktop-app.fw-route-buddy .fw-wx-shell{grid-template-columns:240px minmax(0,1fr)!important;}
+}

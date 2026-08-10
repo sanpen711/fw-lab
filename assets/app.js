@@ -440,6 +440,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const isAdmin = page === "admin.html";
   const isSquare = page === "square.html";
   const hasFeedSurface = Boolean(document.querySelector("[data-post-form], [data-feed]"));
+  const isWindowsDesktopApp = /FWYanjiusuoDesktop\//i.test(navigator.userAgent || "");
+
+  if(isWindowsDesktopApp){
+    loadCss("assets/fw-desktop-client.css?v=windows-client-20260810-1");
+    loadJs("assets/fw-desktop-client.js?v=windows-client-20260810-1");
+  }
 
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
 

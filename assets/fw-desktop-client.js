@@ -1,0 +1,178 @@
+// F.w 研究所 Windows 客户端外壳 v1.0.1
+// 仅在 Tauri 自定义 User-Agent 中启用，网页、PWA 与 Android 不受影响。
+(function(){
+  'use strict';
+
+  if(window.__FW_DESKTOP_CLIENT_SHELL__) return;
+  if(!/FWYanjiusuoDesktop\//i.test(navigator.userAgent || '')) return;
+  window.__FW_DESKTOP_CLIENT_SHELL__ = true;
+
+  var ROUTES = {
+    'square.html': {key:'square', title:'精神广场', subtitle:'匿名说点真话，也听听别人的今天'},
+    'rooms.html': {key:'rooms', title:'学术研讨', subtitle:'一本正经地研究不太正经的问题'},
+    'bird.html': {key:'bird', title:'观鸟台', subtitle:'看看研究所里此刻发生了什么'},
+    'echo.html': {key:'echo', title:'回声', subtitle:'评论、回复和互动都在这里'},
+    'buddy.html': {key:'buddy', title:'搭子', subtitle:'左边选人，右边直接聊天'},
+    'archive.html': {key:'archive', title:'废话档案', subtitle:'翻一翻被留下来的研究记录'},
+    'rules.html': {key:'more', title:'入馆须知', subtitle:'匿名不等于没有边界'}
+  };
+
+  var NAV = [
+    {key:'square', href:'square.html', label:'精神广场', icon:'bubble'},
+    {key:'rooms', href:'rooms.html', label:'学术研讨', icon:'flask'},
+    {key:'bird', href:'bird.html', label:'观鸟台', icon:'eye'},
+    {key:'echo', href:'echo.html', label:'回声', icon:'bell', badge:'echo'},
+    {key:'buddy', href:'buddy.html', label:'搭子', icon:'users', badge:'buddy'},
+    {key:'archive', href:'archive.html', label:'档案', icon:'archive'}
+  ];
+
+  var ICONS = {
+    bubble:'<path d="M5 6.5h14v9H9l-4 3v-12Z"/><path d="M9 10h6M9 13h4"/>',
+    flask:'<path d="M9 3h6M10 3v5l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M8 14h8"/>',
+    eye:'<path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.5"/>',
+    bell:'<path d="M6 17h12l-1.5-2.5V10a4.5 4.5 0 0 0-9 0v4.5L6 17Z"/><path d="M10 20h4"/>',
+    users:'<circle cx="9" cy="8" r="3"/><path d="M3.5 19v-2a5.5 5.5 0 0 1 11 0v2M16 6.5a3 3 0 0 1 0 5.8M17 14a5 5 0 0 1 3.5 4.8"/>',
+    archive:'<path d="M4 6h16v14H4zM3 3h18v4H3z"/><path d="M9 11h6"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    more:'<circle cx="6" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="18" cy="12" r="1"/>'
+  };
+
+  function icon(name){
+    return '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + ICONS[name] + '</svg>';
+  }
+
+  function pageName(){
+    return (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+  }
+
+  function currentRoute(){
+    return ROUTES[pageName()] || {key:'more', title:'F.w 研究所', subtitle:'低功耗匿名交流区'};
+  }
+
+  function buildShell(){
+    if(document.querySelector('[data-fw-desktop-sidebar]')) return;
+    var route = currentRoute();
+    document.documentElement.classList.add('fw-desktop-app', 'fw-route-' + route.key);
+    document.body.classList.add('fw-desktop-body');
+
+    var aside = document.createElement('aside');
+    aside.className = 'fw-desktop-sidebar';
+    aside.dataset.fwDesktopSidebar = '1';
+    aside.innerHTML =
+      '<a class="fw-desktop-brand" href="square.html" aria-label="F.w 研究所"><span>F.w</span><small>研究所</small></a>' +
+      '<button class="fw-desktop-compose" type="button" data-fw-desktop-compose title="发牢骚">' + icon('plus') + '<span>发牢骚</span></button>' +
+      '<nav class="fw-desktop-nav" aria-label="软件主导航">' + NAV.map(function(item){
+        return '<a class="fw-desktop-nav-item' + (route.key === item.key ? ' active' : '') + '" href="' + item.href + '" data-fw-desktop-nav="' + item.key + '" title="' + item.label + '">' +
+          icon(item.icon) + '<span>' + item.label + '</span>' + (item.badge ? '<b data-fw-desktop-badge="' + item.badge + '"></b>' : '') + '</a>';
+      }).join('') + '</nav>' +
+      '<a class="fw-desktop-nav-item fw-desktop-more' + (route.key === 'more' ? ' active' : '') + '" href="rules.html" title="更多">' + icon('more') + '<span>更多</span></a>';
+    document.body.appendChild(aside);
+
+    var header = document.querySelector('.header');
+    if(header && !header.querySelector('[data-fw-desktop-title]')){
+      var title = document.createElement('div');
+      title.className = 'fw-desktop-page-title';
+      title.dataset.fwDesktopTitle = '1';
+      title.innerHTML = '<strong>' + route.title + '</strong><span>' + route.subtitle + '</span>';
+      header.prepend(title);
+    }
+  }
+
+  function openComposer(){
+    if(pageName() !== 'square.html'){
+      location.href = 'square.html?compose=1';
+      return;
+    }
+    var form = document.querySelector('[data-post-form]');
+    var field = form && form.querySelector('textarea');
+    if(!form || !field) return;
+    form.classList.add('fw-desktop-compose-open');
+    form.scrollIntoView({behavior:'smooth', block:'center'});
+    setTimeout(function(){ field.focus(); }, 220);
+  }
+
+  function setupComposer(){
+    var form = document.querySelector('[data-post-form]');
+    if(!form) return;
+    var field = form.querySelector('textarea');
+    if(!field) return;
+    form.classList.add('fw-desktop-compose-ready');
+    field.addEventListener('focus', function(){ form.classList.add('fw-desktop-compose-open'); });
+    field.addEventListener('input', function(){
+      form.classList.toggle('fw-desktop-compose-open', Boolean(field.value.trim()) || document.activeElement === field);
+    });
+    if(new URLSearchParams(location.search).get('compose') === '1') setTimeout(openComposer, 180);
+  }
+
+  function openDedicatedSocialPage(kind){
+    var attempts = 0;
+    function tryOpen(){
+      attempts += 1;
+      if(kind === 'echo' && typeof window.fwOpenStableEcho === 'function'){
+        window.fwOpenStableEcho();
+        return;
+      }
+      if(kind === 'buddy' && window.FWMobileActions && typeof window.FWMobileActions.openBuddy === 'function'){
+        window.FWMobileActions.openBuddy();
+        return;
+      }
+      if(attempts < 100) setTimeout(tryOpen, 100);
+    }
+    setTimeout(tryOpen, 60);
+  }
+
+  function syncBadges(){
+    ['echo','buddy'].forEach(function(kind){
+      var target = document.querySelector('[data-fw-desktop-badge="' + kind + '"]');
+      if(!target) return;
+      var source = document.querySelector('[data-fw-open-' + kind + '] .fw-top-badge, [data-fw-open-' + kind + '].fw-has-badge .fw-top-badge');
+      var visible = source && (source.classList.contains('show') || source.parentElement.classList.contains('show') || source.parentElement.classList.contains('fw-has-badge'));
+      var value = source ? (source.textContent || '').trim() : '';
+      target.textContent = value && value !== '0' ? value : '';
+      target.classList.toggle('show', Boolean(visible && value !== '0'));
+    });
+  }
+
+  function bind(){
+    document.addEventListener('click', function(e){
+      var compose = e.target.closest('[data-fw-desktop-compose]');
+      if(compose){ e.preventDefault(); openComposer(); return; }
+      var current = e.target.closest('.fw-desktop-nav-item.active');
+      if(current && current.getAttribute('href') === pageName()){
+        e.preventDefault();
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
+    });
+
+    document.addEventListener('keydown', function(e){
+      var typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement && document.activeElement.tagName || '');
+      if(!typing && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'n'){
+        e.preventDefault(); openComposer();
+      }
+      if(e.ctrlKey && !e.shiftKey && !e.altKey){
+        var href = {'1':'square.html','2':'echo.html','3':'buddy.html'}[e.key];
+        if(href){ e.preventDefault(); location.href = href; }
+      }
+    });
+
+    var observer = new MutationObserver(function(){ syncBadges(); });
+    observer.observe(document.body, {subtree:true, childList:true, attributes:true, characterData:true, attributeFilter:['class']});
+    setInterval(syncBadges, 12000);
+  }
+
+  function boot(){
+    if(pageName() === 'index.html'){
+      location.replace('square.html');
+      return;
+    }
+    buildShell();
+    setupComposer();
+    bind();
+    syncBadges();
+    if(pageName() === 'echo.html') openDedicatedSocialPage('echo');
+    if(pageName() === 'buddy.html') openDedicatedSocialPage('buddy');
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, {once:true});
+  else boot();
+})();

@@ -10,6 +10,9 @@ on:
       - 'package-lock.json'
       - 'assets/icons/**'
       - 'assets/fw-download-client.js'
+      - 'assets/fw-desktop-client.js'
+      - 'assets/fw-desktop-client.css'
+      - 'assets/app.js'
       - 'tests/desktop-app-static.mjs'
       - '.github/workflows/build-windows-app.yml'
   workflow_dispatch:
@@ -60,19 +63,19 @@ jobs:
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $metadata = @{
             available = $true
-            version = '1.0.0'
+            version = '1.0.1'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = (Get-Date).ToUniversalTime().ToString('o')
             sha256 = $hash
-            notes = 'F.w 研究所 Windows 客户端首个测试版。'
+            notes = 'Windows 社交客户端版式：启动直达精神广场，新增固定导航，并将回声、搭子和私聊改为整页布局。'
           }
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.0.0
+          name: fw-lab-windows-1.0.1
           path: |
             download/fw-lab-windows-latest.exe
             download/windows-version.json
