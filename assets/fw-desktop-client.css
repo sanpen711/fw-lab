@@ -161,17 +161,6 @@ html.fw-desktop-app .header .fw-userbar{
   margin-left:auto!important;
 }
 
-.fw-desktop-page-title{
-  min-width:0;
-  margin-right:auto;
-  display:flex;
-  align-items:baseline;
-  gap:14px;
-  color:var(--fw-desktop-ink);
-}
-.fw-desktop-page-title strong{font-size:22px;font-weight:1000;letter-spacing:-.04em;white-space:nowrap;}
-.fw-desktop-page-title span{overflow:hidden;color:var(--fw-desktop-muted);font-size:12px;font-weight:800;text-overflow:ellipsis;white-space:nowrap;}
-
 html.fw-desktop-app .footer{display:none!important;}
 
 /* 精神广场：首屏直接进入发帖与信息流 */
@@ -350,7 +339,6 @@ html.fw-desktop-app:not(.fw-route-square):not(.fw-route-echo):not(.fw-route-budd
   .fw-desktop-compose{min-height:48px;border-radius:14px!important;}
   .fw-desktop-nav-item{min-height:48px;}
   .fw-desktop-nav-item b{right:2px;top:2px;}
-  .fw-desktop-page-title span{display:none;}
   html.fw-desktop-app.fw-route-buddy .fw-wx-modal,
   html.fw-desktop-app.fw-route-echo .fw-stable-echo-modal{padding:16px!important;}
   html.fw-desktop-app.fw-route-buddy .fw-wx-shell{grid-template-columns:270px minmax(0,1fr)!important;}
