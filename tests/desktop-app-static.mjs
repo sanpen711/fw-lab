@@ -12,20 +12,30 @@ assert.equal(config.identifier, 'com.fwyanjiusuo.desktop');
 assert.equal(config.build.frontendDist, 'https://fwyanjiusuo.com/');
 assert.deepEqual(config.bundle.targets, ['nsis']);
 assert.equal(config.bundle.windows.nsis.installMode, 'currentUser');
-assert.equal(config.version, '1.0.2');
+assert.equal(config.version, '1.0.3');
 assert.equal(config.app.windows[0].url, 'https://fwyanjiusuo.com/square.html');
-assert.match(config.app.windows[0].userAgent, /FWYanjiusuoDesktop\/1\.0\.2/);
+assert.match(config.app.windows[0].userAgent, /FWYanjiusuoDesktop\/1\.0\.3/);
 assert.equal(config.app.windows[0].minWidth, 760);
 assert.equal(config.app.windows[0].minHeight, 560);
+assert.equal(config.bundle.createUpdaterArtifacts, true);
+assert.match(config.plugins.updater.endpoints[0], /download\/windows-updater\.json$/);
+assert.equal(config.plugins.updater.windows.installMode, 'passive');
+assert.ok(config.plugins.updater.pubkey.length > 80);
 
 const cargo = read('src-tauri/Cargo.toml');
 assert.match(cargo, /tauri-plugin-single-instance/);
 assert.match(cargo, /tauri-plugin-window-state/);
+assert.match(cargo, /tauri-plugin-dialog/);
+assert.match(cargo, /tauri-plugin-updater/);
 
 const main = read('src-tauri/src/main.rs');
 assert.match(main, /get_webview_window\("main"\)/);
 assert.match(main, /window\.unminimize\(\)/);
 assert.match(main, /window\.set_focus\(\)/);
+assert.match(main, /check_for_updates/);
+assert.match(main, /download_and_install/);
+assert.match(main, /app\.restart\(\)/);
+assert.match(main, /账号、缓存和浏览位置都会保留/);
 
 const downloadClient = read('assets/fw-download-client.js');
 assert.match(downloadClient, /FWYanjiusuoDesktop/);
@@ -35,6 +45,7 @@ const appLoader = read('assets/app.js');
 assert.match(appLoader, /isWindowsDesktopApp = \/FWYanjiusuoDesktop/);
 assert.match(appLoader, /assets\/fw-desktop-client\.css/);
 assert.match(appLoader, /assets\/fw-desktop-client\.js/);
+assert.match(appLoader, /windows-auto-update-20260810-1/);
 
 const desktopClient = read('assets/fw-desktop-client.js');
 assert.match(desktopClient, /fw-desktop-sidebar/);
@@ -46,6 +57,9 @@ assert.match(desktopClient, /fw:desktop:scroll:/);
 assert.match(desktopClient, /rel = 'prefetch'/);
 assert.doesNotMatch(desktopClient, /observer\.observe\(document\.body/);
 assert.doesNotMatch(desktopClient, /fw-desktop-page-title|data-fw-desktop-title/);
+assert.match(desktopClient, /checkLegacyUpdater/);
+assert.match(desktopClient, /fw-lab-windows-latest\.exe/);
+assert.match(desktopClient, /不需要卸载/);
 
 const desktopCss = read('assets/fw-desktop-client.css');
 assert.match(desktopCss, /--fw-desktop-rail/);
@@ -71,6 +85,13 @@ const workflow = read('.github/workflows/build-windows-app.yml');
 assert.match(workflow, /windows-latest/);
 assert.match(workflow, /npm run desktop:build/);
 assert.match(workflow, /fw-lab-windows-latest\.exe/);
-assert.match(workflow, /fw-lab-windows-1\.0\.2/);
+assert.match(workflow, /TAURI_SIGNING_PRIVATE_KEY/);
+assert.match(workflow, /fw-lab-windows-1\.0\.3/);
+assert.match(workflow, /fw-lab-windows-update\.nsis\.zip/);
+assert.match(workflow, /windows-updater\.json/);
+
+const pagesWorkflow = read('.github/workflows/pages.yml');
+assert.match(pagesWorkflow, /workflow_run:/);
+assert.match(pagesWorkflow, /Build Windows App/);
 
 console.log('desktop app static checks passed');
