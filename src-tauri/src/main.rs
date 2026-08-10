@@ -13,7 +13,7 @@ fn show_update_error(app: &AppHandle) {
         .message("更新没有安装成功，当前版本不会受到影响。请稍后重新打开软件再试。")
         .title("F.w 研究所更新")
         .kind(MessageDialogKind::Error)
-        .buttons(MessageDialogButtons::OkCustom("知道了"))
+        .buttons(MessageDialogButtons::OkCustom("知道了".to_owned()))
         .show(|_| {});
 }
 
@@ -57,7 +57,10 @@ fn check_for_updates(app: AppHandle) {
                 ))
                 .title("F.w 研究所更新")
                 .kind(MessageDialogKind::Info)
-                .buttons(MessageDialogButtons::OkCancelCustom("立即更新", "稍后"))
+                .buttons(MessageDialogButtons::OkCancelCustom(
+                    "立即更新".to_owned(),
+                    "稍后".to_owned(),
+                ))
                 .show(move |confirmed| {
                     if confirmed {
                         install_latest_update(install_app);
