@@ -49,6 +49,17 @@ export default defineConfig({
         locale: 'zh-CN',
         timezoneId: 'Asia/Shanghai'
       }
+    },
+    {
+      name: 'windows-client-chromium',
+      testMatch: /.*desktop-app-shell\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        userAgent: `${devices['Desktop Chrome'].userAgent} FWYanjiusuoDesktop/1.0.2`,
+        viewport: { width: 1280, height: 820 },
+        locale: 'zh-CN',
+        timezoneId: 'Asia/Shanghai'
+      }
     }
   ],
   webServer: process.env.FW_SKIP_WEBSERVER

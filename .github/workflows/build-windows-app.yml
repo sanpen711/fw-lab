@@ -63,19 +63,19 @@ jobs:
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $metadata = @{
             available = $true
-            version = '1.0.1'
+            version = '1.0.2'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = (Get-Date).ToUniversalTime().ToString('o')
             sha256 = $hash
-            notes = 'Windows 社交客户端版式：启动直达精神广场，新增固定导航，并将回声、搭子和私聊改为整页布局。'
+            notes = 'Windows 体验优化：减少聊天重绘和重复脚本，保留浏览位置，加入失败重试，并压缩桌面版式。'
           }
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.0.1
+          name: fw-lab-windows-1.0.2
           path: |
             download/fw-lab-windows-latest.exe
             download/windows-version.json

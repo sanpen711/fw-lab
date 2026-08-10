@@ -12,9 +12,11 @@ assert.equal(config.identifier, 'com.fwyanjiusuo.desktop');
 assert.equal(config.build.frontendDist, 'https://fwyanjiusuo.com/');
 assert.deepEqual(config.bundle.targets, ['nsis']);
 assert.equal(config.bundle.windows.nsis.installMode, 'currentUser');
-assert.equal(config.version, '1.0.1');
+assert.equal(config.version, '1.0.2');
 assert.equal(config.app.windows[0].url, 'https://fwyanjiusuo.com/square.html');
-assert.match(config.app.windows[0].userAgent, /FWYanjiusuoDesktop\/1\.0\.1/);
+assert.match(config.app.windows[0].userAgent, /FWYanjiusuoDesktop\/1\.0\.2/);
+assert.equal(config.app.windows[0].minWidth, 760);
+assert.equal(config.app.windows[0].minHeight, 560);
 
 const cargo = read('src-tauri/Cargo.toml');
 assert.match(cargo, /tauri-plugin-single-instance/);
@@ -40,6 +42,9 @@ assert.match(desktopClient, /square\.html\?compose=1/);
 assert.match(desktopClient, /fwOpenStableEcho/);
 assert.match(desktopClient, /FWMobileActions\.openBuddy/);
 assert.match(desktopClient, /location\.replace\('square\.html'\)/);
+assert.match(desktopClient, /fw:desktop:scroll:/);
+assert.match(desktopClient, /rel = 'prefetch'/);
+assert.doesNotMatch(desktopClient, /observer\.observe\(document\.body/);
 assert.doesNotMatch(desktopClient, /fw-desktop-page-title|data-fw-desktop-title/);
 
 const desktopCss = read('assets/fw-desktop-client.css');
@@ -47,12 +52,25 @@ assert.match(desktopCss, /--fw-desktop-rail/);
 assert.match(desktopCss, /fw-route-echo \.fw-stable-echo-modal/);
 assert.match(desktopCss, /fw-route-buddy \.fw-wx-shell/);
 assert.match(desktopCss, /grid-template-columns:330px minmax\(0,1fr\)/);
+assert.match(desktopCss, /fw-desktop-account/);
+assert.match(desktopCss, /fw-route-rooms \.polls-hero/);
+assert.match(desktopCss, /fw-route-bird \.bird-hero/);
 assert.doesNotMatch(desktopCss, /\.fw-desktop-page-title/);
+
+const buddy = read('assets/fw-buddy-wechat.js');
+assert.match(buddy, /lastMessageSignature/);
+assert.match(buddy, /data-fw-wx-retry-chat/);
+assert.match(buddy, /\}, 6000\)/);
+assert.doesNotMatch(buddy, /\}, 4500\)/);
+
+const stableCore = read('assets/fw-stable-core.js');
+assert.match(stableCore, /isDedicatedDesktopEcho \|\| isDedicatedDesktopBuddy/);
+assert.match(stableCore, /data-fw-stable-refresh>重新加载/);
 
 const workflow = read('.github/workflows/build-windows-app.yml');
 assert.match(workflow, /windows-latest/);
 assert.match(workflow, /npm run desktop:build/);
 assert.match(workflow, /fw-lab-windows-latest\.exe/);
-assert.match(workflow, /fw-lab-windows-1\.0\.1/);
+assert.match(workflow, /fw-lab-windows-1\.0\.2/);
 
 console.log('desktop app static checks passed');
