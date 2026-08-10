@@ -40,12 +40,14 @@ assert.match(desktopClient, /square\.html\?compose=1/);
 assert.match(desktopClient, /fwOpenStableEcho/);
 assert.match(desktopClient, /FWMobileActions\.openBuddy/);
 assert.match(desktopClient, /location\.replace\('square\.html'\)/);
+assert.doesNotMatch(desktopClient, /fw-desktop-page-title|data-fw-desktop-title/);
 
 const desktopCss = read('assets/fw-desktop-client.css');
 assert.match(desktopCss, /--fw-desktop-rail/);
 assert.match(desktopCss, /fw-route-echo \.fw-stable-echo-modal/);
 assert.match(desktopCss, /fw-route-buddy \.fw-wx-shell/);
 assert.match(desktopCss, /grid-template-columns:330px minmax\(0,1fr\)/);
+assert.doesNotMatch(desktopCss, /\.fw-desktop-page-title/);
 
 const workflow = read('.github/workflows/build-windows-app.yml');
 assert.match(workflow, /windows-latest/);
