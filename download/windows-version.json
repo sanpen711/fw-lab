@@ -1,9 +1,9 @@
 {
+  "notes": "新增软件内更新：以后可直接检查、下载、覆盖安装并自动重启，保留账号、缓存、窗口和浏览位置。",
   "available": true,
-  "version": "1.0.2",
-  "platform": "Windows 10/11 64 位",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "publishedAt": "2026-08-10T07:23:48.7513408Z",
-  "sha256": "f5ffe4a02c7bf6a9e2345445ffef30aef99a0c8edfe9e6835eca2daa6ed56477",
-  "notes": "Windows 体验优化：减少聊天重绘和重复脚本，保留浏览位置，加入失败重试，并压缩桌面版式。"
+  "sha256": "b2eb5c8bd9d3641026fe3a0f6777077895534fe93cee64eb65197f7aecf619a9",
+  "platform": "Windows 10/11 64 位",
+  "publishedAt": "2026-08-10T09:04:24.3136588Z",
+  "version": "1.0.3"
 }
