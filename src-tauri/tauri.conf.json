@@ -30,9 +30,13 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "createUpdaterArtifacts": true,
-    "icon": ["icons/icon.ico"],
+    "icon": [
+      "icons/icon.ico"
+    ],
     "publisher": "F.w 研究所",
     "copyright": "Copyright © 2026 F.w 研究所",
     "shortDescription": "F.w 研究所 Windows 客户端",
@@ -40,7 +44,9 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "languages": ["SimpChinese"],
+        "languages": [
+          "SimpChinese"
+        ],
         "displayLanguageSelector": false,
         "installerIcon": "icons/icon.ico",
         "startMenuFolder": "F.w 研究所"
@@ -49,7 +55,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEFGMUE2MTkwRkQ2NkYzMkEKUldRcTgyYjlrR0Vhcng2RjErZE9JK2QvRldaSy80ZmdrUFpSdDNvM1NjUlI1Zlc2NDB1N0IwMWQK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY1OEQxM0UwQjkwNjhEMkUKUldRdWpRYTU0Qk9OWlJHNTNKcVhiVDdjNzM3eHI2eDlkQ0RYN01FZENlMFcrcW1CandOZU1qbjgK",
       "endpoints": [
         "https://fwyanjiusuo.com/download/windows-updater.json"
       ],
