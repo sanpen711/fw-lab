@@ -7,7 +7,7 @@
     if(window.__FW_DOWNLOAD_CLIENT_MODAL__) return;
     if(document.querySelector('script[data-fw-download-client-script]')) return;
     var script = document.createElement('script');
-    script.src = 'assets/fw-download-client.js?v=download-client-20260804-1';
+    script.src = 'assets/fw-download-client.js?v=download-client-20260810-1';
     script.async = false;
     script.setAttribute('data-fw-download-client-script', '1');
     document.body.appendChild(script);

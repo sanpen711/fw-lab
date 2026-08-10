@@ -1,15 +1,19 @@
 {
-  "name": "fw-lab-mobile-pwa-tests",
+  "name": "fw-lab",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "test:static": "node tests/mobile-performance-static.mjs && node tests/desktop-echo-route-static.mjs && node tests/comment-reply-echo-static.mjs && node tests/echo-open-auto-read-static.mjs",
+    "test:desktop-app": "node tests/desktop-app-static.mjs",
     "test": "playwright test",
     "test:mobile": "playwright test --project=mobile-chromium-pwa",
-    "test:desktop": "playwright test --project=desktop-chromium"
+    "test:desktop": "playwright test --project=desktop-chromium",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build --bundles nsis"
   },
   "devDependencies": {
     "@playwright/test": "^1.53.0",
+    "@tauri-apps/cli": "2.11.4",
     "http-server": "^14.1.1"
   }
 }
