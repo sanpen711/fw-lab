@@ -45,4 +45,18 @@ test.describe('Windows 客户端专用外壳', () => {
     });
     await expect(page.locator('[data-fw-stable-echo-modal]')).toHaveClass(/show/);
   });
+
+  test('1.0.2 过渡升级通过系统 Edge 打开安装包', async ({ page }) => {
+    await page.goto('/square.html', { waitUntil: 'domcontentloaded' });
+    const updater = page.locator('[data-fw-legacy-updater]');
+    await expect(updater).toBeVisible();
+
+    const download = updater.locator('[data-fw-legacy-download]');
+    await expect(download).toHaveAttribute(
+      'href',
+      'microsoft-edge:https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
+    );
+    await expect(download).not.toHaveAttribute('download', /.*/);
+    await expect(updater.locator('[data-fw-legacy-update-status]')).toContainText('Microsoft Edge');
+  });
 });

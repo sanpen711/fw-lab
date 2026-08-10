@@ -446,7 +446,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if(isWindowsDesktopApp){
     loadCss("assets/fw-desktop-client.css?v=windows-client-20260810-3");
-    loadJs("assets/fw-desktop-client.js?v=windows-auto-update-20260810-1");
+    loadJs("assets/fw-desktop-client.js?v=windows-auto-update-20260810-2");
   }
 
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
