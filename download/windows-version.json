@@ -1,9 +1,9 @@
 {
-  "available": false,
-  "version": "1.0.0",
-  "platform": "Windows 10/11 64 位",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "publishedAt": null,
-  "sha256": null,
-  "notes": "F.w 研究所 Windows 客户端首个测试版。"
+  "platform": "Windows 10/11 64 位",
+  "version": "1.0.0",
+  "notes": "F.w 研究所 Windows 客户端首个测试版。",
+  "publishedAt": "2026-08-10T05:54:03.5097275Z",
+  "sha256": "56c0ac882ae6c68ba348d633e02d87bd99975f891111cbf3b2e23a732c2408bd",
+  "available": true
 }
