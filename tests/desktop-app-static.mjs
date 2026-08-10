@@ -45,7 +45,7 @@ const appLoader = read('assets/app.js');
 assert.match(appLoader, /isWindowsDesktopApp = \/FWYanjiusuoDesktop/);
 assert.match(appLoader, /assets\/fw-desktop-client\.css/);
 assert.match(appLoader, /assets\/fw-desktop-client\.js/);
-assert.match(appLoader, /windows-auto-update-20260810-1/);
+assert.match(appLoader, /windows-auto-update-20260810-2/);
 
 const desktopClient = read('assets/fw-desktop-client.js');
 assert.match(desktopClient, /fw-desktop-sidebar/);
@@ -59,6 +59,8 @@ assert.doesNotMatch(desktopClient, /observer\.observe\(document\.body/);
 assert.doesNotMatch(desktopClient, /fw-desktop-page-title|data-fw-desktop-title/);
 assert.match(desktopClient, /checkLegacyUpdater/);
 assert.match(desktopClient, /fw-lab-windows-latest\.exe/);
+assert.match(desktopClient, /microsoft-edge:/);
+assert.doesNotMatch(desktopClient, /data-fw-legacy-download download/);
 assert.match(desktopClient, /不需要卸载/);
 
 const desktopCss = read('assets/fw-desktop-client.css');

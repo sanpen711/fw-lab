@@ -203,6 +203,7 @@
       '.fw-legacy-updater{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:24px;background:rgba(11,22,18,.58);backdrop-filter:blur(4px)}' +
       '.fw-legacy-update-card{width:min(460px,calc(100vw - 48px));padding:28px;border:1px solid rgba(17,56,44,.16);border-radius:22px;background:#fffaf0;box-shadow:0 24px 70px rgba(4,24,18,.28);color:#15372c}' +
       '.fw-legacy-update-card h2{margin:0 0 10px;font-size:24px}.fw-legacy-update-card p{margin:0 0 18px;line-height:1.75;color:#52665f}' +
+      '.fw-legacy-update-card .fw-legacy-update-note{margin-top:-8px;font-size:13px;color:#687a73}' +
       '.fw-legacy-update-actions{display:flex;gap:10px;justify-content:flex-end}.fw-legacy-update-actions a,.fw-legacy-update-actions button{min-height:42px;padding:0 18px;border-radius:999px;font:inherit;font-weight:700;cursor:pointer}' +
       '.fw-legacy-update-actions a{display:inline-flex;align-items:center;text-decoration:none;background:#153f33;color:#fff}.fw-legacy-update-actions button{border:1px solid #c8d2cc;background:transparent;color:#42564f}';
     document.head.appendChild(style);
@@ -217,12 +218,17 @@
       '<section class="fw-legacy-update-card">' +
         '<h2 id="fw-legacy-update-title">软件更新已准备好</h2>' +
         '<p>版本 <strong data-fw-legacy-version></strong> 开始支持软件内自动更新。这一次点击下载安装包后直接运行即可覆盖升级，不需要卸载，账号、缓存和浏览位置都会保留。</p>' +
-        '<div class="fw-legacy-update-actions"><button type="button" data-fw-legacy-later>稍后</button><a data-fw-legacy-download download>下载并升级</a></div>' +
+        '<p class="fw-legacy-update-note" data-fw-legacy-update-status>点击“下载并升级”后会打开 Microsoft Edge 下载；这是旧版本最后一次借助浏览器更新。</p>' +
+        '<div class="fw-legacy-update-actions"><button type="button" data-fw-legacy-later>稍后</button><a data-fw-legacy-download>下载并升级</a></div>' +
       '</section>';
     layer.querySelector('[data-fw-legacy-version]').textContent = release.version;
     var download = layer.querySelector('[data-fw-legacy-download]');
-    download.href = release.downloadUrl || 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe';
-    download.addEventListener('click', saveScroll);
+    var downloadUrl = release.downloadUrl || 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe';
+    download.href = 'microsoft-edge:' + downloadUrl;
+    download.addEventListener('click', function(){
+      saveScroll();
+      layer.querySelector('[data-fw-legacy-update-status]').textContent = '正在打开 Microsoft Edge 下载。如果系统询问是否打开，请选择“允许”。下载完成后直接运行安装包即可。';
+    });
     layer.querySelector('[data-fw-legacy-later]').addEventListener('click', function(){
       try{ sessionStorage.setItem('fw:desktop:update-later:' + release.version, '1'); }catch(e){}
       layer.remove();
