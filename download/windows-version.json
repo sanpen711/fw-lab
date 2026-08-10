@@ -1,9 +1,9 @@
 {
+  "notes": "Windows 社交客户端版式：启动直达精神广场，新增固定导航，并将回声、搭子和私聊改为整页布局。",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "available": true,
+  "sha256": "f413a7bbea89f4979895c2c06bf1e37f7cee24903a13c42134c52b0f137e31f7",
   "platform": "Windows 10/11 64 位",
-  "version": "1.0.0",
-  "notes": "F.w 研究所 Windows 客户端首个测试版。",
-  "publishedAt": "2026-08-10T05:54:03.5097275Z",
-  "sha256": "56c0ac882ae6c68ba348d633e02d87bd99975f891111cbf3b2e23a732c2408bd",
-  "available": true
+  "version": "1.0.1",
+  "publishedAt": "2026-08-10T06:29:43.3523095Z"
 }
