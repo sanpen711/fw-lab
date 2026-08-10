@@ -30,6 +30,6 @@ assert.ok(socialOpen.indexOf('body.innerHTML = toolbar') < socialOpen.indexOf('a
 assert.match(socialOpen, /if\(unreadIds\.length\) await markEchoRead\(unreadIds\)/, '电脑社交面板打开后应自动清除当前未读');
 
 assert.match(appIndex, /echo\.js\?v=echo-auto-read-20260808-1/, '手机端 echo.js 应刷新缓存版本');
-assert.match(serviceWorker, /fw-mobile-app-pwa-echo-auto-read-20260808-1/, 'PWA 缓存名应刷新');
+assert.match(serviceWorker, /fw-mobile-app-pwa-windows-download-20260810-1/, 'PWA 缓存名应刷新');
 
 console.log('echo open auto-read checks passed');

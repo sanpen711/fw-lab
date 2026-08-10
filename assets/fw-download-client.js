@@ -17,8 +17,12 @@
     return /FWYanjiusuoAndroid\//i.test(navigator.userAgent || '');
   }
 
+  function isWindowsClient(){
+    return /FWYanjiusuoDesktop\//i.test(navigator.userAgent || '');
+  }
+
   function shouldHideDownloadClient(){
-    return isStandalone() || isAndroidClient();
+    return isStandalone() || isAndroidClient() || isWindowsClient();
   }
 
   function getDeviceType(){
@@ -40,7 +44,8 @@
 
   var SITE_BASE = getSiteBase();
   var DOWNLOADS = {
-    windows: SITE_BASE + 'downloads/fw-lab-windows.exe',
+    windows: SITE_BASE + 'download/fw-lab-windows-latest.exe',
+    windowsVersion: SITE_BASE + 'download/windows-version.json',
     android: SITE_BASE + 'download/fw-lab-android-latest.apk'
   };
 
@@ -66,6 +71,7 @@
       '.fw-download-card p{margin:0;color:rgba(246,246,240,.78);font-size:14px;line-height:1.55;font-weight:700}',
       '.fw-download-card .fw-download-spacer{flex:1}',
       '.fw-download-file{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 16px;border-radius:999px;background:#f6f6f0;color:#10170f;text-decoration:none;font-weight:1000;font-size:14px}',
+      '.fw-download-file[aria-disabled="true"]{cursor:wait;opacity:.56;pointer-events:none}',
       '.fw-download-ios-note{margin-top:auto;padding:12px 13px;border-radius:16px;background:rgba(246,246,240,.08);color:rgba(246,246,240,.86);font-size:14px;line-height:1.55;font-weight:850}',
       'body.fw-download-modal-open{overflow:hidden}',
       '@media(max-width:760px){.fw-download-modal{align-items:flex-end;padding:12px}.fw-download-panel{max-height:86vh;border-radius:24px}.fw-download-head{padding:19px 18px 8px}.fw-download-head h2{font-size:19px}.fw-download-list{grid-template-columns:1fr;padding:12px 18px 18px}.fw-download-card{min-height:auto}.nav-secondary .fw-download-client-btn{margin-left:0;margin-top:8px}}'
@@ -104,12 +110,36 @@
 
   function cardHtml(type, current){
     if(type === 'windows'){
-      return '<section class="fw-download-card' + (current ? ' is-current' : '') + '"><h3>Windows</h3><p>适用于电脑端使用</p><span class="fw-download-spacer"></span><a class="fw-download-file" href="' + DOWNLOADS.windows + '" download>下载安装包</a></section>';
+      return '<section class="fw-download-card' + (current ? ' is-current' : '') + '"><h3>Windows</h3><p data-fw-windows-release>正在检查 Windows 版本…</p><span class="fw-download-spacer"></span><a class="fw-download-file" data-fw-windows-download href="' + DOWNLOADS.windows + '" aria-disabled="true" download>正在准备</a></section>';
     }
     if(type === 'ios'){
       return '<section class="fw-download-card' + (current ? ' is-current' : '') + '"><h3>IOS</h3><div class="fw-download-ios-note">使用 Safari 打开本站，点击底部分享按钮，选择“添加到主屏幕”。</div></section>';
     }
     return '<section class="fw-download-card' + (current ? ' is-current' : '') + '"><h3>Android</h3><p>适用于安卓手机</p><span class="fw-download-spacer"></span><a class="fw-download-file" href="' + DOWNLOADS.android + '" download>下载安装包</a></section>';
+  }
+
+  function updateWindowsRelease(modal){
+    var textNode = $('[data-fw-windows-release]', modal);
+    var link = $('[data-fw-windows-download]', modal);
+    if(!textNode || !link) return;
+
+    fetch(DOWNLOADS.windowsVersion + '?t=' + Date.now(), {cache:'no-store'})
+      .then(function(response){
+        if(!response.ok) throw new Error('Windows release metadata unavailable');
+        return response.json();
+      })
+      .then(function(release){
+        if(!release || !release.available) throw new Error('Windows release is not ready');
+        textNode.textContent = '版本 ' + release.version + ' · ' + (release.platform || 'Windows 10/11 64 位');
+        link.href = release.downloadUrl || DOWNLOADS.windows;
+        link.textContent = '下载安装包';
+        link.removeAttribute('aria-disabled');
+      })
+      .catch(function(){
+        textNode.textContent = 'Windows 版暂未发布，请稍后再试';
+        link.textContent = '暂不可下载';
+        link.setAttribute('aria-disabled', 'true');
+      });
   }
 
   function buildModal(){
@@ -135,6 +165,7 @@
     if(list){
       list.innerHTML = order.map(function(type){ return cardHtml(type, type === current); }).join('');
     }
+    updateWindowsRelease(modal);
     return modal;
   }
 

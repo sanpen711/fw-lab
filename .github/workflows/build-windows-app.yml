@@ -1,0 +1,94 @@
+name: Build Windows App
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src-tauri/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'assets/icons/**'
+      - 'assets/fw-download-client.js'
+      - 'tests/desktop-app-static.mjs'
+      - '.github/workflows/build-windows-app.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-app-release
+  cancel-in-progress: false
+
+jobs:
+  build-windows-app:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run desktop static checks
+        run: npm run test:desktop-app
+
+      - name: Build NSIS installer
+        run: npm run desktop:build
+
+      - name: Prepare website download
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
+          if (-not $installer) { throw 'Windows NSIS installer was not generated.' }
+          Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
+          $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
+          $metadata = @{
+            available = $true
+            version = '1.0.0'
+            platform = 'Windows 10/11 64 位'
+            downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
+            publishedAt = (Get-Date).ToUniversalTime().ToString('o')
+            sha256 = $hash
+            notes = 'F.w 研究所 Windows 客户端首个测试版。'
+          }
+          $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fw-lab-windows-1.0.0
+          path: |
+            download/fw-lab-windows-latest.exe
+            download/windows-version.json
+          if-no-files-found: error
+
+      - name: Publish installer to website
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git pull --rebase --autostash origin main
+          git add download/fw-lab-windows-latest.exe download/windows-version.json
+          if git diff --cached --quiet; then
+            echo "No Windows installer changes to commit."
+          else
+            git commit -m "Build latest Windows app"
+            git push origin HEAD:main
+          fi
