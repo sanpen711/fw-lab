@@ -87,7 +87,8 @@ assert.match(workflow, /npm run desktop:build/);
 assert.match(workflow, /fw-lab-windows-latest\.exe/);
 assert.match(workflow, /TAURI_SIGNING_PRIVATE_KEY/);
 assert.match(workflow, /fw-lab-windows-1\.0\.3/);
-assert.match(workflow, /fw-lab-windows-update\.nsis\.zip/);
+assert.match(workflow, /fw-lab-windows-latest\.exe\.sig/);
+assert.doesNotMatch(workflow, /\.nsis\.zip/);
 assert.match(workflow, /windows-updater\.json/);
 
 const pagesWorkflow = read('.github/workflows/pages.yml');
