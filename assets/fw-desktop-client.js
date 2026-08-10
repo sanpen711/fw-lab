@@ -68,14 +68,6 @@
       '<a class="fw-desktop-nav-item fw-desktop-more' + (route.key === 'more' ? ' active' : '') + '" href="rules.html" title="更多">' + icon('more') + '<span>更多</span></a>';
     document.body.appendChild(aside);
 
-    var header = document.querySelector('.header');
-    if(header && !header.querySelector('[data-fw-desktop-title]')){
-      var title = document.createElement('div');
-      title.className = 'fw-desktop-page-title';
-      title.dataset.fwDesktopTitle = '1';
-      title.innerHTML = '<strong>' + route.title + '</strong><span>' + route.subtitle + '</span>';
-      header.prepend(title);
-    }
   }
 
   function openComposer(){
