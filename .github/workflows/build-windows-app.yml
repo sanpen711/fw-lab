@@ -52,6 +52,8 @@ jobs:
         run: npm run test:desktop-app
 
       - name: Build NSIS installer
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: npm run desktop:build
 
       - name: Prepare website download
@@ -59,25 +61,46 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows NSIS installer was not generated.' }
+          $updaterBundle = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*.nsis.zip' | Select-Object -First 1
+          if (-not $updaterBundle) { throw 'Windows updater bundle was not generated.' }
+          $signatureFile = Get-Item "$($updaterBundle.FullName).sig" -ErrorAction SilentlyContinue
+          if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
           Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
+          Copy-Item $updaterBundle.FullName 'download/fw-lab-windows-update.nsis.zip' -Force
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
+          $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
+          $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
           $metadata = @{
             available = $true
-            version = '1.0.2'
+            version = '1.0.3'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
-            publishedAt = (Get-Date).ToUniversalTime().ToString('o')
+            publishedAt = $publishedAt
             sha256 = $hash
-            notes = 'Windows 体验优化：减少聊天重绘和重复脚本，保留浏览位置，加入失败重试，并压缩桌面版式。'
+            notes = '新增软件内更新：以后可直接检查、下载、覆盖安装并自动重启，保留账号、缓存、窗口和浏览位置。'
           }
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
+          $updaterMetadata = @{
+            version = '1.0.3'
+            notes = $metadata.notes
+            pub_date = $publishedAt
+            platforms = @{
+              'windows-x86_64' = @{
+                signature = $signature
+                url = 'https://fwyanjiusuo.com/download/fw-lab-windows-update.nsis.zip'
+              }
+            }
+          }
+          $updaterMetadata | ConvertTo-Json -Depth 5 | Set-Content 'download/windows-updater.json' -Encoding utf8
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.0.2
+          name: fw-lab-windows-1.0.3
           path: |
             download/fw-lab-windows-latest.exe
+            download/fw-lab-windows-update.nsis.zip
+            download/windows-updater.json
             download/windows-version.json
           if-no-files-found: error
 
@@ -88,7 +111,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
           git pull --rebase --autostash origin main
-          git add download/fw-lab-windows-latest.exe download/windows-version.json
+          git add download/fw-lab-windows-latest.exe download/fw-lab-windows-update.nsis.zip download/windows-updater.json download/windows-version.json
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else

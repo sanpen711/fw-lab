@@ -179,6 +179,70 @@
     if(banner) banner.classList.toggle('show', navigator.onLine === false);
   }
 
+  function desktopVersion(){
+    var match = (navigator.userAgent || '').match(/FWYanjiusuoDesktop\/([0-9]+(?:\.[0-9]+){1,3})/i);
+    return match ? match[1] : '';
+  }
+
+  function compareVersions(left, right){
+    var a = String(left || '').split('.').map(Number);
+    var b = String(right || '').split('.').map(Number);
+    for(var i = 0; i < Math.max(a.length, b.length); i += 1){
+      var partA = Number.isFinite(a[i]) ? a[i] : 0;
+      var partB = Number.isFinite(b[i]) ? b[i] : 0;
+      if(partA !== partB) return partA > partB ? 1 : -1;
+    }
+    return 0;
+  }
+
+  function showLegacyUpdater(release){
+    if(document.querySelector('[data-fw-legacy-updater]')) return;
+
+    var style = document.createElement('style');
+    style.textContent =
+      '.fw-legacy-updater{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:24px;background:rgba(11,22,18,.58);backdrop-filter:blur(4px)}' +
+      '.fw-legacy-update-card{width:min(460px,calc(100vw - 48px));padding:28px;border:1px solid rgba(17,56,44,.16);border-radius:22px;background:#fffaf0;box-shadow:0 24px 70px rgba(4,24,18,.28);color:#15372c}' +
+      '.fw-legacy-update-card h2{margin:0 0 10px;font-size:24px}.fw-legacy-update-card p{margin:0 0 18px;line-height:1.75;color:#52665f}' +
+      '.fw-legacy-update-actions{display:flex;gap:10px;justify-content:flex-end}.fw-legacy-update-actions a,.fw-legacy-update-actions button{min-height:42px;padding:0 18px;border-radius:999px;font:inherit;font-weight:700;cursor:pointer}' +
+      '.fw-legacy-update-actions a{display:inline-flex;align-items:center;text-decoration:none;background:#153f33;color:#fff}.fw-legacy-update-actions button{border:1px solid #c8d2cc;background:transparent;color:#42564f}';
+    document.head.appendChild(style);
+
+    var layer = document.createElement('div');
+    layer.className = 'fw-legacy-updater';
+    layer.dataset.fwLegacyUpdater = '1';
+    layer.setAttribute('role', 'dialog');
+    layer.setAttribute('aria-modal', 'true');
+    layer.setAttribute('aria-labelledby', 'fw-legacy-update-title');
+    layer.innerHTML =
+      '<section class="fw-legacy-update-card">' +
+        '<h2 id="fw-legacy-update-title">软件更新已准备好</h2>' +
+        '<p>版本 <strong data-fw-legacy-version></strong> 开始支持软件内自动更新。这一次点击下载安装包后直接运行即可覆盖升级，不需要卸载，账号、缓存和浏览位置都会保留。</p>' +
+        '<div class="fw-legacy-update-actions"><button type="button" data-fw-legacy-later>稍后</button><a data-fw-legacy-download download>下载并升级</a></div>' +
+      '</section>';
+    layer.querySelector('[data-fw-legacy-version]').textContent = release.version;
+    var download = layer.querySelector('[data-fw-legacy-download]');
+    download.href = release.downloadUrl || 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe';
+    download.addEventListener('click', saveScroll);
+    layer.querySelector('[data-fw-legacy-later]').addEventListener('click', function(){
+      try{ sessionStorage.setItem('fw:desktop:update-later:' + release.version, '1'); }catch(e){}
+      layer.remove();
+    });
+    document.body.appendChild(layer);
+  }
+
+  function checkLegacyUpdater(){
+    var current = desktopVersion();
+    if(!current || compareVersions(current, '1.0.3') >= 0) return;
+    fetch('download/windows-version.json?legacy-updater=' + Date.now(), {cache:'no-store'})
+      .then(function(response){ if(!response.ok) throw new Error('release unavailable'); return response.json(); })
+      .then(function(release){
+        if(!release || !release.available || compareVersions(release.version, current) <= 0) return;
+        try{ if(sessionStorage.getItem('fw:desktop:update-later:' + release.version) === '1') return; }catch(e){}
+        showLegacyUpdater(release);
+      })
+      .catch(function(){});
+  }
+
   function bind(){
     document.addEventListener('click', function(e){
       var compose = e.target.closest('[data-fw-desktop-compose]');
@@ -234,6 +298,7 @@
     syncConnection();
     restoreScroll();
     setTimeout(prefetchRoutes, 700);
+    setTimeout(checkLegacyUpdater, 1200);
     if(pageName() === 'echo.html') openDedicatedSocialPage('echo');
     if(pageName() === 'buddy.html') openDedicatedSocialPage('buddy');
   }
