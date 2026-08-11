@@ -443,17 +443,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const isBuddyPage = page === "buddy.html";
   const hasFeedSurface = Boolean(document.querySelector("[data-post-form], [data-feed]"));
   const isWindowsDesktopApp = /FWYanjiusuoDesktop\//i.test(navigator.userAgent || "");
+  const isDedicatedWindowsSocialPage = isWindowsDesktopApp && (isEchoPage || isBuddyPage);
 
   if(isWindowsDesktopApp){
-    loadCss("assets/fw-desktop-client.css?v=windows-client-20260810-3");
-    loadJs("assets/fw-desktop-client.js?v=windows-auto-update-20260810-2");
+    loadCss("assets/fw-desktop-client.css?v=windows-navigation-stable-20260811-1");
+    loadJs("assets/fw-desktop-client.js?v=windows-navigation-stable-20260811-1");
   }
 
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
 
   loadJs("assets/fw-comment-reply-echo.js?v=comment-reply-echo-20260808-1");
   if(!isWindowsDesktopApp || !isEchoPage) loadJs("assets/fw-echo-stable-route.js?v=echo-auto-read-20260808-1");
-  loadJs("assets/fw-social.js?v=echo-auto-read-20260808-1");
+  if(!isDedicatedWindowsSocialPage) loadJs("assets/fw-social.js?v=echo-auto-read-20260808-1");
   loadJs("assets/fw-logout-home-fix.js?v=logout-home-fix-20260513-1");
   loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
   if(isHome) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");

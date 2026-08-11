@@ -3,6 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <script>
+    (function(){
+      if(!/FWYanjiusuoDesktop\//i.test(navigator.userAgent || '')) return;
+      document.documentElement.classList.add('fw-desktop-preparing');
+      window.setTimeout(function(){
+        document.documentElement.classList.remove('fw-desktop-preparing');
+      }, 6000);
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/fw-desktop-client.css?v=windows-navigation-stable-20260811-1" />
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f172a">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -78,7 +88,7 @@
   <footer class="footer"><span>F.w 研究所</span><span>精神广场 / Public Wall · <a href="privacy.html">隐私政策</a></span></footer>
 </main>
 
-<script src="assets/app.js?v=windows-upgrade-click-20260810-1"></script>
+<script src="assets/app.js?v=windows-navigation-stable-20260811-1"></script>
 <script src="assets/auth.js?v=echo-clean-20260702-1"></script>
 <script src="assets/fw-load-posts-safe.js?v=desktop-performance-20260806-2"></script>
 <script src="assets/fw-square-ui-fix.js?v=desktop-performance-20260806-1"></script>

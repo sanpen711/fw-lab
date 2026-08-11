@@ -18,6 +18,18 @@ html.fw-desktop-app body{
   background:var(--fw-desktop-bg)!important;
 }
 
+/*
+  Windows WebView 会先绘制网页原始版式，再由桌面壳接管。
+  在壳层准备期间直接隐藏原始页面，避免切页时闪回上一页或露出网页导航。
+  该类只会由带 FwYanjiusuoDesktop User-Agent 的页面在 head 中添加。
+*/
+html.fw-desktop-preparing{
+  background:#eee9df!important;
+}
+html.fw-desktop-preparing body{
+  visibility:hidden!important;
+}
+
 html.fw-desktop-app body > .page{
   width:auto!important;
   min-height:100vh!important;
@@ -167,6 +179,15 @@ html.fw-desktop-app body.fw-desktop-navigating:after{
   animation:fwDesktopLoading .55s ease-out both;
 }
 @keyframes fwDesktopLoading{from{width:4%;opacity:.55}to{width:72%;opacity:1}}
+
+html.fw-desktop-app body.fw-desktop-navigating:before{
+  content:"";
+  position:fixed;
+  z-index:12500;
+  inset:0 0 0 var(--fw-desktop-rail);
+  background:var(--fw-desktop-bg);
+  pointer-events:auto;
+}
 
 html.fw-desktop-app .header{
   display:none!important;

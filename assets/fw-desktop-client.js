@@ -80,6 +80,8 @@
 
   function openComposer(){
     if(pageName() !== 'square.html'){
+      rememberRoute('square.html');
+      document.body.classList.add('fw-desktop-navigating');
       location.href = 'square.html?compose=1';
       return;
     }
@@ -104,21 +106,29 @@
     if(new URLSearchParams(location.search).get('compose') === '1') setTimeout(openComposer, 180);
   }
 
+  function markPageReady(){
+    document.documentElement.classList.remove('fw-desktop-preparing');
+    document.body.classList.remove('fw-desktop-navigating');
+  }
+
   function openDedicatedSocialPage(kind){
     var attempts = 0;
     function tryOpen(){
       attempts += 1;
       if(kind === 'echo' && typeof window.fwOpenStableEcho === 'function'){
         window.fwOpenStableEcho();
+        markPageReady();
         return;
       }
       if(kind === 'buddy' && window.FWMobileActions && typeof window.FWMobileActions.openBuddy === 'function'){
         window.FWMobileActions.openBuddy();
+        markPageReady();
         return;
       }
-      if(attempts < 100) setTimeout(tryOpen, 100);
+      if(attempts < 50) setTimeout(tryOpen, 80);
+      else markPageReady();
     }
-    setTimeout(tryOpen, 60);
+    setTimeout(tryOpen, 0);
   }
 
   function syncBadges(){
@@ -162,16 +172,43 @@
     }
   }
 
-  function prefetchRoutes(){
-    NAV.concat([{href:'rules.html'}]).forEach(function(item){
-      if(item.href === pageName() || document.querySelector('link[data-fw-desktop-prefetch="' + item.href + '"]')) return;
-      var link = document.createElement('link');
-      link.rel = 'prefetch';
-      link.href = item.href;
-      link.as = 'document';
-      link.dataset.fwDesktopPrefetch = item.href;
-      document.head.appendChild(link);
+  function prefetchRoute(href){
+    if(!href || href === pageName() || document.querySelector('link[data-fw-desktop-prefetch="' + href + '"]')) return;
+    var link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = href;
+    link.as = 'document';
+    link.dataset.fwDesktopPrefetch = href;
+    document.head.appendChild(link);
+  }
+
+  function setupRouteIntent(){
+    document.addEventListener('pointerover', function(e){
+      var next = e.target.closest && e.target.closest('.fw-desktop-nav-item[href], .fw-desktop-brand[href]');
+      if(next) prefetchRoute(next.getAttribute('href'));
+    }, {passive:true});
+    document.addEventListener('focusin', function(e){
+      var next = e.target.closest && e.target.closest('.fw-desktop-nav-item[href], .fw-desktop-brand[href]');
+      if(next) prefetchRoute(next.getAttribute('href'));
     });
+  }
+
+  function rememberRoute(route){
+    if(!ROUTES[route]) return;
+    try{ localStorage.setItem('fw:desktop:last-route', route); }catch(e){}
+  }
+
+  function resumeLastRoute(){
+    try{
+      if(sessionStorage.getItem('fw:desktop:session-started') === '1') return false;
+      sessionStorage.setItem('fw:desktop:session-started', '1');
+      var last = localStorage.getItem('fw:desktop:last-route') || '';
+      if(ROUTES[last] && last !== pageName()){
+        location.replace(last);
+        return true;
+      }
+    }catch(e){}
+    return false;
   }
 
   function syncConnection(){
@@ -268,8 +305,12 @@
         try{ sessionStorage.setItem('fw:desktop:scroll:' + pageName(), '0'); }catch(err){}
         return;
       }
-      var next = e.target.closest('.fw-desktop-nav-item[href]');
-      if(next){ saveScroll(); document.body.classList.add('fw-desktop-navigating'); }
+      var next = e.target.closest('.fw-desktop-nav-item[href], .fw-desktop-brand[href]');
+      if(next){
+        saveScroll();
+        rememberRoute((next.getAttribute('href') || '').split('?')[0].split('#')[0]);
+        document.body.classList.add('fw-desktop-navigating');
+      }
     });
 
     document.addEventListener('keydown', function(e){
@@ -284,6 +325,7 @@
     });
 
     window.addEventListener('pagehide', saveScroll);
+    window.addEventListener('beforeunload', function(){ document.body.classList.add('fw-desktop-navigating'); });
     window.addEventListener('online', syncConnection);
     window.addEventListener('offline', syncConnection);
     document.addEventListener('visibilitychange', function(){ if(!document.hidden) syncBadges(); });
@@ -293,20 +335,23 @@
   }
 
   function boot(){
+    if(resumeLastRoute()) return;
     if(pageName() === 'index.html'){
       location.replace('square.html');
       return;
     }
+    rememberRoute(pageName());
     buildShell();
     setupComposer();
     bind();
+    setupRouteIntent();
     syncBadges();
     syncConnection();
     restoreScroll();
-    setTimeout(prefetchRoutes, 700);
     setTimeout(checkLegacyUpdater, 1200);
-    if(pageName() === 'echo.html') openDedicatedSocialPage('echo');
-    if(pageName() === 'buddy.html') openDedicatedSocialPage('buddy');
+    if(pageName() === 'echo.html'){ openDedicatedSocialPage('echo'); return; }
+    if(pageName() === 'buddy.html'){ openDedicatedSocialPage('buddy'); return; }
+    markPageReady();
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, {once:true});
