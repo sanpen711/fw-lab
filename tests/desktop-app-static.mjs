@@ -45,7 +45,9 @@ const appLoader = read('assets/app.js');
 assert.match(appLoader, /isWindowsDesktopApp = \/FWYanjiusuoDesktop/);
 assert.match(appLoader, /assets\/fw-desktop-client\.css/);
 assert.match(appLoader, /assets\/fw-desktop-client\.js/);
-assert.match(appLoader, /windows-auto-update-20260810-2/);
+assert.match(appLoader, /windows-navigation-stable-20260811-1/);
+assert.match(appLoader, /isDedicatedWindowsSocialPage/);
+assert.match(appLoader, /if\(!isDedicatedWindowsSocialPage\) loadJs\("assets\/fw-social\.js/);
 
 const desktopClient = read('assets/fw-desktop-client.js');
 assert.match(desktopClient, /fw-desktop-sidebar/);
@@ -55,6 +57,11 @@ assert.match(desktopClient, /FWMobileActions\.openBuddy/);
 assert.match(desktopClient, /location\.replace\('square\.html'\)/);
 assert.match(desktopClient, /fw:desktop:scroll:/);
 assert.match(desktopClient, /rel = 'prefetch'/);
+assert.match(desktopClient, /fw:desktop:last-route/);
+assert.match(desktopClient, /fw:desktop:session-started/);
+assert.match(desktopClient, /markPageReady/);
+assert.match(desktopClient, /beforeunload/);
+assert.doesNotMatch(desktopClient, /setTimeout\(prefetchRoutes/);
 assert.doesNotMatch(desktopClient, /observer\.observe\(document\.body/);
 assert.doesNotMatch(desktopClient, /fw-desktop-page-title|data-fw-desktop-title/);
 assert.match(desktopClient, /checkLegacyUpdater/);
@@ -67,11 +74,20 @@ const desktopCss = read('assets/fw-desktop-client.css');
 assert.match(desktopCss, /--fw-desktop-rail/);
 assert.match(desktopCss, /fw-route-echo \.fw-stable-echo-modal/);
 assert.match(desktopCss, /fw-route-buddy \.fw-wx-shell/);
+assert.match(desktopCss, /fw-desktop-preparing body/);
+assert.match(desktopCss, /body\.fw-desktop-navigating:before/);
 assert.match(desktopCss, /grid-template-columns:330px minmax\(0,1fr\)/);
 assert.match(desktopCss, /fw-desktop-account/);
 assert.match(desktopCss, /fw-route-rooms \.polls-hero/);
 assert.match(desktopCss, /fw-route-bird \.bird-hero/);
 assert.doesNotMatch(desktopCss, /\.fw-desktop-page-title/);
+
+for(const page of ['index.html','square.html','rooms.html','bird.html','echo.html','buddy.html','archive.html','rules.html','admin.html']){
+  const html = read(page);
+  assert.match(html, /fw-desktop-preparing/, `${page} 应在首屏绘制前隐藏网页原始版式`);
+  assert.match(html, /fw-desktop-client\.css\?v=windows-navigation-stable-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
+  assert.match(html, /assets\/app\.js\?v=windows-navigation-stable-20260811-1/, `${page} 应刷新桌面导航脚本缓存`);
+}
 
 const buddy = read('assets/fw-buddy-wechat.js');
 assert.match(buddy, /lastMessageSignature/);

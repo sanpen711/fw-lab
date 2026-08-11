@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <script>
     (function(){
+      if(!/FWYanjiusuoDesktop\//i.test(navigator.userAgent || '')) return;
+      document.documentElement.classList.add('fw-desktop-preparing');
+      window.setTimeout(function(){
+        document.documentElement.classList.remove('fw-desktop-preparing');
+      }, 6000);
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/fw-desktop-client.css?v=windows-navigation-stable-20260811-1" />
+  <script>
+    (function(){
       var params = new URLSearchParams(window.location.search || '');
       if(params.get('desktop') === '1' || params.get('app') === '0') return;
       var ua = navigator.userAgent || '';
@@ -91,7 +101,7 @@
   </footer>
 </main>
 
-<script src="assets/app.js?v=windows-upgrade-click-20260810-1"></script>
+<script src="assets/app.js?v=windows-navigation-stable-20260811-1"></script>
 <script src="assets/auth.js?v=echo-clean-20260702-1"></script>
 <script src="assets/fw-home-feed-preview.js?v=desktop-priority-20260716-1"></script>
   <script src="assets/pwa.js?v=pwa-download-client-20260810-1"></script>
