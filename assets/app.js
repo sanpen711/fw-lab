@@ -456,7 +456,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if(isWindowsDesktopApp){
     loadJs("assets/fw-desktop-cache.js?v=desktop-cache-all-20260811-1");
     loadCss("assets/fw-desktop-client.css?v=ui-consistency-20260811-1");
-    loadJs("assets/fw-desktop-client.js?v=desktop-cache-all-20260811-1");
+    loadJs("assets/fw-desktop-client.js?v=desktop-badge-zero-20260811-1");
   }
 
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");

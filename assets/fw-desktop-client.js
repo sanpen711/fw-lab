@@ -151,10 +151,10 @@
       var target = document.querySelector('[data-fw-desktop-badge="' + kind + '"]');
       if(!target) return;
       var source = document.querySelector('[data-fw-open-' + kind + '] .fw-top-badge, [data-fw-open-' + kind + '].fw-has-badge .fw-top-badge');
-      var visible = source && (source.classList.contains('show') || source.parentElement.classList.contains('show') || source.parentElement.classList.contains('fw-has-badge'));
+      var visible = source && (source.classList.contains('show') || source.parentElement.classList.contains('show'));
       var value = source ? (source.textContent || '').trim() : '';
       target.textContent = value && value !== '0' ? value : '';
-      target.classList.toggle('show', Boolean(visible && value !== '0'));
+      target.classList.toggle('show', Boolean(visible && /^\d+$/.test(value) && Number(value) > 0));
     });
   }
 

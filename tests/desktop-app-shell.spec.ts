@@ -29,6 +29,13 @@ test.describe('Windows 客户端专用外壳', () => {
     await expect(page.locator('html')).toHaveClass(/fw-route-home/);
   });
 
+  test('首页停留后零未读不会弹出回声和搭子红点', async ({ page }) => {
+    await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+    await expect(page.locator('[data-fw-desktop-badge="echo"]')).not.toHaveClass(/show/);
+    await expect(page.locator('[data-fw-desktop-badge="buddy"]')).not.toHaveClass(/show/);
+  });
+
   test('更多入口展开辅助页面，不再误导为入馆须知直达', async ({ page }) => {
     await page.goto('/square.html', { waitUntil: 'domcontentloaded' });
     const more = page.locator('[data-fw-desktop-more]');
