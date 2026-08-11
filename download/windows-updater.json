@@ -1,11 +1,11 @@
 {
+  "version": "1.0.3",
+  "pub_date": "2026-08-11T01:07:11.0594120Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmI3b1dNemtFUkxBRDBEeXBoaTdISHV4emIrb3kyQ2lwUkFxRnQ3NCszMTB1emhqVXVMSHNyc2NKUEVyTXFUNytwU053NFh5eUVzaEcrN3k0RWY3K2c0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2MzU0MDUyCWZpbGU6Ri53IOeglOeptuaJgF8xLjAuM194NjQtc2V0dXAuZXhlCjFDR1JEbnVqb3dqeU1BSlgvdzdaUXVlV3pLT0pNd2c4YVNqeEZNU2NqZ3ZiZndDZ2VlRm5mTndmN1VuVWlObHUzR2xnbEtPeEtQdWYzL3IwOC96VEN3PT0K",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlI5cjE4KzViVXNUSWdlaXRRQjBQYVlhWmlCUXFvMUhlS0dXN0N5NHJ2Tk1tWmlsNTEvYklUYWw1UklCU0RIYVJkTXJwM1pTQzBaNU5VcnJsaE5XNlFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NDEwNDMwCWZpbGU6Ri53IOeglOeptuaJgF8xLjAuM194NjQtc2V0dXAuZXhlCkdmNnB2blA2WFVndVlYVysvaDROaXl1NW9FQkJkclJ5OXZSZXhQNDdUb3FodmkraVpZT0M2UkdDVW5UWkxZM202a3BwY2ZkYmhiQUVaNXpBU0tQYUJnPT0K"
     }
   },
-  "version": "1.0.3",
-  "pub_date": "2026-08-10T09:27:32.6299418Z",
   "notes": "新增软件内更新：以后可直接检查、下载、覆盖安装并自动重启，保留账号、缓存、窗口和浏览位置。"
 }
