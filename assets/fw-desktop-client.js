@@ -1,4 +1,4 @@
-// F.w 研究所 Windows 客户端外壳 v1.0.3
+// F.w 研究所 Windows 客户端外壳 v1.0.4
 // 仅在 Tauri 自定义 User-Agent 中启用，网页、PWA 与 Android 不受影响。
 (function(){
   'use strict';

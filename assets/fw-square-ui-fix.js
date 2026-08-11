@@ -3,6 +3,7 @@
   window.__FW_SQUARE_UI_FIX_V12__ = true;
 
   var KEY = 'fw_lab_posts_v1';
+  var DESKTOP_CACHE_KEY = 'square-feed-v1';
   var PAGE_SIZE = 12;
   var visibleCount = PAGE_SIZE;
   var open = {};
@@ -13,6 +14,9 @@
   var realtimeChannel = null;
   var realtimeTimer = 0;
   var readyTimer = 0;
+  var cacheEnvelope = {version:1, syncedAt:0, reactions:[], posts:[]};
+  var cacheHydrated = false;
+  var cacheWriteTimer = 0;
 
   var $ = function(selector, root){ return (root || document).querySelector(selector); };
   var $$ = function(selector, root){ return Array.from((root || document).querySelectorAll(selector)); };
@@ -87,10 +91,67 @@
   function posts(){
     try{ return JSON.parse(readRaw()) || []; }catch(e){ return []; }
   }
-  function put(list){
+  function publicCachePosts(list){
+    return (list || []).map(function(post){
+      var clean = Object.assign({}, post);
+      delete clean.canDelete;
+      delete clean.myReactions;
+      clean.comments = (post.comments || []).map(function(comment){
+        var next = Object.assign({}, comment);
+        delete next.canDelete;
+        return next;
+      });
+      return clean;
+    });
+  }
+  function persistDesktopCache(list, serverMeta){
+    if(serverMeta){
+      cacheEnvelope.version = 1;
+      cacheEnvelope.syncedAt = serverMeta.syncedAt || Date.now();
+      cacheEnvelope.reactions = Array.isArray(serverMeta.reactions) ? serverMeta.reactions : cacheEnvelope.reactions;
+    }
+    cacheEnvelope.posts = publicCachePosts(list);
+    if(!window.fwDesktopCache || !window.fwDesktopCache.enabled) return;
+    clearTimeout(cacheWriteTimer);
+    cacheWriteTimer = setTimeout(function(){
+      window.fwDesktopCache.write(DESKTOP_CACHE_KEY, cacheEnvelope).catch(function(){});
+    }, 120);
+  }
+  function put(list, serverMeta){
     var next = JSON.stringify(list || []);
-    if(next === readRaw()) return false;
-    try{ localStorage.setItem(KEY, next); }catch(e){}
+    var changed = next !== readRaw();
+    if(changed){
+      try{ localStorage.setItem(KEY, next); }catch(e){}
+    }
+    persistDesktopCache(list, serverMeta);
+    return changed;
+  }
+
+  function waitForDesktopCache(attempt){
+    return new Promise(function(resolve){
+      if(window.fwDesktopCache) return resolve(window.fwDesktopCache);
+      if(attempt >= 20) return resolve(null);
+      setTimeout(function(){ waitForDesktopCache(attempt + 1).then(resolve); }, 50);
+    });
+  }
+  async function hydrateDesktopCache(){
+    var bridge = await waitForDesktopCache(0);
+    if(!bridge || !bridge.enabled){ cacheHydrated = true; return false; }
+    var saved = await bridge.read(DESKTOP_CACHE_KEY);
+    if(saved && saved.version === 1 && Array.isArray(saved.posts)){
+      cacheEnvelope = {
+        version:1,
+        syncedAt:Number(saved.syncedAt) || 0,
+        reactions:Array.isArray(saved.reactions) ? saved.reactions : [],
+        posts:saved.posts
+      };
+      var next = JSON.stringify(saved.posts);
+      if(next !== readRaw()){
+        try{ localStorage.setItem(KEY, next); }catch(e){}
+        render();
+      }
+    }
+    cacheHydrated = true;
     return true;
   }
   function mergePending(list){
@@ -329,8 +390,14 @@
     }
     syncRunning = (async function(){
       try{
-        var list = mergePending(await window.fwDb.loadPosts() || []);
-        if(put(list)) render();
+        var list = mergePending(await window.fwDb.loadPosts({
+          cachedPosts:posts(),
+          cachedReactions:cacheEnvelope.reactions,
+          cacheVersion:cacheEnvelope.version,
+          cacheReady:cacheHydrated && !!(window.fwDesktopCache && window.fwDesktopCache.enabled)
+        }) || []);
+        var serverMeta = window.fwDb.__lastPostCacheMeta || null;
+        if(put(list, serverMeta)) render();
         else if(!$('[data-feed] .post-card, [data-feed] .empty')) render();
         return true;
       }catch(e){
@@ -617,7 +684,10 @@
 
   function boot(){
     render();
-    waitForReady(0);
+    hydrateDesktopCache().catch(function(error){
+      console.warn('[FW square] desktop cache hydrate skipped', error);
+      cacheHydrated = true;
+    }).finally(function(){ waitForReady(0); });
     window.addEventListener('online', function(){ scheduleSync(true, 80); });
     window.addEventListener('focus', function(){ if(!document.hidden) scheduleSync(false, 120); });
     document.addEventListener('visibilitychange', function(){ if(!document.hidden) scheduleSync(false, 120); });

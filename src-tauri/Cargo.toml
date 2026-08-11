@@ -1,6 +1,6 @@
 [package]
 name = "fw-lab-desktop"
-version = "1.0.3"
+version = "1.0.4"
 description = "F.w 研究所 Windows 客户端"
 authors = ["F.w 研究所"]
 edition = "2021"
@@ -16,6 +16,7 @@ tauri-plugin-window-state = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-updater = "2"
 serde_json = "1"
+serde = { version = "1", features = ["derive"] }
 
 [features]
 default = ["custom-protocol"]

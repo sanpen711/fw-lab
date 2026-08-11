@@ -12,9 +12,12 @@ assert.equal(config.identifier, 'com.fwyanjiusuo.desktop');
 assert.equal(config.build.frontendDist, 'https://fwyanjiusuo.com/');
 assert.deepEqual(config.bundle.targets, ['nsis']);
 assert.equal(config.bundle.windows.nsis.installMode, 'currentUser');
-assert.equal(config.version, '1.0.3');
+assert.equal(config.version, '1.0.4');
 assert.equal(config.app.windows[0].url, 'https://fwyanjiusuo.com/index.html');
-assert.match(config.app.windows[0].userAgent, /FWYanjiusuoDesktop\/1\.0\.3/);
+assert.match(config.app.windows[0].userAgent, /FWYanjiusuoDesktop\/1\.0\.4/);
+assert.equal(config.app.withGlobalTauri, true);
+assert.deepEqual(config.app.security.capabilities[0].remote.urls, ['https://fwyanjiusuo.com/*']);
+assert.deepEqual(config.app.security.capabilities[0].windows, ['main']);
 assert.equal(config.app.windows[0].minWidth, 760);
 assert.equal(config.app.windows[0].minHeight, 560);
 assert.equal(config.bundle.createUpdaterArtifacts, true);
@@ -27,6 +30,7 @@ assert.match(cargo, /tauri-plugin-single-instance/);
 assert.match(cargo, /tauri-plugin-window-state/);
 assert.match(cargo, /tauri-plugin-dialog/);
 assert.match(cargo, /tauri-plugin-updater/);
+assert.match(cargo, /serde = \{ version = "1", features = \["derive"\] \}/);
 
 const main = read('src-tauri/src/main.rs');
 assert.match(main, /get_webview_window\("main"\)/);
@@ -36,6 +40,15 @@ assert.match(main, /check_for_updates/);
 assert.match(main, /download_and_install/);
 assert.match(main, /app\.restart\(\)/);
 assert.match(main, /账号、缓存和浏览位置都会保留/);
+assert.match(main, /app_cache_dir\(\)/);
+assert.match(main, /content-cache/);
+assert.match(main, /CACHE_MAX_FILE_BYTES/);
+assert.match(main, /CACHE_MAX_TOTAL_BYTES/);
+assert.match(main, /desktop_cache_read/);
+assert.match(main, /desktop_cache_write/);
+assert.match(main, /desktop_cache_remove/);
+assert.match(main, /desktop_cache_status/);
+assert.match(main, /valid_cache_key/);
 
 const downloadClient = read('assets/fw-download-client.js');
 assert.match(downloadClient, /FWYanjiusuoDesktop/);
@@ -43,6 +56,7 @@ assert.match(downloadClient, /download\/fw-lab-windows-latest\.exe/);
 
 const appLoader = read('assets/app.js');
 assert.match(appLoader, /isWindowsDesktopApp = \/FWYanjiusuoDesktop/);
+assert.match(appLoader, /assets\/fw-desktop-cache\.js\?v=desktop-cache-20260811-1/);
 assert.match(appLoader, /assets\/fw-desktop-client\.css/);
 assert.match(appLoader, /assets\/fw-desktop-client\.js/);
 assert.match(appLoader, /ui-consistency-20260811-1/);
@@ -81,6 +95,27 @@ assert.match(desktopClient, /href="rules\.html"/);
 assert.match(desktopClient, /href="admin\.html"/);
 assert.match(desktopClient, /setupMoreMenu/);
 
+const desktopCache = read('assets/fw-desktop-cache.js');
+assert.match(desktopCache, /FWYanjiusuoDesktop/);
+assert.match(desktopCache, /__TAURI__.*core.*invoke/);
+assert.match(desktopCache, /desktop_cache_read/);
+assert.match(desktopCache, /desktop_cache_write/);
+assert.match(desktopCache, /desktop_cache_remove/);
+assert.match(desktopCache, /desktop_cache_status/);
+assert.match(desktopCache, /\^\[a-z0-9\]/);
+
+const safePostLoader = read('assets/fw-load-posts-safe.js');
+assert.match(safePostLoader, /loadIncremental/);
+assert.match(safePostLoader, /selectActive/);
+assert.match(safePostLoader, /\.gt\('id', maxReactionId\)/);
+assert.match(safePostLoader, /__lastPostCacheMeta/);
+
+const squareUi = read('assets/fw-square-ui-fix.js');
+assert.match(squareUi, /square-feed-v1/);
+assert.match(squareUi, /hydrateDesktopCache/);
+assert.match(squareUi, /cachedReactions:cacheEnvelope\.reactions/);
+assert.match(squareUi, /publicCachePosts/);
+
 const desktopCss = read('assets/fw-desktop-client.css');
 assert.match(desktopCss, /--fw-desktop-rail/);
 assert.match(desktopCss, /fw-route-home #live/);
@@ -105,7 +140,7 @@ for(const page of ['index.html','compose.html','square.html','rooms.html','bird.
   const html = read(page);
   assert.match(html, /fw-desktop-preparing/, `${page} 应在首屏绘制前隐藏网页原始版式`);
   assert.match(html, /fw-desktop-client\.css\?v=ui-consistency-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
-  assert.match(html, /assets\/app\.js\?v=ui-consistency-20260811-1/, `${page} 应刷新桌面导航脚本缓存`);
+  assert.match(html, /assets\/app\.js\?v=desktop-cache-20260811-1/, `${page} 应刷新桌面缓存入口脚本`);
 }
 
 const home = read('index.html');
@@ -122,7 +157,7 @@ assert.doesNotMatch(square, /data-post-form|先发一句牢骚/);
 assert.match(square, /class="feed-list" data-feed/);
 assert.match(appLoader, /'compose\.html':'square'/);
 assert.match(appLoader, /form\.dataset\.postRedirect/);
-assert.match(appLoader, /ui-consistency-20260811-1/);
+assert.match(appLoader, /desktop-cache-20260811-1/);
 assert.match(read('assets/supabase-auth-clean.js'), /form\.dataset\.postRedirect/);
 assert.match(read('assets/supabase-live.js'), /ui-consistency-20260811-1/);
 assert.match(read('assets/supabase-auth-clean.js'), /fw-desktop-login-required/);
@@ -147,7 +182,8 @@ assert.match(workflow, /windows-latest/);
 assert.match(workflow, /npm run desktop:build/);
 assert.match(workflow, /fw-lab-windows-latest\.exe/);
 assert.match(workflow, /TAURI_SIGNING_PRIVATE_KEY/);
-assert.match(workflow, /fw-lab-windows-1\.0\.3/);
+assert.match(workflow, /fw-lab-windows-1\.0\.4/);
+assert.match(workflow, /version = '1\.0\.4'/);
 assert.match(workflow, /fw-lab-windows-latest\.exe\.sig/);
 assert.doesNotMatch(workflow, /\.nsis\.zip/);
 assert.match(workflow, /windows-updater\.json/);
