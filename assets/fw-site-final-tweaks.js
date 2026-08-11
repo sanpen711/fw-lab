@@ -3,6 +3,9 @@
 (function(){
   if(window.__FW_SITE_FINAL_TWEAKS__) return;
   window.__FW_SITE_FINAL_TWEAKS__ = true;
+  // Windows 客户端已经由 fw-stable-core 与 fw-buddy-wechat 接管回声、搭子和未读状态。
+  // 旧补丁会轮询整份私聊摘要，并在打开回声后把私聊重新写成未读，因此桌面端必须停用。
+  if(/FWYanjiusuoDesktop\//i.test(navigator.userAgent || '')) return;
 
   var profileCache = {};
   var previewCache = {time:0, data:{}};

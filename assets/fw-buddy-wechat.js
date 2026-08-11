@@ -24,9 +24,15 @@
   let lastProfiles = {};
   let lastUnreadMap = {};
   let hydratedBuddyKey = '';
+  let listPromise = null;
+  let currentMessages = [];
+  let lastMessageId = 0;
+  let lastFullMessageSyncAt = 0;
+  let hasInitialMessageSync = false;
+  const locallyReadBuddyIds = new Set();
 
   function buddyCacheKey(userId){
-    return 'buddy-list-v1-' + String(userId || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 42);
+    return 'buddy-list-v2-' + String(userId || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 42);
   }
 
   async function waitForDesktopCache(attempt = 0){
@@ -39,7 +45,7 @@
   function persistBuddyCache(){
     if(!me?.id || !window.fwDesktopCache?.enabled) return;
     window.fwDesktopCache.write(buddyCacheKey(me.id), {
-      version:1,
+      version:2,
       syncedAt:Date.now(),
       friendships:lastRows,
       profiles:lastProfiles,
@@ -203,11 +209,13 @@
         if(!key) return;
         map[key] = (map[key] || 0) + 1;
       });
+      locallyReadBuddyIds.forEach(id => { map[id] = 0; });
     }catch(e){}
     return map;
   }
 
-  async function refreshBuddyBadge(){
+  async function refreshBuddyBadge(force){
+    if(typeof window.fwRefreshDesktopBadges === 'function') return window.fwRefreshDesktopBadges(Boolean(force));
     if(!me?.id) return setTopBadge(0);
     try{
       const [msg, req] = await Promise.all([
@@ -229,6 +237,16 @@
 
   async function markPrivateReadFrom(userId){
     if(!me?.id || !userId) return;
+    locallyReadBuddyIds.add(String(userId));
+    lastUnreadMap[String(userId)] = 0;
+    persistBuddyCache();
+
+    $$(`[data-fw-wx-chat-user="${window.CSS && CSS.escape ? CSS.escape(String(userId)) : String(userId).replace(/"/g,'')}"]`).forEach(item => {
+      item.classList.remove('unread', 'fw-wx-unread');
+      item.dataset.fwUnread = '0';
+      item.querySelectorAll('.fw-wx-unread-dot,.fw-wx-unread-badge').forEach(x => x.remove());
+    });
+
     try{
       await window.fwDb.client
         .from('notifications')
@@ -238,13 +256,9 @@
         .eq('type', 'private_message')
         .eq('actor_id', userId);
     }catch(e){}
+    finally{ locallyReadBuddyIds.delete(String(userId)); }
 
-    $$(`[data-fw-wx-chat-user="${window.CSS && CSS.escape ? CSS.escape(String(userId)) : String(userId).replace(/"/g,'')}"]`).forEach(item => {
-      item.classList.remove('unread');
-      item.querySelectorAll('.fw-wx-unread-dot,.fw-wx-unread-badge').forEach(x => x.remove());
-    });
-
-    await refreshBuddyBadge();
+    await refreshBuddyBadge(true);
   }
 
   function injectStyle(){
@@ -439,10 +453,10 @@
     }).join('');
   }
 
-  function renderCachedBuddyState(){
+  function renderCachedBuddyState(trustUnread){
     const accepted = acceptedRows();
     const sortedAccepted = accepted.slice().sort((a,b) => String((lastProfiles[otherId(a)] || {}).nickname || '').localeCompare(String((lastProfiles[otherId(b)] || {}).nickname || ''), 'zh-CN'));
-    if(activeTab === 'messages') renderCachedMessages(accepted, lastProfiles, lastUnreadMap);
+    if(activeTab === 'messages') renderCachedMessages(accepted, lastProfiles, trustUnread ? lastUnreadMap : {});
     else if(activeTab === 'friends') renderFriendRows(sortedAccepted, lastProfiles);
     else renderNewTab(lastProfiles);
   }
@@ -451,18 +465,18 @@
     if(!me?.id) return false;
     const key = buddyCacheKey(me.id);
     if(hydratedBuddyKey === key){
-      renderCachedBuddyState();
+      renderCachedBuddyState(true);
       return lastRows.length > 0;
     }
     hydratedBuddyKey = key;
     const cache = await waitForDesktopCache();
     if(!cache?.enabled) return false;
     const saved = await cache.read(key);
-    if(!saved || saved.version !== 1 || !Array.isArray(saved.friendships)) return false;
+    if(!saved || saved.version !== 2 || !Array.isArray(saved.friendships)) return false;
     lastRows = saved.friendships;
     lastProfiles = saved.profiles && typeof saved.profiles === 'object' ? saved.profiles : {};
     lastUnreadMap = saved.unread && typeof saved.unread === 'object' ? saved.unread : {};
-    renderCachedBuddyState();
+    renderCachedBuddyState(false);
     return true;
   }
 
@@ -474,7 +488,7 @@
       return;
     }
 
-    list.innerHTML = '<div class="fw-wx-empty">正在读取搭子消息...</div>';
+    if(!list.querySelector('[data-fw-wx-chat-user]')) list.innerHTML = '<div class="fw-wx-empty">正在读取搭子消息...</div>';
     const buddyIds = accepted.map(f => otherId(f)).filter(Boolean).map(String);
     const allowed = {};
     buddyIds.forEach(id => allowed[id] = true);
@@ -532,13 +546,14 @@
         return `<div class="fw-wx-item ${activeTargetId === row.userId ? 'active' : ''} ${unread ? 'unread' : ''}" data-fw-wx-chat-user="${esc(row.userId)}" data-fw-wx-last-message-id="${esc(row.message.id)}">${unread ? '<i class="fw-wx-unread-dot" aria-hidden="true"></i>' : ''}${avatar(name, p.avatar_url, 'fw-wx-avatar')}<div><div class="fw-wx-name">${esc(name)}</div><div class="fw-wx-sub">${esc(mine ? '我：' + messagePreview(row.message.content) : messagePreview(row.message.content))}</div><span class="fw-wx-time">${esc(unread ? `未读 ${row.unread} 条 · ` + timeText(row.message.created_at) : timeText(row.message.created_at))}</span></div></div>`;
       }).join('');
 
-      await refreshBuddyBadge();
     }catch(e){
       list.innerHTML = '<div class="fw-wx-empty">搭子消息暂时读取失败。<button class="fw-wx-mini dark" type="button" data-fw-wx-retry-list>重新加载</button></div>';
     }
   }
 
   async function loadBuddyList(selectId){
+    if(listPromise) return listPromise;
+    listPromise = (async () => {
     if(!(await waitForDb()) || !(await needLogin())) return;
     openHub();
     setTabs();
@@ -558,6 +573,8 @@
     }catch(e){
       if(list) list.innerHTML = `<div class="fw-wx-empty">搭子读取失败：${esc(e.message || '请稍后重试。')}<div class="fw-wx-actions"><button class="fw-wx-mini dark" type="button" data-fw-wx-retry-list>重新加载</button></div></div>`;
     }
+    })().finally(() => { listPromise = null; });
+    return listPromise;
   }
 
   async function selectChat(targetId){
@@ -568,9 +585,13 @@
     chatLoading = false;
     renderedConversationId = null;
     lastMessageSignature = '';
+    currentMessages = [];
+    lastMessageId = 0;
+    lastFullMessageSyncAt = 0;
+    hasInitialMessageSync = false;
     setTabs();
     $$('.fw-wx-item').forEach(x => x.classList.toggle('active', String(x.dataset.fwWxChatUser) === activeTargetId));
-    await markPrivateReadFrom(activeTargetId);
+    markPrivateReadFrom(activeTargetId);
 
     const title = $('[data-fw-wx-chat-title]');
     const sub = $('[data-fw-wx-chat-sub]');
@@ -604,25 +625,41 @@
     const conversationId = activeConversationId;
     const generation = chatGeneration;
     const forceScroll = Boolean(options && options.forceScroll);
+    const fullSync = !hasInitialMessageSync || renderedConversationId !== conversationId || Date.now() - lastFullMessageSyncAt > 60000;
     const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 90;
     chatLoading = true;
     try{
-      const {data, error} = await window.fwDb.client
+      let query = window.fwDb.client
         .from('private_messages')
         .select('id,conversation_id,sender_id,content,is_deleted,created_at')
         .eq('conversation_id', conversationId)
-        .eq('is_deleted', false)
-        .order('created_at', {ascending:true})
-        .limit(200);
+        .eq('is_deleted', false);
+      query = fullSync
+        ? query.order('created_at', {ascending:false}).limit(120)
+        : query.gt('id', lastMessageId).order('id', {ascending:true}).limit(100);
+      const {data, error} = await query;
       if(error) throw error;
       if(conversationId !== activeConversationId) return;
-      const rows = data || [];
+      const incoming = fullSync ? (data || []).slice().reverse() : (data || []);
+      if(fullSync){
+        currentMessages = incoming;
+        lastFullMessageSyncAt = Date.now();
+        hasInitialMessageSync = true;
+      }else if(incoming.length){
+        const byId = new Map(currentMessages.map(row => [String(row.id), row]));
+        incoming.forEach(row => byId.set(String(row.id), row));
+        currentMessages = Array.from(byId.values()).sort((a,b) => Number(a.id) - Number(b.id));
+      }else{
+        return;
+      }
+      const rows = currentMessages;
+      lastMessageId = rows.reduce((max, row) => Math.max(max, Number(row.id) || 0), 0);
       const signature = rows.map(m => String(m.id)).join('|');
       if(renderedConversationId === conversationId && signature === lastMessageSignature) return;
       const shouldStick = forceScroll || nearBottom || renderedConversationId !== conversationId;
       renderedConversationId = conversationId;
       lastMessageSignature = signature;
-      const profiles = await fetchProfiles(rows.map(m => m.sender_id));
+      const profiles = lastProfiles;
       if(conversationId !== activeConversationId) return;
       if(!rows.length){ box.innerHTML = '<div class="fw-wx-empty">还没有私聊消息。可以先低功耗地打个招呼。</div>'; return; }
       box.innerHTML = rows.map(m => {
@@ -723,7 +760,6 @@
   function endDrag(){ drag = null; document.body.style.userSelect = ''; }
 
   async function openBuddyCenter(selectId){
-    if(!(await waitForDb()) || !(await needLogin())) return;
     openHub();
     if(selectId) activeTab = 'messages';
     await loadBuddyList(selectId || '');
@@ -735,6 +771,7 @@
   function resetRightPane(){
     activeTargetId = ''; activeConversationId = null; clearInterval(chatTimer); chatTimer = null;
     chatGeneration += 1; renderedConversationId = null; lastMessageSignature = ''; chatLoading = false;
+    currentMessages = []; lastMessageId = 0; lastFullMessageSyncAt = 0; hasInitialMessageSync = false;
     $$('.fw-wx-item').forEach(x => x.classList.remove('active'));
     const title = $('[data-fw-wx-chat-title]');
     const sub = $('[data-fw-wx-chat-sub]');
@@ -763,7 +800,7 @@
       const reset = e.target.closest('[data-fw-wx-reset]');
       if(reset){ openHub(); return; }
       const tab = e.target.closest('[data-fw-wx-tab]');
-      if(tab){ activeTab = tab.dataset.fwWxTab || 'messages'; resetRightPane(); loadBuddyList(); return; }
+      if(tab){ activeTab = tab.dataset.fwWxTab || 'messages'; resetRightPane(); renderCachedBuddyState(true); loadBuddyList(); return; }
       const item = e.target.closest('[data-fw-wx-chat-user]');
       if(item && !e.target.closest('button')){ selectChat(item.dataset.fwWxChatUser); return; }
       const direct = e.target.closest('[data-fw-wx-chat-direct]');
