@@ -1,11 +1,11 @@
 {
-  "version": "1.0.3",
-  "notes": "新增软件内更新：以后可直接检查、下载、覆盖安装并自动重启，保留账号、缓存、窗口和浏览位置。",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmVBRjEydkNONFdnTzdJK3Z3TG9xYUNNNGplYWVEaERaaysrNjdmdnlIdzQyMzd0MWY0c2k3dGdYcVJOY0gySG1XT2FCT2pMTVB2V1BWZXczSnhvTWc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NDE5NzUzCWZpbGU6Ri53IOeglOeptuaJgF8xLjAuM194NjQtc2V0dXAuZXhlCjZtQlY1R01sRlExUDQ0VWpjYndJSmM4NlpBYklNV1RmNmcvYkVpa1BzVDRsQkwwanpnbkRmQUJJUk0yRFFSRjZZWFN4ckxHMXl6Yi8wWjNodXRROEFBPT0K"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlpFQzdoWEg1SEYvbWVuVWtJYUFObldEQ2M5aGdiMEdDZ2ZRWUFrL29MNXg1UFR4aE9QcXNWQnVqRWdPUDlpeTRKRXRYbjJTaXl6bFZ6V2NaZ0JKQWc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NDI2OTIxCWZpbGU6Ri53IOeglOeptuaJgF8xLjAuNF94NjQtc2V0dXAuZXhlClBBKzQ0TFZLc3k2SHBHbFA1ZmdhaFV4cnl1ZElYdUNhbDc0YkZRREc2NVQ5OU0zUW9TNjc1UzF2WGRjTXhvY2FOUjMvdkdqRDd0QXllT0dtV2NKeERnPT0K",
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
     }
   },
-  "pub_date": "2026-08-11T03:42:33.6720196Z"
+  "version": "1.0.4",
+  "notes": "新增 Windows 本地内容缓存：精神广场先显示本地内容，再增量同步新帖子、评论和互动，减少重复加载。",
+  "pub_date": "2026-08-11T05:42:02.2104983Z"
 }
