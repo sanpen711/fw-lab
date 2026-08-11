@@ -1,9 +1,9 @@
 {
-  "available": true,
-  "publishedAt": "2026-08-11T02:57:22.1041990Z",
-  "platform": "Windows 10/11 64 位",
-  "sha256": "a0c1a6f0d63e9a52c7063cea81e4e255fa1e4e3ade4001fd7e7e1ede176e49d2",
-  "version": "1.0.3",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "notes": "新增软件内更新：以后可直接检查、下载、覆盖安装并自动重启，保留账号、缓存、窗口和浏览位置。"
+  "notes": "新增软件内更新：以后可直接检查、下载、覆盖安装并自动重启，保留账号、缓存、窗口和浏览位置。",
+  "publishedAt": "2026-08-11T03:42:33.6720196Z",
+  "version": "1.0.3",
+  "sha256": "4d3f5f15a8af493fe08d7d434d020c659e50d446852be1408d6c664409531b23",
+  "platform": "Windows 10/11 64 位",
+  "available": true
 }
