@@ -16,17 +16,22 @@ test.describe('Windows 客户端专用外壳', () => {
     await expect(page.locator('#live')).toBeHidden();
   });
 
-  test('精神广场保持紧凑且窄窗口可用', async ({ page }) => {
+  test('发牢骚是独立页面，精神广场只保留内容流', async ({ page }) => {
+    await page.goto('/compose.html', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('html')).toHaveClass(/fw-route-compose/);
+    await expect(page.locator('[data-fw-desktop-compose]')).toHaveClass(/active/);
+    await expect(page.locator('[data-fw-desktop-compose]')).toHaveAttribute('href', 'compose.html');
+    await expect(page.locator('[data-post-form]')).toBeVisible();
+    await expect(page.locator('[data-post-form]')).toHaveAttribute('data-post-redirect', 'square.html');
+
     await page.goto('/square.html', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('html')).toHaveClass(/fw-desktop-app/);
     await expect(page.locator('[data-fw-desktop-sidebar]')).toBeVisible();
     await expect(page.locator('[data-fw-desktop-account]')).toBeVisible();
     await expect(page.locator('.header')).toBeHidden();
     await expect(page.locator('.square-side')).toBeHidden();
-
-    const closedComposer = page.locator('[data-post-form]');
-    await expect(closedComposer).toHaveClass(/fw-desktop-compose-ready/);
-    expect((await closedComposer.boundingBox())?.height || 999).toBeLessThan(90);
+    await expect(page.locator('[data-post-form]')).toHaveCount(0);
+    await expect(page.locator('.square-main [data-feed]')).toBeVisible();
 
     await page.setViewportSize({ width: 760, height: 620 });
     await expect(page.locator('[data-fw-desktop-sidebar]')).toBeVisible();

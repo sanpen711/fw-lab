@@ -12,6 +12,6 @@
     document.head.appendChild(script);
   }
 
-  load('assets/supabase-auth-clean.js?v=desktop-auth-switch-20260720-1');
+  load('assets/supabase-auth-clean.js?v=compose-redirect-20260811-1');
   load('assets/fw-password-recovery.js?v=password-recovery-20260702-2');
 })();

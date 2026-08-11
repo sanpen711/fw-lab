@@ -19,8 +19,8 @@
   <meta name="apple-mobile-web-app-title" content="F.w 研究所">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
-  <title>精神广场｜F.w 研究所</title>
-  <meta name="description" content="F.w 研究所：上班族匿名精神休息室。" />
+  <title>发牢骚｜F.w 研究所</title>
+  <meta name="description" content="在 F.w 研究所匿名放下一句今天想说的话。" />
   <link rel="stylesheet" href="assets/styles.css?v=desktop-priority-20260716-1" />
   <link rel="stylesheet" href="assets/square-compact.css?v=separate-compose-20260811-1" />
   <link rel="stylesheet" href="assets/auth.css" />
@@ -28,13 +28,13 @@
 <body>
 
 <main class="page bg-gradient-clean">
-  <section class="page-hero bg-night square-hero">
-    
+  <section class="page-hero bg-night compose-hero">
+
 <header class="header dark">
   <a class="logo" href="index.html">F.w 研究所</a>
   <nav class="nav">
     <a class="" href="index.html">首页</a>
-    <a class="active" href="square.html">精神广场</a>
+    <a class="" href="square.html">精神广场</a>
     <a class="" href="rooms.html">学术研讨</a>
     <a class="" href="bird.html">观鸟台</a>
     <a class="" href="archive.html">废话档案</a>
@@ -52,34 +52,31 @@
   <a href="admin.html">处理公告</a>
 </nav>
 
-    <div class="hero-inner square-hero-inner">
-      <div class="square-hero-copy">
-        <h1 class="hero-title">精神广场</h1>
-        <p class="hero-copy">这里不是严肃论坛，只是看看大家今天放下来的话。登录后可以点赞、评论、俺也一样、递纸巾。</p>
+    <div class="hero-inner compose-hero-inner">
+      <div class="compose-page-copy">
+        <p class="kicker">DROP IT HERE</p>
+        <h1 class="hero-title">发牢骚</h1>
+        <p class="hero-copy">今天想说什么，就先放在这里。发布后会回到精神广场。</p>
+        <a class="compose-back" href="square.html">← 返回精神广场</a>
+      </div>
+
+      <div class="compose-form-slot">
+        <form class="quick-form square-hero-compose compose-page-form" data-post-form data-post-redirect="square.html">
+          <h2 class="form-title">先发一句牢骚</h2>
+          <label class="form-label">今天想说点什么？</label>
+          <textarea placeholder="例如：今天开了三个会，最后决定下次再讨论。" autofocus></textarea>
+          <button class="btn dark full" type="submit" style="margin-top:14px">发布 →</button>
+          <p class="form-tip" data-notice>登录后才能发布。</p>
+        </form>
       </div>
     </div>
   </section>
 
-  <section class="layout-two square-layout">
-    <div class="square-main">
-      <div class="feed-list" data-feed data-limit="12"></div>
-    </div>
-
-    <aside class="square-side">
-      <div class="side-card light">
-        <h3>互动规则</h3>
-        <p>每个登录账号对同一条内容只能点赞一次、“俺也一样”一次、“递纸巾”一次。评论不限量，但站长可以删除不合适评论。</p>
-      </div>
-    </aside>
-  </section>
-
-  <footer class="footer"><span>F.w 研究所</span><span>精神广场 / Public Wall · <a href="privacy.html">隐私政策</a></span></footer>
+  <footer class="footer"><span>F.w 研究所</span><span>发牢骚 / Compose · <a href="privacy.html">隐私政策</a></span></footer>
 </main>
 
 <script src="assets/app.js?v=separate-compose-20260811-1"></script>
 <script src="assets/auth.js?v=echo-clean-20260702-1"></script>
-<script src="assets/fw-load-posts-safe.js?v=desktop-performance-20260806-2"></script>
-<script src="assets/fw-square-ui-fix.js?v=desktop-performance-20260806-1"></script>
-  <script src="assets/pwa.js?v=pwa-20260522-1"></script>
+<script src="assets/pwa.js?v=pwa-20260522-1"></script>
 </body>
 </html>

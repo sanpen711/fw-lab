@@ -45,15 +45,18 @@ const appLoader = read('assets/app.js');
 assert.match(appLoader, /isWindowsDesktopApp = \/FWYanjiusuoDesktop/);
 assert.match(appLoader, /assets\/fw-desktop-client\.css/);
 assert.match(appLoader, /assets\/fw-desktop-client\.js/);
-assert.match(appLoader, /windows-web-home-20260811-1/);
+assert.match(appLoader, /separate-compose-20260811-1/);
 assert.match(appLoader, /isDedicatedWindowsSocialPage/);
 assert.match(appLoader, /if\(!isDedicatedWindowsSocialPage\) loadJs\("assets\/fw-social\.js/);
 
 const desktopClient = read('assets/fw-desktop-client.js');
 assert.match(desktopClient, /fw-desktop-sidebar/);
 assert.match(desktopClient, /'index\.html': \{key:'home'/);
+assert.match(desktopClient, /'compose\.html': \{key:'compose'/);
 assert.match(desktopClient, /href:'index\.html', label:'首页'/);
-assert.match(desktopClient, /square\.html\?compose=1/);
+assert.match(desktopClient, /href="compose\.html" data-fw-desktop-compose/);
+assert.match(desktopClient, /location\.href = 'compose\.html'/);
+assert.doesNotMatch(desktopClient, /square\.html\?compose=1/);
 assert.match(desktopClient, /fwOpenStableEcho/);
 assert.match(desktopClient, /FWMobileActions\.openBuddy/);
 assert.match(desktopClient, /fw:desktop:home-enabled-20260811/);
@@ -77,6 +80,8 @@ const desktopCss = read('assets/fw-desktop-client.css');
 assert.match(desktopCss, /--fw-desktop-rail/);
 assert.match(desktopCss, /fw-route-home #live/);
 assert.doesNotMatch(desktopCss, /fw-desktop-home/);
+assert.match(desktopCss, /fw-route-compose \.compose-hero/);
+assert.match(desktopCss, /fw-route-compose \.compose-page-form/);
 assert.match(desktopCss, /fw-route-echo \.fw-stable-echo-modal/);
 assert.match(desktopCss, /fw-route-buddy \.fw-wx-shell/);
 assert.match(desktopCss, /fw-desktop-preparing body/);
@@ -87,17 +92,30 @@ assert.match(desktopCss, /fw-route-rooms \.polls-hero/);
 assert.match(desktopCss, /fw-route-bird \.bird-hero/);
 assert.doesNotMatch(desktopCss, /\.fw-desktop-page-title/);
 
-for(const page of ['index.html','square.html','rooms.html','bird.html','echo.html','buddy.html','archive.html','rules.html','admin.html']){
+for(const page of ['index.html','compose.html','square.html','rooms.html','bird.html','echo.html','buddy.html','archive.html','rules.html','admin.html']){
   const html = read(page);
   assert.match(html, /fw-desktop-preparing/, `${page} 应在首屏绘制前隐藏网页原始版式`);
-  assert.match(html, /fw-desktop-client\.css\?v=windows-web-home-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
-  assert.match(html, /assets\/app\.js\?v=windows-web-home-20260811-1/, `${page} 应刷新桌面导航脚本缓存`);
+  assert.match(html, /fw-desktop-client\.css\?v=separate-compose-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
+  assert.match(html, /assets\/app\.js\?v=separate-compose-20260811-1/, `${page} 应刷新桌面导航脚本缓存`);
 }
 
 const home = read('index.html');
 assert.doesNotMatch(home, /class="fw-desktop-home"/);
 assert.match(home, /class="hero bg-night home-hero"/);
 assert.match(home, /class="hero-title">F\.w 研究所</);
+assert.match(home, /href="compose\.html">去发一句牢骚/);
+
+const compose = read('compose.html');
+const square = read('square.html');
+assert.match(compose, /data-post-form data-post-redirect="square\.html"/);
+assert.match(compose, /class="hero-title">发牢骚</);
+assert.doesNotMatch(square, /data-post-form|先发一句牢骚/);
+assert.match(square, /class="feed-list" data-feed/);
+assert.match(appLoader, /'compose\.html':'square'/);
+assert.match(appLoader, /form\.dataset\.postRedirect/);
+assert.match(appLoader, /compose-redirect-20260811-1/);
+assert.match(read('assets/supabase-auth-clean.js'), /form\.dataset\.postRedirect/);
+assert.match(read('assets/supabase-live.js'), /compose-redirect-20260811-1/);
 assert.match(home, /id="live"/);
 assert.match(read('assets/fw-home-feed-preview.js'), /FWYanjiusuoDesktop/);
 
