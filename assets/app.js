@@ -446,8 +446,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const isDedicatedWindowsSocialPage = isWindowsDesktopApp && (isEchoPage || isBuddyPage);
 
   if(isWindowsDesktopApp){
-    loadCss("assets/fw-desktop-client.css?v=windows-navigation-stable-20260811-1");
-    loadJs("assets/fw-desktop-client.js?v=windows-navigation-stable-20260811-1");
+    loadCss("assets/fw-desktop-client.css?v=windows-home-20260811-1");
+    loadJs("assets/fw-desktop-client.js?v=windows-home-20260811-1");
   }
 
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
@@ -457,7 +457,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if(!isDedicatedWindowsSocialPage) loadJs("assets/fw-social.js?v=echo-auto-read-20260808-1");
   loadJs("assets/fw-logout-home-fix.js?v=logout-home-fix-20260513-1");
   loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
-  if(isHome) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
+  if(isHome && !isWindowsDesktopApp) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
   loadJs("assets/fw-login-submit-fix.js?v=login-submit-fix-20260515-1");
   loadJs("assets/fw-register-disclaimer-link.js?v=privacy-consent-20260710-1");
   loadJs("assets/fw-avatar-mobile-fix.js?v=avatar-mobile-fix-20260514-2");

@@ -209,6 +209,83 @@ html.fw-desktop-app .header .fw-userbar{
 
 html.fw-desktop-app .footer{display:none!important;}
 
+.fw-desktop-home{display:none;}
+
+/* 首页：先提供稳定入口与内容预留位，后续活动、公告和每日一句可分别接入。 */
+html.fw-desktop-app.fw-route-home .home-hero,
+html.fw-desktop-app.fw-route-home #live{
+  display:none!important;
+}
+html.fw-desktop-app.fw-route-home .fw-desktop-home{
+  width:min(1040px,calc(100% - 48px));
+  margin:0 auto;
+  padding:48px 0 40px;
+  display:block;
+}
+.fw-desktop-home-head{
+  padding:34px 38px;
+  border:1px solid rgba(28,28,24,.12);
+  border-radius:24px;
+  background:linear-gradient(135deg,#fffdf7 0%,#f5eee3 100%);
+  box-shadow:0 12px 34px rgba(31,28,22,.07);
+}
+.fw-desktop-home-kicker{
+  margin:0 0 12px;
+  color:#a05b5b;
+  font-size:12px;
+  font-weight:1000;
+  letter-spacing:.16em;
+}
+.fw-desktop-home-head h1{
+  margin:0;
+  color:var(--fw-desktop-ink);
+  font-size:42px;
+  line-height:1;
+  letter-spacing:-.06em;
+}
+.fw-desktop-home-head > p:last-child{
+  margin:16px 0 0;
+  color:var(--fw-desktop-muted);
+  font-size:15px;
+  line-height:1.7;
+  font-weight:700;
+}
+.fw-desktop-home-grid{
+  margin-top:20px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px;
+}
+.fw-desktop-home-card{
+  min-height:184px;
+  padding:24px;
+  border:1px solid rgba(28,28,24,.11);
+  border-radius:20px;
+  background:var(--fw-desktop-paper);
+  box-shadow:0 8px 24px rgba(30,28,22,.045);
+}
+.fw-desktop-home-card span{
+  display:inline-flex;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(217,121,121,.12);
+  color:#9a5555;
+  font-size:11px;
+  font-weight:1000;
+}
+.fw-desktop-home-card h2{
+  margin:28px 0 8px;
+  color:var(--fw-desktop-ink);
+  font-size:22px;
+  letter-spacing:-.035em;
+}
+.fw-desktop-home-card p{
+  margin:0;
+  color:var(--fw-desktop-muted);
+  font-size:13px;
+  line-height:1.65;
+}
+
 /* 精神广场：首屏直接进入发帖与信息流 */
 html.fw-desktop-app.fw-route-square .square-hero{
   min-height:0!important;
@@ -439,6 +516,8 @@ html.fw-desktop-app:not(.fw-route-square):not(.fw-route-echo):not(.fw-route-budd
 }
 
 @media(max-width:900px){
+  .fw-desktop-home-grid{grid-template-columns:1fr;}
+  .fw-desktop-home-card{min-height:0;}
   html.fw-desktop-app.fw-route-square .square-hero-inner,
   html.fw-desktop-app.fw-route-square .square-layout{width:calc(100% - 28px)!important;}
   html.fw-desktop-app.fw-route-square .square-hero-copy .hero-copy{display:none!important;}

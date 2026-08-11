@@ -12,7 +12,7 @@
       }, 6000);
     })();
   </script>
-  <link rel="stylesheet" href="assets/fw-desktop-client.css?v=windows-navigation-stable-20260811-1" />
+  <link rel="stylesheet" href="assets/fw-desktop-client.css?v=windows-home-20260811-1" />
   <script>
     (function(){
       var params = new URLSearchParams(window.location.search || '');
@@ -48,6 +48,18 @@
 <body>
 
 <main class="page">
+  <section class="fw-desktop-home" aria-labelledby="fw-desktop-home-title">
+    <header class="fw-desktop-home-head">
+      <p class="fw-desktop-home-kicker">FW LAB / HOME</p>
+      <h1 id="fw-desktop-home-title">首页</h1>
+      <p>这里先作为研究所的首页。活动、公告和每天一句话，后面会逐步放到对应位置。</p>
+    </header>
+    <div class="fw-desktop-home-grid" aria-label="首页内容预留区">
+      <article class="fw-desktop-home-card"><span>ACTIVITY</span><h2>活动</h2><p>活动内容预留区，后续再接入发布与展示。</p></article>
+      <article class="fw-desktop-home-card"><span>NOTICE</span><h2>公告</h2><p>研究所公告预留区，暂不影响现有栏目。</p></article>
+      <article class="fw-desktop-home-card"><span>DAILY</span><h2>每天一句话</h2><p>每日内容预留区，后续再加入更新方式。</p></article>
+    </div>
+  </section>
   <section class="hero bg-night home-hero">
 
 <header class="header dark">
@@ -101,7 +113,7 @@
   </footer>
 </main>
 
-<script src="assets/app.js?v=windows-navigation-stable-20260811-1"></script>
+<script src="assets/app.js?v=windows-home-20260811-1"></script>
 <script src="assets/auth.js?v=echo-clean-20260702-1"></script>
 <script src="assets/fw-home-feed-preview.js?v=desktop-priority-20260716-1"></script>
   <script src="assets/pwa.js?v=pwa-download-client-20260810-1"></script>
