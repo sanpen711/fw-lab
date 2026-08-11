@@ -6,6 +6,8 @@
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const state = { me:null, tab:'users', rows:{users:[],posts:[],comments:[],reports:[],chats:[],logs:[]} };
+  const PUBLIC_CACHE_KEY = 'admin-public-logs-v1';
+  let publicLogsCache = [];
 
   const actionText = {
     ban:'封号', unban:'解封', mute:'禁言', unmute:'解除禁言',
@@ -35,6 +37,30 @@
   }
   const db = () => window.fwDb.client;
 
+  async function waitForDesktopCache(attempt=0){
+    if(window.fwDesktopCache) return window.fwDesktopCache;
+    if(attempt>=20) return null;
+    await new Promise(resolve=>setTimeout(resolve,50));
+    return waitForDesktopCache(attempt+1);
+  }
+
+  async function hydratePublicLogs(){
+    const box=$('[data-public-trial-list]');
+    if(!box) return false;
+    const cache=await waitForDesktopCache();
+    if(!cache?.enabled) return false;
+    const saved=await cache.read(PUBLIC_CACHE_KEY);
+    if(!saved||saved.version!==1||!Array.isArray(saved.rows)) return false;
+    publicLogsCache=saved.rows;
+    box.innerHTML=renderLogs(publicLogsCache,false);
+    return true;
+  }
+
+  function persistPublicLogs(){
+    if(!window.fwDesktopCache?.enabled) return;
+    window.fwDesktopCache.write(PUBLIC_CACHE_KEY,{version:1,syncedAt:Date.now(),rows:publicLogsCache}).catch(()=>{});
+  }
+
   function ensureChatTab(){
     const tabs = $('.trial-tabs');
     if(!tabs || tabs.querySelector('[data-admin-tab="chats"]')) return;
@@ -48,6 +74,7 @@
   }
 
   async function boot(){
+    await hydratePublicLogs();
     const ok = await waitForDb();
     ensureChatTab();
     if(!ok){ renderPublicError('处理公告暂时读取失败，请稍后刷新。'); return; }
@@ -59,13 +86,26 @@
     const box=$('[data-public-trial-list]');
     if(!box) return;
     try{
-      const {data,error}=await db().from('moderation_logs')
-        .select('id,target_type,target_display_name,action,reason,duration_text,created_at,expires_at')
+      const {data:meta,error}=await db().from('moderation_logs')
+        .select('id,created_at')
         .eq('public_visible',true).eq('is_revoked',false)
         .order('created_at',{ascending:false}).limit(50);
       if(error) throw error;
-      box.innerHTML = renderLogs(data||[], false);
-    }catch(e){ renderPublicError('处理公告暂时读取失败，请稍后刷新。'); }
+      const cachedById=new Map(publicLogsCache.map(row=>[String(row.id),row]));
+      const missingIds=(meta||[]).map(row=>row.id).filter(id=>!cachedById.has(String(id)));
+      let fresh=[];
+      if(missingIds.length){
+        const result=await db().from('moderation_logs')
+          .select('id,target_type,target_display_name,action,reason,duration_text,created_at,expires_at')
+          .in('id',missingIds);
+        if(result.error) throw result.error;
+        fresh=result.data||[];
+      }
+      const freshById=new Map(fresh.map(row=>[String(row.id),row]));
+      publicLogsCache=(meta||[]).map(row=>cachedById.get(String(row.id))||freshById.get(String(row.id))).filter(Boolean);
+      box.innerHTML = renderLogs(publicLogsCache, false);
+      persistPublicLogs();
+    }catch(e){ if(!publicLogsCache.length) renderPublicError('处理公告暂时读取失败，请稍后刷新。'); }
   }
   function renderPublicError(msg){ const box=$('[data-public-trial-list]'); if(box) box.innerHTML = `<div class="trial-empty">${esc(msg)}</div>`; }
 

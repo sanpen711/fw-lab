@@ -1,4 +1,4 @@
-// F.w 研究所 Windows 客户端外壳 v1.0.4
+// F.w 研究所 Windows 客户端外壳 v1.0.5
 // 仅在 Tauri 自定义 User-Agent 中启用，网页、PWA 与 Android 不受影响。
 (function(){
   'use strict';
@@ -117,7 +117,6 @@
       if(field) field.focus();
       return;
     }
-    rememberRoute('compose.html');
     document.body.classList.add('fw-desktop-navigating');
     location.href = 'compose.html';
   }
@@ -229,38 +228,6 @@
     });
   }
 
-  function rememberRoute(route){
-    if(!ROUTES[route]) return;
-    try{ localStorage.setItem('fw:desktop:last-route', route); }catch(e){}
-  }
-
-  function resumeLastRoute(){
-    try{
-      if(sessionStorage.getItem('fw:desktop:session-started') === '1') return false;
-      sessionStorage.setItem('fw:desktop:session-started', '1');
-      var last = localStorage.getItem('fw:desktop:last-route') || '';
-      if(ROUTES[last] && last !== pageName()){
-        location.replace(last);
-        return true;
-      }
-    }catch(e){}
-    return false;
-  }
-
-  function openHomeAfterUpgrade(){
-    try{
-      var key = 'fw:desktop:home-enabled-20260811';
-      if(localStorage.getItem(key) === '1') return false;
-      localStorage.setItem(key, '1');
-      if(pageName() !== 'index.html'){
-        localStorage.setItem('fw:desktop:last-route', 'index.html');
-        location.replace('index.html');
-        return true;
-      }
-    }catch(e){}
-    return false;
-  }
-
   function syncConnection(){
     var banner = document.querySelector('[data-fw-desktop-connection]');
     if(banner) banner.classList.toggle('show', navigator.onLine === false);
@@ -304,7 +271,7 @@
     layer.innerHTML =
       '<section class="fw-legacy-update-card">' +
         '<h2 id="fw-legacy-update-title">软件更新已准备好</h2>' +
-        '<p>版本 <strong data-fw-legacy-version></strong> 开始支持软件内自动更新。这一次点击下载安装包后直接运行即可覆盖升级，不需要卸载，账号、缓存和浏览位置都会保留。</p>' +
+        '<p>版本 <strong data-fw-legacy-version></strong> 开始支持软件内自动更新。这一次点击下载安装包后直接运行即可覆盖升级，不需要卸载，账号和缓存都会保留。</p>' +
         '<p class="fw-legacy-update-note" data-fw-legacy-update-status>点击“下载并升级”后会打开 Microsoft Edge 下载；这是旧版本最后一次借助浏览器更新。</p>' +
         '<div class="fw-legacy-update-actions"><button type="button" data-fw-legacy-later>稍后</button><a data-fw-legacy-download>下载并升级</a></div>' +
       '</section>';
@@ -358,7 +325,6 @@
       var next = e.target.closest('.fw-desktop-nav-item[href], .fw-desktop-brand[href], [data-fw-desktop-more-menu] a[href]');
       if(next){
         saveScroll();
-        rememberRoute((next.getAttribute('href') || '').split('?')[0].split('#')[0]);
         document.body.classList.add('fw-desktop-navigating');
       }
     });
@@ -385,9 +351,6 @@
   }
 
   function boot(){
-    if(openHomeAfterUpgrade()) return;
-    if(resumeLastRoute()) return;
-    rememberRoute(pageName());
     buildShell();
     bind();
     setupRouteIntent();

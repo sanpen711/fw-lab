@@ -9,6 +9,7 @@
   var MAX_IMAGE_SIZE = 800 * 1024;
   var MAX_IMAGE_EDGE = 1280;
   var BUCKET = 'chat-media';
+  var DESKTOP_CACHE_KEY = 'bird-feed-v1';
   var pendingFiles = [];
   var openComments = {};
   var expandedPosts = {};
@@ -17,6 +18,47 @@
   var detailFocusComments = false;
   var lastComposeTrigger = null;
   var previousBodyPaddingRight = '';
+
+  async function waitForDesktopCache(attempt){
+    attempt = attempt || 0;
+    if(window.fwDesktopCache) return window.fwDesktopCache;
+    if(attempt >= 20) return null;
+    await new Promise(function(resolve){ setTimeout(resolve, 50); });
+    return waitForDesktopCache(attempt + 1);
+  }
+
+  function publicBirdPosts(list){
+    return (list || []).map(function(post){
+      var copy = Object.assign({}, post);
+      delete copy.canDelete;
+      delete copy.myReactions;
+      copy.comments = (post.comments || []).map(function(comment){
+        var next = Object.assign({}, comment);
+        delete next.canDelete;
+        return next;
+      });
+      return copy;
+    });
+  }
+
+  async function hydrateDesktopCache(){
+    var cache = await waitForDesktopCache(0);
+    if(!cache || !cache.enabled) return false;
+    var saved = await cache.read(DESKTOP_CACHE_KEY);
+    if(!saved || saved.version !== 1 || !Array.isArray(saved.posts)) return false;
+    feedCache = saved.posts;
+    renderFeed();
+    return true;
+  }
+
+  function persistDesktopCache(){
+    if(!window.fwDesktopCache || !window.fwDesktopCache.enabled) return;
+    window.fwDesktopCache.write(DESKTOP_CACHE_KEY, {
+      version:1,
+      syncedAt:Date.now(),
+      posts:publicBirdPosts(feedCache)
+    }).catch(function(){});
+  }
 
   function $(s, root){ return (root || document).querySelector(s); }
   function $$(s, root){ return Array.from((root || document).querySelectorAll(s)); }
@@ -161,18 +203,54 @@
     return null;
   }
 
-  async function loadBirdPosts(){
+  async function loadBirdPosts(cachedPosts){
     if(!(await waitDb())) throw new Error('数据库还没准备好。');
     var db = window.fwDb.client;
-    var postsResult = await db
+    cachedPosts = Array.isArray(cachedPosts) ? cachedPosts : [];
+    var cachedByPost = {};
+    cachedPosts.forEach(function(post){ if(post && post.id != null) cachedByPost[String(post.id)] = post; });
+    var postMetaResult = await db
       .from('bird_posts')
-      .select('id,user_id,title,content,display_mode,pen_name,images,is_deleted,created_at,updated_at')
+      .select('id,user_id,is_deleted,created_at,updated_at')
       .or('is_deleted.eq.false,is_deleted.is.null')
       .order('created_at', {ascending:false})
       .limit(100);
-    if(postsResult.error) throw new Error('读取观鸟台失败：' + postsResult.error.message);
+    if(postMetaResult.error) throw new Error('读取观鸟台失败：' + postMetaResult.error.message);
 
-    var posts = postsResult.data || [];
+    var postMeta = postMetaResult.data || [];
+    var changedPostIds = postMeta.filter(function(meta){
+      var cached = cachedByPost[String(meta.id)];
+      return !cached || String(cached.updatedAt || cached.createdAt || '') !== String(meta.updated_at || meta.created_at || '');
+    }).map(function(meta){ return meta.id; });
+    var freshPosts = [];
+    if(changedPostIds.length){
+      var postsResult = await db
+        .from('bird_posts')
+        .select('id,user_id,title,content,display_mode,pen_name,images,is_deleted,created_at,updated_at')
+        .in('id', changedPostIds);
+      if(postsResult.error) throw new Error('读取新增观察记录失败：' + postsResult.error.message);
+      freshPosts = postsResult.data || [];
+    }
+    var freshPostMap = {};
+    freshPosts.forEach(function(post){ freshPostMap[String(post.id)] = post; });
+    var posts = postMeta.map(function(meta){
+      var fresh = freshPostMap[String(meta.id)];
+      if(fresh) return fresh;
+      var cached = cachedByPost[String(meta.id)];
+      if(!cached) return null;
+      return {
+        id:meta.id,
+        user_id:meta.user_id,
+        title:cached.title,
+        content:cached.content,
+        display_mode:cached.displayMode,
+        pen_name:cached.penName,
+        images:cached.images,
+        created_at:meta.created_at,
+        updated_at:meta.updated_at,
+        __cachedDisplay:cached
+      };
+    }).filter(Boolean);
     if(!posts.length) return [];
 
     var meId = null;
@@ -182,14 +260,44 @@
     }catch(e){}
 
     var postIds = posts.map(function(p){ return p.id; });
-    var commentsResult = await db
+    var cachedComments = {};
+    cachedPosts.forEach(function(post){
+      (post.comments || []).forEach(function(comment){ if(comment && comment.id != null) cachedComments[String(comment.id)] = comment; });
+    });
+    var commentMetaResult = await db
       .from('bird_comments')
-      .select('id,post_id,user_id,content,is_deleted,created_at')
+      .select('id,post_id,user_id,created_at,is_deleted')
       .in('post_id', postIds)
       .or('is_deleted.eq.false,is_deleted.is.null')
       .order('created_at', {ascending:true});
-    if(commentsResult.error) throw new Error('读取观鸟评论失败：' + commentsResult.error.message);
-    var comments = commentsResult.data || [];
+    if(commentMetaResult.error) throw new Error('读取观鸟评论失败：' + commentMetaResult.error.message);
+    var commentMeta = commentMetaResult.data || [];
+    var missingCommentIds = commentMeta.map(function(comment){ return comment.id; }).filter(function(id){ return !cachedComments[String(id)]; });
+    var freshComments = [];
+    if(missingCommentIds.length){
+      var commentsResult = await db
+        .from('bird_comments')
+        .select('id,post_id,user_id,content,is_deleted,created_at')
+        .in('id', missingCommentIds);
+      if(commentsResult.error) throw new Error('读取新增观鸟评论失败：' + commentsResult.error.message);
+      freshComments = commentsResult.data || [];
+    }
+    var freshCommentMap = {};
+    freshComments.forEach(function(comment){ freshCommentMap[String(comment.id)] = comment; });
+    var comments = commentMeta.map(function(meta){
+      var fresh = freshCommentMap[String(meta.id)];
+      if(fresh) return fresh;
+      var cached = cachedComments[String(meta.id)];
+      if(!cached) return null;
+      return {
+        id:meta.id,
+        post_id:meta.post_id,
+        user_id:meta.user_id,
+        content:cached.content,
+        created_at:meta.created_at,
+        __cachedDisplay:cached
+      };
+    }).filter(Boolean);
 
     var reactions = [];
     var reactionResult = await db
@@ -215,10 +323,10 @@
     });
 
     var ids = uniq(
-      posts
+      freshPosts
         .filter(function(p){ return p.display_mode === 'profile'; })
         .map(function(p){ return p.user_id; })
-        .concat(comments.map(function(c){ return c.user_id; }))
+        .concat(freshComments.map(function(c){ return c.user_id; }))
     );
     var profiles = [];
     if(ids.length){
@@ -229,6 +337,13 @@
     var profilesById = profileMap(profiles);
     var commentsByPost = {};
     comments.forEach(function(c){
+      if(c.__cachedDisplay){
+        var cachedComment = Object.assign({}, c.__cachedDisplay);
+        cachedComment.canDelete = !!meId && c.user_id === meId;
+        cachedComment.time = relativeTime(c.created_at);
+        (commentsByPost[c.post_id] = commentsByPost[c.post_id] || []).push(cachedComment);
+        return;
+      }
       var prof = profilesById[c.user_id] || {};
       (commentsByPost[c.post_id] = commentsByPost[c.post_id] || []).push({
         id:c.id,
@@ -244,9 +359,23 @@
     });
 
     return posts.map(function(p){
+      var stat = reactionStats[p.id] || emptyReactionStats();
+      if(p.__cachedDisplay){
+        var cachedPost = Object.assign({}, p.__cachedDisplay);
+        cachedPost.createdAt = p.created_at;
+        cachedPost.updatedAt = p.updated_at;
+        cachedPost.time = relativeTime(p.created_at);
+        cachedPost.exactTime = exactTime(p.created_at);
+        cachedPost.comments = commentsByPost[p.id] || [];
+        cachedPost.validCount = stat.validCount || 0;
+        cachedPost.seenCount = stat.seenCount || 0;
+        cachedPost.tissueCount = stat.tissueCount || 0;
+        cachedPost.myReactions = stat.myReactions || {valid:false, seen:false, tissue:false};
+        cachedPost.canDelete = !!meId && p.user_id === meId;
+        return cachedPost;
+      }
       var prof = profilesById[p.user_id] || {};
       var author = displayAuthor(p, prof);
-      var stat = reactionStats[p.id] || emptyReactionStats();
       return {
         id:p.id,
         userId:p.user_id,
@@ -256,6 +385,7 @@
         penName:p.pen_name || '',
         images:Array.isArray(p.images) ? p.images : [],
         createdAt:p.created_at,
+        updatedAt:p.updated_at,
         time:relativeTime(p.created_at),
         exactTime:exactTime(p.created_at),
         authorName:author.name,
@@ -604,12 +734,13 @@
   }
   async function syncFeed(){
     try{
-      feedCache = await loadBirdPosts();
+      feedCache = await loadBirdPosts(feedCache);
       renderFeed();
       refreshOpenDetail();
+      persistDesktopCache();
     }catch(e){
       var box = $('[data-bird-feed]');
-      if(box) box.innerHTML = '<div class="bird-empty">' + esc(e.message || '读取失败。') + '</div>';
+      if(box && !feedCache.length) box.innerHTML = '<div class="bird-empty">' + esc(e.message || '读取失败。') + '</div>';
     }
   }
   function validatePost(form){
@@ -872,10 +1003,11 @@
       }
     });
   }
-  function boot(){
+  async function boot(){
     exposeBirdDb();
     bind();
     updatePreview();
+    await hydrateDesktopCache();
     syncFeed();
     if(window.location.hash === '#bird-compose') openComposeModal();
     window.addEventListener('hashchange', function(){

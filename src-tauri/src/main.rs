@@ -5,16 +5,12 @@ use serde_json::Value;
 use std::{
     fs,
     path::PathBuf,
-    time::{Duration, SystemTime},
 };
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tauri_plugin_updater::UpdaterExt;
 
 const CACHE_FOLDER: &str = "content-cache";
-const CACHE_MAX_FILE_BYTES: usize = 4 * 1024 * 1024;
-const CACHE_MAX_TOTAL_BYTES: u64 = 32 * 1024 * 1024;
-const CACHE_MAX_AGE: Duration = Duration::from_secs(30 * 24 * 60 * 60);
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -70,38 +66,10 @@ fn cache_usage(dir: &PathBuf) -> (usize, u64) {
     (entries, bytes)
 }
 
-fn cleanup_cache_dir(dir: &PathBuf) {
-    let now = SystemTime::now();
-    let Ok(files) = fs::read_dir(dir) else {
-        return;
-    };
-    for entry in files.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|value| value.to_str()) != Some("json") {
-            continue;
-        }
-        let stale = entry
-            .metadata()
-            .ok()
-            .and_then(|metadata| metadata.modified().ok())
-            .and_then(|modified| now.duration_since(modified).ok())
-            .map(|age| age > CACHE_MAX_AGE)
-            .unwrap_or(false);
-        if stale {
-            let _ = fs::remove_file(path);
-        }
-    }
-}
-
 #[tauri::command]
 fn desktop_cache_read(app: AppHandle, key: String) -> Result<Option<Value>, String> {
     let path = cache_file(&app, &key)?;
     if !path.exists() {
-        return Ok(None);
-    }
-    let metadata = fs::metadata(&path).map_err(|error| format!("无法读取缓存信息：{error}"))?;
-    if metadata.len() > CACHE_MAX_FILE_BYTES as u64 {
-        let _ = fs::remove_file(path);
         return Ok(None);
     }
     let raw = fs::read_to_string(&path).map_err(|error| format!("无法读取缓存：{error}"))?;
@@ -118,31 +86,11 @@ fn desktop_cache_read(app: AppHandle, key: String) -> Result<Option<Value>, Stri
 fn desktop_cache_write(app: AppHandle, key: String, value: Value) -> Result<CacheStatus, String> {
     let path = cache_file(&app, &key)?;
     let raw = serde_json::to_vec(&value).map_err(|error| format!("无法整理缓存数据：{error}"))?;
-    if raw.len() > CACHE_MAX_FILE_BYTES {
-        return Err("单个缓存文件超过 4 MB 限制。".to_owned());
-    }
 
     let dir = path
         .parent()
         .ok_or_else(|| "缓存目录无效。".to_owned())?
         .to_path_buf();
-    let previous_bytes = fs::metadata(&path).map(|metadata| metadata.len()).unwrap_or(0);
-    let (_, current_bytes) = cache_usage(&dir);
-    let next_total = current_bytes
-        .saturating_sub(previous_bytes)
-        .saturating_add(raw.len() as u64);
-    if next_total > CACHE_MAX_TOTAL_BYTES {
-        cleanup_cache_dir(&dir);
-        let (_, cleaned_bytes) = cache_usage(&dir);
-        if cleaned_bytes
-            .saturating_sub(previous_bytes)
-            .saturating_add(raw.len() as u64)
-            > CACHE_MAX_TOTAL_BYTES
-        {
-            return Err("缓存空间已达到 32 MB 上限。".to_owned());
-        }
-    }
-
     let temp = path.with_extension("json.tmp");
     fs::write(&temp, raw).map_err(|error| format!("无法写入缓存：{error}"))?;
     if path.exists() {
@@ -221,7 +169,7 @@ fn check_for_updates(app: AppHandle) {
             let install_app = app.clone();
             app.dialog()
                 .message(format!(
-                    "发现新版本 {version}。更新会下载到当前安装位置，完成后自动重启；账号、缓存和浏览位置都会保留。"
+                    "发现新版本 {version}。更新会下载到当前安装位置，完成后自动重启；账号和缓存都会保留。"
                 ))
                 .title("F.w 研究所更新")
                 .kind(MessageDialogKind::Info)
@@ -251,9 +199,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
-            if let Ok(dir) = cache_dir(app.handle()) {
-                cleanup_cache_dir(&dir);
-            }
+            let _ = cache_dir(app.handle());
             check_for_updates(app.handle().clone());
             Ok(())
         })

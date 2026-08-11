@@ -243,6 +243,35 @@
       .trim() || '对你的低功耗发言产生了回应。';
   }
 
+  function echoCacheKey(userId){
+    return 'echo-v1-' + String(userId || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 48);
+  }
+
+  async function waitForDesktopCache(attempt = 0){
+    if(window.fwDesktopCache) return window.fwDesktopCache;
+    if(attempt >= 20) return null;
+    await new Promise(resolve => setTimeout(resolve, 50));
+    return waitForDesktopCache(attempt + 1);
+  }
+
+  function renderEchoRows(body, rows, profiles){
+    rows = rows || [];
+    profiles = profiles || {};
+    const unread = rows.filter(n => !n.is_read).map(n => n.id);
+    const toolbar = `<div class="fw-stable-echo-toolbar"><div><b>回声通知</b><small>${unread.length ? `还有 ${unread.length} 条未读` : '没有未读回声'}</small></div><div class="fw-stable-echo-tools">${unread.length ? '<button class="dark" type="button" data-fw-stable-mark-all>全部已读</button>' : ''}<button type="button" data-fw-stable-refresh>刷新</button></div></div>`;
+    if(!rows.length){
+      body.innerHTML = toolbar + '<div class="fw-stable-echo-empty">暂时没有新的回声。私聊消息已经移到“搭子”里了。</div>';
+      return unread;
+    }
+    body.innerHTML = toolbar + rows.map(n => {
+      const p = profiles[n.actor_id] || {};
+      const name = p.nickname || '某位研究员';
+      const postId = postIdOf(n);
+      return `<article class="fw-stable-echo-item ${n.is_read ? '' : 'unread'}" data-fw-stable-notice="${esc(n.id)}"><span data-fw-profile-user="${esc(n.actor_id || '')}">${avatarHtml(p)}</span><div class="fw-stable-echo-main"><b>${esc(name)} ${esc(typeText(n.type))}</b><span>${esc(previewText(n.content))}</span><time>${esc(timeText(n.created_at))}</time></div><div class="fw-stable-echo-actions">${postId ? `<button type="button" data-fw-stable-post="${esc(postId)}" data-open-comments="${n.type === 'comment' || n.type === 'comment_reply' ? '1' : '0'}" data-fw-stable-read="${esc(n.id)}">查看帖子</button>` : ''}${n.type === 'friend_request' || n.type === 'friend_accept' ? `<button type="button" data-fw-stable-buddy data-fw-stable-read="${esc(n.id)}">去搭子</button>` : ''}</div></article>`;
+    }).join('');
+    return unread;
+  }
+
   async function openEcho(){
     if(state.echoOpening) return;
     state.echoOpening = true;
@@ -256,22 +285,43 @@
     modal.classList.add('show');
     body.innerHTML = '<div class="fw-stable-echo-empty">正在读取回声...</div>';
     try{
-      const {data, error} = await window.fwDb.client.from('notifications').select('id,actor_id,type,target_type,target_id,content,is_read,created_at').eq('user_id', me.id).neq('type', 'private_message').order('created_at', {ascending:false}).limit(100);
-      if(error) throw error;
-      let rows = await resolveReplyPosts(data || []);
+      const cache = await waitForDesktopCache();
+      const key = echoCacheKey(me.id);
+      const saved = cache?.enabled ? await cache.read(key) : null;
+      let cachedRows = saved?.version === 1 && Array.isArray(saved.rows) ? saved.rows : [];
+      let cachedProfiles = saved?.version === 1 && saved.profiles && typeof saved.profiles === 'object' ? saved.profiles : {};
+      if(cachedRows.length){
+        const cachedUnread = renderEchoRows(body, cachedRows, cachedProfiles);
+        if(cachedUnread.length) markEchoRead(cachedUnread);
+      }
+
+      const cachedById = new Map(cachedRows.map(row => [String(row.id), row]));
+      const metaResult = await window.fwDb.client.from('notifications').select('id,is_read,created_at').eq('user_id', me.id).neq('type', 'private_message').order('created_at', {ascending:false}).limit(100);
+      if(metaResult.error) throw metaResult.error;
+      const metaRows = metaResult.data || [];
+      const missingIds = metaRows.map(row => row.id).filter(id => !cachedById.has(String(id)));
+      let freshRows = [];
+      if(missingIds.length){
+        const freshResult = await window.fwDb.client.from('notifications').select('id,actor_id,type,target_type,target_id,content,is_read,created_at').in('id', missingIds);
+        if(freshResult.error) throw freshResult.error;
+        freshRows = freshResult.data || [];
+      }
+      const freshById = new Map(freshRows.map(row => [String(row.id), row]));
+      let rows = metaRows.map(meta => ({...(cachedById.get(String(meta.id)) || freshById.get(String(meta.id)) || {}), ...meta})).filter(row => row.id != null && row.type);
+      rows = await resolveReplyPosts(rows);
       if(window.FWCommentReplyEcho) rows = await window.FWCommentReplyEcho.merge(window.fwDb.client, me.id, rows, {limit:100});
-      const profiles = await fetchProfiles(rows.map(x => x.actor_id));
-      const unread = rows.filter(n => !n.is_read).map(n => n.id);
-      const toolbar = `<div class="fw-stable-echo-toolbar"><div><b>回声通知</b><small>${unread.length ? `还有 ${unread.length} 条未读` : '没有未读回声'}</small></div><div class="fw-stable-echo-tools">${unread.length ? '<button class="dark" type="button" data-fw-stable-mark-all>全部已读</button>' : ''}<button type="button" data-fw-stable-refresh>刷新</button></div></div>`;
-      if(!rows.length){ body.innerHTML = toolbar + '<div class="fw-stable-echo-empty">暂时没有新的回声。私聊消息已经移到“搭子”里了。</div>'; return; }
-      body.innerHTML = toolbar + rows.map(n => {
-        const p = profiles[n.actor_id] || {};
-        const name = p.nickname || '某位研究员';
-        const postId = postIdOf(n);
-        return `<article class="fw-stable-echo-item ${n.is_read ? '' : 'unread'}" data-fw-stable-notice="${esc(n.id)}"><span data-fw-profile-user="${esc(n.actor_id || '')}">${avatarHtml(p)}</span><div class="fw-stable-echo-main"><b>${esc(name)} ${esc(typeText(n.type))}</b><span>${esc(previewText(n.content))}</span><time>${esc(timeText(n.created_at))}</time></div><div class="fw-stable-echo-actions">${postId ? `<button type="button" data-fw-stable-post="${esc(postId)}" data-open-comments="${n.type === 'comment' || n.type === 'comment_reply' ? '1' : '0'}" data-fw-stable-read="${esc(n.id)}">查看帖子</button>` : ''}${n.type === 'friend_request' || n.type === 'friend_accept' ? `<button type="button" data-fw-stable-buddy data-fw-stable-read="${esc(n.id)}">去搭子</button>` : ''}</div></article>`;
-      }).join('');
+      const missingActors = rows.map(x => x.actor_id).filter(id => id && !cachedProfiles[id]);
+      const freshProfiles = await fetchProfiles(missingActors);
+      const profiles = {...cachedProfiles, ...freshProfiles};
+      const unread = renderEchoRows(body, rows, profiles);
+      if(cache?.enabled){
+        const cachedAsRead = rows.map(row => ({...row, is_read:true}));
+        cache.write(key, {version:1, syncedAt:Date.now(), rows:cachedAsRead, profiles}).catch(() => {});
+      }
       if(unread.length) await markEchoRead(unread);
-    }catch(e){ body.innerHTML = '<div class="fw-stable-echo-empty">回声读取失败。<div class="fw-stable-echo-tools"><button class="dark" type="button" data-fw-stable-refresh>重新加载</button></div></div>'; }
+    }catch(e){
+      if(!body.querySelector('.fw-stable-echo-item,.fw-stable-echo-toolbar')) body.innerHTML = '<div class="fw-stable-echo-empty">回声读取失败。<div class="fw-stable-echo-tools"><button class="dark" type="button" data-fw-stable-refresh>重新加载</button></div></div>';
+    }
   }
   window.fwOpenStableEcho = openEcho;
 
