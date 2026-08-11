@@ -380,7 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 (function loadSupabaseBridge(){
   const scripts = [
-    "assets/supabase-live.js?v=compose-redirect-20260811-1",
+    "assets/supabase-live.js?v=ui-consistency-20260811-1",
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
     "assets/supabase-db.js?v=critical-relations-20260710-1"
@@ -454,8 +454,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const isDedicatedWindowsSocialPage = isWindowsDesktopApp && (isEchoPage || isBuddyPage);
 
   if(isWindowsDesktopApp){
-    loadCss("assets/fw-desktop-client.css?v=separate-compose-20260811-1");
-    loadJs("assets/fw-desktop-client.js?v=separate-compose-20260811-1");
+    loadCss("assets/fw-desktop-client.css?v=ui-consistency-20260811-1");
+    loadJs("assets/fw-desktop-client.js?v=ui-consistency-20260811-1");
   }
 
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
@@ -479,7 +479,7 @@ document.addEventListener("DOMContentLoaded", () => {
     桌面端社交、登录、头像、房间聊天等模块保留。
   */
   if(!isSquareSurface) loadJs("assets/fw-stable-core.js?v=windows-performance-20260810-1");
-  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-wechat.js?v=windows-client-20260810-3");
+  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-wechat.js?v=ui-consistency-20260811-1");
   loadJs("assets/fw-desktop-echo-legacy-kill.js?v=desktop-fixes-lite-20260702-1");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-sticker-direct-render.js?v=home-feed-scope-20260713-1");

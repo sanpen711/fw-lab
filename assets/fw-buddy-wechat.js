@@ -8,6 +8,7 @@
 
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
+  const isWindowsDesktopApp = /FWYanjiusuoDesktop\//i.test(navigator.userAgent || '');
 
   let me = null;
   let activeTab = 'messages';
@@ -284,6 +285,23 @@
     document.head.appendChild(style);
   }
 
+  function syncDesktopComposer(enabled){
+    if(!isWindowsDesktopApp) return;
+    const form = $('[data-fw-wx-compose]');
+    if(!form) return;
+    const input = form.querySelector('input[name="message"]');
+    const submit = form.querySelector('button[type="submit"]');
+    form.classList.toggle('fw-desktop-compose-disabled', !enabled);
+    form.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+    if(input){
+      input.disabled = !enabled;
+      input.placeholder = enabled
+        ? '说一句只给搭子看的话，最多 300 字...'
+        : '先从左侧选择一个搭子';
+    }
+    if(submit) submit.disabled = !enabled;
+  }
+
   function ensureHub(){
     let modal = $('[data-fw-wx-buddy-modal]');
     if(modal) return modal;
@@ -310,6 +328,7 @@
         </div>
       </div>`;
     document.body.appendChild(modal);
+    syncDesktopComposer(false);
     return modal;
   }
 
@@ -468,6 +487,7 @@
 
   async function selectChat(targetId){
     if(!targetId) return;
+    syncDesktopComposer(false);
     activeTargetId = String(targetId);
     chatGeneration += 1;
     chatLoading = false;
@@ -492,11 +512,13 @@
       const convId = Number(data);
       if(!Number.isFinite(convId) || convId <= 0) throw new Error('私聊会话创建失败。');
       activeConversationId = convId;
+      syncDesktopComposer(true);
       await loadMessages();
       clearInterval(chatTimer);
       chatTimer = setInterval(() => { if($('.fw-wx-modal.show') && !document.hidden) loadMessages(); }, 6000);
       $('[data-fw-wx-compose] input')?.focus();
     }catch(e){
+      syncDesktopComposer(false);
       if(box) box.innerHTML = `<div class="fw-wx-empty">私聊打开失败：${esc(e.message || '请稍后重试。')}<div class="fw-wx-actions"><button class="fw-wx-mini dark" type="button" data-fw-wx-retry-chat>重新打开</button></div></div>`;
     }
   }
@@ -645,6 +667,7 @@
     if(title) title.textContent = '选择一个搭子';
     if(sub) sub.textContent = '左侧点一个消息或搭子，右侧开始低功耗私聊。';
     if(box) box.innerHTML = '<div class="fw-wx-empty">还没有选择聊天对象。</div>';
+    syncDesktopComposer(false);
   }
 
   function intercept(e){
