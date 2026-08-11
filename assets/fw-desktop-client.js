@@ -9,6 +9,7 @@
 
   var ROUTES = {
     'index.html': {key:'home', title:'首页', subtitle:'活动、公告和每天一句话都会放在这里'},
+    'compose.html': {key:'compose', title:'发牢骚', subtitle:'把今天想说的话单独放在这里'},
     'square.html': {key:'square', title:'精神广场', subtitle:'匿名说点真话，也听听别人的今天'},
     'rooms.html': {key:'rooms', title:'学术研讨', subtitle:'一本正经地研究不太正经的问题'},
     'bird.html': {key:'bird', title:'观鸟台', subtitle:'看看研究所里此刻发生了什么'},
@@ -64,7 +65,7 @@
     aside.dataset.fwDesktopSidebar = '1';
     aside.innerHTML =
       '<a class="fw-desktop-brand" href="index.html" aria-label="F.w 研究所首页"><span>F.w</span><small>研究所</small></a>' +
-      '<button class="fw-desktop-compose" type="button" data-fw-desktop-compose title="发牢骚">' + icon('plus') + '<span>发牢骚</span></button>' +
+      '<a class="fw-desktop-compose' + (route.key === 'compose' ? ' active' : '') + '" href="compose.html" data-fw-desktop-compose title="发牢骚">' + icon('plus') + '<span>发牢骚</span></a>' +
       '<nav class="fw-desktop-nav" aria-label="软件主导航">' + NAV.map(function(item){
         return '<a class="fw-desktop-nav-item' + (route.key === item.key ? ' active' : '') + '" href="' + item.href + '" data-fw-desktop-nav="' + item.key + '" title="' + item.label + '">' +
           icon(item.icon) + '<span>' + item.label + '</span>' + (item.badge ? '<b data-fw-desktop-badge="' + item.badge + '"></b>' : '') + '</a>';
@@ -82,31 +83,14 @@
   }
 
   function openComposer(){
-    if(pageName() !== 'square.html'){
-      rememberRoute('square.html');
-      document.body.classList.add('fw-desktop-navigating');
-      location.href = 'square.html?compose=1';
+    if(pageName() === 'compose.html'){
+      var field = document.querySelector('[data-post-form] textarea');
+      if(field) field.focus();
       return;
     }
-    var form = document.querySelector('[data-post-form]');
-    var field = form && form.querySelector('textarea');
-    if(!form || !field) return;
-    form.classList.add('fw-desktop-compose-open');
-    form.scrollIntoView({behavior:'smooth', block:'center'});
-    setTimeout(function(){ field.focus(); }, 220);
-  }
-
-  function setupComposer(){
-    var form = document.querySelector('[data-post-form]');
-    if(!form) return;
-    var field = form.querySelector('textarea');
-    if(!field) return;
-    form.classList.add('fw-desktop-compose-ready');
-    field.addEventListener('focus', function(){ form.classList.add('fw-desktop-compose-open'); });
-    field.addEventListener('input', function(){
-      form.classList.toggle('fw-desktop-compose-open', Boolean(field.value.trim()) || document.activeElement === field);
-    });
-    if(new URLSearchParams(location.search).get('compose') === '1') setTimeout(openComposer, 180);
+    rememberRoute('compose.html');
+    document.body.classList.add('fw-desktop-navigating');
+    location.href = 'compose.html';
   }
 
   function markPageReady(){
@@ -187,11 +171,11 @@
 
   function setupRouteIntent(){
     document.addEventListener('pointerover', function(e){
-      var next = e.target.closest && e.target.closest('.fw-desktop-nav-item[href], .fw-desktop-brand[href]');
+      var next = e.target.closest && e.target.closest('.fw-desktop-compose[href], .fw-desktop-nav-item[href], .fw-desktop-brand[href]');
       if(next) prefetchRoute(next.getAttribute('href'));
     }, {passive:true});
     document.addEventListener('focusin', function(e){
-      var next = e.target.closest && e.target.closest('.fw-desktop-nav-item[href], .fw-desktop-brand[href]');
+      var next = e.target.closest && e.target.closest('.fw-desktop-compose[href], .fw-desktop-nav-item[href], .fw-desktop-brand[href]');
       if(next) prefetchRoute(next.getAttribute('href'));
     });
   }
@@ -356,7 +340,6 @@
     if(resumeLastRoute()) return;
     rememberRoute(pageName());
     buildShell();
-    setupComposer();
     bind();
     setupRouteIntent();
     syncBadges();

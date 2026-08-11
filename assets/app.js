@@ -6,6 +6,7 @@
   var page = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
   var viewMap = {
     'index.html':'nav',
+    'compose.html':'square',
     'square.html':'square',
     'rooms.html':'rooms',
     'bird.html':'bird',
@@ -267,6 +268,11 @@ function initPostForm(){
           notice.textContent = "";
         }, 2200);
       }
+
+      const redirect = form.dataset.postRedirect;
+      if(redirect){
+        window.setTimeout(() => { window.location.href = redirect; }, 320);
+      }
     });
   });
 }
@@ -374,7 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 (function loadSupabaseBridge(){
   const scripts = [
-    "assets/supabase-live.js?v=desktop-auth-switch-20260720-1",
+    "assets/supabase-live.js?v=compose-redirect-20260811-1",
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
     "assets/supabase-db.js?v=critical-relations-20260710-1"
@@ -439,6 +445,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const isHome = !page || page === "index.html";
   const isAdmin = page === "admin.html";
   const isSquare = page === "square.html";
+  const isCompose = page === "compose.html";
+  const isSquareSurface = isSquare || isCompose;
   const isEchoPage = page === "echo.html";
   const isBuddyPage = page === "buddy.html";
   const hasFeedSurface = Boolean(document.querySelector("[data-post-form], [data-feed]"));
@@ -446,8 +454,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const isDedicatedWindowsSocialPage = isWindowsDesktopApp && (isEchoPage || isBuddyPage);
 
   if(isWindowsDesktopApp){
-    loadCss("assets/fw-desktop-client.css?v=windows-web-home-20260811-1");
-    loadJs("assets/fw-desktop-client.js?v=windows-web-home-20260811-1");
+    loadCss("assets/fw-desktop-client.css?v=separate-compose-20260811-1");
+    loadJs("assets/fw-desktop-client.js?v=separate-compose-20260811-1");
   }
 
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
@@ -463,30 +471,30 @@ document.addEventListener("DOMContentLoaded", () => {
   loadJs("assets/fw-avatar-mobile-fix.js?v=avatar-mobile-fix-20260514-2");
   loadJs("assets/fw-avatar-upload-stage-fix.js?v=avatar-upload-stage-fix-20260514-1");
   loadJs("assets/fw-avatar-save-guard.js?v=avatar-save-guard-20260514-1");
-  if(!isSquare) loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
+  if(!isSquareSurface) loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
 
   /*
     手机端已经迁移到 /app/ 独立 PWA。
     旧电脑端手机壳脚本不再加载，避免和 /app/ 的底部导航、搭子、回声、我的入口重复抢控制权。
     桌面端社交、登录、头像、房间聊天等模块保留。
   */
-  if(!isSquare) loadJs("assets/fw-stable-core.js?v=windows-performance-20260810-1");
-  if(!isSquare && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-wechat.js?v=windows-client-20260810-3");
+  if(!isSquareSurface) loadJs("assets/fw-stable-core.js?v=windows-performance-20260810-1");
+  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-wechat.js?v=windows-client-20260810-3");
   loadJs("assets/fw-desktop-echo-legacy-kill.js?v=desktop-fixes-lite-20260702-1");
-  if(!isSquare && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
-  if(!isSquare && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-sticker-direct-render.js?v=home-feed-scope-20260713-1");
-  if(!isSquare && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-chat-media-upload.js?v=home-feed-scope-20260713-1");
+  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
+  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-sticker-direct-render.js?v=home-feed-scope-20260713-1");
+  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-chat-media-upload.js?v=home-feed-scope-20260713-1");
 
   if(hasFeedSurface) loadJs("assets/fw-post-media-tools.js?v=desktop-performance-20260806-2");
 
   if(!isWindowsDesktopApp) loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
   if(!isWindowsDesktopApp) loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
-  if(!isSquare && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
-  if(!isSquare && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-admin-buddy-lock.js?v=admin-buddy-lock-20260513-1");
+  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
+  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-admin-buddy-lock.js?v=admin-buddy-lock-20260513-1");
   loadJs("assets/fw-report-rpc.js?v=desktop-performance-20260806-2");
   if(isAdmin) loadJs("assets/fw-admin-polish.js?v=admin-polish-20260513-1");
   if(!isWindowsDesktopApp) loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
-  if(!isSquare && !isWindowsDesktopApp) loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260513-1");
+  if(!isSquareSurface && !isWindowsDesktopApp) loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260513-1");
 
   if(document.querySelector("[data-weekly-grid]")){
     loadJs("assets/fw-archive-enhance.js?v=archive-leaderboard-20260511-1");

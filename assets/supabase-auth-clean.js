@@ -895,6 +895,13 @@
       }
 
       toast('已投递到研究所。');
+
+      const redirect = form.dataset.postRedirect;
+      if(redirect){
+        window.location.href = redirect;
+        return;
+      }
+
       await loadRemotePosts();
 
     }catch(e){
