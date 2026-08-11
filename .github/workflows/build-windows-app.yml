@@ -70,16 +70,16 @@ jobs:
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
           $metadata = @{
             available = $true
-            version = '1.0.4'
+            version = '1.0.5'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
             sha256 = $hash
-            notes = '新增 Windows 本地内容缓存：精神广场先显示本地内容，再增量同步新帖子、评论和互动，减少重复加载。'
+            notes = '扩展 Windows 本地增量缓存到学术研讨、观鸟台、废话档案、回声、搭子联系人和处理公告；取消容量与自动清理限制，并固定从首页启动。'
           }
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
           $updaterMetadata = @{
-            version = '1.0.4'
+            version = '1.0.5'
             notes = $metadata.notes
             pub_date = $publishedAt
             platforms = @{
@@ -94,7 +94,7 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.0.4
+          name: fw-lab-windows-1.0.5
           path: |
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig

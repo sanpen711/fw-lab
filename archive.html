@@ -695,7 +695,7 @@
     </footer>
   </main>
 
-<script src="assets/app.js?v=desktop-cache-20260811-1"></script>
+<script src="assets/app.js?v=desktop-cache-all-20260811-1"></script>
   <script src="assets/auth.js"></script>
   <script>
   (function(){
@@ -709,6 +709,7 @@
     };
     let dailyRankings={like:[],same:[],tissue:[]};
     let currentDailyType='like';
+    const DESKTOP_CACHE_KEY='archive-rankings-v1';
 
     function esc(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
     function initials(name){return String(name||'FW').trim().slice(0,2).toUpperCase();}
@@ -729,6 +730,12 @@
         },100);
       });
     }
+    async function waitForDesktopCache(attempt=0){
+      if(window.fwDesktopCache) return window.fwDesktopCache;
+      if(attempt>=20) return null;
+      await new Promise(resolve=>setTimeout(resolve,50));
+      return waitForDesktopCache(attempt+1);
+    }
     function startOfDay(d=new Date()){
       const x=new Date(d);
       x.setHours(0,0,0,0);
@@ -743,6 +750,30 @@
       const thisMonday=addDays(today,-daysSinceMonday);
       const lastMonday=addDays(thisMonday,-7);
       return {today,yesterday,thisMonday,lastMonday};
+    }
+    function rangeSignature(ranges){
+      return [ranges.yesterday,ranges.today,ranges.lastMonday,ranges.thisMonday].map(d=>d.toISOString()).join('|');
+    }
+    async function hydrateArchiveCache(ranges){
+      const cache=await waitForDesktopCache();
+      if(!cache?.enabled) return false;
+      const saved=await cache.read(DESKTOP_CACHE_KEY);
+      if(!saved||saved.version!==1||saved.range!==rangeSignature(ranges)||!saved.weekly||!saved.daily) return false;
+      dailyRankings=saved.daily;
+      renderWeekly(saved.weekly);
+      renderDaily(currentDailyType);
+      renderHistory(saved.weekly);
+      return true;
+    }
+    function persistArchiveCache(ranges,weekly){
+      if(!window.fwDesktopCache?.enabled) return;
+      window.fwDesktopCache.write(DESKTOP_CACHE_KEY,{
+        version:1,
+        syncedAt:Date.now(),
+        range:rangeSignature(ranges),
+        weekly,
+        daily:dailyRankings
+      }).catch(()=>{});
     }
     function fmtDate(d){return `${d.getMonth()+1}月${d.getDate()}日`;}
     function setNextUpdateText(){
@@ -894,13 +925,15 @@
 
     async function bootArchive(){
       setNextUpdateText();
+      const ranges=getRanges();
+      if(await hydrateArchiveCache(ranges)) return;
       const ok=await waitForDb();
       if(!ok){
         document.querySelector('[data-weekly-grid]').innerHTML='<div class="archive-loading">榜单暂时读取失败，请稍后刷新。</div>';
         document.querySelector('[data-daily-list]').innerHTML='<div class="empty-list">榜单暂时读取失败，请稍后刷新。</div>';
         return;
       }
-      const {today,yesterday,thisMonday,lastMonday}=getRanges();
+      const {today,yesterday,thisMonday,lastMonday}=ranges;
       try{
         const [wLike,wSame,wTissue,dLike,dSame,dTissue]=await Promise.all([
           fetchRankings(lastMonday,thisMonday,'like',3),
@@ -915,6 +948,7 @@
         renderWeekly(weekly);
         renderDaily(currentDailyType);
         renderHistory(weekly);
+        persistArchiveCache(ranges,weekly);
       }catch(err){
         console.error(err);
         document.querySelector('[data-weekly-grid]').innerHTML='<div class="archive-loading">榜单暂时读取失败，请稍后刷新。</div>';

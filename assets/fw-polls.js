@@ -2,6 +2,7 @@
 (function(){
   const MAX_OPTIONS = 20;
   const INITIAL_OPTION_COUNT = 4;
+  const DESKTOP_CACHE_KEY = 'rooms-polls-v1';
 
   const state = {
     user:null,
@@ -9,6 +10,41 @@
     ready:false,
     renderTimer:null
   };
+
+  function publicPollsForCache(polls){
+    return (polls || []).map(poll => {
+      const copy = {...poll};
+      delete copy.myVote;
+      return copy;
+    });
+  }
+
+  async function waitForDesktopCache(attempt = 0){
+    if(window.fwDesktopCache) return window.fwDesktopCache;
+    if(attempt >= 20) return null;
+    await new Promise(resolve => setTimeout(resolve, 50));
+    return waitForDesktopCache(attempt + 1);
+  }
+
+  async function hydrateDesktopCache(){
+    const cache = await waitForDesktopCache();
+    if(!cache?.enabled) return false;
+    const saved = await cache.read(DESKTOP_CACHE_KEY);
+    if(!saved || saved.version !== 1 || !Array.isArray(saved.polls)) return false;
+    state.polls = saved.polls;
+    renderPolls();
+    setStatus('已显示本地课题，正在同步最新变化...');
+    return true;
+  }
+
+  function persistDesktopCache(){
+    if(!window.fwDesktopCache?.enabled) return;
+    window.fwDesktopCache.write(DESKTOP_CACHE_KEY, {
+      version:1,
+      syncedAt:Date.now(),
+      polls:publicPollsForCache(state.polls)
+    }).catch(() => {});
+  }
 
   const $ = selector => document.querySelector(selector);
   const $$ = selector => Array.from(document.querySelectorAll(selector));
@@ -355,8 +391,7 @@
 
   async function loadPolls(){
     if(!window.fwDb?.client){
-      state.polls = [];
-      renderPolls();
+      if(!state.polls.length) renderPolls();
       setStatus(pollReadFailedMessage());
       return;
     }
@@ -364,9 +399,11 @@
     setStatus('正在读取学术研讨课题...');
 
     try{
+      const cachedPolls = Array.isArray(state.polls) ? state.polls : [];
+      const cachedById = new Map(cachedPolls.map(poll => [String(poll.id), poll]));
       const pollResult = await window.fwDb.client
         .from('polls')
-        .select('id,user_id,title,is_official,created_at,ends_at,closed_at,conclusion,is_deleted,profiles(nickname,avatar_url)')
+        .select('id,user_id,is_official,created_at,ends_at,closed_at,conclusion,is_deleted')
         .eq('is_deleted', false)
         .order('is_official', {ascending:false})
         .order('created_at', {ascending:false})
@@ -374,8 +411,8 @@
 
       if(pollResult.error) throw pollResult.error;
 
-      const polls = pollResult.data || [];
-      const ids = polls.map(poll => poll.id);
+      const pollMeta = pollResult.data || [];
+      const ids = pollMeta.map(poll => poll.id);
       const idSet = new Set(ids.map(id => String(id)));
 
       if(!ids.length){
@@ -385,12 +422,43 @@
         return;
       }
 
-      const optionResult = await window.fwDb.client
+      const missingPollIds = ids.filter(id => !cachedById.has(String(id)));
+      let newPolls = [];
+      if(missingPollIds.length){
+        const newPollResult = await window.fwDb.client
+          .from('polls')
+          .select('id,user_id,title,is_official,created_at,ends_at,closed_at,conclusion,is_deleted,profiles(nickname,avatar_url)')
+          .in('id', missingPollIds);
+        if(newPollResult.error) throw newPollResult.error;
+        newPolls = newPollResult.data || [];
+      }
+      const newPollById = new Map(newPolls.map(poll => [String(poll.id), poll]));
+      const polls = pollMeta.map(meta => ({
+        ...(cachedById.get(String(meta.id)) || newPollById.get(String(meta.id)) || {}),
+        ...meta
+      })).filter(poll => poll.id != null && poll.title);
+
+      const cachedOptions = new Map();
+      cachedPolls.forEach(poll => (poll.options || []).forEach(option => cachedOptions.set(String(option.id), option)));
+      const optionMetaResult = await window.fwDb.client
         .from('poll_options')
-        .select('id,poll_id,user_id,label,source,created_at')
+        .select('id,poll_id')
         .in('poll_id', ids)
         .order('created_at', {ascending:true});
-      if(optionResult.error) throw optionResult.error;
+      if(optionMetaResult.error) throw optionMetaResult.error;
+      const optionMeta = optionMetaResult.data || [];
+      const missingOptionIds = optionMeta.map(option => option.id).filter(id => !cachedOptions.has(String(id)));
+      let freshOptions = [];
+      if(missingOptionIds.length){
+        const freshOptionResult = await window.fwDb.client
+          .from('poll_options')
+          .select('id,poll_id,user_id,label,source,created_at')
+          .in('id', missingOptionIds)
+          .order('created_at', {ascending:true});
+        if(freshOptionResult.error) throw freshOptionResult.error;
+        freshOptions = freshOptionResult.data || [];
+      }
+      freshOptions.forEach(option => cachedOptions.set(String(option.id), option));
 
       const statsResult = await window.fwDb.client.rpc('fw_poll_vote_stats');
       if(statsResult.error) throw statsResult.error;
@@ -402,7 +470,9 @@
       }
 
       const optionsByPoll = {};
-      (optionResult.data || []).forEach(option => {
+      optionMeta.forEach(meta => {
+        const option = cachedOptions.get(String(meta.id));
+        if(!option) return;
         (optionsByPoll[option.poll_id] = optionsByPoll[option.poll_id] || []).push(option);
       });
 
@@ -434,10 +504,10 @@
 
       renderPolls();
       setStatus('');
+      persistDesktopCache();
     }catch(error){
       console.error('[fw-polls] load polls failed', error);
-      state.polls = [];
-      renderPolls();
+      if(!state.polls.length) renderPolls();
       setStatus(pollReadFailedMessage());
     }
   }
@@ -700,6 +770,7 @@
   async function init(){
     bindEvents();
     setStatus('正在读取学术研讨课题...');
+    await hydrateDesktopCache();
 
     try{
       const ready = await waitForFwDb();

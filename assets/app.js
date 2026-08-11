@@ -454,9 +454,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const isDedicatedWindowsSocialPage = isWindowsDesktopApp && (isEchoPage || isBuddyPage);
 
   if(isWindowsDesktopApp){
-    loadJs("assets/fw-desktop-cache.js?v=desktop-cache-20260811-1");
+    loadJs("assets/fw-desktop-cache.js?v=desktop-cache-all-20260811-1");
     loadCss("assets/fw-desktop-client.css?v=ui-consistency-20260811-1");
-    loadJs("assets/fw-desktop-client.js?v=ui-consistency-20260811-1");
+    loadJs("assets/fw-desktop-client.js?v=desktop-cache-all-20260811-1");
   }
 
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
@@ -479,8 +479,8 @@ document.addEventListener("DOMContentLoaded", () => {
     旧电脑端手机壳脚本不再加载，避免和 /app/ 的底部导航、搭子、回声、我的入口重复抢控制权。
     桌面端社交、登录、头像、房间聊天等模块保留。
   */
-  if(!isSquareSurface) loadJs("assets/fw-stable-core.js?v=windows-performance-20260810-1");
-  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-wechat.js?v=ui-consistency-20260811-1");
+  if(!isSquareSurface) loadJs("assets/fw-stable-core.js?v=desktop-cache-all-20260811-1");
+  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-wechat.js?v=desktop-cache-all-20260811-1");
   loadJs("assets/fw-desktop-echo-legacy-kill.js?v=desktop-fixes-lite-20260702-1");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-sticker-direct-render.js?v=home-feed-scope-20260713-1");

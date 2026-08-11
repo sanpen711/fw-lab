@@ -22,6 +22,30 @@
   let drag = null;
   let lastRows = [];
   let lastProfiles = {};
+  let lastUnreadMap = {};
+  let hydratedBuddyKey = '';
+
+  function buddyCacheKey(userId){
+    return 'buddy-list-v1-' + String(userId || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 42);
+  }
+
+  async function waitForDesktopCache(attempt = 0){
+    if(window.fwDesktopCache) return window.fwDesktopCache;
+    if(attempt >= 20) return null;
+    await new Promise(resolve => setTimeout(resolve, 50));
+    return waitForDesktopCache(attempt + 1);
+  }
+
+  function persistBuddyCache(){
+    if(!me?.id || !window.fwDesktopCache?.enabled) return;
+    window.fwDesktopCache.write(buddyCacheKey(me.id), {
+      version:1,
+      syncedAt:Date.now(),
+      friendships:lastRows,
+      profiles:lastProfiles,
+      unread:lastUnreadMap
+    }).catch(() => {});
+  }
 
   function esc(v){
     return String(v ?? '').replace(/[&<>"']/g, c => ({
@@ -112,7 +136,8 @@
     const ids = [];
     (data || []).forEach(f => ids.push(f.requester_id, f.receiver_id));
     lastRows = data || [];
-    lastProfiles = await fetchProfiles(ids);
+    const missingProfiles = ids.filter(id => id && !lastProfiles[id]);
+    lastProfiles = {...lastProfiles, ...(await fetchProfiles(missingProfiles))};
     return {rows:lastRows, profiles:lastProfiles};
   }
 
@@ -395,6 +420,52 @@
     list.innerHTML = `<section class="fw-wx-section"><h3 class="fw-wx-section-title">收到申请</h3>${incomingHtml}</section><section class="fw-wx-section"><h3 class="fw-wx-section-title">发出申请</h3>${outgoingHtml}</section>`;
   }
 
+  function renderCachedMessages(accepted, profiles, unreadMap){
+    const list = $('[data-fw-wx-list]');
+    if(!list) return;
+    if(!accepted.length){
+      list.innerHTML = '<div class="fw-wx-empty">暂时还没有搭子消息。先去“新的搭子”加一个搭子吧。</div>';
+      return;
+    }
+    const rows = accepted.map(f => {
+      const userId = String(otherId(f) || '');
+      return {userId, unread:Number(unreadMap[userId] || 0), friendship:f};
+    }).sort((a, b) => b.unread - a.unread || String((profiles[a.userId] || {}).nickname || '').localeCompare(String((profiles[b.userId] || {}).nickname || ''), 'zh-CN'));
+    list.innerHTML = rows.map(row => {
+      const p = profiles[row.userId] || {};
+      const name = p.nickname || '低功耗搭子';
+      const unread = row.unread > 0;
+      return `<div class="fw-wx-item ${activeTargetId === row.userId ? 'active' : ''} ${unread ? 'unread' : ''}" data-fw-wx-chat-user="${esc(row.userId)}">${unread ? '<i class="fw-wx-unread-dot" aria-hidden="true"></i>' : ''}${avatar(name, p.avatar_url, 'fw-wx-avatar')}<div><div class="fw-wx-name">${esc(name)}</div><div class="fw-wx-sub">${unread ? `有 ${row.unread} 条未读私聊` : '点击查看私聊'}</div><span class="fw-wx-time">本地联系人缓存</span></div></div>`;
+    }).join('');
+  }
+
+  function renderCachedBuddyState(){
+    const accepted = acceptedRows();
+    const sortedAccepted = accepted.slice().sort((a,b) => String((lastProfiles[otherId(a)] || {}).nickname || '').localeCompare(String((lastProfiles[otherId(b)] || {}).nickname || ''), 'zh-CN'));
+    if(activeTab === 'messages') renderCachedMessages(accepted, lastProfiles, lastUnreadMap);
+    else if(activeTab === 'friends') renderFriendRows(sortedAccepted, lastProfiles);
+    else renderNewTab(lastProfiles);
+  }
+
+  async function hydrateBuddyCache(){
+    if(!me?.id) return false;
+    const key = buddyCacheKey(me.id);
+    if(hydratedBuddyKey === key){
+      renderCachedBuddyState();
+      return lastRows.length > 0;
+    }
+    hydratedBuddyKey = key;
+    const cache = await waitForDesktopCache();
+    if(!cache?.enabled) return false;
+    const saved = await cache.read(key);
+    if(!saved || saved.version !== 1 || !Array.isArray(saved.friendships)) return false;
+    lastRows = saved.friendships;
+    lastProfiles = saved.profiles && typeof saved.profiles === 'object' ? saved.profiles : {};
+    lastUnreadMap = saved.unread && typeof saved.unread === 'object' ? saved.unread : {};
+    renderCachedBuddyState();
+    return true;
+  }
+
   async function renderMessages(accepted, profiles){
     const list = $('[data-fw-wx-list]');
     if(!list) return;
@@ -410,6 +481,8 @@
 
     try{
       const unreadMap = await unreadPrivateMap(buddyIds);
+      lastUnreadMap = unreadMap;
+      persistBuddyCache();
       const conv = await window.fwDb.client
         .from('conversations')
         .select('id,user_one_id,user_two_id,updated_at')
@@ -470,7 +543,8 @@
     openHub();
     setTabs();
     const list = $('[data-fw-wx-list]');
-    if(list) list.innerHTML = '<div class="fw-wx-empty">正在读取搭子列表...</div>';
+    const hydrated = await hydrateBuddyCache();
+    if(list && !hydrated) list.innerHTML = '<div class="fw-wx-empty">正在读取搭子列表...</div>';
     try{
       const {rows, profiles} = await getFriendships();
       const accepted = rows.filter(f => f.status === 'accepted');
@@ -478,6 +552,7 @@
       if(activeTab === 'messages') await renderMessages(accepted, profiles);
       else if(activeTab === 'friends') renderFriendRows(sortedAccepted, profiles);
       else renderNewTab(profiles);
+      persistBuddyCache();
       if(selectId) await selectChat(selectId);
       await refreshBuddyBadge();
     }catch(e){
