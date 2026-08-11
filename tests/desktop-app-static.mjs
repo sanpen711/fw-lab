@@ -93,6 +93,8 @@ assert.match(desktopClient, /aria-expanded/);
 assert.match(desktopClient, /href="rules\.html"/);
 assert.match(desktopClient, /href="admin\.html"/);
 assert.match(desktopClient, /setupMoreMenu/);
+assert.doesNotMatch(desktopClient, /parentElement\.classList\.contains\('fw-has-badge'\)/, '仅具备角标能力不能被误判为存在未读');
+assert.match(desktopClient, /\^\\d\+\$\/\.test\(value\) && Number\(value\) > 0/, '桌面侧栏红点必须有大于零的真实未读数');
 
 const desktopCache = read('assets/fw-desktop-cache.js');
 assert.match(desktopCache, /FWYanjiusuoDesktop/);
@@ -163,7 +165,7 @@ for(const page of ['index.html','compose.html','square.html','rooms.html','bird.
   const html = read(page);
   assert.match(html, /fw-desktop-preparing/, `${page} 应在首屏绘制前隐藏网页原始版式`);
   assert.match(html, /fw-desktop-client\.css\?v=ui-consistency-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
-  assert.match(html, /assets\/app\.js\?v=desktop-social-unread-20260811-1/, `${page} 应刷新桌面社交缓存入口脚本`);
+  assert.match(html, /assets\/app\.js\?v=desktop-badge-zero-20260811-1/, `${page} 应刷新桌面红点修复入口脚本`);
 }
 
 const home = read('index.html');
@@ -181,6 +183,7 @@ assert.match(square, /class="feed-list" data-feed/);
 assert.match(appLoader, /'compose\.html':'square'/);
 assert.match(appLoader, /form\.dataset\.postRedirect/);
 assert.match(appLoader, /desktop-social-unread-20260811-1/);
+assert.match(appLoader, /fw-desktop-client\.js\?v=desktop-badge-zero-20260811-1/);
 assert.match(read('assets/supabase-auth-clean.js'), /form\.dataset\.postRedirect/);
 assert.match(read('assets/supabase-live.js'), /ui-consistency-20260811-1/);
 assert.match(read('assets/supabase-auth-clean.js'), /fw-desktop-login-required/);
