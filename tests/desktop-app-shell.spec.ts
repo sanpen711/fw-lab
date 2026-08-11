@@ -5,13 +5,14 @@ test.describe('Windows 客户端专用外壳', () => {
     await page.addInitScript(() => localStorage.setItem('fw:desktop:home-enabled-20260811', '1'));
   });
 
-  test('首页作为独立栏目显示预留内容', async ({ page }) => {
+  test('首页复用网页版主体并隐藏实时牢骚', async ({ page }) => {
     await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('html')).toHaveClass(/fw-route-home/);
     await expect(page.locator('[data-fw-desktop-nav="home"]')).toHaveClass(/active/);
-    await expect(page.locator('.fw-desktop-home')).toBeVisible();
-    await expect(page.locator('.fw-desktop-home-card')).toHaveCount(3);
-    await expect(page.locator('.home-hero')).toBeHidden();
+    await expect(page.locator('.fw-desktop-home')).toHaveCount(0);
+    await expect(page.locator('.home-hero')).toBeVisible();
+    await expect(page.locator('.home-hero .hero-title')).toHaveText('F.w 研究所');
+    await expect(page.locator('.home-hero .hero-actions')).toBeVisible();
     await expect(page.locator('#live')).toBeHidden();
   });
 
