@@ -1,9 +1,9 @@
 {
-  "notes": "扩展 Windows 本地增量缓存到学术研讨、观鸟台、废话档案、回声、搭子联系人和处理公告；取消容量与自动清理限制，并固定从首页启动。",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "version": "1.0.5",
-  "available": true,
   "platform": "Windows 10/11 64 位",
-  "publishedAt": "2026-08-11T07:01:56.0864622Z",
-  "sha256": "6d8369e23f8ecf48f7a60d961614df5dd484feb1209be6df888064213159c6a4"
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "sha256": "6d386fc8463618c1775087f3b098f57ea5e9316861f700405f154517ef2d7e71",
+  "available": true,
+  "notes": "扩展 Windows 本地增量缓存到学术研讨、观鸟台、废话档案、回声、搭子联系人和处理公告；取消容量与自动清理限制，并固定从首页启动。",
+  "version": "1.0.5",
+  "publishedAt": "2026-08-11T09:38:40.8933045Z"
 }

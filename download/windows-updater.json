@@ -1,11 +1,11 @@
 {
+  "notes": "扩展 Windows 本地增量缓存到学术研讨、观鸟台、废话档案、回声、搭子联系人和处理公告；取消容量与自动清理限制，并固定从首页启动。",
+  "version": "1.0.5",
   "platforms": {
     "windows-x86_64": {
       "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlNGZHlScHpYdFpvUXlpUVV3aFJnZHBCeGNnTmdvcXo4MUNQSWVJTzY3Tm5SWkFYZmhVV0tLTGV6K01La05CSTZBTWFWZm1wOHJnb1VRSGxBS2hOQ1E0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NDMxNzE1CWZpbGU6Ri53IOeglOeptuaJgF8xLjAuNV94NjQtc2V0dXAuZXhlCjZ2OW5sQ2RaVTg5aGNWZnBPMG4xQTFZYnhabGlFc1czK0JuYjJTN05oVGU5ajhYVUNTRk5helNxZXNXWEM1Q2pYbmdtbUJtdHZ3SWdZc1RGRU9rREJnPT0K"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmRQU0hOL0EvUFBtaTF1TzZCNXFZSkw0Q1lQQ3VXTDdoT2x6V0xJOFlPd1ZFb2VNWGdYNmZzd0NQOXhSWTlpQmZUaGQ4MXpZbzRnVFd6WThCOHlEVVFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NDQxMTIwCWZpbGU6Ri53IOeglOeptuaJgF8xLjAuNV94NjQtc2V0dXAuZXhlCmN0ekwzbnRHQzFkMWNSZTkwQStaUWNSenVmenJpNXo0SzJrMTE4cVRFMTVCY0p3TWh5VHIyWkI2b3RnODk3TkVxaGpqaXh5bWNJMzJTV3dhL2JNREN3PT0K"
     }
   },
-  "notes": "扩展 Windows 本地增量缓存到学术研讨、观鸟台、废话档案、回声、搭子联系人和处理公告；取消容量与自动清理限制，并固定从首页启动。",
-  "pub_date": "2026-08-11T07:01:56.0864622Z",
-  "version": "1.0.5"
+  "pub_date": "2026-08-11T09:38:40.8933045Z"
 }
