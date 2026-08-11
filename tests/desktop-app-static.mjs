@@ -45,7 +45,7 @@ const appLoader = read('assets/app.js');
 assert.match(appLoader, /isWindowsDesktopApp = \/FWYanjiusuoDesktop/);
 assert.match(appLoader, /assets\/fw-desktop-client\.css/);
 assert.match(appLoader, /assets\/fw-desktop-client\.js/);
-assert.match(appLoader, /windows-home-20260811-1/);
+assert.match(appLoader, /windows-web-home-20260811-1/);
 assert.match(appLoader, /isDedicatedWindowsSocialPage/);
 assert.match(appLoader, /if\(!isDedicatedWindowsSocialPage\) loadJs\("assets\/fw-social\.js/);
 
@@ -75,7 +75,8 @@ assert.match(desktopClient, /不需要卸载/);
 
 const desktopCss = read('assets/fw-desktop-client.css');
 assert.match(desktopCss, /--fw-desktop-rail/);
-assert.match(desktopCss, /fw-route-home \.fw-desktop-home/);
+assert.match(desktopCss, /fw-route-home #live/);
+assert.doesNotMatch(desktopCss, /fw-desktop-home/);
 assert.match(desktopCss, /fw-route-echo \.fw-stable-echo-modal/);
 assert.match(desktopCss, /fw-route-buddy \.fw-wx-shell/);
 assert.match(desktopCss, /fw-desktop-preparing body/);
@@ -89,16 +90,17 @@ assert.doesNotMatch(desktopCss, /\.fw-desktop-page-title/);
 for(const page of ['index.html','square.html','rooms.html','bird.html','echo.html','buddy.html','archive.html','rules.html','admin.html']){
   const html = read(page);
   assert.match(html, /fw-desktop-preparing/, `${page} 应在首屏绘制前隐藏网页原始版式`);
-  assert.match(html, /fw-desktop-client\.css\?v=windows-home-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
-  assert.match(html, /assets\/app\.js\?v=windows-home-20260811-1/, `${page} 应刷新桌面导航脚本缓存`);
+  assert.match(html, /fw-desktop-client\.css\?v=windows-web-home-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
+  assert.match(html, /assets\/app\.js\?v=windows-web-home-20260811-1/, `${page} 应刷新桌面导航脚本缓存`);
 }
 
 const home = read('index.html');
-assert.match(home, /class="fw-desktop-home"/);
-assert.match(home, />活动</);
-assert.match(home, />公告</);
-assert.match(home, />每天一句话</);
+assert.doesNotMatch(home, /class="fw-desktop-home"/);
+assert.match(home, /class="hero bg-night home-hero"/);
+assert.match(home, /class="hero-title">F\.w 研究所</);
+assert.match(home, /id="live"/);
 assert.match(read('assets/fw-home-feed-preview.js'), /FWYanjiusuoDesktop/);
+
 
 const buddy = read('assets/fw-buddy-wechat.js');
 assert.match(buddy, /lastMessageSignature/);
