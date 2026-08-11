@@ -45,7 +45,7 @@ const appLoader = read('assets/app.js');
 assert.match(appLoader, /isWindowsDesktopApp = \/FWYanjiusuoDesktop/);
 assert.match(appLoader, /assets\/fw-desktop-client\.css/);
 assert.match(appLoader, /assets\/fw-desktop-client\.js/);
-assert.match(appLoader, /separate-compose-20260811-1/);
+assert.match(appLoader, /ui-consistency-20260811-1/);
 assert.match(appLoader, /isDedicatedWindowsSocialPage/);
 assert.match(appLoader, /if\(!isDedicatedWindowsSocialPage\) loadJs\("assets\/fw-social\.js/);
 
@@ -75,6 +75,11 @@ assert.match(desktopClient, /fw-lab-windows-latest\.exe/);
 assert.match(desktopClient, /microsoft-edge:/);
 assert.doesNotMatch(desktopClient, /data-fw-legacy-download download/);
 assert.match(desktopClient, /不需要卸载/);
+assert.match(desktopClient, /data-fw-desktop-more/);
+assert.match(desktopClient, /aria-expanded/);
+assert.match(desktopClient, /href="rules\.html"/);
+assert.match(desktopClient, /href="admin\.html"/);
+assert.match(desktopClient, /setupMoreMenu/);
 
 const desktopCss = read('assets/fw-desktop-client.css');
 assert.match(desktopCss, /--fw-desktop-rail/);
@@ -88,6 +93,10 @@ assert.match(desktopCss, /fw-desktop-preparing body/);
 assert.match(desktopCss, /body\.fw-desktop-navigating:before/);
 assert.match(desktopCss, /grid-template-columns:330px minmax\(0,1fr\)/);
 assert.match(desktopCss, /fw-desktop-account/);
+assert.match(desktopCss, /fw-desktop-more-menu/);
+assert.match(desktopCss, /fw-route-archive \.archive-hero/);
+assert.match(desktopCss, /fw-desktop-login-required/);
+assert.match(desktopCss, /fw-desktop-compose-disabled/);
 assert.match(desktopCss, /fw-route-rooms \.polls-hero/);
 assert.match(desktopCss, /fw-route-bird \.bird-hero/);
 assert.doesNotMatch(desktopCss, /\.fw-desktop-page-title/);
@@ -95,8 +104,8 @@ assert.doesNotMatch(desktopCss, /\.fw-desktop-page-title/);
 for(const page of ['index.html','compose.html','square.html','rooms.html','bird.html','echo.html','buddy.html','archive.html','rules.html','admin.html']){
   const html = read(page);
   assert.match(html, /fw-desktop-preparing/, `${page} 应在首屏绘制前隐藏网页原始版式`);
-  assert.match(html, /fw-desktop-client\.css\?v=separate-compose-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
-  assert.match(html, /assets\/app\.js\?v=separate-compose-20260811-1/, `${page} 应刷新桌面导航脚本缓存`);
+  assert.match(html, /fw-desktop-client\.css\?v=ui-consistency-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
+  assert.match(html, /assets\/app\.js\?v=ui-consistency-20260811-1/, `${page} 应刷新桌面导航脚本缓存`);
 }
 
 const home = read('index.html');
@@ -113,9 +122,10 @@ assert.doesNotMatch(square, /data-post-form|先发一句牢骚/);
 assert.match(square, /class="feed-list" data-feed/);
 assert.match(appLoader, /'compose\.html':'square'/);
 assert.match(appLoader, /form\.dataset\.postRedirect/);
-assert.match(appLoader, /compose-redirect-20260811-1/);
+assert.match(appLoader, /ui-consistency-20260811-1/);
 assert.match(read('assets/supabase-auth-clean.js'), /form\.dataset\.postRedirect/);
-assert.match(read('assets/supabase-live.js'), /compose-redirect-20260811-1/);
+assert.match(read('assets/supabase-live.js'), /ui-consistency-20260811-1/);
+assert.match(read('assets/supabase-auth-clean.js'), /fw-desktop-login-required/);
 assert.match(home, /id="live"/);
 assert.match(read('assets/fw-home-feed-preview.js'), /FWYanjiusuoDesktop/);
 
@@ -123,6 +133,8 @@ assert.match(read('assets/fw-home-feed-preview.js'), /FWYanjiusuoDesktop/);
 const buddy = read('assets/fw-buddy-wechat.js');
 assert.match(buddy, /lastMessageSignature/);
 assert.match(buddy, /data-fw-wx-retry-chat/);
+assert.match(buddy, /syncDesktopComposer/);
+assert.match(buddy, /fw-desktop-compose-disabled/);
 assert.match(buddy, /\}, 6000\)/);
 assert.doesNotMatch(buddy, /\}, 4500\)/);
 

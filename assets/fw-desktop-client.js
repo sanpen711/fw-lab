@@ -1,4 +1,4 @@
-// F.w 研究所 Windows 客户端外壳 v1.0.2
+// F.w 研究所 Windows 客户端外壳 v1.0.3
 // 仅在 Tauri 自定义 User-Agent 中启用，网页、PWA 与 Android 不受影响。
 (function(){
   'use strict';
@@ -16,7 +16,8 @@
     'echo.html': {key:'echo', title:'回声', subtitle:'评论、回复和互动都在这里'},
     'buddy.html': {key:'buddy', title:'搭子', subtitle:'左边选人，右边直接聊天'},
     'archive.html': {key:'archive', title:'废话档案', subtitle:'翻一翻被留下来的研究记录'},
-    'rules.html': {key:'more', title:'入馆须知', subtitle:'匿名不等于没有边界'}
+    'rules.html': {key:'more', title:'入馆须知', subtitle:'匿名不等于没有边界'},
+    'admin.html': {key:'more', title:'处理公告', subtitle:'查看研究所近期处理记录'}
   };
 
   var NAV = [
@@ -70,7 +71,14 @@
         return '<a class="fw-desktop-nav-item' + (route.key === item.key ? ' active' : '') + '" href="' + item.href + '" data-fw-desktop-nav="' + item.key + '" title="' + item.label + '">' +
           icon(item.icon) + '<span>' + item.label + '</span>' + (item.badge ? '<b data-fw-desktop-badge="' + item.badge + '"></b>' : '') + '</a>';
       }).join('') + '</nav>' +
-      '<a class="fw-desktop-nav-item fw-desktop-more' + (route.key === 'more' ? ' active' : '') + '" href="rules.html" title="更多">' + icon('more') + '<span>更多</span></a>' +
+      '<div class="fw-desktop-more-wrap">' +
+        '<button class="fw-desktop-nav-item fw-desktop-more' + (route.key === 'more' ? ' active' : '') + '" type="button" data-fw-desktop-more aria-expanded="false" aria-controls="fw-desktop-more-menu" title="更多">' + icon('more') + '<span>更多</span></button>' +
+        '<div class="fw-desktop-more-menu" id="fw-desktop-more-menu" data-fw-desktop-more-menu hidden>' +
+          '<small>更多内容</small>' +
+          '<a href="rules.html"' + (pageName() === 'rules.html' ? ' class="active"' : '') + '><b>入馆须知</b><span>使用规则与边界</span></a>' +
+          '<a href="admin.html"' + (pageName() === 'admin.html' ? ' class="active"' : '') + '><b>处理公告</b><span>近期违规处理记录</span></a>' +
+        '</div>' +
+      '</div>' +
       '<button class="fw-desktop-nav-item fw-desktop-account" type="button" data-fw-desktop-account title="我的">' + icon('user') + '<span>我的</span></button>';
     document.body.appendChild(aside);
 
@@ -80,6 +88,27 @@
     connection.innerHTML = '<span>网络已断开，部分内容可能暂时不可用。</span><button type="button" data-fw-desktop-retry>重新连接</button>';
     document.body.appendChild(connection);
 
+  }
+
+  function closeMoreMenu(){
+    var button = document.querySelector('[data-fw-desktop-more]');
+    var menu = document.querySelector('[data-fw-desktop-more-menu]');
+    if(!button || !menu) return;
+    button.setAttribute('aria-expanded', 'false');
+    menu.hidden = true;
+  }
+
+  function toggleMoreMenu(){
+    var button = document.querySelector('[data-fw-desktop-more]');
+    var menu = document.querySelector('[data-fw-desktop-more-menu]');
+    if(!button || !menu) return;
+    var open = button.getAttribute('aria-expanded') === 'true';
+    button.setAttribute('aria-expanded', open ? 'false' : 'true');
+    menu.hidden = open;
+    if(!open){
+      var first = menu.querySelector('a');
+      if(first) setTimeout(function(){ first.focus(); }, 0);
+    }
   }
 
   function openComposer(){
@@ -171,12 +200,32 @@
 
   function setupRouteIntent(){
     document.addEventListener('pointerover', function(e){
-      var next = e.target.closest && e.target.closest('.fw-desktop-compose[href], .fw-desktop-nav-item[href], .fw-desktop-brand[href]');
+      var next = e.target.closest && e.target.closest('.fw-desktop-compose[href], .fw-desktop-nav-item[href], .fw-desktop-brand[href], [data-fw-desktop-more-menu] a[href]');
       if(next) prefetchRoute(next.getAttribute('href'));
     }, {passive:true});
     document.addEventListener('focusin', function(e){
-      var next = e.target.closest && e.target.closest('.fw-desktop-compose[href], .fw-desktop-nav-item[href], .fw-desktop-brand[href]');
+      var next = e.target.closest && e.target.closest('.fw-desktop-compose[href], .fw-desktop-nav-item[href], .fw-desktop-brand[href], [data-fw-desktop-more-menu] a[href]');
       if(next) prefetchRoute(next.getAttribute('href'));
+    });
+  }
+
+  function setupMoreMenu(){
+    document.addEventListener('click', function(e){
+      var toggle = e.target.closest && e.target.closest('[data-fw-desktop-more]');
+      if(toggle){
+        e.preventDefault();
+        e.stopPropagation();
+        toggleMoreMenu();
+        return;
+      }
+      if(!e.target.closest || !e.target.closest('[data-fw-desktop-more-menu]')) closeMoreMenu();
+    });
+    document.addEventListener('keydown', function(e){
+      if(e.key !== 'Escape') return;
+      var button = document.querySelector('[data-fw-desktop-more]');
+      if(!button || button.getAttribute('aria-expanded') !== 'true') return;
+      closeMoreMenu();
+      button.focus();
     });
   }
 
@@ -306,7 +355,7 @@
         try{ sessionStorage.setItem('fw:desktop:scroll:' + pageName(), '0'); }catch(err){}
         return;
       }
-      var next = e.target.closest('.fw-desktop-nav-item[href], .fw-desktop-brand[href]');
+      var next = e.target.closest('.fw-desktop-nav-item[href], .fw-desktop-brand[href], [data-fw-desktop-more-menu] a[href]');
       if(next){
         saveScroll();
         rememberRoute((next.getAttribute('href') || '').split('?')[0].split('#')[0]);
@@ -342,6 +391,7 @@
     buildShell();
     bind();
     setupRouteIntent();
+    setupMoreMenu();
     syncBadges();
     syncConnection();
     restoreScroll();

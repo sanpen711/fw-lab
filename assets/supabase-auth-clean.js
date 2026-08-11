@@ -8,6 +8,7 @@
   const on = () => !!(db() && db().enabled && db().client);
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
+  const isWindowsDesktopApp = /FWYanjiusuoDesktop\//i.test(navigator.userAgent || '');
 
   let me = null;
   let registerState = { email:'', password:'', labCode:'' };
@@ -489,11 +490,21 @@
   function updatePostNotice(){
     $$('[data-post-form]').forEach(form => {
       const notice = form.querySelector('[data-notice]');
+      const submit = form.querySelector('button[type="submit"]');
 
       if(notice){
         notice.textContent = me
           ? '已登录，可以发布和互动。'
           : '登录后才能发布；未登录只能浏览，不能点赞、评论、俺也一样或递纸巾。';
+      }
+
+      if(isWindowsDesktopApp){
+        form.classList.toggle('fw-desktop-login-required', !me);
+        if(submit){
+          if(!submit.dataset.fwSignedInLabel) submit.dataset.fwSignedInLabel = submit.textContent.trim();
+          submit.textContent = me ? submit.dataset.fwSignedInLabel : '登录后发布';
+          submit.setAttribute('aria-label', me ? submit.dataset.fwSignedInLabel : '登录后发布，点击打开登录窗口');
+        }
       }
     });
   }

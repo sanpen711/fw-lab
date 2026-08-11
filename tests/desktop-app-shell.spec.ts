@@ -14,6 +14,23 @@ test.describe('Windows 客户端专用外壳', () => {
     await expect(page.locator('.home-hero .hero-title')).toHaveText('F.w 研究所');
     await expect(page.locator('.home-hero .hero-actions')).toBeVisible();
     await expect(page.locator('#live')).toBeHidden();
+    await expect(page.locator('.home-hero .hero-actions a[href="rooms.html"]')).toBeHidden();
+    await expect(page.locator('.home-hero .hero-actions a[href="bird.html"]')).toBeHidden();
+  });
+
+  test('更多入口展开辅助页面，不再误导为入馆须知直达', async ({ page }) => {
+    await page.goto('/square.html', { waitUntil: 'domcontentloaded' });
+    const more = page.locator('[data-fw-desktop-more]');
+    const menu = page.locator('[data-fw-desktop-more-menu]');
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    await expect(menu).toBeHidden();
+    await more.click();
+    await expect(more).toHaveAttribute('aria-expanded', 'true');
+    await expect(menu).toBeVisible();
+    await expect(menu.locator('a[href="rules.html"]')).toContainText('入馆须知');
+    await expect(menu.locator('a[href="admin.html"]')).toContainText('处理公告');
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
   });
 
   test('发牢骚是独立页面，精神广场只保留内容流', async ({ page }) => {
@@ -50,6 +67,12 @@ test.describe('Windows 客户端专用外壳', () => {
     await page.goto('/bird.html', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('.bird-hero')).toBeVisible();
     expect((await page.locator('.bird-hero').boundingBox())?.height || 999).toBeLessThan(280);
+
+    await page.goto('/archive.html', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('html')).toHaveClass(/fw-route-archive/);
+    await expect(page.locator('.archive-hero h1')).toHaveCSS('font-size', '48px');
+    await page.setViewportSize({ width: 760, height: 620 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(760);
   });
 
   test('专用回声页按 Esc 不会被关成空白', async ({ page }) => {
