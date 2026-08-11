@@ -55,6 +55,47 @@ test.describe('Windows 客户端专用外壳', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(760);
   });
 
+  test('精神广场先读取 Windows 本地文件缓存', async ({ page }) => {
+    await page.addInitScript(() => {
+      const calls: string[] = [];
+      (window as any).__FW_NATIVE_CACHE_CALLS__ = calls;
+      (window as any).__TAURI__ = {
+        core: {
+          invoke: async (command: string) => {
+            calls.push(command);
+            if(command === 'desktop_cache_read'){
+              return {
+                version: 1,
+                syncedAt: Date.now() - 1000,
+                reactions: [],
+                posts: [{
+                  id: 998877,
+                  userId: 'cached-user',
+                  authorId: 'cached-user',
+                  authorName: '本地研究员',
+                  authorAvatar: '',
+                  status: '今日无效',
+                  content: '这是 Windows 本地缓存中的内容',
+                  createdAt: new Date().toISOString(),
+                  comments: [],
+                  resonance: 0,
+                  same: 0,
+                  tissue: 0
+                }]
+              };
+            }
+            return {enabled: true, entries: 1, bytes: 512};
+          }
+        }
+      };
+    });
+
+    await page.goto('/square.html', {waitUntil: 'domcontentloaded'});
+    await expect(page.getByText('这是 Windows 本地缓存中的内容')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => (window as any).__FW_NATIVE_CACHE_CALLS__ || []))
+      .toContain('desktop_cache_read');
+  });
+
   test('栏目页压缩首屏并减少无关模块', async ({ page }) => {
     await page.goto('/rooms.html', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('.polls-hero')).toBeVisible();

@@ -1,8 +1,176 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use serde::Serialize;
+use serde_json::Value;
+use std::{
+    fs,
+    path::PathBuf,
+    time::{Duration, SystemTime},
+};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tauri_plugin_updater::UpdaterExt;
+
+const CACHE_FOLDER: &str = "content-cache";
+const CACHE_MAX_FILE_BYTES: usize = 4 * 1024 * 1024;
+const CACHE_MAX_TOTAL_BYTES: u64 = 32 * 1024 * 1024;
+const CACHE_MAX_AGE: Duration = Duration::from_secs(30 * 24 * 60 * 60);
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CacheStatus {
+    enabled: bool,
+    entries: usize,
+    bytes: u64,
+}
+
+fn valid_cache_key(key: &str) -> bool {
+    !key.is_empty()
+        && key.len() <= 64
+        && key
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-' || byte == b'_')
+}
+
+fn cache_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app
+        .path()
+        .app_cache_dir()
+        .map_err(|error| format!("无法定位缓存目录：{error}"))?
+        .join(CACHE_FOLDER);
+    fs::create_dir_all(&dir).map_err(|error| format!("无法创建缓存目录：{error}"))?;
+    Ok(dir)
+}
+
+fn cache_file(app: &AppHandle, key: &str) -> Result<PathBuf, String> {
+    if !valid_cache_key(key) {
+        return Err("缓存名称不合法。".to_owned());
+    }
+    Ok(cache_dir(app)?.join(format!("{key}.json")))
+}
+
+fn cache_usage(dir: &PathBuf) -> (usize, u64) {
+    let mut entries = 0usize;
+    let mut bytes = 0u64;
+    let Ok(files) = fs::read_dir(dir) else {
+        return (entries, bytes);
+    };
+    for entry in files.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|value| value.to_str()) != Some("json") {
+            continue;
+        }
+        if let Ok(metadata) = entry.metadata() {
+            if metadata.is_file() {
+                entries += 1;
+                bytes = bytes.saturating_add(metadata.len());
+            }
+        }
+    }
+    (entries, bytes)
+}
+
+fn cleanup_cache_dir(dir: &PathBuf) {
+    let now = SystemTime::now();
+    let Ok(files) = fs::read_dir(dir) else {
+        return;
+    };
+    for entry in files.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|value| value.to_str()) != Some("json") {
+            continue;
+        }
+        let stale = entry
+            .metadata()
+            .ok()
+            .and_then(|metadata| metadata.modified().ok())
+            .and_then(|modified| now.duration_since(modified).ok())
+            .map(|age| age > CACHE_MAX_AGE)
+            .unwrap_or(false);
+        if stale {
+            let _ = fs::remove_file(path);
+        }
+    }
+}
+
+#[tauri::command]
+fn desktop_cache_read(app: AppHandle, key: String) -> Result<Option<Value>, String> {
+    let path = cache_file(&app, &key)?;
+    if !path.exists() {
+        return Ok(None);
+    }
+    let metadata = fs::metadata(&path).map_err(|error| format!("无法读取缓存信息：{error}"))?;
+    if metadata.len() > CACHE_MAX_FILE_BYTES as u64 {
+        let _ = fs::remove_file(path);
+        return Ok(None);
+    }
+    let raw = fs::read_to_string(&path).map_err(|error| format!("无法读取缓存：{error}"))?;
+    match serde_json::from_str(&raw) {
+        Ok(value) => Ok(Some(value)),
+        Err(_) => {
+            let _ = fs::remove_file(path);
+            Ok(None)
+        }
+    }
+}
+
+#[tauri::command]
+fn desktop_cache_write(app: AppHandle, key: String, value: Value) -> Result<CacheStatus, String> {
+    let path = cache_file(&app, &key)?;
+    let raw = serde_json::to_vec(&value).map_err(|error| format!("无法整理缓存数据：{error}"))?;
+    if raw.len() > CACHE_MAX_FILE_BYTES {
+        return Err("单个缓存文件超过 4 MB 限制。".to_owned());
+    }
+
+    let dir = path
+        .parent()
+        .ok_or_else(|| "缓存目录无效。".to_owned())?
+        .to_path_buf();
+    let previous_bytes = fs::metadata(&path).map(|metadata| metadata.len()).unwrap_or(0);
+    let (_, current_bytes) = cache_usage(&dir);
+    let next_total = current_bytes
+        .saturating_sub(previous_bytes)
+        .saturating_add(raw.len() as u64);
+    if next_total > CACHE_MAX_TOTAL_BYTES {
+        cleanup_cache_dir(&dir);
+        let (_, cleaned_bytes) = cache_usage(&dir);
+        if cleaned_bytes
+            .saturating_sub(previous_bytes)
+            .saturating_add(raw.len() as u64)
+            > CACHE_MAX_TOTAL_BYTES
+        {
+            return Err("缓存空间已达到 32 MB 上限。".to_owned());
+        }
+    }
+
+    let temp = path.with_extension("json.tmp");
+    fs::write(&temp, raw).map_err(|error| format!("无法写入缓存：{error}"))?;
+    if path.exists() {
+        fs::remove_file(&path).map_err(|error| format!("无法替换旧缓存：{error}"))?;
+    }
+    fs::rename(&temp, &path).map_err(|error| format!("无法启用新缓存：{error}"))?;
+
+    let (entries, bytes) = cache_usage(&dir);
+    Ok(CacheStatus { enabled: true, entries, bytes })
+}
+
+#[tauri::command]
+fn desktop_cache_remove(app: AppHandle, key: String) -> Result<CacheStatus, String> {
+    let path = cache_file(&app, &key)?;
+    if path.exists() {
+        fs::remove_file(&path).map_err(|error| format!("无法清理缓存：{error}"))?;
+    }
+    let dir = cache_dir(&app)?;
+    let (entries, bytes) = cache_usage(&dir);
+    Ok(CacheStatus { enabled: true, entries, bytes })
+}
+
+#[tauri::command]
+fn desktop_cache_status(app: AppHandle) -> Result<CacheStatus, String> {
+    let dir = cache_dir(&app)?;
+    let (entries, bytes) = cache_usage(&dir);
+    Ok(CacheStatus { enabled: true, entries, bytes })
+}
 
 fn show_update_error(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
@@ -83,9 +251,18 @@ fn main() {
         }))
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
+            if let Ok(dir) = cache_dir(app.handle()) {
+                cleanup_cache_dir(&dir);
+            }
             check_for_updates(app.handle().clone());
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![
+            desktop_cache_read,
+            desktop_cache_write,
+            desktop_cache_remove,
+            desktop_cache_status
+        ])
         .run(tauri::generate_context!())
         .expect("F.w 研究所 Windows 客户端启动失败");
 }

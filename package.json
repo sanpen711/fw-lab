@@ -1,6 +1,6 @@
 {
   "name": "fw-lab",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "scripts": {
     "test:static": "node tests/mobile-performance-static.mjs && node tests/desktop-echo-route-static.mjs && node tests/comment-reply-echo-static.mjs && node tests/echo-open-auto-read-static.mjs && node tests/desktop-app-static.mjs",
