@@ -56,6 +56,8 @@ assert.match(downloadClient, /download\/fw-lab-windows-latest\.exe/);
 const appLoader = read('assets/app.js');
 assert.match(appLoader, /isWindowsDesktopApp = \/FWYanjiusuoDesktop/);
 assert.match(appLoader, /assets\/fw-desktop-cache\.js\?v=desktop-cache-all-20260811-1/);
+assert.match(appLoader, /assets\/fw-stable-core\.js\?v=desktop-social-unread-20260811-1/);
+assert.match(appLoader, /assets\/fw-buddy-wechat\.js\?v=desktop-social-unread-20260811-1/);
 assert.match(appLoader, /assets\/fw-desktop-client\.css/);
 assert.match(appLoader, /assets\/fw-desktop-client\.js/);
 assert.match(appLoader, /ui-consistency-20260811-1/);
@@ -161,7 +163,7 @@ for(const page of ['index.html','compose.html','square.html','rooms.html','bird.
   const html = read(page);
   assert.match(html, /fw-desktop-preparing/, `${page} 应在首屏绘制前隐藏网页原始版式`);
   assert.match(html, /fw-desktop-client\.css\?v=ui-consistency-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
-  assert.match(html, /assets\/app\.js\?v=desktop-cache-all-20260811-1/, `${page} 应刷新桌面缓存入口脚本`);
+  assert.match(html, /assets\/app\.js\?v=desktop-social-unread-20260811-1/, `${page} 应刷新桌面社交缓存入口脚本`);
 }
 
 const home = read('index.html');
@@ -178,10 +180,12 @@ assert.doesNotMatch(square, /data-post-form|先发一句牢骚/);
 assert.match(square, /class="feed-list" data-feed/);
 assert.match(appLoader, /'compose\.html':'square'/);
 assert.match(appLoader, /form\.dataset\.postRedirect/);
-assert.match(appLoader, /desktop-cache-all-20260811-1/);
+assert.match(appLoader, /desktop-social-unread-20260811-1/);
 assert.match(read('assets/supabase-auth-clean.js'), /form\.dataset\.postRedirect/);
 assert.match(read('assets/supabase-live.js'), /ui-consistency-20260811-1/);
 assert.match(read('assets/supabase-auth-clean.js'), /fw-desktop-login-required/);
+const siteFinalTweaks = read('assets/fw-site-final-tweaks.js');
+assert.match(siteFinalTweaks, /if\(\/FWYanjiusuoDesktop\\\/\/i\.test\(navigator\.userAgent \|\| ''\)\) return/, 'Windows 端必须停用会恢复私聊未读并全量轮询的旧补丁');
 assert.match(home, /id="live"/);
 assert.match(read('assets/fw-home-feed-preview.js'), /FWYanjiusuoDesktop/);
 
@@ -193,17 +197,30 @@ assert.match(buddy, /syncDesktopComposer/);
 assert.match(buddy, /fw-desktop-compose-disabled/);
 assert.match(buddy, /\}, 6000\)/);
 assert.doesNotMatch(buddy, /\}, 4500\)/);
-assert.match(buddy, /buddy-list-v1-/);
+assert.match(buddy, /buddy-list-v2-/);
 assert.match(buddy, /hydrateBuddyCache/);
 assert.match(buddy, /unread:lastUnreadMap/);
+assert.match(buddy, /renderCachedBuddyState\(false\)/, '搭子缓存首屏不能用旧未读数重新制造红点');
+assert.match(buddy, /lastUnreadMap\[String\(userId\)\] = 0/, '打开私聊后应立即清空本地未读摘要');
+assert.match(buddy, /locallyReadBuddyIds\.forEach\(id => \{ map\[id\] = 0; \}\)/, '并发未读查询不能把刚清掉的搭子红点写回来');
+assert.match(buddy, /query\.gt\('id', lastMessageId\)/, '私聊轮询应只拉取上次消息之后的新增内容');
+assert.match(buddy, /Date\.now\(\) - lastFullMessageSyncAt > 60000/, '私聊应保留低频完整校准');
+assert.match(buddy, /hasInitialMessageSync = true/, '空会话完成首次同步后不应每 6 秒继续全量读取');
+assert.doesNotMatch(buddy, /await markPrivateReadFrom\(activeTargetId\)/, '私聊打开不应等待已读写回后才渲染');
 assert.doesNotMatch(buddy, /private_messages[^]*fwDesktopCache\.write/);
 
 const stableCore = read('assets/fw-stable-core.js');
 assert.match(stableCore, /isDedicatedDesktopEcho \|\| isDedicatedDesktopBuddy/);
 assert.match(stableCore, /data-fw-stable-refresh>重新加载/);
-assert.match(stableCore, /echo-v1-/);
+assert.match(stableCore, /echo-v2-/);
 assert.match(stableCore, /missingIds/);
 assert.match(stableCore, /cache\.write\(key/);
+assert.match(stableCore, /saved\.rows\.map\(row => \(\{\.\.\.row, is_read:true\}\)\)/, '回声缓存只负责首屏内容，不能恢复旧红点');
+assert.match(stableCore, /window\.fwRefreshDesktopBadges = refreshBadges/, '回声和搭子必须共享单一顶部未读刷新器');
+assert.match(stableCore, /if\(state\.badgePromise\)\{[^]*if\(!force\) return state\.badgePromise/, '并发未读刷新应合并为一次数据库请求');
+assert.match(stableCore, /await refreshBadges\(true\)/, '已读写回后应强制丢弃旧角标请求并读取最新状态');
+const badgeRefresh = stableCore.slice(stableCore.indexOf('async function refreshBadges'), stableCore.indexOf('function ensureEchoPanel'));
+assert.doesNotMatch(badgeRefresh, /FWCommentReplyEcho\.merge/, '周期红点刷新不应扫描评论兜底并制造幽灵未读');
 
 const workflow = read('.github/workflows/build-windows-app.yml');
 assert.match(workflow, /windows-latest/);

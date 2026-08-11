@@ -18,7 +18,7 @@
   const desktopPage = (window.location.pathname.split('/').pop() || '').toLowerCase();
   const isDedicatedDesktopEcho = isWindowsDesktopApp && desktopPage === 'echo.html';
   const isDedicatedDesktopBuddy = isWindowsDesktopApp && desktopPage === 'buddy.html';
-  const state = { user:null, badgeTimer:0, buddyTimer:0, echoOpening:false, logoutBusy:false, buddyEnhancing:false };
+  const state = { user:null, badgeTimer:0, buddyTimer:0, echoOpening:false, logoutBusy:false, buddyEnhancing:false, badgePromise:null, badgeSequence:0 };
 
   function esc(v){
     return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -127,26 +127,49 @@
     else{ badge.textContent = ''; btn.classList.remove('show'); }
   }
 
+  function setBadges(kind, count){
+    $$('[data-fw-open-' + kind + ']').forEach(btn => setTopBadge(btn, count));
+    const n = Number(count || 0);
+    $$('[data-fw-desktop-badge="' + kind + '"]').forEach(badge => {
+      badge.textContent = n > 99 ? '99+' : (n > 0 ? String(n) : '');
+      badge.classList.toggle('show', n > 0);
+    });
+  }
+
   async function currentUserId(){
     const me = await getMe();
     return me?.id || '';
   }
 
-  async function refreshBadges(){
-    const uid = await currentUserId();
-    if(!uid){ setTopBadge($('[data-fw-open-echo]'), 0); setTopBadge($('[data-fw-open-buddy]'), 0); return; }
-    try{
-      const [echo, priv, req] = await Promise.all([
-        window.fwDb.client.from('notifications').select('id,type,target_id,is_read,created_at').eq('user_id', uid).neq('type', 'private_message').order('created_at', {ascending:false}).limit(300),
-        window.fwDb.client.from('notifications').select('id', {count:'exact', head:true}).eq('user_id', uid).eq('is_read', false).eq('type', 'private_message'),
-        window.fwDb.client.from('friendships').select('id', {count:'exact', head:true}).eq('receiver_id', uid).eq('status', 'pending')
-      ]);
-      let echoRows = echo.data || [];
-      if(window.FWCommentReplyEcho) echoRows = await window.FWCommentReplyEcho.merge(window.fwDb.client, uid, echoRows, {limit:300});
-      setTopBadge($('[data-fw-open-echo]'), echoRows.filter(n => !n.is_read).length);
-      setTopBadge($('[data-fw-open-buddy]'), (priv.count || 0) + (req.count || 0));
-    }catch(e){}
+  async function refreshBadges(force){
+    if(state.badgePromise){
+      if(!force) return state.badgePromise;
+      state.badgeSequence += 1;
+      await state.badgePromise;
+      return refreshBadges(false);
+    }
+    const sequence = ++state.badgeSequence;
+    const promise = (async () => {
+      const uid = await currentUserId();
+      if(!uid){ setBadges('echo', 0); setBadges('buddy', 0); return; }
+      try{
+        const [notices, req] = await Promise.all([
+          window.fwDb.client.from('notifications').select('id,type,actor_id,created_at').eq('user_id', uid).eq('is_read', false).order('created_at', {ascending:false}).limit(300),
+          window.fwDb.client.from('friendships').select('id', {count:'exact', head:true}).eq('receiver_id', uid).eq('status', 'pending')
+        ]);
+        if(sequence !== state.badgeSequence) return;
+        const rows = notices.data || [];
+        const privateCount = rows.filter(row => row.type === 'private_message').length;
+        const echoCount = rows.filter(row => !['private_message','friend_request','friend_accept'].includes(row.type)).length;
+        setBadges('echo', echoCount);
+        setBadges('buddy', privateCount + Number(req.count || 0));
+      }catch(e){}
+    })();
+    state.badgePromise = promise;
+    try{ return await promise; }
+    finally{ if(state.badgePromise === promise) state.badgePromise = null; }
   }
+  window.fwRefreshDesktopBadges = refreshBadges;
 
   function ensureEchoPanel(){
     let modal = $('[data-fw-stable-echo-modal]');
@@ -210,7 +233,7 @@
     if(window.FWCommentReplyEcho) window.FWCommentReplyEcho.markRead(uid, ids);
     const databaseIds = window.FWCommentReplyEcho ? window.FWCommentReplyEcho.databaseNoticeIds(ids) : ids;
     try{ if(databaseIds.length) await window.fwDb.client.from('notifications').update({is_read:true}).in('id', databaseIds); }catch(e){}
-    setTimeout(refreshBadges, 200);
+    await refreshBadges(true);
   }
 
   function postIdOf(n){
@@ -244,7 +267,7 @@
   }
 
   function echoCacheKey(userId){
-    return 'echo-v1-' + String(userId || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 48);
+    return 'echo-v2-' + String(userId || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 48);
   }
 
   async function waitForDesktopCache(attempt = 0){
@@ -288,11 +311,10 @@
       const cache = await waitForDesktopCache();
       const key = echoCacheKey(me.id);
       const saved = cache?.enabled ? await cache.read(key) : null;
-      let cachedRows = saved?.version === 1 && Array.isArray(saved.rows) ? saved.rows : [];
-      let cachedProfiles = saved?.version === 1 && saved.profiles && typeof saved.profiles === 'object' ? saved.profiles : {};
+      let cachedRows = saved?.version === 2 && Array.isArray(saved.rows) ? saved.rows.map(row => ({...row, is_read:true})) : [];
+      let cachedProfiles = saved?.version === 2 && saved.profiles && typeof saved.profiles === 'object' ? saved.profiles : {};
       if(cachedRows.length){
-        const cachedUnread = renderEchoRows(body, cachedRows, cachedProfiles);
-        if(cachedUnread.length) markEchoRead(cachedUnread);
+        renderEchoRows(body, cachedRows, cachedProfiles);
       }
 
       const cachedById = new Map(cachedRows.map(row => [String(row.id), row]));
@@ -309,16 +331,26 @@
       const freshById = new Map(freshRows.map(row => [String(row.id), row]));
       let rows = metaRows.map(meta => ({...(cachedById.get(String(meta.id)) || freshById.get(String(meta.id)) || {}), ...meta})).filter(row => row.id != null && row.type);
       rows = await resolveReplyPosts(rows);
-      if(window.FWCommentReplyEcho) rows = await window.FWCommentReplyEcho.merge(window.fwDb.client, me.id, rows, {limit:100});
       const missingActors = rows.map(x => x.actor_id).filter(id => id && !cachedProfiles[id]);
       const freshProfiles = await fetchProfiles(missingActors);
-      const profiles = {...cachedProfiles, ...freshProfiles};
-      const unread = renderEchoRows(body, rows, profiles);
+      let profiles = {...cachedProfiles, ...freshProfiles};
+      let unread = renderEchoRows(body, rows, profiles);
       if(cache?.enabled){
         const cachedAsRead = rows.map(row => ({...row, is_read:true}));
-        cache.write(key, {version:1, syncedAt:Date.now(), rows:cachedAsRead, profiles}).catch(() => {});
+        cache.write(key, {version:2, syncedAt:Date.now(), rows:cachedAsRead, profiles}).catch(() => {});
       }
       if(unread.length) await markEchoRead(unread);
+
+      if(window.FWCommentReplyEcho){
+        const mergedRows = await window.FWCommentReplyEcho.merge(window.fwDb.client, me.id, rows, {limit:100});
+        const extraActors = mergedRows.map(x => x.actor_id).filter(id => id && !profiles[id]);
+        if(extraActors.length) profiles = {...profiles, ...(await fetchProfiles(extraActors))};
+        unread = renderEchoRows(body, mergedRows, profiles);
+        if(cache?.enabled){
+          cache.write(key, {version:2, syncedAt:Date.now(), rows:mergedRows.map(row => ({...row, is_read:true})), profiles}).catch(() => {});
+        }
+        if(unread.length) await markEchoRead(unread);
+      }
     }catch(e){
       if(!body.querySelector('.fw-stable-echo-item,.fw-stable-echo-toolbar')) body.innerHTML = '<div class="fw-stable-echo-empty">回声读取失败。<div class="fw-stable-echo-tools"><button class="dark" type="button" data-fw-stable-refresh>重新加载</button></div></div>';
     }
@@ -507,7 +539,7 @@
       }
       if(e.target.matches('[data-fw-stable-echo-modal]')) e.target.classList.remove('show');
       const chat = e.target.closest('[data-fw-wx-chat-user], [data-fw-wx-chat-direct], [data-fw-start-chat]');
-      if(chat){ const id = chat.dataset.fwWxChatUser || chat.dataset.fwWxChatDirect || chat.dataset.fwStartChat || ''; if(id) markPrivateReadFrom(id); }
+      if(chat && !isDedicatedDesktopBuddy){ const id = chat.dataset.fwWxChatUser || chat.dataset.fwWxChatDirect || chat.dataset.fwStartChat || ''; if(id) markPrivateReadFrom(id); }
       if(e.target.closest('[data-fw-open-buddy], [data-fw-wx-tab], [data-fw-wx-chat-user], [data-fw-wx-chat-direct], [data-fw-wx-reset]')){
         setTimeout(() => { clampBuddyOnce(); cleanBuddyPreview(); if(!isDedicatedDesktopBuddy) enhanceBuddyList(); refreshBadges(); }, 380);
       }

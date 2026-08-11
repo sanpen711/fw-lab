@@ -472,15 +472,15 @@ document.addEventListener("DOMContentLoaded", () => {
   loadJs("assets/fw-avatar-mobile-fix.js?v=avatar-mobile-fix-20260514-2");
   loadJs("assets/fw-avatar-upload-stage-fix.js?v=avatar-upload-stage-fix-20260514-1");
   loadJs("assets/fw-avatar-save-guard.js?v=avatar-save-guard-20260514-1");
-  if(!isSquareSurface) loadJs("assets/fw-site-final-tweaks.js?v=site-final-tweaks-20260512-1");
+  if(!isSquareSurface) loadJs("assets/fw-site-final-tweaks.js?v=desktop-social-unread-20260811-1");
 
   /*
     手机端已经迁移到 /app/ 独立 PWA。
     旧电脑端手机壳脚本不再加载，避免和 /app/ 的底部导航、搭子、回声、我的入口重复抢控制权。
     桌面端社交、登录、头像、房间聊天等模块保留。
   */
-  if(!isSquareSurface) loadJs("assets/fw-stable-core.js?v=desktop-cache-all-20260811-1");
-  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-wechat.js?v=desktop-cache-all-20260811-1");
+  if(!isSquareSurface) loadJs("assets/fw-stable-core.js?v=desktop-social-unread-20260811-1");
+  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-wechat.js?v=desktop-social-unread-20260811-1");
   loadJs("assets/fw-desktop-echo-legacy-kill.js?v=desktop-fixes-lite-20260702-1");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-sticker-direct-render.js?v=home-feed-scope-20260713-1");
