@@ -446,8 +446,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const isDedicatedWindowsSocialPage = isWindowsDesktopApp && (isEchoPage || isBuddyPage);
 
   if(isWindowsDesktopApp){
-    loadCss("assets/fw-desktop-client.css?v=windows-home-20260811-1");
-    loadJs("assets/fw-desktop-client.js?v=windows-home-20260811-1");
+    loadCss("assets/fw-desktop-client.css?v=windows-web-home-20260811-1");
+    loadJs("assets/fw-desktop-client.js?v=windows-web-home-20260811-1");
   }
 
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
