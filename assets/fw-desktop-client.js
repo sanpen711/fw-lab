@@ -8,6 +8,7 @@
   window.__FW_DESKTOP_CLIENT_SHELL__ = true;
 
   var ROUTES = {
+    'index.html': {key:'home', title:'首页', subtitle:'活动、公告和每天一句话都会放在这里'},
     'square.html': {key:'square', title:'精神广场', subtitle:'匿名说点真话，也听听别人的今天'},
     'rooms.html': {key:'rooms', title:'学术研讨', subtitle:'一本正经地研究不太正经的问题'},
     'bird.html': {key:'bird', title:'观鸟台', subtitle:'看看研究所里此刻发生了什么'},
@@ -18,6 +19,7 @@
   };
 
   var NAV = [
+    {key:'home', href:'index.html', label:'首页', icon:'home'},
     {key:'square', href:'square.html', label:'精神广场', icon:'bubble'},
     {key:'rooms', href:'rooms.html', label:'学术研讨', icon:'flask'},
     {key:'bird', href:'bird.html', label:'观鸟台', icon:'eye'},
@@ -27,6 +29,7 @@
   ];
 
   var ICONS = {
+    home:'<path d="M3.5 11.5 12 4l8.5 7.5"/><path d="M5.5 10v10h13V10M9.5 20v-6h5v6"/>',
     bubble:'<path d="M5 6.5h14v9H9l-4 3v-12Z"/><path d="M9 10h6M9 13h4"/>',
     flask:'<path d="M9 3h6M10 3v5l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M8 14h8"/>',
     eye:'<path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.5"/>',
@@ -60,7 +63,7 @@
     aside.className = 'fw-desktop-sidebar';
     aside.dataset.fwDesktopSidebar = '1';
     aside.innerHTML =
-      '<a class="fw-desktop-brand" href="square.html" aria-label="F.w 研究所"><span>F.w</span><small>研究所</small></a>' +
+      '<a class="fw-desktop-brand" href="index.html" aria-label="F.w 研究所首页"><span>F.w</span><small>研究所</small></a>' +
       '<button class="fw-desktop-compose" type="button" data-fw-desktop-compose title="发牢骚">' + icon('plus') + '<span>发牢骚</span></button>' +
       '<nav class="fw-desktop-nav" aria-label="软件主导航">' + NAV.map(function(item){
         return '<a class="fw-desktop-nav-item' + (route.key === item.key ? ' active' : '') + '" href="' + item.href + '" data-fw-desktop-nav="' + item.key + '" title="' + item.label + '">' +
@@ -211,6 +214,20 @@
     return false;
   }
 
+  function openHomeAfterUpgrade(){
+    try{
+      var key = 'fw:desktop:home-enabled-20260811';
+      if(localStorage.getItem(key) === '1') return false;
+      localStorage.setItem(key, '1');
+      if(pageName() !== 'index.html'){
+        localStorage.setItem('fw:desktop:last-route', 'index.html');
+        location.replace('index.html');
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+
   function syncConnection(){
     var banner = document.querySelector('[data-fw-desktop-connection]');
     if(banner) banner.classList.toggle('show', navigator.onLine === false);
@@ -319,7 +336,7 @@
         e.preventDefault(); openComposer();
       }
       if(e.ctrlKey && !e.shiftKey && !e.altKey){
-        var href = {'1':'square.html','2':'echo.html','3':'buddy.html'}[e.key];
+        var href = {'1':'index.html','2':'square.html','3':'echo.html','4':'buddy.html'}[e.key];
         if(href){ e.preventDefault(); location.href = href; }
       }
     });
@@ -335,11 +352,8 @@
   }
 
   function boot(){
+    if(openHomeAfterUpgrade()) return;
     if(resumeLastRoute()) return;
-    if(pageName() === 'index.html'){
-      location.replace('square.html');
-      return;
-    }
     rememberRoute(pageName());
     buildShell();
     setupComposer();

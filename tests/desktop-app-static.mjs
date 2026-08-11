@@ -13,7 +13,7 @@ assert.equal(config.build.frontendDist, 'https://fwyanjiusuo.com/');
 assert.deepEqual(config.bundle.targets, ['nsis']);
 assert.equal(config.bundle.windows.nsis.installMode, 'currentUser');
 assert.equal(config.version, '1.0.3');
-assert.equal(config.app.windows[0].url, 'https://fwyanjiusuo.com/square.html');
+assert.equal(config.app.windows[0].url, 'https://fwyanjiusuo.com/index.html');
 assert.match(config.app.windows[0].userAgent, /FWYanjiusuoDesktop\/1\.0\.3/);
 assert.equal(config.app.windows[0].minWidth, 760);
 assert.equal(config.app.windows[0].minHeight, 560);
@@ -45,16 +45,19 @@ const appLoader = read('assets/app.js');
 assert.match(appLoader, /isWindowsDesktopApp = \/FWYanjiusuoDesktop/);
 assert.match(appLoader, /assets\/fw-desktop-client\.css/);
 assert.match(appLoader, /assets\/fw-desktop-client\.js/);
-assert.match(appLoader, /windows-navigation-stable-20260811-1/);
+assert.match(appLoader, /windows-home-20260811-1/);
 assert.match(appLoader, /isDedicatedWindowsSocialPage/);
 assert.match(appLoader, /if\(!isDedicatedWindowsSocialPage\) loadJs\("assets\/fw-social\.js/);
 
 const desktopClient = read('assets/fw-desktop-client.js');
 assert.match(desktopClient, /fw-desktop-sidebar/);
+assert.match(desktopClient, /'index\.html': \{key:'home'/);
+assert.match(desktopClient, /href:'index\.html', label:'首页'/);
 assert.match(desktopClient, /square\.html\?compose=1/);
 assert.match(desktopClient, /fwOpenStableEcho/);
 assert.match(desktopClient, /FWMobileActions\.openBuddy/);
-assert.match(desktopClient, /location\.replace\('square\.html'\)/);
+assert.match(desktopClient, /fw:desktop:home-enabled-20260811/);
+assert.doesNotMatch(desktopClient, /location\.replace\('square\.html'\)/);
 assert.match(desktopClient, /fw:desktop:scroll:/);
 assert.match(desktopClient, /rel = 'prefetch'/);
 assert.match(desktopClient, /fw:desktop:last-route/);
@@ -72,6 +75,7 @@ assert.match(desktopClient, /不需要卸载/);
 
 const desktopCss = read('assets/fw-desktop-client.css');
 assert.match(desktopCss, /--fw-desktop-rail/);
+assert.match(desktopCss, /fw-route-home \.fw-desktop-home/);
 assert.match(desktopCss, /fw-route-echo \.fw-stable-echo-modal/);
 assert.match(desktopCss, /fw-route-buddy \.fw-wx-shell/);
 assert.match(desktopCss, /fw-desktop-preparing body/);
@@ -85,9 +89,16 @@ assert.doesNotMatch(desktopCss, /\.fw-desktop-page-title/);
 for(const page of ['index.html','square.html','rooms.html','bird.html','echo.html','buddy.html','archive.html','rules.html','admin.html']){
   const html = read(page);
   assert.match(html, /fw-desktop-preparing/, `${page} 应在首屏绘制前隐藏网页原始版式`);
-  assert.match(html, /fw-desktop-client\.css\?v=windows-navigation-stable-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
-  assert.match(html, /assets\/app\.js\?v=windows-navigation-stable-20260811-1/, `${page} 应刷新桌面导航脚本缓存`);
+  assert.match(html, /fw-desktop-client\.css\?v=windows-home-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
+  assert.match(html, /assets\/app\.js\?v=windows-home-20260811-1/, `${page} 应刷新桌面导航脚本缓存`);
 }
+
+const home = read('index.html');
+assert.match(home, /class="fw-desktop-home"/);
+assert.match(home, />活动</);
+assert.match(home, />公告</);
+assert.match(home, />每天一句话</);
+assert.match(read('assets/fw-home-feed-preview.js'), /FWYanjiusuoDesktop/);
 
 const buddy = read('assets/fw-buddy-wechat.js');
 assert.match(buddy, /lastMessageSignature/);

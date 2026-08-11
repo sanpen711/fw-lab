@@ -1,4 +1,5 @@
 (function(){
+  if(/FWYanjiusuoDesktop\//i.test(navigator.userAgent || '')) return;
   if(window.__FW_HOME_FEED_PREVIEW__) return;
   window.__FW_HOME_FEED_PREVIEW__ = true;
 
