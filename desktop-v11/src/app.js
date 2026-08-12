@@ -1,6 +1,7 @@
 import {authStore} from './auth-store.js';
 import {socialStore} from './social-store.js';
 import {feedStore} from './feed-store.js';
+import {pollStore} from './poll-store.js';
 import {APP_VERSION} from './config.js';
 
 const $=selector=>document.querySelector(selector);
@@ -12,10 +13,13 @@ const EMOJIS=['😀','😄','😂','🤣','😊','🥰','😍','😘','😋','�
 let accountState={ready:false,busy:false,user:null};
 let socialState=socialStore.state;
 let feedState=feedStore.state;
+let pollState=pollStore.state;
 let currentAuthView='login';
 let currentView='home';
 let emojiTab='emoji';
 let lastChatSignature='';
+let pollFilter='all';
+let pollCreateOpen=false;
 const composeDraft={text:'',status:'今日无效',imageFile:null,imagePreview:'',stickers:new Set()};
 const commentDrafts=new Map();
 const STATUS_OPTIONS=['今日无效','已疲惫','摸鱼现场','精神离岗','今日崩溃'];
@@ -57,6 +61,7 @@ function renderAccount(next){
   $$('[data-account-modal] button, [data-account-modal] input').forEach(node=>{if(!node.matches('[data-close-account]'))node.disabled=Boolean(next.busy);});
   if(next.ready&&!user&&(currentView==='echo'||currentView==='buddy'))renderSocial();
   if(next.ready)renderFeed();
+  if(next.ready)renderPolls();
 }
 
 function showAuth(view){
@@ -70,16 +75,18 @@ function closeAccount(){$('[data-account-modal]').hidden=true;document.body.clas
 function navigate(view){
   const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;$('[data-page-title]').textContent=route[0];$('[data-page-subtitle]').textContent=route[1];
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
-  const localViews=['home','compose','square','echo','buddy'];
+  const localViews=['home','compose','square','rooms','echo','buddy'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
   if(!localViews.includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
   $('[data-emoji-panel]').hidden=true;
   if(view!=='buddy')socialStore.closeChat();
   if(view!=='square')feedStore.deactivate();
+  if(view!=='rooms')pollStore.deactivate();
   if(view==='echo')socialStore.loadEcho();
   if(view==='buddy')socialStore.loadBuddy();
   if(view==='compose'){socialStore.loadStickers().catch(()=>{});renderFeed();}
   if(view==='square')feedStore.activate().then(()=>{const raw=sessionStorage.getItem('fw:desktop:v11:pending-post');if(!raw)return;sessionStorage.removeItem('fw:desktop:v11:pending-post');try{const pending=JSON.parse(raw);feedStore.openPost(pending.id);}catch{}}).catch(error=>toast(error.message||'精神广场读取失败。'));
+  if(view==='rooms')pollStore.activate().catch(error=>toast(error.message||'课题读取失败。'));
 }
 
 function setBadge(kind,count){const badge=$(`[data-badge="${kind}"]`);const value=Number(count||0);badge.hidden=value<=0;badge.textContent=value>99?'99+':String(value||'');}
@@ -138,6 +145,21 @@ function renderPostDetail(){
     ${accountState.user?`<form class="comment-compose-card" data-comment-form="${esc(post.id)}">${reply?`<div class="replying">正在回复 ${esc(reply.name)}<button type="button" data-clear-reply>取消</button></div>`:''}<textarea name="content" maxlength="180" placeholder="留一句回声，最多 180 字">${esc(draft.text)}</textarea><div class="media-tools"><label class="secondary compact file-button">图片<input type="file" accept="image/*" data-comment-image="${esc(post.id)}" hidden></label><span>也可以只发送图片或表情</span></div>${draft.imagePreview?`<div class="image-preview small"><img src="${esc(draft.imagePreview)}" alt="待发送图片"><button class="secondary compact danger" type="button" data-comment-image-remove="${esc(post.id)}">移除</button></div>`:''}<div class="picker-block compact-picker"><b>我的表情（最多 6 个）</b>${stickerPicker(draft.stickers,'data-comment-sticker',post.id)}</div><button class="primary full" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发送中...':'发送回声'}</button></form>`:'<div class="state-card small"><b>登录后参与评论</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>'}</section></div>`;
 }
 function renderFeed(next=feedState){feedState=next;renderCompose();renderSquareFeed();renderPostDetail();}
+
+function pollEnded(poll){return Boolean(poll.closed_at)||new Date(poll.ends_at).getTime()<=Date.now();}
+function remainingTime(value){const ms=new Date(value).getTime()-Date.now();if(!Number.isFinite(ms)||ms<=0)return'已结束';const minutes=Math.ceil(ms/60000);const days=Math.floor(minutes/1440);const hours=Math.floor((minutes%1440)/60);return days?`${days}天${hours?` ${hours}小时`:''}`:hours?`${hours}小时${minutes%60?` ${minutes%60}分钟`:''}`:`${minutes}分钟`;}
+function pollConclusion(poll){if(poll.conclusion)return poll.conclusion;const total=Number(poll.participantCount||0);if(!total)return'样本量仍为 0，本课题暂时没有形成有效研究结论。';const counts=poll.options.map(option=>Number(poll.stats[String(option.id)]||0));const max=Math.max(...counts);const winners=poll.options.filter(option=>Number(poll.stats[String(option.id)]||0)===max);if(winners.length>1)return`样本显示「${winners.map(item=>item.label).join('」「')}」并列领先，各获得 ${max} 票。`;return`样本倾向于「${winners[0]?.label||'暂无'}」，获得 ${max} 票，占参与样本的 ${Math.round(max/total*100)}%。`;}
+function pollMatches(poll){const ended=pollEnded(poll);if(pollFilter==='ended')return ended;if(ended)return false;if(pollFilter==='official')return Boolean(poll.is_official);if(pollFilter==='user')return!poll.is_official;return true;}
+function pollCard(poll){
+  const ended=pollEnded(poll);const profile=pollState.profiles[String(poll.user_id)]||{};const total=Number(poll.participantCount||0);const user=accountState.user;const myOption=String(poll.myVote?.option_id||'');
+  return `<article class="poll-card ${poll.is_official?'official':''} ${ended?'ended':''}"><header><div><div class="poll-tags"><span>${poll.is_official?'官方课题':'用户课题'}</span><span>${ended?'已结束':'研究中'}</span></div><h2>${esc(poll.title)}</h2><p>由 ${esc(profile.nickname||'匿名研究员')} 发起 · ${esc(new Date(poll.created_at).toLocaleDateString('zh-CN'))} 发布 · 默认 7 天截止</p></div><div class="poll-deadline"><b>${esc(remainingTime(poll.ends_at))}</b><span>${ended?'截止状态':'剩余时间'}</span></div></header>${user?.role==='admin'&&!poll.is_official&&!ended?`<button class="secondary compact" type="button" data-poll-promote="${esc(poll.id)}">设为官方课题</button>`:''}<div class="poll-options">${poll.options.map(option=>{const votes=Number(poll.stats[String(option.id)]||0);const percent=total?Math.round(votes/total*100):0;const selected=myOption===String(option.id);const canDelete=user&&!ended&&option.source==='user'&&String(option.user_id)===String(user.id);return `<div class="poll-option-row"><button class="poll-option ${selected?'selected':''}" type="button" data-poll-vote="${esc(poll.id)}" data-option-id="${esc(option.id)}" ${ended||pollState.busy?'disabled':''}><span><b>${esc(option.label)}</b><small>${votes}票 · ${percent}%</small></span><i><i style="width:${percent}%"></i></i></button>${canDelete?`<button class="poll-delete-option danger" type="button" data-poll-delete-option="${esc(option.id)}">删除</button>`:''}</div>`;}).join('')}</div>${!ended&&poll.options.length<20&&!poll.options.some(option=>option.source==='user'&&String(option.user_id)===String(user?.id))?`<form class="poll-add-option" data-poll-add-option="${esc(poll.id)}"><input name="label" maxlength="80" placeholder="补充一个新选项"><button class="secondary compact" type="submit">新增并投票</button></form>`:!ended&&user?'<p class="poll-note">每人每个课题最多补充 1 个选项，课题最多 20 个选项。</p>':''}${ended?`<div class="poll-conclusion"><b>研究结论</b><p>${esc(pollConclusion(poll))}</p></div>`:''}<footer><span><b>${total}</b>参与</span><span><b>${poll.options.length}</b>选项</span><span><b>${poll.myVote?'已投':'未投'}</b>状态</span></footer></article>`;
+}
+function renderPolls(next=pollState){
+  pollState=next;const countNode=$('[data-poll-daily-count]');if(countNode)countNode.textContent=accountState.user?(pollState.dailyCount==null?'今日次数读取失败':`今日发起 ${pollState.dailyCount}/3`):'登录后可见';
+  $$('[data-poll-filter]').forEach(button=>button.classList.toggle('active',button.dataset.pollFilter===pollFilter));
+  const create=$('[data-poll-create-host]');if(create){create.hidden=!pollCreateOpen;if(pollCreateOpen)create.innerHTML=accountState.user?`<form class="poll-create-card" data-poll-create-form><div><h2>发起 7 天投票</h2><p>每人每天最多 3 次；标题最多 120 字，创建时必须填写 4 个不同选项。</p></div><label>课题标题<input name="title" maxlength="120" autocomplete="off" required placeholder="例如：今天最值得研究的崩溃来源是什么？"></label><div class="poll-initial-options">${[1,2,3,4].map(index=>`<label>选项 ${index}<input name="option${index}" maxlength="80" required></label>`).join('')}</div>${accountState.user.role==='admin'?'<label class="poll-official-check"><input type="checkbox" name="official"> 作为官方课题发布并置顶</label>':''}<div class="compose-actions"><button class="secondary" type="button" data-poll-create-toggle>取消</button><button class="primary" type="submit" ${pollState.busy?'disabled':''}>${pollState.busy?'发布中...':'发布课题'}</button></div></form>`:'<div class="state-card"><b>登录后发起课题</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';}
+  const list=$('[data-poll-list]');if(!list)return;if(pollState.loading&&!pollState.loaded){list.innerHTML='<div class="state-card">正在读取学术研讨课题...</div>';return;}if(pollState.error&&!pollState.polls.length){list.innerHTML=`<div class="state-card"><b>课题暂时读取失败</b><span>${esc(pollState.error)}</span><button class="secondary compact" type="button" data-poll-refresh>重试</button></div>`;return;}const rows=pollState.polls.filter(pollMatches).sort((a,b)=>pollFilter==='ended'?new Date(b.created_at)-new Date(a.created_at):Number(b.is_official)-Number(a.is_official)||new Date(b.created_at)-new Date(a.created_at));list.innerHTML=rows.length?rows.map(pollCard).join(''):'<div class="state-card">这个分类下暂时没有课题。</div>';
+}
 
 function renderEcho(){
   const list=$('[data-echo-list]');if(!list)return;
@@ -207,6 +229,12 @@ function bindNavigation(){
     const nav=event.target.closest('[data-nav]');if(nav){navigate(nav.dataset.nav);return;}
     if(event.target.closest('[data-open-account]')){openAccount();return;}if(event.target.closest('[data-close-account]')){closeAccount();return;}
     const switcher=event.target.closest('[data-show-auth]');if(switcher){showAuth(switcher.dataset.showAuth);return;}
+    if(event.target.closest('[data-poll-refresh]')){pollStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
+    if(event.target.closest('[data-poll-create-toggle]')){pollCreateOpen=!pollCreateOpen;renderPolls();requestAnimationFrame(()=>$('[data-poll-create-form] input[name="title"]')?.focus());return;}
+    const pollTab=event.target.closest('[data-poll-filter]');if(pollTab){pollFilter=pollTab.dataset.pollFilter;renderPolls();return;}
+    const pollVote=event.target.closest('[data-poll-vote]');if(pollVote){try{await pollStore.vote(pollVote.dataset.pollVote,pollVote.dataset.optionId);toast('投票已记录，截止前可以改票。');}catch(error){toast(error.message||'投票失败。');}return;}
+    const pollDelete=event.target.closest('[data-poll-delete-option]');if(pollDelete){if(!window.confirm('确定删除这个补充选项吗？已有投票的选项不能删除。'))return;try{await pollStore.deleteOption(pollDelete.dataset.pollDeleteOption);toast('补充选项已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
+    const promote=event.target.closest('[data-poll-promote]');if(promote){if(!window.confirm('确定将这个课题设为官方课题并置顶吗？'))return;try{await pollStore.promote(promote.dataset.pollPromote);pollFilter='official';toast('已设为官方课题并置顶。');}catch(error){toast(error.message||'设置失败。');}return;}
     if(event.target.closest('[data-square-refresh]')){feedStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
     const status=event.target.closest('[data-compose-status]');if(status){composeDraft.status=status.dataset.composeStatus;renderCompose();return;}
     const composeSticker=event.target.closest('[data-compose-sticker]');if(composeSticker){const url=composeSticker.dataset.composeSticker;if(composeDraft.stickers.has(url))composeDraft.stickers.delete(url);else if(composeDraft.stickers.size<6)composeDraft.stickers.add(url);else toast('一次最多选择 6 个表情。');renderCompose();return;}
@@ -264,10 +292,12 @@ function bindForms(){
     if(event.target.matches('[data-comment-image]')){const file=event.target.files?.[0];if(!file)return;const draft=draftFor(event.target.dataset.commentImage);releasePreview(draft);draft.imageFile=file;draft.imagePreview=URL.createObjectURL(file);renderPostDetail();}
   });
   document.addEventListener('submit',async event=>{
+    const createPoll=event.target.closest?.('[data-poll-create-form]');if(createPoll){event.preventDefault();const fd=new FormData(createPoll);try{await pollStore.createPoll({title:fd.get('title'),options:[1,2,3,4].map(index=>fd.get(`option${index}`)),isOfficial:fd.get('official')==='on'});pollCreateOpen=false;pollFilter=accountState.user?.role==='admin'&&fd.get('official')==='on'?'official':'user';toast('投票课题已发布。');renderPolls();}catch(error){toast(error.message||'发布失败。');}return;}
+    const addOption=event.target.closest?.('[data-poll-add-option]');if(addOption){event.preventDefault();try{await pollStore.addOption(addOption.dataset.pollAddOption,new FormData(addOption).get('label'));toast('新选项已加入并投票。');}catch(error){toast(error.message||'新增选项失败。');}return;}
     const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();try{await feedStore.createPost({text:composeDraft.text,status:composeDraft.status,imageFile:composeDraft.imageFile,stickerUrls:Array.from(composeDraft.stickers)});releasePreview(composeDraft);composeDraft.text='';composeDraft.status='今日无效';composeDraft.stickers.clear();toast('已投递到精神广场。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('回声已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
 function bindConnection(){const render=()=>{const online=navigator.onLine!==false;const node=$('[data-connection-state]');node.textContent=online?'已连接':'网络已断开';node.classList.toggle('offline',!online);};window.addEventListener('online',render);window.addEventListener('offline',render);render();}
 
-bindNavigation();bindForms();bindConnection();authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);authStore.boot();
+bindNavigation();bindForms();bindConnection();authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);authStore.boot();

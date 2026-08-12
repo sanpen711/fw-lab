@@ -70,3 +70,20 @@ test('发牢骚和精神广场均为本地页面且内容按需读取',async({pa
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBeGreaterThan(0);
   expect(page.url()).toBe(original);
 });
+
+test('学术研讨为本地按需页面并保留投票分类',async({page})=>{
+  await page.goto('/');
+  const original=page.url();
+  await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
+  await page.locator('[data-nav="rooms"].nav-item').click();
+  await expect(page.locator('[data-view-panel="rooms"]')).toHaveClass(/active/);
+  await expect(page.getByRole('heading',{name:'学术研讨'})).toBeVisible();
+  await expect(page.locator('[data-poll-filter="all"]')).toBeVisible();
+  await expect(page.locator('[data-poll-filter="official"]')).toBeVisible();
+  await expect(page.locator('[data-poll-filter="user"]')).toBeVisible();
+  await expect(page.locator('[data-poll-filter="ended"]')).toBeVisible();
+  await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBeGreaterThan(0);
+  await page.locator('[data-poll-create-toggle]').click();
+  await expect(page.getByText('登录后发起课题')).toBeVisible();
+  expect(page.url()).toBe(original);
+});
