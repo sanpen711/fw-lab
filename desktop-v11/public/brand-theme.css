@@ -1,190 +1,203 @@
-/* F.w 研究所 Windows 1.1.1 brand restoration
-   Standard visual language: warm paper + near-black structure + muted pink actions.
-   This file intentionally changes presentation only; data, routing and caching are untouched. */
+/* F.w 研究所 Windows 1.1.2 classic desktop palette
+   Restores the pre-standalone Windows visual language exactly:
+   warm paper + near-black structure + muted pink core actions.
+   Presentation only: no data, routing, cache, realtime or social logic changes. */
 
 :root{
-  --bg:#eee9df;
-  --paper:#fffdf7;
-  --ink:#1b1b18;
-  --muted:#756f64;
-  --line:rgba(27,27,24,.13);
-  --accent:#d97979;
-  --deep:#181916;
+  --bg:#eee9df!important;
+  --paper:#fffdf7!important;
+  --ink:#1b1b18!important;
+  --muted:#756f64!important;
+  --line:rgba(27,27,24,.13)!important;
+  --accent:#d97979!important;
+  --deep:#181916!important;
 }
 
 html,body{
-  background:var(--bg);
-  color:var(--ink);
+  background:#eee9df!important;
+  color:#1b1b18!important;
 }
 
-/* Main shell: restore the original black rail. */
-.sidebar{
-  color:#f9f5ec;
-  background:#181916;
-  border-right-color:rgba(255,255,255,.08);
-  box-shadow:10px 0 32px rgba(25,23,18,.08);
+html body .sidebar{
+  color:#f9f5ec!important;
+  background:#181916!important;
+  border-right-color:rgba(255,255,255,.08)!important;
+  box-shadow:10px 0 32px rgba(25,23,18,.08)!important;
 }
-.brand strong{color:#fff;}
-.brand span{color:#d9d2c5;}
-.compose-button{
-  background:var(--accent);
-  color:#fff;
-  box-shadow:0 9px 20px rgba(217,121,121,.20);
+html body .brand strong{color:#fff!important;}
+html body .brand span{color:#d9d2c5!important;}
+html body .compose-button{
+  background:#d97979!important;
+  color:#fff!important;
+  box-shadow:0 9px 20px rgba(217,121,121,.20)!important;
 }
-.compose-button:hover{background:#e48686;}
-.nav-item{color:#bdb9af;}
-.nav-item:hover{background:rgba(255,255,255,.07);color:#fff;}
-.nav-item.active{
-  background:#f6f1e7;
-  color:#1b1b18;
-  box-shadow:0 9px 22px rgba(0,0,0,.18);
+html body .compose-button:hover{background:#e48686!important;}
+html body .nav-item{color:#bdb9af!important;}
+html body .nav-item:hover{background:rgba(255,255,255,.07)!important;color:#fff!important;}
+html body .nav-item.active{
+  background:#f6f1e7!important;
+  color:#1b1b18!important;
+  box-shadow:0 9px 22px rgba(0,0,0,.18)!important;
 }
-.account-button{border-top-color:rgba(255,255,255,.10);}
-.account-button:hover{color:#fff;}
-.badge{background:var(--accent);}
+html body .account-button{border-top-color:rgba(255,255,255,.10)!important;}
+html body .account-button:hover{background:transparent!important;color:#fff!important;}
+html body .badge{background:#d97979!important;color:#fff!important;}
 
-/* Warm paper workspace. */
-.topbar{
-  border-bottom-color:rgba(27,27,24,.12);
-  background:rgba(238,233,223,.92);
+html body .main-content,
+html body .view,
+html body .home-wrap,
+html body .compose-page,
+html body .rooms-page,
+html body .archive-page,
+html body .social-page{
+  background:#eee9df!important;
 }
-.section-heading{
-  border-bottom-color:var(--line);
-  background:rgba(255,253,247,.72);
+html body .topbar{
+  border-bottom-color:rgba(27,27,24,.12)!important;
+  background:rgba(238,233,223,.94)!important;
 }
-
-/* Home: black hero + pink main action, matching the original identity. */
-.hero-card{
-  background:#181916;
-  color:#fffdf7;
-  box-shadow:0 18px 45px rgba(24,25,22,.16);
-}
-.hero-card:after{
-  border-color:rgba(255,253,247,.15);
-  box-shadow:0 0 0 55px rgba(255,253,247,.035),0 0 0 110px rgba(255,253,247,.025);
-}
-.hero-card>p:first-child,
-.eyebrow,
-.pending-card>span,
-.section-heading p,
-.chat-heading p,
-.archive-hero small,
-.archive-section header small{
-  color:#e59a9a;
-}
-.hero-copy{color:#d9d2c5;}
-.hero-card .primary{
-  border-color:var(--accent);
-  background:var(--accent);
-  color:#fff;
-}
-.hero-card .primary:hover{background:#e48686;}
-.hero-card .secondary{border-color:rgba(255,255,255,.30);color:#fff;}
-.feature-card small{color:#a85f5f;}
-.feature-card:hover{border-color:rgba(217,121,121,.48);}
-.phase-note{color:#8e877d;font-size:0;}
-.phase-note::after{content:'Windows 1.1.1 本地前端 · 黑粉视觉修复版';font-size:11px;}
-
-/* Pink is reserved for core actions; black is used for selected/structural states. */
-.primary{
-  border-color:var(--accent);
-  background:var(--accent);
-  color:#fff;
-  box-shadow:0 8px 20px rgba(217,121,121,.16);
-}
-.primary:hover{background:#e48686;}
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-a:focus-visible{
-  outline-color:rgba(217,121,121,.35);
+html body .section-heading{
+  border-bottom-color:rgba(27,27,24,.13)!important;
+  background:rgba(255,253,247,.72)!important;
 }
 
-.buddy-tabs button.active,
-.emoji-tabs button.active,
-.status-options button.active,
-.reaction-row button.active,
-.poll-filters button.active,
-.archive-tabs button.active{
-  border-color:#181916;
-  background:#181916;
-  color:#fff;
+html body .hero-card{
+  background:#181916!important;
+  color:#fffdf7!important;
+  box-shadow:0 18px 45px rgba(24,25,22,.16)!important;
+}
+html body .hero-card:after{
+  border-color:rgba(255,253,247,.15)!important;
+  box-shadow:0 0 0 55px rgba(255,253,247,.035),0 0 0 110px rgba(255,253,247,.025)!important;
+}
+html body .hero-card>p:first-child,
+html body .eyebrow,
+html body .pending-card>span,
+html body .section-heading p,
+html body .chat-heading p,
+html body .archive-hero small,
+html body .archive-section header small{
+  color:#e59a9a!important;
+}
+html body .hero-copy{color:#d9d2c5!important;}
+html body .hero-card .primary{
+  border-color:#d97979!important;
+  background:#d97979!important;
+  color:#fff!important;
+}
+html body .hero-card .primary:hover{background:#e48686!important;}
+html body .hero-card .secondary{border-color:rgba(255,255,255,.30)!important;color:#fff!important;}
+html body .feature-card{
+  border-color:rgba(27,27,24,.13)!important;
+  background:#fffdf7!important;
+  color:#1b1b18!important;
+}
+html body .feature-card small{color:#a85f5f!important;}
+html body .feature-card span{color:#756f64!important;}
+html body .feature-card:hover{border-color:rgba(217,121,121,.48)!important;}
+html body .phase-note{color:transparent!important;font-size:0!important;}
+html body .phase-note::after{
+  content:'Windows 1.1.2 本地前端 · 经典配色恢复版'!important;
+  color:#8e877d!important;
+  font-size:11px!important;
 }
 
-/* Social / chat surfaces. */
-.social-avatar,
-.archive-award>header>i,
-.archive-avatar,
-.archive-rule{
-  background:#181916;
+html body .primary{
+  border-color:#d97979!important;
+  background:#d97979!important;
+  color:#fff!important;
+  box-shadow:0 8px 20px rgba(217,121,121,.16)!important;
 }
-.buddy-column,
-.square-feed,
-.bird-compose-host,
-.bird-feed{
-  background:#eee9df;
+html body .primary:hover{background:#e48686!important;}
+html body button:focus-visible,
+html body input:focus-visible,
+html body textarea:focus-visible,
+html body a:focus-visible{outline-color:rgba(217,121,121,.35)!important;}
+html body .buddy-tabs button.active,
+html body .emoji-tabs button.active,
+html body .status-options button.active,
+html body .reaction-row button.active,
+html body .poll-filters button.active,
+html body .archive-tabs button.active{
+  border-color:#181916!important;
+  background:#181916!important;
+  color:#fff!important;
 }
-.chat-column,
-.post-detail-column,
-.bird-detail-column{background:var(--paper);}
-.chat-messages{
-  background-image:linear-gradient(rgba(27,27,24,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(27,27,24,.035) 1px,transparent 1px);
-}
-.chat-message.mine .chat-bubble{
-  border-color:#181916;
-  background:#181916;
-  color:#fff;
-}
-.buddy-search button{background:#181916;color:#fff;}
-.buddy-item:hover,
-.buddy-item.active{border-color:rgba(217,121,121,.48);}
-.buddy-item.unread,
-.echo-item.unread{border-color:rgba(217,121,121,.58);background:#fff5ef;}
-.buddy-section h3,
-.echo-main time,
-.buddy-main time,
-.bird-label,
-.archive-winner strong{color:#a65d5d;}
 
-/* Cards and details remain warm/neutral instead of green-tinted. */
-.state-card{background:rgba(255,253,247,.74);}
-.square-post,
-.poll-card,
-.bird-card,
-.archive-section,
-.archive-award,
-.archive-history article,
-.archive-daily-row,
-.post-comment{background:var(--paper);}
-.square-post.active,
-.bird-card:hover{border-color:var(--accent);}
-.post-meta span,
-.poll-tags span,
-.daily-count,
-.replying,
-.poll-conclusion{background:#f1e6df;color:#875656;}
-.comment-actions button,
-.replying button,
-.form-links button{color:#975858;}
-
-/* Archive and modal surfaces. */
-.archive-hero{
-  background:linear-gradient(135deg,#181916,#2b2728);
-  box-shadow:0 16px 40px rgba(24,25,22,.16);
+html body .pending-card,
+html body .state-card,
+html body .square-post,
+html body .poll-card,
+html body .bird-card,
+html body .archive-section,
+html body .archive-award,
+html body .archive-history article,
+html body .archive-daily-row,
+html body .post-comment,
+html body .echo-item,
+html body .buddy-item,
+html body .chat-heading,
+html body .chat-bubble,
+html body .account-panel{
+  background:#fffdf7!important;
+  color:#1b1b18!important;
 }
-.archive-hero p,
-.archive-rule span{color:#d9d2c5;}
-.archive-award blockquote{border-left-color:var(--accent);background:#f8e9e5;}
-.modal{background:rgba(15,15,14,.54);}
-.account-panel{
-  background:#fffdf7;
-  box-shadow:0 28px 80px rgba(15,15,14,.25);
+html body .state-card{background:rgba(255,253,247,.74)!important;}
+html body .buddy-column,
+html body .square-feed,
+html body .bird-compose-host,
+html body .bird-feed{background:#eee9df!important;}
+html body .chat-column,
+html body .post-detail-column,
+html body .bird-detail-column{background:#fffdf7!important;}
+html body .chat-messages{
+  background-color:#fffdf7!important;
+  background-image:linear-gradient(rgba(27,27,24,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(27,27,24,.035) 1px,transparent 1px)!important;
 }
-.toast{background:#181916;color:#fff;}
-.bird-cover span{background:rgba(24,25,22,.84);}
-.sticker-delete,
-.bird-preview-grid button{background:rgba(24,25,22,.84)!important;}
+html body .social-avatar,
+html body .archive-award>header>i,
+html body .archive-avatar,
+html body .archive-rule{background:#181916!important;color:#fff!important;}
+html body .chat-message.mine .chat-bubble{
+  border-color:#181916!important;
+  background:#181916!important;
+  color:#fff!important;
+}
+html body .buddy-search button{background:#181916!important;color:#fff!important;}
+html body .buddy-item:hover,
+html body .buddy-item.active{border-color:rgba(217,121,121,.48)!important;}
+html body .buddy-item.unread,
+html body .echo-item.unread{border-color:rgba(217,121,121,.58)!important;background:#fff5ef!important;}
+html body .buddy-section h3,
+html body .echo-main time,
+html body .buddy-main time,
+html body .bird-label,
+html body .archive-winner strong{color:#a65d5d!important;}
+html body .square-post.active,
+html body .bird-card:hover{border-color:#d97979!important;}
+html body .post-meta span,
+html body .poll-tags span,
+html body .daily-count,
+html body .replying,
+html body .poll-conclusion{background:#f1e6df!important;color:#875656!important;}
+html body .comment-actions button,
+html body .replying button,
+html body .form-links button{color:#975858!important;}
 
-/* Keep green only where it communicates a real connected/online state. */
-.connection-state:before{background:#6b9b7e;}
-.connection-state.offline:before{background:var(--accent);}
+html body .archive-hero{
+  background:linear-gradient(135deg,#181916,#2b2728)!important;
+  color:#fffdf7!important;
+  box-shadow:0 16px 40px rgba(24,25,22,.16)!important;
+}
+html body .archive-hero p,
+html body .archive-rule span{color:#d9d2c5!important;}
+html body .archive-award blockquote{border-left-color:#d97979!important;background:#f8e9e5!important;}
+html body .modal{background:rgba(15,15,14,.54)!important;}
+html body .account-panel{box-shadow:0 28px 80px rgba(15,15,14,.25)!important;}
+html body .toast{background:#181916!important;color:#fff!important;}
+html body .bird-cover span,
+html body .sticker-delete,
+html body .bird-preview-grid button{background:rgba(24,25,22,.84)!important;color:#fff!important;}
+
+html body .connection-state:before{background:#6b9b7e!important;}
+html body .connection-state.offline:before{background:#d97979!important;}
