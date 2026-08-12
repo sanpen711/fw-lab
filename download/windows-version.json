@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 客户端升级为本地独立前端：首页、发牢骚、精神广场、学术研讨、观鸟台、回声、搭子、私聊和废话档案均已迁移；减少重复脚本、数据库查询、轮询和全局页面监听。",
-  "version": "1.1.0",
   "available": true,
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "sha256": "52fd6082ee2d5890a2acba643f2288c432e4b531b8bff2015a7a5a4d0f0e2624",
+  "version": "1.1.0",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
   "platform": "Windows 10/11 64 位",
+  "publishedAt": "2026-08-12T06:19:01.7831861Z",
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "notes": "Windows 客户端升级为本地独立前端：首页、发牢骚、精神广场、学术研讨、观鸟台、回声、搭子、私聊和废话档案均已迁移；减少重复脚本、数据库查询、轮询和全局页面监听。",
   "rollbackVersion": "1.0.5",
-  "publishedAt": "2026-08-12T05:46:44.2121778Z"
+  "sha256": "2eaa1d225086452c0b925c870fa2374bcd2803ab2c1b8ad409680c6533ee7eec"
 }
