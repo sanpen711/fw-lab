@@ -1,5 +1,6 @@
 import {authStore} from './auth-store.js';
 import {socialStore} from './social-store.js';
+import {feedStore} from './feed-store.js';
 import {APP_VERSION} from './config.js';
 
 const $=selector=>document.querySelector(selector);
@@ -10,10 +11,14 @@ const routes={
 const EMOJIS=['😀','😄','😂','🤣','😊','🥰','😍','😘','😋','😎','🤔','🙃','😴','🥱','😭','🥺','😤','😡','🤯','😱','👍','👎','👏','🙏','💪','🤝','❤️','💔','✨','🎉','☕','🍉','🐟','🫠','🫡','🤡'];
 let accountState={ready:false,busy:false,user:null};
 let socialState=socialStore.state;
+let feedState=feedStore.state;
 let currentAuthView='login';
 let currentView='home';
 let emojiTab='emoji';
 let lastChatSignature='';
+const composeDraft={text:'',status:'今日无效',imageFile:null,imagePreview:'',stickers:new Set()};
+const commentDrafts=new Map();
+const STATUS_OPTIONS=['今日无效','已疲惫','摸鱼现场','精神离岗','今日崩溃'];
 
 window.__FW_DESKTOP_V11__={version:APP_VERSION,architecture:'local-frontend',contentRequests:0,socialContentRequests:0,realtimeChat:true,pollingTimers:0};
 
@@ -36,6 +41,12 @@ function timeText(value){
 function noticeText(type){return({like:'点赞了你的帖子',same:'对你说：俺也一样',tissue:'给你递了纸巾',comment:'评论了你的帖子',comment_reply:'回复了你的评论',chat_agree:'赞同了你的房间消息',system:'发送了一条系统通知'})[type]||'给你发来一条回声';}
 function previewText(value){return String(value||'对你的低功耗发言产生了回应。').replace(/\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]/g,'动画表情').replace(/\[\[FW_MEDIA_IMAGE:[A-Za-z0-9+/=]+\]\]/g,'图片').replace(/\[\[FW_MEDIA_VIDEO:[A-Za-z0-9+/=]+\]\]/g,'视频').replace(/\s+/g,' ').trim()||'对你的低功耗发言产生了回应。';}
 function decodeSticker(value){const match=String(value||'').trim().match(/^\[\[FW_USER_STICKER:([A-Za-z0-9+/=]+)\]\]$/);if(!match)return'';try{return atob(match[1]);}catch{return'';}}
+function safeMediaUrl(encoded){try{const url=new URL(atob(encoded));return['http:','https:'].includes(url.protocol)?url.href:'';}catch{return'';}}
+function richContent(value){
+  const source=String(value||'');const pattern=/\[\[(FW_MEDIA_IMAGE|FW_USER_STICKER):([A-Za-z0-9+/=]+)\]\]/g;let cursor=0;let match;const text=[];const media=[];
+  while((match=pattern.exec(source))){text.push(source.slice(cursor,match.index));const url=safeMediaUrl(match[2]);if(url)media.push(match[1]==='FW_USER_STICKER'?`<img class="rich-sticker" src="${esc(url)}" alt="自定义表情" loading="lazy">`:`<img class="rich-image" src="${esc(url)}" alt="帖子图片" loading="lazy">`);cursor=match.index+match[0].length;}
+  text.push(source.slice(cursor));const clean=text.join('').trim();return `${clean?`<div class="rich-text">${esc(clean).replace(/\n/g,'<br>')}</div>`:''}${media.length?`<div class="rich-media">${media.join('')}</div>`:''}`||'<div class="rich-text">（空白记录）</div>';
+}
 
 function renderAccount(next){
   accountState=next;const user=next.user;
@@ -45,6 +56,7 @@ function renderAccount(next){
   const profile=$('[data-auth-view="profile"]');if(profile&&user){profile.elements.labCode.value=user.labCode||'';profile.elements.nickname.value=user.nickname||'';}
   $$('[data-account-modal] button, [data-account-modal] input').forEach(node=>{if(!node.matches('[data-close-account]'))node.disabled=Boolean(next.busy);});
   if(next.ready&&!user&&(currentView==='echo'||currentView==='buddy'))renderSocial();
+  if(next.ready)renderFeed();
 }
 
 function showAuth(view){
@@ -58,16 +70,74 @@ function closeAccount(){$('[data-account-modal]').hidden=true;document.body.clas
 function navigate(view){
   const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;$('[data-page-title]').textContent=route[0];$('[data-page-subtitle]').textContent=route[1];
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
-  $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(['home','echo','buddy'].includes(view)?view:'pending')));
-  if(!['home','echo','buddy'].includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
+  const localViews=['home','compose','square','echo','buddy'];
+  $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
+  if(!localViews.includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
   $('[data-emoji-panel]').hidden=true;
   if(view!=='buddy')socialStore.closeChat();
+  if(view!=='square')feedStore.deactivate();
   if(view==='echo')socialStore.loadEcho();
   if(view==='buddy')socialStore.loadBuddy();
+  if(view==='compose'){socialStore.loadStickers().catch(()=>{});renderFeed();}
+  if(view==='square')feedStore.activate().then(()=>{const raw=sessionStorage.getItem('fw:desktop:v11:pending-post');if(!raw)return;sessionStorage.removeItem('fw:desktop:v11:pending-post');try{const pending=JSON.parse(raw);feedStore.openPost(pending.id);}catch{}}).catch(error=>toast(error.message||'精神广场读取失败。'));
 }
 
 function setBadge(kind,count){const badge=$(`[data-badge="${kind}"]`);const value=Number(count||0);badge.hidden=value<=0;badge.textContent=value>99?'99+':String(value||'');}
 function echoPostId(row){if(row.__post_id)return String(row.__post_id);if(row.target_type==='post'&&row.target_id)return String(row.target_id);if(['like','same','tissue','comment'].includes(row.type)&&row.target_id)return String(row.target_id);return'';}
+
+function currentProfile(userId){return feedState.profiles[String(userId)]||{};}
+function reactionInfo(post){
+  const mine=String(accountState.user?.id||'');const values={like:0,same:0,tissue:0};const active={like:false,same:false,tissue:false};
+  (post.reactions||[]).forEach(row=>{if(row.type in values)values[row.type]+=1;if(String(row.user_id)===mine)active[row.type]=true;});return{values,active};
+}
+function draftFor(postId){const key=String(postId);if(!commentDrafts.has(key))commentDrafts.set(key,{text:'',imageFile:null,imagePreview:'',stickers:new Set()});return commentDrafts.get(key);}
+function releasePreview(draft){if(draft?.imagePreview){try{URL.revokeObjectURL(draft.imagePreview);}catch{}}if(draft){draft.imageFile=null;draft.imagePreview='';}}
+function stickerPicker(selected,attribute,postId=''){
+  const rows=socialState.stickers.rows||[];
+  if(socialState.stickers.loading&&!socialState.stickers.loaded)return'<div class="state-card small">正在读取我的表情...</div>';
+  if(!rows.length)return'<div class="state-card small">还没有自定义表情，可在“搭子”的表情面板中添加。</div>';
+  return `<div class="inline-sticker-grid">${rows.slice(0,30).map(row=>{const on=selected.has(row.image_url);return `<button class="${on?'selected':''}" type="button" ${attribute}="${esc(row.image_url)}" ${postId?`data-post-id="${esc(postId)}"`:''} aria-pressed="${on}"><img src="${esc(row.image_url)}" alt="自定义表情"></button>`;}).join('')}</div>`;
+}
+function renderCompose(){
+  const host=$('[data-compose-content]');if(!host)return;
+  if(!accountState.user){host.innerHTML='<div class="state-card"><b>登录后发牢骚</b><span>发布内容会与网页、PWA、APK 共用同一账号和数据库。</span><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';return;}
+  host.innerHTML=`<form class="compose-card" data-compose-form>
+    <label>今天属于哪种状态？</label><div class="status-options">${STATUS_OPTIONS.map(status=>`<button class="${composeDraft.status===status?'active':''}" type="button" data-compose-status="${esc(status)}">${esc(status)}</button>`).join('')}</div>
+    <label for="composeText">把想说的先放在这里</label><textarea id="composeText" name="content" maxlength="500" placeholder="不要求有结论，也不要求立刻振作。">${esc(composeDraft.text)}</textarea><div class="compose-count">${composeDraft.text.length}/500</div>
+    <div class="media-tools"><label class="secondary compact file-button">添加图片<input type="file" accept="image/*" data-compose-image hidden></label><span>静态图过大时会压缩；GIF 最大 3MB；表情最多 6 个。</span></div>
+    ${composeDraft.imagePreview?`<div class="image-preview"><img src="${esc(composeDraft.imagePreview)}" alt="待发布图片"><button class="secondary compact danger" type="button" data-compose-image-remove>移除图片</button></div>`:''}
+    <div class="picker-block"><b>我的表情</b>${stickerPicker(composeDraft.stickers,'data-compose-sticker')}</div>
+    <div class="compose-actions"><button class="secondary" type="button" data-nav="square">取消</button><button class="primary" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发布中...':'投递到精神广场'}</button></div>
+  </form>`;
+}
+function postCard(post){
+  const profile=currentProfile(post.user_id);const reactions=reactionInfo(post);const open=String(feedState.openPostId)===String(post.id);
+  return `<article class="square-post ${open?'active':''}" data-open-post="${esc(post.id)}"><div class="post-meta"><span>${esc(post.status_tag||'今日无效')}</span><time>${esc(timeText(post.created_at))}</time></div><div class="post-author">${avatarHtml(profile,'social-avatar mini')}<b>${esc(profile.nickname||'匿名研究员')}</b></div>${richContent(post.content)}<div class="post-stats"><span>点赞 ${reactions.values.like}</span><span>俺也一样 ${reactions.values.same}</span><span>递纸巾 ${reactions.values.tissue}</span><span>评论 ${(post.comments||[]).length}</span></div></article>`;
+}
+function renderSquareFeed(){
+  const host=$('[data-square-feed]');if(!host)return;
+  if(feedState.loading&&!feedState.loaded){host.innerHTML='<div class="state-card">正在读取精神广场...</div>';return;}
+  if(feedState.error&&!feedState.posts.length){host.innerHTML=`<div class="state-card"><b>精神广场暂时读取失败</b><span>${esc(feedState.error)}</span><button class="secondary compact" type="button" data-square-refresh>重试</button></div>`;return;}
+  host.innerHTML=feedState.posts.length?feedState.posts.map(postCard).join(''):'<div class="state-card"><b>广场还很安静</b><span>可以留下第一条低功耗记录。</span><button class="primary compact" type="button" data-nav="compose">发牢骚</button></div>';
+}
+function commentTree(comments){
+  const byId=new Map((comments||[]).map(row=>[String(row.id),row]));const roots=[];const replies=new Map();
+  (comments||[]).forEach(row=>{let rootId=String(row.parent_comment_id||row.id);let cursor=byId.get(rootId);let guard=0;while(cursor?.parent_comment_id&&byId.has(String(cursor.parent_comment_id))&&guard++<20){cursor=byId.get(String(cursor.parent_comment_id));rootId=String(cursor.id);}if(!row.parent_comment_id||rootId===String(row.id))roots.push(row);else{if(!replies.has(rootId))replies.set(rootId,[]);replies.get(rootId).push(row);}});
+  return{roots,replies};
+}
+function commentHtml(comment,{reply=false}={}){
+  const profile=currentProfile(comment.user_id);const target=currentProfile(comment.reply_to_user_id);const mine=String(comment.user_id)===String(accountState.user?.id);
+  return `<article class="post-comment ${reply?'reply':''}" data-comment-id="${esc(comment.id)}">${avatarHtml(profile,'social-avatar mini')}<div><div class="comment-meta"><b>${esc(profile.nickname||'匿名回声')}${reply&&target.nickname?` 回复 ${esc(target.nickname)}`:''}</b><time>${esc(timeText(comment.created_at))}</time></div>${richContent(comment.content)}<div class="comment-actions"><button type="button" data-reply-comment="${esc(comment.id)}">回复</button>${mine?`<button class="danger" type="button" data-delete-comment="${esc(comment.id)}">删除</button>`:''}</div></div></article>`;
+}
+function renderPostDetail(){
+  const host=$('[data-post-detail]');if(!host)return;const post=feedState.posts.find(row=>String(row.id)===String(feedState.openPostId));
+  if(!post){host.innerHTML='<div class="post-detail-empty"><b>选择一条帖子</b><span>在这里查看完整评论、回复和互动。</span></div>';return;}
+  const profile=currentProfile(post.user_id);const reaction=reactionInfo(post);const mine=String(post.user_id)===String(accountState.user?.id);const tree=commentTree(post.comments);const draft=draftFor(post.id);const reply=feedState.reply&&String(feedState.reply.postId)===String(post.id)?feedState.reply:null;
+  host.innerHTML=`<div class="detail-scroll"><header class="detail-head"><button class="secondary compact" type="button" data-close-post>关闭</button><div class="row-actions">${mine?`<button class="secondary compact danger" type="button" data-delete-post="${esc(post.id)}">删除帖子</button>`:`<button class="secondary compact" type="button" data-report-post="${esc(post.id)}">举报</button>`}</div></header><article class="detail-post"><div class="post-meta"><span>${esc(post.status_tag||'今日无效')}</span><time>${esc(new Date(post.created_at).toLocaleString('zh-CN'))}</time></div><div class="post-author">${avatarHtml(profile)}<b>${esc(profile.nickname||'匿名研究员')}</b></div>${richContent(post.content)}<div class="reaction-row">${[['like','点赞'],['same','俺也一样'],['tissue','递纸巾']].map(([type,label])=>`<button class="${reaction.active[type]?'active':''}" type="button" data-react="${type}" data-post-id="${esc(post.id)}">${label} ${reaction.values[type]}</button>`).join('')}</div></article>
+    <section class="comments-section"><h3>回声 ${(post.comments||[]).length}</h3><div class="comment-list">${tree.roots.length?tree.roots.map(root=>`<div class="comment-thread">${commentHtml(root)}${(tree.replies.get(String(root.id))||[]).map(item=>commentHtml(item,{reply:true})).join('')}</div>`).join(''):'<div class="state-card small">还没有评论，可以先留一句。</div>'}</div>
+    ${accountState.user?`<form class="comment-compose-card" data-comment-form="${esc(post.id)}">${reply?`<div class="replying">正在回复 ${esc(reply.name)}<button type="button" data-clear-reply>取消</button></div>`:''}<textarea name="content" maxlength="180" placeholder="留一句回声，最多 180 字">${esc(draft.text)}</textarea><div class="media-tools"><label class="secondary compact file-button">图片<input type="file" accept="image/*" data-comment-image="${esc(post.id)}" hidden></label><span>也可以只发送图片或表情</span></div>${draft.imagePreview?`<div class="image-preview small"><img src="${esc(draft.imagePreview)}" alt="待发送图片"><button class="secondary compact danger" type="button" data-comment-image-remove="${esc(post.id)}">移除</button></div>`:''}<div class="picker-block compact-picker"><b>我的表情（最多 6 个）</b>${stickerPicker(draft.stickers,'data-comment-sticker',post.id)}</div><button class="primary full" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发送中...':'发送回声'}</button></form>`:'<div class="state-card small"><b>登录后参与评论</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>'}</section></div>`;
+}
+function renderFeed(next=feedState){feedState=next;renderCompose();renderSquareFeed();renderPostDetail();}
 
 function renderEcho(){
   const list=$('[data-echo-list]');if(!list)return;
@@ -130,13 +200,27 @@ function renderEmojiPanel(){
   body.innerHTML=`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>＋ 添加表情</button><span>${socialState.stickers.rows.length}/80 · 最大 1MB</span></div>`+(socialState.stickers.rows.length?`<div class="sticker-grid">${socialState.stickers.rows.map(row=>`<div class="sticker-item"><button type="button" data-send-sticker="${esc(row.image_url)}"><img src="${esc(row.image_url)}" alt="表情"></button><button class="sticker-delete" type="button" data-delete-sticker="${esc(row.id)}" aria-label="删除表情">×</button></div>`).join('')}</div>`:'<div class="state-card small">还没有添加自定义表情；可以添加 JPG、PNG、WebP 或 GIF。</div>');
 }
 
-function renderSocial(next=socialState){socialState=next;setBadge('echo',next.badges.echo);setBadge('buddy',next.badges.buddy);renderEcho();renderBuddyList();renderChat();if(!$('[data-emoji-panel]').hidden)renderEmojiPanel();}
+function renderSocial(next=socialState){socialState=next;setBadge('echo',next.badges.echo);setBadge('buddy',next.badges.buddy);renderEcho();renderBuddyList();renderChat();if(!$('[data-emoji-panel]').hidden)renderEmojiPanel();if(currentView==='compose'||currentView==='square')renderFeed();}
 
 function bindNavigation(){
   document.addEventListener('click',async event=>{
     const nav=event.target.closest('[data-nav]');if(nav){navigate(nav.dataset.nav);return;}
     if(event.target.closest('[data-open-account]')){openAccount();return;}if(event.target.closest('[data-close-account]')){closeAccount();return;}
     const switcher=event.target.closest('[data-show-auth]');if(switcher){showAuth(switcher.dataset.showAuth);return;}
+    if(event.target.closest('[data-square-refresh]')){feedStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
+    const status=event.target.closest('[data-compose-status]');if(status){composeDraft.status=status.dataset.composeStatus;renderCompose();return;}
+    const composeSticker=event.target.closest('[data-compose-sticker]');if(composeSticker){const url=composeSticker.dataset.composeSticker;if(composeDraft.stickers.has(url))composeDraft.stickers.delete(url);else if(composeDraft.stickers.size<6)composeDraft.stickers.add(url);else toast('一次最多选择 6 个表情。');renderCompose();return;}
+    if(event.target.closest('[data-compose-image-remove]')){releasePreview(composeDraft);renderCompose();return;}
+    const commentSticker=event.target.closest('[data-comment-sticker]');if(commentSticker){const draft=draftFor(commentSticker.dataset.postId);const url=commentSticker.dataset.commentSticker;if(draft.stickers.has(url))draft.stickers.delete(url);else if(draft.stickers.size<6)draft.stickers.add(url);else toast('一次最多选择 6 个表情。');renderPostDetail();return;}
+    const removeCommentImage=event.target.closest('[data-comment-image-remove]');if(removeCommentImage){releasePreview(draftFor(removeCommentImage.dataset.commentImageRemove));renderPostDetail();return;}
+    const react=event.target.closest('[data-react]');if(react){try{const added=await feedStore.toggleReaction(react.dataset.postId,react.dataset.react);toast(added?'已收到。':'已撤回。');}catch(error){toast(error.message||'互动失败。');}return;}
+    const reply=event.target.closest('[data-reply-comment]');if(reply){const post=feedState.posts.find(row=>String(row.id)===String(feedState.openPostId));const comment=post?.comments.find(row=>String(row.id)===String(reply.dataset.replyComment));if(comment){feedStore.setReply(comment);requestAnimationFrame(()=>$('[data-comment-form] textarea')?.focus());}return;}
+    if(event.target.closest('[data-clear-reply]')){feedStore.clearReply();return;}
+    const deletePost=event.target.closest('[data-delete-post]');if(deletePost){if(!window.confirm('确定删除这条帖子吗？'))return;try{await feedStore.deletePost(deletePost.dataset.deletePost);toast('帖子已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
+    const deleteComment=event.target.closest('[data-delete-comment]');if(deleteComment){if(!window.confirm('确定删除这条评论吗？'))return;try{await feedStore.deleteComment(deleteComment.dataset.deleteComment);toast('评论已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
+    const report=event.target.closest('[data-report-post]');if(report){const reason=window.prompt('请填写举报原因（至少 2 个字）');if(reason==null)return;try{await feedStore.report('post',report.dataset.reportPost,reason);toast('举报已提交，管理员会处理。');}catch(error){toast(error.message||'举报失败。');}return;}
+    if(event.target.closest('[data-close-post]')){feedStore.closePost();return;}
+    const openPost=event.target.closest('[data-open-post]');if(openPost){feedStore.openPost(openPost.dataset.openPost);socialStore.loadStickers().catch(()=>{});return;}
     if(event.target.closest('[data-echo-refresh]')){socialStore.loadEcho(true);return;}
     if(event.target.closest('[data-echo-mark-all]')){await socialStore.markEchoRead(socialState.echo.rows.filter(row=>!row.is_read).map(row=>row.id));return;}
     const echoItem=event.target.closest('[data-echo-item]');if(echoItem)await socialStore.markEchoRead([echoItem.dataset.echoItem]);
@@ -171,7 +255,19 @@ function bindForms(){
   $('[data-buddy-search]').addEventListener('submit',event=>{event.preventDefault();socialStore.searchProfiles(new FormData(event.currentTarget).get('q')).catch(error=>toast(error.message||'搜索失败。'));});
   $('[data-chat-compose]').addEventListener('submit',async event=>{event.preventDefault();const input=event.currentTarget.elements.message;const text=input.value;try{await socialStore.sendMessage(text);input.value='';input.focus();}catch(error){toast(error.message||'发送失败。');}});
   $('[data-sticker-file]').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;try{await socialStore.uploadSticker(file);toast('表情已添加。');}catch(error){toast(error.message||'添加表情失败。');}});
+  document.addEventListener('input',event=>{
+    if(event.target.matches('[data-compose-form] textarea')){composeDraft.text=event.target.value;const count=$('.compose-count');if(count)count.textContent=`${composeDraft.text.length}/500`;return;}
+    const form=event.target.closest?.('[data-comment-form]');if(form&&event.target.matches('textarea'))draftFor(form.dataset.commentForm).text=event.target.value;
+  });
+  document.addEventListener('change',event=>{
+    if(event.target.matches('[data-compose-image]')){const file=event.target.files?.[0];if(!file)return;releasePreview(composeDraft);composeDraft.imageFile=file;composeDraft.imagePreview=URL.createObjectURL(file);renderCompose();return;}
+    if(event.target.matches('[data-comment-image]')){const file=event.target.files?.[0];if(!file)return;const draft=draftFor(event.target.dataset.commentImage);releasePreview(draft);draft.imageFile=file;draft.imagePreview=URL.createObjectURL(file);renderPostDetail();}
+  });
+  document.addEventListener('submit',async event=>{
+    const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();try{await feedStore.createPost({text:composeDraft.text,status:composeDraft.status,imageFile:composeDraft.imageFile,stickerUrls:Array.from(composeDraft.stickers)});releasePreview(composeDraft);composeDraft.text='';composeDraft.status='今日无效';composeDraft.stickers.clear();toast('已投递到精神广场。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
+    const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('回声已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
+  });
 }
 function bindConnection(){const render=()=>{const online=navigator.onLine!==false;const node=$('[data-connection-state]');node.textContent=online?'已连接':'网络已断开';node.classList.toggle('offline',!online);};window.addEventListener('online',render);window.addEventListener('offline',render);render();}
 
-bindNavigation();bindForms();bindConnection();authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);authStore.boot();
+bindNavigation();bindForms();bindConnection();authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);authStore.boot();
