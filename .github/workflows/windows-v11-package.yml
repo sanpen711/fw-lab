@@ -1,0 +1,63 @@
+name: Build Windows 1.1 Release Candidate
+
+on:
+  pull_request:
+    paths:
+      - 'desktop-v11/**'
+      - 'src-tauri/tauri.v11.conf.json'
+      - '.github/workflows/windows-v11-package.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-v11-release-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows-v11-release-candidate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop-v11/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          npm ci
+          npm --prefix desktop-v11 ci
+      - name: Verify local frontend
+        run: npm --prefix desktop-v11 run test:static
+      - name: Build Windows 1.1 NSIS candidate
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: npx tauri build --config src-tauri/tauri.v11.conf.json --bundles nsis
+      - name: Verify candidate metadata
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
+          if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
+          if ($installer.Name -notmatch '1\.1\.0') { throw "Unexpected candidate name: $($installer.Name)" }
+          $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          New-Item -ItemType Directory -Force 'windows-v11-candidate' | Out-Null
+          Copy-Item $installer.FullName 'windows-v11-candidate/fw-lab-windows-1.1.0-setup.exe'
+          Set-Content 'windows-v11-candidate/sha256.txt' "$hash  fw-lab-windows-1.1.0-setup.exe" -Encoding utf8
+          $signature = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
+          if ($signature) { Copy-Item $signature.FullName 'windows-v11-candidate/fw-lab-windows-1.1.0-setup.exe.sig' }
+      - name: Upload unpublished candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: fw-lab-windows-1.1.0-release-candidate
+          path: windows-v11-candidate/*
+          if-no-files-found: error
+          retention-days: 14
