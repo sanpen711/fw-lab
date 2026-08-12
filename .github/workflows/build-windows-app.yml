@@ -128,8 +128,41 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          publish_dir="$(mktemp -d)"
+          trap 'rm -rf "$publish_dir"' EXIT
+          cp download/fw-lab-windows-latest.exe "$publish_dir/fw-lab-windows-latest.exe"
+          cp download/fw-lab-windows-latest.exe.sig "$publish_dir/fw-lab-windows-latest.exe.sig"
+          cp download/windows-updater.json "$publish_dir/windows-updater.json"
+          cp download/windows-version.json "$publish_dir/windows-version.json"
+          if [ -f download/fw-lab-windows-1.0.5-setup.exe ]; then
+            cp download/fw-lab-windows-1.0.5-setup.exe "$publish_dir/fw-lab-windows-1.0.5-setup.exe"
+          fi
+          if [ -f download/fw-lab-windows-1.0.5-setup.exe.sig ]; then
+            cp download/fw-lab-windows-1.0.5-setup.exe.sig "$publish_dir/fw-lab-windows-1.0.5-setup.exe.sig"
+          fi
+
           git fetch origin main
-          git pull --rebase --autostash origin main
+          git reset --hard origin/main
+
+          cp "$publish_dir/fw-lab-windows-latest.exe" download/fw-lab-windows-latest.exe
+          cp "$publish_dir/fw-lab-windows-latest.exe.sig" download/fw-lab-windows-latest.exe.sig
+          cp "$publish_dir/windows-updater.json" download/windows-updater.json
+          cp "$publish_dir/windows-version.json" download/windows-version.json
+          if [ -f "$publish_dir/fw-lab-windows-1.0.5-setup.exe" ]; then
+            cp "$publish_dir/fw-lab-windows-1.0.5-setup.exe" download/fw-lab-windows-1.0.5-setup.exe
+          fi
+          if [ -f "$publish_dir/fw-lab-windows-1.0.5-setup.exe.sig" ]; then
+            cp "$publish_dir/fw-lab-windows-1.0.5-setup.exe.sig" download/fw-lab-windows-1.0.5-setup.exe.sig
+          fi
+
+          if grep -nE '^(<<<<<<<|=======|>>>>>>>)' download/windows-version.json download/windows-updater.json download/fw-lab-windows-latest.exe.sig; then
+            echo "Conflict markers detected in Windows release metadata. Refusing to publish."
+            exit 1
+          fi
+
+          node -e "JSON.parse(require('fs').readFileSync('download/windows-version.json','utf8')); JSON.parse(require('fs').readFileSync('download/windows-updater.json','utf8'));"
+
           git add download/fw-lab-windows-latest.exe download/fw-lab-windows-latest.exe.sig download/windows-updater.json download/windows-version.json
           if [ -f download/fw-lab-windows-1.0.5-setup.exe ]; then
             git add download/fw-lab-windows-1.0.5-setup.exe
