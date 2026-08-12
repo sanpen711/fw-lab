@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-08-12T09:31:40.6272387Z",
-  "version": "1.1.3",
+  "pub_date": "2026-08-12T09:51:22.8197041Z",
+  "version": "1.1.4",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlRZaXUwZ1AwZmZlN1VCRzRYb1kzMjdGaXRXSFBlNUw0R1VTMldsM0hGSzl6ME5kcEp6QWtSMTBoU0V6T24xR25RWnZaZTRBQ0pYcE1KbnhBZkJLNFFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTI3MTAwCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuM194NjQtc2V0dXAuZXhlCjVZTnkrZEFyNzcyVmpMOWpvWG9jZU43U081Tmc0SkdFN2FiNmMwYUpGbko3VmZ1K24wc3JBODdqd0l5dlRLNlExMWFmbnAvNkhZSzduTTBhQnJlREF3PT0K",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlkwamFDak9qckdERll2bGluY2tWdHdyN01QRVFrL1l6eUJuN0NEekY5WS9ndnV1MzhSenJNbGQ3K0RxMXJxL2RndjZySmFBaXlNQTlqZWd5d0dHbkFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTI4MjgyCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuNF94NjQtc2V0dXAuZXhlCmR3TmtaQk5Wc1YvN2srVDJObDR2QWRpSDRrZUdxcGRFVXBsU3psclhvQnV5Unp4eHlET1FXbGRnL0VBMTJNU3hKUFpGVmlhVmIxTWtuZy9iV0I0NUFnPT0K"
     }
   },
-  "notes": "Windows 1.1.3：重做自动更新链路。取消二次检查，加入连接/读取超时、真实下载进度、速度与字节显示、校验/安装阶段提示和本地更新日志；经典黑粉配色及现有功能保持不变。"
+  "notes": "Windows 1.1.4：自动更新验证版。仅升级版本标识并保留 1.1.3 的新版更新器，用于验证真实下载进度、超时、校验和自动安装链路；其他功能与配色不变。"
 }
