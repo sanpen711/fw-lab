@@ -1,9 +1,11 @@
 {
+  "notes": "Windows 客户端升级为本地独立前端：首页、发牢骚、精神广场、学术研讨、观鸟台、回声、搭子、私聊和废话档案均已迁移；减少重复脚本、数据库查询、轮询和全局页面监听。",
+  "version": "1.1.0",
   "available": true,
-  "platform": "Windows 10/11 64 位",
-  "sha256": "3ace72667fec96abf89c598b09217fbfc1de101eee460439e70bc4cbe744f63e",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "version": "1.0.5",
-  "publishedAt": "2026-08-12T03:50:03.3739579Z",
-  "notes": "扩展 Windows 本地增量缓存到学术研讨、观鸟台、废话档案、回声、搭子联系人和处理公告；取消容量与自动清理限制，并固定从首页启动。"
+  "sha256": "52fd6082ee2d5890a2acba643f2288c432e4b531b8bff2015a7a5a4d0f0e2624",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "platform": "Windows 10/11 64 位",
+  "rollbackVersion": "1.0.5",
+  "publishedAt": "2026-08-12T05:46:44.2121778Z"
 }
