@@ -18,19 +18,33 @@ test('本地首页保留桌面视觉和完整导航框架',async({page})=>{
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
 });
 
-test('本地路由不重载网页并能返回首页',async({page})=>{
+test('回声已经是本地页面且导航不会重载网页',async({page})=>{
   await page.goto('/');
   const original=page.url();
   await page.locator('[data-nav="echo"].nav-item').click();
-  await expect(page.locator('[data-pending-title]')).toHaveText('回声正在迁移');
+  await expect(page.locator('[data-view-panel="echo"]')).toHaveClass(/active/);
+  await expect(page.getByRole('heading',{name:'回声通知'})).toBeVisible();
+  await expect(page.getByText('登录后查看回声')).toBeVisible();
   expect(page.url()).toBe(original);
-  await page.getByRole('button',{name:'返回首页'}).click();
+  await page.locator('[data-nav="home"].nav-item').click();
   await expect(page.locator('[data-view-panel="home"]')).toHaveClass(/active/);
+});
+
+test('搭子和私聊使用本地左右分栏且没有定时轮询',async({page})=>{
+  await page.goto('/');
+  await page.locator('[data-nav="buddy"].nav-item').click();
+  await expect(page.locator('[data-view-panel="buddy"]')).toHaveClass(/active/);
+  await expect(page.locator('[data-buddy-tab="messages"]')).toBeVisible();
+  await expect(page.locator('[data-buddy-tab="friends"]')).toBeVisible();
+  await expect(page.locator('[data-buddy-tab="new"]')).toBeVisible();
+  await expect(page.locator('[data-chat-messages]')).toContainText('还没有选择聊天对象');
+  await expect(page.locator('[data-chat-compose] input')).toBeDisabled();
+  await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.pollingTimers)).toBe(0);
 });
 
 test('账号入口打开本地登录注册界面',async({page})=>{
   await page.goto('/');
-  await page.locator('[data-open-account]').last().click();
+  await page.locator('.account-button[data-open-account]').click();
   await expect(page.locator('[data-account-modal]')).toBeVisible();
   await expect(page.locator('[data-auth-view="login"]')).toBeVisible();
   await page.getByRole('button',{name:'没有账号？去注册'}).click();

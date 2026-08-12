@@ -53,7 +53,51 @@
             <button class="feature-card" type="button" data-nav="echo"><small>02 / ECHO</small><strong>回声</strong><span>评论、回复和互动集中收在这里。</span></button>
             <button class="feature-card" type="button" data-nav="buddy"><small>03 / BUDDY</small><strong>搭子</strong><span>找到聊得来的人，安静说几句话。</span></button>
           </div>
-          <p class="phase-note">Windows 1.1.0 本地前端 · 第一阶段</p>
+          <p class="phase-note">Windows 1.1.0 本地前端 · 渐进迁移中</p>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="echo">
+        <div class="social-page echo-page">
+          <div class="section-heading">
+            <div><p>ECHO CENTER</p><h1>回声通知</h1><span>评论、回复和互动集中收在这里；私聊消息只进入“搭子”。</span></div>
+            <div class="section-actions"><button class="secondary compact" type="button" data-echo-mark-all>全部已读</button><button class="primary compact" type="button" data-echo-refresh>刷新</button></div>
+          </div>
+          <div class="echo-list" data-echo-list><div class="state-card">进入回声后读取通知。</div></div>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="buddy">
+        <div class="buddy-page">
+          <aside class="buddy-column">
+            <div class="buddy-tabs" role="tablist">
+              <button class="active" type="button" data-buddy-tab="messages">消息</button>
+              <button type="button" data-buddy-tab="friends">全部搭子</button>
+              <button type="button" data-buddy-tab="new">新的搭子</button>
+            </div>
+            <form class="buddy-search" data-buddy-search hidden>
+              <input name="q" autocomplete="off" placeholder="编号 / 昵称 / 完整邮箱" aria-label="搜索搭子">
+              <button type="submit">搜索</button>
+            </form>
+            <div class="buddy-list" data-buddy-list><div class="state-card">进入搭子后读取联系人。</div></div>
+          </aside>
+          <section class="chat-column">
+            <header class="chat-heading">
+              <div><p>PRIVATE CHAT</p><h2 data-chat-title>选择一个搭子</h2><span data-chat-subtitle>左边点一个消息或搭子，右边直接聊天。</span></div>
+              <button class="secondary compact" type="button" data-close-chat hidden>关闭私聊</button>
+            </header>
+            <div class="chat-messages" data-chat-messages><div class="state-card">还没有选择聊天对象。</div></div>
+            <form class="chat-compose" data-chat-compose>
+              <button class="emoji-trigger" type="button" data-emoji-toggle aria-label="打开表情">😊</button>
+              <input name="message" maxlength="300" autocomplete="off" placeholder="先从左侧选择一个搭子" disabled>
+              <button class="primary" type="submit" disabled>发送</button>
+            </form>
+            <div class="emoji-panel" data-emoji-panel hidden>
+              <div class="emoji-tabs"><button class="active" type="button" data-emoji-tab="emoji">小表情</button><button type="button" data-emoji-tab="stickers">♥ 我的表情</button></div>
+              <div class="emoji-body" data-emoji-body></div>
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-sticker-file hidden>
+            </div>
+          </section>
         </div>
       </section>
 
