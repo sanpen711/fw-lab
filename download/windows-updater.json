@@ -1,28 +1,11 @@
 {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  "platforms": {
-    "windows-x86_64": {
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmZ2K3J3RDVJRGJOOWM4YWRGbVB3TXpiU1QxM2x2YXdzL0dNZWZ6d2pOb3p2MXRSK09teUVVS003SFhXbDduZDgzNm01eFREY2JyNklNMWtCRHRYUmc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTE1NTQxCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMF94NjQtc2V0dXAuZXhlClhwN0NGVkt5ak1PWEV5MFA5Z1RDZHNnSUM5VC9qQWovakRxc1ZMVXNXOUZtYUgwVk9yWnJjaG5mVDVJTUR6ZnZJNUJVY0NTUjFRN0VvQWVNSkVVa0JBPT0K"
-=======
-  "pub_date": "2026-08-12T06:23:51.5089126Z",
-  "version": "1.1.0",
-  "notes": "Windows 客户端升级为本地独立前端：首页、发牢骚、精神广场、学术研讨、观鸟台、回声、搭子、私聊和废话档案均已迁移；减少重复脚本、数据库查询、轮询和全局页面监听。",
-  "platforms": {
-    "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlVHQVprWStlL3RkOUNyS0Q2YVVqOXZaZzNDckNZV21aNTQxOE9xRVpQMDc1T0lUVHFFclhnY3NCRGpYMWlyaFkwdjVtZlRHankwVXV1OVk3bTZORHdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTE1ODMxCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMF94NjQtc2V0dXAuZXhlCldHajFrUXEwb1NyL0YxQUpIY3Y3RHVmZWQyK0hyT082YmxmNTg3eVltZEFGM25ISkdTdEVPZkFqY3dxa28rSWtabExKS3hTVWZqRnpOZXZtdWJkRkJnPT0K",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
->>>>>>> Stashed changes
-=======
-  "pub_date": "2026-08-12T06:28:48.3014719Z",
   "version": "1.1.1",
+  "notes": "Windows 1.1.1：恢复 F.w 研究所黑粉标准视觉，保留 1.1.0 本地独立前端与性能优化；黑色用于结构与选中状态，粉色用于核心操作。",
+  "pub_date": "2026-08-12T06:28:48.3014719Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmZzeDdpR2RVSEcrYjBVU2NQUkZUWUVrb2p6WUZPSzBCa0xvbmpTYzJZbXc3RWNoZGE2eVhNc1MzbU90b3UrZGkyNzduQUhsZjJZdXVaNy9TOFF0T1E4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTE2MTI3CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMV94NjQtc2V0dXAuZXhlCnFRamxEMUwrQTU0bTlEdzFid2tDWmREK2RmS1RrNWYySGM3c3NPSCtwVU5YcHV0T3ZuUTlXYktpOUV2SkpUYVZueVlyK1cxNWNqanpTOVNvem4xWEJnPT0K"
->>>>>>> Stashed changes
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmZzeDdpR2RVSEcrYjBVU2NQUkZUWUVrb2p6WUZPSzBCa0xvbmpTYzJZbXc3RWNoZGE2eVhNc1MzbU90b3UrZGkyNzduQUhsZjJZdXVaNy9TOFF0T1E4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTE2MTI3CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMV94NjQtc2V0dXAuZXhlCnFRamxEMUwrQTU0bTlEdzFid2tDWmREK2RmS1RrNWYySGM3c3NPSCtwVU5YcHV0T3ZuUTlXYktpOUV2SkpUYVZueVlyK1cxNWNqanpTOVNvem4xWEJnPT0K",
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
     }
-  },
-  "notes": "Windows 1.1.1：恢复 F.w 研究所黑粉标准视觉，保留 1.1.0 本地独立前端与性能优化；黑色用于结构与选中状态，粉色用于核心操作。"
+  }
 }
