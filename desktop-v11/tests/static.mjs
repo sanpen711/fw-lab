@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
+
+const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
+const read=path=>readFileSync(resolve(root,path),'utf8');
+const config=JSON.parse(read('src-tauri/tauri.v11.conf.json'));
+assert.equal(config.version,'1.1.0');
+assert.equal(config.build.frontendDist,'../desktop-v11/dist');
+assert.equal(config.build.devUrl,'http://127.0.0.1:1421');
+assert.equal(config.app.windows[0].url,'index.html');
+assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.1\.0/);
+assert.doesNotMatch(JSON.stringify(config),/fwyanjiusuo\.com\/index\.html/);
+assert.match(config.app.security.csp,/supabase\.co/);
+
+const app=read('desktop-v11/src/app.js');
+const auth=read('desktop-v11/src/auth-store.js');
+const html=read('desktop-v11/index.html');
+assert.match(html,/data-view-panel="home"/);
+assert.match(html,/data-open-account/);
+assert.match(html,/data-auth-view="login"/);
+assert.match(html,/data-auth-view="register"/);
+assert.match(html,/data-auth-view="profile"/);
+assert.match(auth,/createClient\(SUPABASE_URL, SUPABASE_ANON_KEY/);
+assert.equal((auth.match(/createClient\(/g)||[]).length,1,'Supabase 客户端必须只有一个实例');
+assert.match(auth,/client\.auth\.getSession\(\)/);
+assert.match(auth,/fw_get_current_profile/);
+assert.doesNotMatch(auth,/\.from\(['"]posts['"]\)|\.from\(['"]comments['"]\)|private_messages|buddy_connections/,'第一阶段首页不能读取内容或私聊数据');
+assert.doesNotMatch(app,/setInterval|MutationObserver/,'本地首页不能创建轮询或全局 DOM 监听器');
+assert.match(app,/contentRequests:0/);
+assert.doesNotMatch(app,/location\.href|window\.location\.replace|fwyanjiusuo\.com/,'本地导航不能回跳网页页面');
+console.log('Windows 1.1.0 phase-one static checks passed');

@@ -1,0 +1,33 @@
+name: Test Windows 1.1 Preview
+
+on:
+  pull_request:
+    paths:
+      - 'desktop-v11/**'
+      - 'src-tauri/tauri.v11.conf.json'
+      - '.github/workflows/windows-v11-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-windows-v11-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop-v11/package-lock.json
+      - name: Install existing project dependencies
+        run: npm ci
+      - name: Install Windows 1.1 frontend dependencies
+        run: npm --prefix desktop-v11 ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Test local Windows frontend
+        run: npm --prefix desktop-v11 test
