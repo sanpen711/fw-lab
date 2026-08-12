@@ -3,6 +3,7 @@ import {socialStore} from './social-store.js';
 import {feedStore} from './feed-store.js';
 import {pollStore} from './poll-store.js';
 import {birdStore} from './bird-store.js';
+import {archiveStore} from './archive-store.js';
 import {APP_VERSION} from './config.js';
 
 const $=selector=>document.querySelector(selector);
@@ -16,6 +17,7 @@ let socialState=socialStore.state;
 let feedState=feedStore.state;
 let pollState=pollStore.state;
 let birdState=birdStore.state;
+let archiveState=archiveStore.state;
 let currentAuthView='login';
 let currentView='home';
 let emojiTab='emoji';
@@ -23,6 +25,7 @@ let lastChatSignature='';
 let pollFilter='all';
 let pollCreateOpen=false;
 let birdComposeOpen=false;
+let archiveDailyType='like';
 const birdDraft={title:'',content:'',displayMode:'profile',penName:'',files:[],previews:[]};
 const composeDraft={text:'',status:'今日无效',imageFile:null,imagePreview:'',stickers:new Set()};
 const commentDrafts=new Map();
@@ -67,6 +70,7 @@ function renderAccount(next){
   if(next.ready)renderFeed();
   if(next.ready)renderPolls();
   if(next.ready)renderBird();
+  if(next.ready)renderArchive();
 }
 
 function showAuth(view){
@@ -80,7 +84,7 @@ function closeAccount(){$('[data-account-modal]').hidden=true;document.body.clas
 function navigate(view){
   const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;$('[data-page-title]').textContent=route[0];$('[data-page-subtitle]').textContent=route[1];
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
-  const localViews=['home','compose','square','rooms','bird','echo','buddy'];
+  const localViews=['home','compose','square','rooms','bird','echo','buddy','archive'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
   if(!localViews.includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
   $('[data-emoji-panel]').hidden=true;
@@ -94,6 +98,7 @@ function navigate(view){
   if(view==='square')feedStore.activate().then(()=>{const raw=sessionStorage.getItem('fw:desktop:v11:pending-post');if(!raw)return;sessionStorage.removeItem('fw:desktop:v11:pending-post');try{const pending=JSON.parse(raw);feedStore.openPost(pending.id);}catch{}}).catch(error=>toast(error.message||'精神广场读取失败。'));
   if(view==='rooms')pollStore.activate().catch(error=>toast(error.message||'课题读取失败。'));
   if(view==='bird')birdStore.activate().catch(error=>toast(error.message||'观鸟台读取失败。'));
+  if(view==='archive')archiveStore.load().catch(error=>toast(error.message||'废话档案读取失败。'));
 }
 
 function setBadge(kind,count){const badge=$(`[data-badge="${kind}"]`);const value=Number(count||0);badge.hidden=value<=0;badge.textContent=value>99?'99+':String(value||'');}
@@ -178,6 +183,14 @@ function renderBirdFeed(){const host=$('[data-bird-feed]');if(!host)return;if(bi
 function renderBirdDetail(){const host=$('[data-bird-detail]');if(!host)return;const post=birdState.posts.find(row=>String(row.id)===String(birdState.openPostId));if(!post){host.innerHTML='<div class="post-detail-empty"><b>选择一个离谱品种</b><span>查看完整观察记录、图片、评论和标记。</span></div>';return;}const author=birdAuthor(post);const stats=birdReaction(post);const mine=String(post.user_id)===String(accountState.user?.id);host.innerHTML=`<div class="detail-scroll"><header class="detail-head"><button class="secondary compact" type="button" data-bird-close>关闭</button>${mine?`<button class="secondary compact danger" type="button" data-bird-delete-post="${esc(post.id)}">删除记录</button>`:''}</header><article class="bird-detail-card"><p class="bird-label">这是什么品种：</p><h2>${esc(post.title)}</h2><div class="post-author">${avatarHtml({nickname:author.name,avatar_url:author.avatar_url})}<b>${esc(author.name)}</b><time>${esc(timeText(post.created_at))}</time></div><div class="bird-content">${esc(post.content).replace(/\n/g,'<br>')}</div>${post.images.length?`<div class="bird-images">${post.images.map(image=>safeDirectUrl(image.url)).filter(Boolean).map(url=>`<img src="${esc(url)}" alt="观察图片" loading="lazy">`).join('')}</div>`:''}<div class="reaction-row">${[['valid','标本有效'],['seen','我也见过'],['tissue','递纸巾']].map(([type,label])=>`<button class="${stats.active[type]?'active':''}" type="button" data-bird-react="${type}" data-post-id="${esc(post.id)}" ${stats.active[type]?'disabled':''}>${label} ${stats.values[type]}</button>`).join('')}</div></article><section class="comments-section"><h3>观察补充 ${post.comments.length}</h3><div class="comment-list">${post.comments.length?post.comments.map(comment=>{const profile=birdState.profiles[String(comment.user_id)]||{};const own=String(comment.user_id)===String(accountState.user?.id);return `<article class="post-comment">${avatarHtml(profile,'social-avatar mini')}<div><div class="comment-meta"><b>${esc(profile.nickname||'匿名回声')}</b><time>${esc(timeText(comment.created_at))}</time></div><div class="rich-text">${esc(comment.content).replace(/\n/g,'<br>')}</div>${own?`<div class="comment-actions"><button class="danger" type="button" data-bird-delete-comment="${esc(comment.id)}">删除</button></div>`:''}</div></article>`;}).join(''):'<div class="state-card small">还没有评论，可以先留一句。</div>'}</div>${accountState.user?`<form class="comment-compose-card" data-bird-comment-form="${esc(post.id)}"><textarea name="content" maxlength="500" placeholder="留一句观察补充，最多 500 字"></textarea><button class="primary full" type="submit" ${birdState.busy?'disabled':''}>发送</button></form>`:'<div class="state-card small"><b>登录后参与评论</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>'}</section></div>`;}
 function renderBird(next=birdState){birdState=next;renderBirdCompose();renderBirdFeed();renderBirdDetail();}
 
+const ARCHIVE_AWARDS={like:{title:'点赞之王',en:'LIKE KING',medal:'赞',tab:'点赞榜',quote:'代表废话'},same:{title:'共鸣王',en:'RESONANCE KING',medal:'鸣',tab:'共鸣榜',quote:'代表共鸣'},tissue:{title:'纸巾王',en:'TISSUE KING',medal:'纸',tab:'纸巾榜',quote:'代表破防'}};
+function archiveAvatar(row,className='archive-avatar'){return avatarHtml(row,className);}
+function archiveWinner(row,rank){const item=row||{nickname:`暂无第${rank}名`,score:0};return `<div class="archive-winner rank-${rank}">${archiveAvatar(item)}<b>${esc(item.nickname||'暂无上榜')}</b><strong>${Number(item.score||0)}</strong><i>${rank}</i></div>`;}
+function archiveAward(type,rows){const config=ARCHIVE_AWARDS[type];if(!rows.length)return`<article class="archive-award"><header><div><small>${config.en}</small><h3>${config.title}</h3></div><i>${config.medal}</i></header><div class="state-card small">上周还没有产生${config.title}。</div><blockquote><b>${config.quote}：</b>暂无。</blockquote></article>`;const first=rows[0];return`<article class="archive-award"><header><div><small>${config.en}</small><h3>${config.title}</h3></div><i>${config.medal}</i></header><div class="archive-podium">${archiveWinner(rows[1],2)}${archiveWinner(first,1)}${archiveWinner(rows[2],3)}</div><blockquote><b>${config.quote}：</b>“${esc(previewText(first.topPost?.content||'暂无代表废话。').slice(0,100))}”</blockquote></article>`;}
+function formatMonthDay(value){const date=new Date(value);return`${date.getMonth()+1}月${date.getDate()}日`;}
+function renderArchive(next=archiveState){
+  archiveState=next;const host=$('[data-archive-content]');if(!host)return;if(archiveState.loading&&!archiveState.loaded){host.innerHTML='<div class="state-card">正在整理废话档案...</div>';return;}const hasRows=['like','same','tissue'].some(type=>archiveState.weekly[type]?.length||archiveState.daily[type]?.length);if(archiveState.error&&!hasRows){host.innerHTML=`<div class="state-card"><b>榜单暂时读取失败</b><span>${esc(archiveState.error)}</span><button class="secondary compact" type="button" data-archive-refresh>重试</button></div>`;return;}const daily=archiveState.daily[archiveDailyType]||[];const nextDay=archiveState.ranges?.nextDay;const nextMonday=archiveState.ranges?.nextMonday;host.innerHTML=`<section class="archive-hero"><div><small>LOW POWER ARCHIVE</small><h2>有人点赞，有人共鸣，<br>有人默默递纸巾。</h2><p>榜单不是为了竞争，是为了证明大家都在以不同方式坚持上班。</p></div><div class="archive-update">周榜：${nextMonday?formatMonthDay(nextMonday):'下周一'} 00:00 更新<br>日榜：${nextDay?formatMonthDay(nextDay):'明日'} 00:00 更新</div></section><section class="archive-section"><header><div><small>LAST WEEK HONOR WALL</small><h2>上周低功耗荣誉榜</h2></div><span>每榜前三名</span></header><div class="archive-award-grid">${['like','same','tissue'].map(type=>archiveAward(type,archiveState.weekly[type]||[])).join('')}</div></section><section class="archive-section"><header><div><small>YESTERDAY TOP 10</small><h2>昨日情绪残留榜</h2></div><span>每日 0 点更新</span></header><div class="archive-tabs">${Object.entries(ARCHIVE_AWARDS).map(([type,config])=>`<button class="${archiveDailyType===type?'active':''}" type="button" data-archive-daily="${type}">${config.tab}</button>`).join('')}</div><div class="archive-daily-list">${daily.length?daily.map((row,index)=>`<div class="archive-daily-row"><span>${String(index+1).padStart(2,'0')}</span>${archiveAvatar(row)}<b>${esc(row.nickname)}</b><strong>${Number(row.score||0)}</strong></div>`).join(''):'<div class="state-card small">昨日还没有产生这个榜单。</div>'}</div></section><section class="archive-rule"><b>档案规则</b><span>自己给自己的反应可以显示，但不计入榜单；同一用户对同一条内容同一类型只统计 1 次；删除或被处理的内容不会进入榜单。</span></section><section class="archive-section"><header><div><small>PAST ARCHIVES</small><h2>历代废话档案</h2></div><span>最近一周预览</span></header><div class="archive-history">${['like','same','tissue'].map(type=>{const top=archiveState.weekly[type]?.[0];return`<article><small>上周 / ${ARCHIVE_AWARDS[type].title}</small><h3>${esc(top?.nickname||'暂无上榜')}</h3><p>${esc(top?previewText(top.topPost?.content).slice(0,100):'还没有足够数据进入档案。')}</p></article>`;}).join('')}</div></section>`;}
+
 function renderEcho(){
   const list=$('[data-echo-list]');if(!list)return;
   const markAll=$('[data-echo-mark-all]');const rows=socialState.echo.rows||[];markAll.hidden=!rows.some(row=>!row.is_read);
@@ -246,6 +259,8 @@ function bindNavigation(){
     const nav=event.target.closest('[data-nav]');if(nav){navigate(nav.dataset.nav);return;}
     if(event.target.closest('[data-open-account]')){openAccount();return;}if(event.target.closest('[data-close-account]')){closeAccount();return;}
     const switcher=event.target.closest('[data-show-auth]');if(switcher){showAuth(switcher.dataset.showAuth);return;}
+    if(event.target.closest('[data-archive-refresh]')){archiveStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
+    const archiveTab=event.target.closest('[data-archive-daily]');if(archiveTab){archiveDailyType=archiveTab.dataset.archiveDaily;renderArchive();return;}
     if(event.target.closest('[data-bird-refresh]')){birdStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
     if(event.target.closest('[data-bird-compose-toggle]')){birdComposeOpen=!birdComposeOpen;if(!birdComposeOpen)releaseBirdFiles();renderBirdCompose();requestAnimationFrame(()=>$('[data-bird-compose-form] input[name="title"]')?.focus());return;}
     const removeBirdFile=event.target.closest('[data-bird-remove-file]');if(removeBirdFile){const index=Number(removeBirdFile.dataset.birdRemoveFile);const url=birdDraft.previews[index];if(url)URL.revokeObjectURL(url);birdDraft.files.splice(index,1);birdDraft.previews.splice(index,1);renderBirdCompose();return;}
@@ -330,4 +345,4 @@ function bindForms(){
 }
 function bindConnection(){const render=()=>{const online=navigator.onLine!==false;const node=$('[data-connection-state]');node.textContent=online?'已连接':'网络已断开';node.classList.toggle('offline',!online);};window.addEventListener('online',render);window.addEventListener('offline',render);render();}
 
-bindNavigation();bindForms();bindConnection();authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);authStore.boot();
+bindNavigation();bindForms();bindConnection();authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();
