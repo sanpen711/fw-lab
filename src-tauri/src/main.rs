@@ -228,7 +228,8 @@ fn show_update_error(app: &AppHandle, detail: String) {
 fn install_latest_update(app: AppHandle, update: Update) {
     let version = update.version.clone();
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.set_title(format!("F.w 研究所 · 正在更新到 {version}"));
+        let window_title = format!("F.w 研究所 · 正在更新到 {version}");
+        let _ = window.set_title(&window_title);
     }
     ensure_update_ui(&app);
     render_update_ui(
