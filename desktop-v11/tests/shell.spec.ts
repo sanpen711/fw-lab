@@ -53,3 +53,20 @@ test('账号入口打开本地登录注册界面',async({page})=>{
   await page.locator('[data-close-account]').click();
   await expect(page.locator('[data-account-modal]')).toBeHidden();
 });
+
+test('发牢骚和精神广场均为本地页面且内容按需读取',async({page})=>{
+  await page.goto('/');
+  const original=page.url();
+  await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
+  await page.locator('.compose-button[data-nav="compose"]').click();
+  await expect(page.locator('[data-view-panel="compose"]')).toHaveClass(/active/);
+  await expect(page.getByRole('heading',{name:'发一句牢骚'})).toBeVisible();
+  await expect(page.getByText('登录后发牢骚')).toBeVisible();
+  expect(page.url()).toBe(original);
+  await page.locator('[data-nav="square"].nav-item').click();
+  await expect(page.locator('[data-view-panel="square"]')).toHaveClass(/active/);
+  await expect(page.getByRole('heading',{name:'精神广场'})).toBeVisible();
+  await expect(page.locator('[data-post-detail]')).toContainText('选择一条帖子');
+  await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBeGreaterThan(0);
+  expect(page.url()).toBe(original);
+});
