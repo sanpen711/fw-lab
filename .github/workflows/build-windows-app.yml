@@ -63,7 +63,7 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.1\.0') { throw "Unexpected installer name: $($installer.Name)" }
+          if ($installer.Name -notmatch '1\.1\.1') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
@@ -82,11 +82,11 @@ jobs:
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 客户端升级为本地独立前端：首页、发牢骚、精神广场、学术研讨、观鸟台、回声、搭子、私聊和废话档案均已迁移；减少重复脚本、数据库查询、轮询和全局页面监听。'
+          $notes = 'Windows 1.1.1：恢复 F.w 研究所黑粉标准视觉，保留 1.1.0 本地独立前端与性能优化；黑色用于结构与选中状态，粉色用于核心操作。'
 
           $metadata = @{
             available = $true
-            version = '1.1.0'
+            version = '1.1.1'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
@@ -98,7 +98,7 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.1.0'
+            version = '1.1.1'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
@@ -113,7 +113,7 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.1.0
+          name: fw-lab-windows-1.1.1
           path: |
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
@@ -140,6 +140,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.1.0"
+            git commit -m "Release Windows 1.1.1"
             git push origin HEAD:main
           fi

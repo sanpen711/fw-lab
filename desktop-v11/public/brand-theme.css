@@ -1,4 +1,4 @@
-/* F.w 研究所 Windows 1.1.0 brand restoration
+/* F.w 研究所 Windows 1.1.1 brand restoration
    Standard visual language: warm paper + near-black structure + muted pink actions.
    This file intentionally changes presentation only; data, routing and caching are untouched. */
 
@@ -82,7 +82,8 @@ html,body{
 .hero-card .secondary{border-color:rgba(255,255,255,.30);color:#fff;}
 .feature-card small{color:#a85f5f;}
 .feature-card:hover{border-color:rgba(217,121,121,.48);}
-.phase-note{color:#8e877d;}
+.phase-note{color:#8e877d;font-size:0;}
+.phase-note::after{content:'Windows 1.1.1 本地前端 · 黑粉视觉修复版';font-size:11px;}
 
 /* Pink is reserved for core actions; black is used for selected/structural states. */
 .primary{
