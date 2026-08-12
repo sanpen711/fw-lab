@@ -227,11 +227,14 @@ assert.doesNotMatch(badgeRefresh, /FWCommentReplyEcho\.merge/, '周期红点刷�
 
 const workflow = read('.github/workflows/build-windows-app.yml');
 assert.match(workflow, /windows-latest/);
-assert.match(workflow, /npm run desktop:build/);
+assert.match(workflow, /npm --prefix desktop-v11 run test:static/, '正式构建必须先验证 Windows 1.1 本地前端');
+assert.match(workflow, /npx tauri build --config src-tauri\/tauri\.v11\.conf\.json --bundles nsis/, '正式构建必须使用 Windows 1.1 本地前端配置');
 assert.match(workflow, /fw-lab-windows-latest\.exe/);
 assert.match(workflow, /TAURI_SIGNING_PRIVATE_KEY/);
-assert.match(workflow, /fw-lab-windows-1\.0\.5/);
-assert.match(workflow, /version = '1\.0\.5'/);
+assert.match(workflow, /fw-lab-windows-1\.1\.0/);
+assert.match(workflow, /version = '1\.1\.0'/);
+assert.match(workflow, /fw-lab-windows-1\.0\.5-setup\.exe/, '正式发布必须保留 Windows 1.0.5 回退安装包');
+assert.match(workflow, /rollbackVersion = '1\.0\.5'/);
 assert.match(workflow, /fw-lab-windows-latest\.exe\.sig/);
 assert.doesNotMatch(workflow, /\.nsis\.zip/);
 assert.match(workflow, /windows-updater\.json/);
