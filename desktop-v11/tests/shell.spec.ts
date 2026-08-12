@@ -44,7 +44,7 @@ test('搭子和私聊使用本地左右分栏且没有定时轮询',async({page}
 
 test('账号入口打开本地登录注册界面',async({page})=>{
   await page.goto('/');
-  await page.locator('[data-open-account]').last().click();
+  await page.locator('.account-button[data-open-account]').click();
   await expect(page.locator('[data-account-modal]')).toBeVisible();
   await expect(page.locator('[data-auth-view="login"]')).toBeVisible();
   await page.getByRole('button',{name:'没有账号？去注册'}).click();
