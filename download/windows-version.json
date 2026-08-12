@@ -1,27 +1,11 @@
 {
-<<<<<<< Updated upstream
   "available": true,
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "platform": "Windows 10/11 64 位",
-  "notes": "Windows 1.1.1：恢复 F.w 研究所黑粉标准视觉，保留 1.1.0 本地独立前端与性能优化；黑色用于结构与选中状态，粉色用于核心操作。",
   "version": "1.1.1",
-  "rollbackVersion": "1.0.5",
-<<<<<<< Updated upstream
-  "sha256": "2eaa1d225086452c0b925c870fa2374bcd2803ab2c1b8ad409680c6533ee7eec"
-=======
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "publishedAt": "2026-08-12T06:23:51.5089126Z",
-  "notes": "Windows 客户端升级为本地独立前端：首页、发牢骚、精神广场、学术研讨、观鸟台、回声、搭子、私聊和废话档案均已迁移；减少重复脚本、数据库查询、轮询和全局页面监听。",
-  "rollbackVersion": "1.0.5",
+  "platform": "Windows 10/11 64 位",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "version": "1.1.0",
-  "available": true,
-  "sha256": "da7fd615f33d1bcaf2debc50d1eadbb3616037bbb39066525af655c06098a984",
-  "platform": "Windows 10/11 64 位"
->>>>>>> Stashed changes
-=======
+  "publishedAt": "2026-08-12T06:28:48.3014719Z",
   "sha256": "f561bb926b3cc958ff4b0c26c0e4b3f87b5cd46c4a524e2c32d67e1c58db6233",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "publishedAt": "2026-08-12T06:28:48.3014719Z"
->>>>>>> Stashed changes
+  "notes": "Windows 1.1.1：恢复 F.w 研究所黑粉标准视觉，保留 1.1.0 本地独立前端与性能优化；黑色用于结构与选中状态，粉色用于核心操作。",
+  "rollbackVersion": "1.0.5",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
 }
