@@ -18,7 +18,7 @@ permissions:
 
 concurrency:
   group: windows-app-release
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-windows-app:
