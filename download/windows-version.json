@@ -1,4 +1,5 @@
 {
+<<<<<<< Updated upstream
   "available": true,
   "version": "1.1.0",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
@@ -8,4 +9,15 @@
   "notes": "Windows 客户端升级为本地独立前端：首页、发牢骚、精神广场、学术研讨、观鸟台、回声、搭子、私聊和废话档案均已迁移；减少重复脚本、数据库查询、轮询和全局页面监听。",
   "rollbackVersion": "1.0.5",
   "sha256": "2eaa1d225086452c0b925c870fa2374bcd2803ab2c1b8ad409680c6533ee7eec"
+=======
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "publishedAt": "2026-08-12T06:23:51.5089126Z",
+  "notes": "Windows 客户端升级为本地独立前端：首页、发牢骚、精神广场、学术研讨、观鸟台、回声、搭子、私聊和废话档案均已迁移；减少重复脚本、数据库查询、轮询和全局页面监听。",
+  "rollbackVersion": "1.0.5",
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "version": "1.1.0",
+  "available": true,
+  "sha256": "da7fd615f33d1bcaf2debc50d1eadbb3616037bbb39066525af655c06098a984",
+  "platform": "Windows 10/11 64 位"
+>>>>>>> Stashed changes
 }
