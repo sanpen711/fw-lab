@@ -1,11 +1,11 @@
 {
-  "publishedAt": "2026-08-12T07:27:39.8211633Z",
-  "version": "1.1.1",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "notes": "Windows 1.1.1：恢复 F.w 研究所黑粉标准视觉，保留 1.1.0 本地独立前端与性能优化；黑色用于结构与选中状态，粉色用于核心操作。",
+  "version": "1.1.2",
+  "publishedAt": "2026-08-12T08:31:46.8854915Z",
   "rollbackVersion": "1.0.5",
+  "available": true,
   "platform": "Windows 10/11 64 位",
-  "sha256": "75fbe1ce134cbee80aa5e17a9bfcbc2731be772ba18572132cefec277c8b1f1e",
-  "available": true
+  "notes": "Windows 1.1.2：恢复电脑端独立前端之前的经典黑粉配色；米灰背景、暖白卡片、黑色结构、粉色核心操作。功能、缓存和社交逻辑不变。",
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "sha256": "2c12a4d9834039c1296ed5b1b53ae42164f239537a326121133e20437f0b9f66",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
 }

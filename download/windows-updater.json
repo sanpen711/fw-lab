@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-08-12T07:27:39.8211633Z",
-  "notes": "Windows 1.1.1：恢复 F.w 研究所黑粉标准视觉，保留 1.1.0 本地独立前端与性能优化；黑色用于结构与选中状态，粉色用于核心操作。",
-  "version": "1.1.1",
+  "pub_date": "2026-08-12T08:31:46.8854915Z",
+  "version": "1.1.2",
+  "notes": "Windows 1.1.2：恢复电脑端独立前端之前的经典黑粉配色；米灰背景、暖白卡片、黑色结构、粉色核心操作。功能、缓存和社交逻辑不变。",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmNTSTVYUlliNzlqcm5EeVZubjZZY0hoenBQVUNJZlZpWlVqbkYzcHRKZUdVcU5LNEtVRG1DZDIraW1zY25iRjVVV0E1MlpveGFDUkhJQlBQMDI0bXdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTE5NjU5CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMV94NjQtc2V0dXAuZXhlClg1YWtkUDAwWnltemRtaE85NG9wMHM3T0VtV0hUS0cxdXdmZnh5N2hvUW9jMVhPL3Vpak1SbERFcnFyeFVTOWRwVnJubVdtYnYydW4zWS9YSzZNcERBPT0K",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlprTVVwMWVIVFZ2UUk2WE1GQXNqMncvYzh6TzUzbDJZS2RUdithbklnN1B6SCtnay83Q2tORjdhcWIrbmtsNllYUlo0dVZicTkzRXZ0WXBGbEJKT0FjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTIzNTA2CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMl94NjQtc2V0dXAuZXhlClhvWDRvaDNWT04wWU9xQWJQeVRicUl1em5INVZQMU9YNEY4Y1FOU2NLZkI4blBZYTRCNjVXZ2grNDk1eVk5U3lJQ29xTGduaXpWaE1kay8rcDNwUEJBPT0K"
     }
   }
 }
