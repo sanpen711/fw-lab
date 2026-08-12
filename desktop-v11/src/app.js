@@ -2,6 +2,7 @@ import {authStore} from './auth-store.js';
 import {socialStore} from './social-store.js';
 import {feedStore} from './feed-store.js';
 import {pollStore} from './poll-store.js';
+import {birdStore} from './bird-store.js';
 import {APP_VERSION} from './config.js';
 
 const $=selector=>document.querySelector(selector);
@@ -14,12 +15,15 @@ let accountState={ready:false,busy:false,user:null};
 let socialState=socialStore.state;
 let feedState=feedStore.state;
 let pollState=pollStore.state;
+let birdState=birdStore.state;
 let currentAuthView='login';
 let currentView='home';
 let emojiTab='emoji';
 let lastChatSignature='';
 let pollFilter='all';
 let pollCreateOpen=false;
+let birdComposeOpen=false;
+const birdDraft={title:'',content:'',displayMode:'profile',penName:'',files:[],previews:[]};
 const composeDraft={text:'',status:'今日无效',imageFile:null,imagePreview:'',stickers:new Set()};
 const commentDrafts=new Map();
 const STATUS_OPTIONS=['今日无效','已疲惫','摸鱼现场','精神离岗','今日崩溃'];
@@ -62,6 +66,7 @@ function renderAccount(next){
   if(next.ready&&!user&&(currentView==='echo'||currentView==='buddy'))renderSocial();
   if(next.ready)renderFeed();
   if(next.ready)renderPolls();
+  if(next.ready)renderBird();
 }
 
 function showAuth(view){
@@ -75,18 +80,20 @@ function closeAccount(){$('[data-account-modal]').hidden=true;document.body.clas
 function navigate(view){
   const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;$('[data-page-title]').textContent=route[0];$('[data-page-subtitle]').textContent=route[1];
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
-  const localViews=['home','compose','square','rooms','echo','buddy'];
+  const localViews=['home','compose','square','rooms','bird','echo','buddy'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
   if(!localViews.includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
   $('[data-emoji-panel]').hidden=true;
   if(view!=='buddy')socialStore.closeChat();
   if(view!=='square')feedStore.deactivate();
   if(view!=='rooms')pollStore.deactivate();
+  if(view!=='bird')birdStore.deactivate();
   if(view==='echo')socialStore.loadEcho();
   if(view==='buddy')socialStore.loadBuddy();
   if(view==='compose'){socialStore.loadStickers().catch(()=>{});renderFeed();}
   if(view==='square')feedStore.activate().then(()=>{const raw=sessionStorage.getItem('fw:desktop:v11:pending-post');if(!raw)return;sessionStorage.removeItem('fw:desktop:v11:pending-post');try{const pending=JSON.parse(raw);feedStore.openPost(pending.id);}catch{}}).catch(error=>toast(error.message||'精神广场读取失败。'));
   if(view==='rooms')pollStore.activate().catch(error=>toast(error.message||'课题读取失败。'));
+  if(view==='bird')birdStore.activate().catch(error=>toast(error.message||'观鸟台读取失败。'));
 }
 
 function setBadge(kind,count){const badge=$(`[data-badge="${kind}"]`);const value=Number(count||0);badge.hidden=value<=0;badge.textContent=value>99?'99+':String(value||'');}
@@ -161,6 +168,16 @@ function renderPolls(next=pollState){
   const list=$('[data-poll-list]');if(!list)return;if(pollState.loading&&!pollState.loaded){list.innerHTML='<div class="state-card">正在读取学术研讨课题...</div>';return;}if(pollState.error&&!pollState.polls.length){list.innerHTML=`<div class="state-card"><b>课题暂时读取失败</b><span>${esc(pollState.error)}</span><button class="secondary compact" type="button" data-poll-refresh>重试</button></div>`;return;}const rows=pollState.polls.filter(pollMatches).sort((a,b)=>pollFilter==='ended'?new Date(b.created_at)-new Date(a.created_at):Number(b.is_official)-Number(a.is_official)||new Date(b.created_at)-new Date(a.created_at));list.innerHTML=rows.length?rows.map(pollCard).join(''):'<div class="state-card">这个分类下暂时没有课题。</div>';
 }
 
+function safeDirectUrl(value){try{const url=new URL(String(value||''));return['http:','https:'].includes(url.protocol)?url.href:'';}catch{return'';}}
+function birdAuthor(post){if(post.display_mode==='anonymous')return{name:'匿名观察员',avatar_url:''};if(post.display_mode==='pen_name')return{name:post.pen_name||'临时观察员',avatar_url:''};const profile=birdState.profiles[String(post.user_id)]||{};return{name:profile.nickname||'观察员',avatar_url:profile.avatar_url||''};}
+function birdReaction(post){const values={valid:0,seen:0,tissue:0};const active={valid:false,seen:false,tissue:false};const mine=String(accountState.user?.id||'');(post.reactions||[]).forEach(row=>{if(row.type in values)values[row.type]+=1;if(String(row.user_id)===mine)active[row.type]=true;});return{values,active};}
+function releaseBirdFiles(){birdDraft.previews.forEach(url=>{try{URL.revokeObjectURL(url);}catch{}});birdDraft.files=[];birdDraft.previews=[];}
+function renderBirdCompose(){const host=$('[data-bird-compose-host]');if(!host)return;host.hidden=!birdComposeOpen;if(!birdComposeOpen)return;if(!accountState.user){host.innerHTML='<div class="state-card"><b>登录后收录品种</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';return;}host.innerHTML=`<form class="bird-compose-card" data-bird-compose-form><div><h2>收录新的离谱品种</h2><p>品种名 2–80 字，观察记录最多 5000 字，可上传最多 20 张图片。</p></div><label>这是什么品种？<input name="title" maxlength="80" required value="${esc(birdDraft.title)}"></label><label>观察记录<textarea name="content" maxlength="5000" required>${esc(birdDraft.content)}</textarea></label><fieldset><legend>署名方式</legend>${[['profile','使用账号资料'],['anonymous','匿名观察员'],['pen_name','临时笔名']].map(([value,label])=>`<label><input type="radio" name="displayMode" value="${value}" ${birdDraft.displayMode===value?'checked':''}> ${label}</label>`).join('')}</fieldset>${birdDraft.displayMode==='pen_name'?`<label>临时笔名<input name="penName" maxlength="20" value="${esc(birdDraft.penName)}" required></label>`:''}<div class="media-tools"><label class="secondary compact file-button">添加图片<input type="file" accept="image/*" multiple data-bird-files hidden></label><span>${birdDraft.files.length}/20 · 每张会压缩至 800KB 内</span></div>${birdDraft.previews.length?`<div class="bird-preview-grid">${birdDraft.previews.map((url,index)=>`<div><img src="${esc(url)}" alt="待上传图片"><button type="button" data-bird-remove-file="${index}">×</button></div>`).join('')}</div>`:''}<div class="compose-actions"><button class="secondary" type="button" data-bird-compose-toggle>取消</button><button class="primary" type="submit" ${birdState.busy?'disabled':''}>${birdState.busy?'收录中...':'收录观察记录'}</button></div></form>`;}
+function birdCard(post){const author=birdAuthor(post);const cover=safeDirectUrl(post.images?.[0]?.url);return `<article class="bird-card" data-bird-open="${esc(post.id)}">${cover?`<div class="bird-cover"><img src="${esc(cover)}" alt="观察图片" loading="lazy">${post.images.length>1?`<span>共 ${post.images.length} 张图</span>`:''}</div>`:'<div class="bird-cover empty">暂无观察图</div>'}<div><h2>${esc(post.title)}</h2><div class="post-author">${avatarHtml({nickname:author.name,avatar_url:author.avatar_url},'social-avatar mini')}<b>${esc(author.name)}</b></div><time>${esc(timeText(post.created_at))}</time></div></article>`;}
+function renderBirdFeed(){const host=$('[data-bird-feed]');if(!host)return;if(birdState.loading&&!birdState.loaded){host.innerHTML='<div class="state-card">正在打开观鸟镜...</div>';return;}if(birdState.error&&!birdState.posts.length){host.innerHTML=`<div class="state-card"><b>观鸟台暂时读取失败</b><span>${esc(birdState.error)}</span><button class="secondary compact" type="button" data-bird-refresh>重试</button></div>`;return;}host.innerHTML=birdState.posts.length?birdState.posts.map(birdCard).join(''):'<div class="state-card"><b>还没有收录新的品种</b><span>可以先放下一条观察记录。</span></div>';}
+function renderBirdDetail(){const host=$('[data-bird-detail]');if(!host)return;const post=birdState.posts.find(row=>String(row.id)===String(birdState.openPostId));if(!post){host.innerHTML='<div class="post-detail-empty"><b>选择一个离谱品种</b><span>查看完整观察记录、图片、评论和标记。</span></div>';return;}const author=birdAuthor(post);const stats=birdReaction(post);const mine=String(post.user_id)===String(accountState.user?.id);host.innerHTML=`<div class="detail-scroll"><header class="detail-head"><button class="secondary compact" type="button" data-bird-close>关闭</button>${mine?`<button class="secondary compact danger" type="button" data-bird-delete-post="${esc(post.id)}">删除记录</button>`:''}</header><article class="bird-detail-card"><p class="bird-label">这是什么品种：</p><h2>${esc(post.title)}</h2><div class="post-author">${avatarHtml({nickname:author.name,avatar_url:author.avatar_url})}<b>${esc(author.name)}</b><time>${esc(timeText(post.created_at))}</time></div><div class="bird-content">${esc(post.content).replace(/\n/g,'<br>')}</div>${post.images.length?`<div class="bird-images">${post.images.map(image=>safeDirectUrl(image.url)).filter(Boolean).map(url=>`<img src="${esc(url)}" alt="观察图片" loading="lazy">`).join('')}</div>`:''}<div class="reaction-row">${[['valid','标本有效'],['seen','我也见过'],['tissue','递纸巾']].map(([type,label])=>`<button class="${stats.active[type]?'active':''}" type="button" data-bird-react="${type}" data-post-id="${esc(post.id)}" ${stats.active[type]?'disabled':''}>${label} ${stats.values[type]}</button>`).join('')}</div></article><section class="comments-section"><h3>观察补充 ${post.comments.length}</h3><div class="comment-list">${post.comments.length?post.comments.map(comment=>{const profile=birdState.profiles[String(comment.user_id)]||{};const own=String(comment.user_id)===String(accountState.user?.id);return `<article class="post-comment">${avatarHtml(profile,'social-avatar mini')}<div><div class="comment-meta"><b>${esc(profile.nickname||'匿名回声')}</b><time>${esc(timeText(comment.created_at))}</time></div><div class="rich-text">${esc(comment.content).replace(/\n/g,'<br>')}</div>${own?`<div class="comment-actions"><button class="danger" type="button" data-bird-delete-comment="${esc(comment.id)}">删除</button></div>`:''}</div></article>`;}).join(''):'<div class="state-card small">还没有评论，可以先留一句。</div>'}</div>${accountState.user?`<form class="comment-compose-card" data-bird-comment-form="${esc(post.id)}"><textarea name="content" maxlength="500" placeholder="留一句观察补充，最多 500 字"></textarea><button class="primary full" type="submit" ${birdState.busy?'disabled':''}>发送</button></form>`:'<div class="state-card small"><b>登录后参与评论</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>'}</section></div>`;}
+function renderBird(next=birdState){birdState=next;renderBirdCompose();renderBirdFeed();renderBirdDetail();}
+
 function renderEcho(){
   const list=$('[data-echo-list]');if(!list)return;
   const markAll=$('[data-echo-mark-all]');const rows=socialState.echo.rows||[];markAll.hidden=!rows.some(row=>!row.is_read);
@@ -229,6 +246,14 @@ function bindNavigation(){
     const nav=event.target.closest('[data-nav]');if(nav){navigate(nav.dataset.nav);return;}
     if(event.target.closest('[data-open-account]')){openAccount();return;}if(event.target.closest('[data-close-account]')){closeAccount();return;}
     const switcher=event.target.closest('[data-show-auth]');if(switcher){showAuth(switcher.dataset.showAuth);return;}
+    if(event.target.closest('[data-bird-refresh]')){birdStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
+    if(event.target.closest('[data-bird-compose-toggle]')){birdComposeOpen=!birdComposeOpen;if(!birdComposeOpen)releaseBirdFiles();renderBirdCompose();requestAnimationFrame(()=>$('[data-bird-compose-form] input[name="title"]')?.focus());return;}
+    const removeBirdFile=event.target.closest('[data-bird-remove-file]');if(removeBirdFile){const index=Number(removeBirdFile.dataset.birdRemoveFile);const url=birdDraft.previews[index];if(url)URL.revokeObjectURL(url);birdDraft.files.splice(index,1);birdDraft.previews.splice(index,1);renderBirdCompose();return;}
+    const birdReact=event.target.closest('[data-bird-react]');if(birdReact){try{await birdStore.react(birdReact.dataset.postId,birdReact.dataset.birdReact);toast('观察标记已记录。');}catch(error){toast(error.message||'互动失败。');}return;}
+    const deleteBirdPost=event.target.closest('[data-bird-delete-post]');if(deleteBirdPost){if(!window.confirm('确定删除这条观察记录吗？'))return;try{await birdStore.deletePost(deleteBirdPost.dataset.birdDeletePost);toast('观察记录已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
+    const deleteBirdComment=event.target.closest('[data-bird-delete-comment]');if(deleteBirdComment){if(!window.confirm('确定删除这条评论吗？'))return;try{await birdStore.deleteComment(deleteBirdComment.dataset.birdDeleteComment);toast('评论已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
+    if(event.target.closest('[data-bird-close]')){birdStore.closePost();return;}
+    const openBird=event.target.closest('[data-bird-open]');if(openBird){birdStore.openPost(openBird.dataset.birdOpen);return;}
     if(event.target.closest('[data-poll-refresh]')){pollStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
     if(event.target.closest('[data-poll-create-toggle]')){pollCreateOpen=!pollCreateOpen;renderPolls();requestAnimationFrame(()=>$('[data-poll-create-form] input[name="title"]')?.focus());return;}
     const pollTab=event.target.closest('[data-poll-filter]');if(pollTab){pollFilter=pollTab.dataset.pollFilter;renderPolls();return;}
@@ -284,14 +309,19 @@ function bindForms(){
   $('[data-chat-compose]').addEventListener('submit',async event=>{event.preventDefault();const input=event.currentTarget.elements.message;const text=input.value;try{await socialStore.sendMessage(text);input.value='';input.focus();}catch(error){toast(error.message||'发送失败。');}});
   $('[data-sticker-file]').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;try{await socialStore.uploadSticker(file);toast('表情已添加。');}catch(error){toast(error.message||'添加表情失败。');}});
   document.addEventListener('input',event=>{
+    const birdForm=event.target.closest?.('[data-bird-compose-form]');if(birdForm){if(event.target.name==='title')birdDraft.title=event.target.value;if(event.target.name==='content')birdDraft.content=event.target.value;if(event.target.name==='penName')birdDraft.penName=event.target.value;return;}
     if(event.target.matches('[data-compose-form] textarea')){composeDraft.text=event.target.value;const count=$('.compose-count');if(count)count.textContent=`${composeDraft.text.length}/500`;return;}
     const form=event.target.closest?.('[data-comment-form]');if(form&&event.target.matches('textarea'))draftFor(form.dataset.commentForm).text=event.target.value;
   });
   document.addEventListener('change',event=>{
+    if(event.target.matches('[data-bird-files]')){const requested=Array.from(event.target.files||[]).filter(file=>/^image\//i.test(file.type||''));const incoming=requested.slice(0,20-birdDraft.files.length);birdDraft.files.push(...incoming);birdDraft.previews.push(...incoming.map(file=>URL.createObjectURL(file)));event.target.value='';if(incoming.length<requested.length)toast('最多上传 20 张图片。');renderBirdCompose();return;}
+    if(event.target.matches('[data-bird-compose-form] input[name="displayMode"]')){birdDraft.displayMode=event.target.value;renderBirdCompose();return;}
     if(event.target.matches('[data-compose-image]')){const file=event.target.files?.[0];if(!file)return;releasePreview(composeDraft);composeDraft.imageFile=file;composeDraft.imagePreview=URL.createObjectURL(file);renderCompose();return;}
     if(event.target.matches('[data-comment-image]')){const file=event.target.files?.[0];if(!file)return;const draft=draftFor(event.target.dataset.commentImage);releasePreview(draft);draft.imageFile=file;draft.imagePreview=URL.createObjectURL(file);renderPostDetail();}
   });
   document.addEventListener('submit',async event=>{
+    const birdCompose=event.target.closest?.('[data-bird-compose-form]');if(birdCompose){event.preventDefault();try{await birdStore.createPost({title:birdDraft.title,content:birdDraft.content,displayMode:birdDraft.displayMode,penName:birdDraft.penName,files:birdDraft.files});releaseBirdFiles();birdDraft.title='';birdDraft.content='';birdDraft.displayMode='profile';birdDraft.penName='';birdComposeOpen=false;toast('观察记录已收录。');renderBird();}catch(error){toast(error.message||'发布失败。');}return;}
+    const birdComment=event.target.closest?.('[data-bird-comment-form]');if(birdComment){event.preventDefault();try{await birdStore.createComment(birdComment.dataset.birdCommentForm,new FormData(birdComment).get('content'));toast('评论已发送。');}catch(error){toast(error.message||'评论失败。');}return;}
     const createPoll=event.target.closest?.('[data-poll-create-form]');if(createPoll){event.preventDefault();const fd=new FormData(createPoll);try{await pollStore.createPoll({title:fd.get('title'),options:[1,2,3,4].map(index=>fd.get(`option${index}`)),isOfficial:fd.get('official')==='on'});pollCreateOpen=false;pollFilter=accountState.user?.role==='admin'&&fd.get('official')==='on'?'official':'user';toast('投票课题已发布。');renderPolls();}catch(error){toast(error.message||'发布失败。');}return;}
     const addOption=event.target.closest?.('[data-poll-add-option]');if(addOption){event.preventDefault();try{await pollStore.addOption(addOption.dataset.pollAddOption,new FormData(addOption).get('label'));toast('新选项已加入并投票。');}catch(error){toast(error.message||'新增选项失败。');}return;}
     const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();try{await feedStore.createPost({text:composeDraft.text,status:composeDraft.status,imageFile:composeDraft.imageFile,stickerUrls:Array.from(composeDraft.stickers)});releasePreview(composeDraft);composeDraft.text='';composeDraft.status='今日无效';composeDraft.stickers.clear();toast('已投递到精神广场。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
@@ -300,4 +330,4 @@ function bindForms(){
 }
 function bindConnection(){const render=()=>{const online=navigator.onLine!==false;const node=$('[data-connection-state]');node.textContent=online?'已连接':'网络已断开';node.classList.toggle('offline',!online);};window.addEventListener('online',render);window.addEventListener('offline',render);render();}
 
-bindNavigation();bindForms();bindConnection();authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);authStore.boot();
+bindNavigation();bindForms();bindConnection();authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);authStore.boot();

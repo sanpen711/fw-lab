@@ -87,3 +87,17 @@ test('学术研讨为本地按需页面并保留投票分类',async({page})=>{
   await expect(page.getByText('登录后发起课题')).toBeVisible();
   expect(page.url()).toBe(original);
 });
+
+test('观鸟台为本地双栏按需页面',async({page})=>{
+  await page.goto('/');
+  const original=page.url();
+  await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
+  await page.locator('[data-nav="bird"].nav-item').click();
+  await expect(page.locator('[data-view-panel="bird"]')).toHaveClass(/active/);
+  await expect(page.getByRole('heading',{name:'观鸟台'})).toBeVisible();
+  await expect(page.locator('[data-bird-detail]')).toContainText('选择一个离谱品种');
+  await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBeGreaterThan(0);
+  await page.locator('[data-bird-compose-toggle]').click();
+  await expect(page.getByText('登录后收录品种')).toBeVisible();
+  expect(page.url()).toBe(original);
+});
