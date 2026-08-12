@@ -19,8 +19,9 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 
 const CACHE_FOLDER: &str = "content-cache";
 const UPDATE_CONNECT_TIMEOUT_SECS: u64 = 12;
-const UPDATE_READ_TIMEOUT_SECS: u64 = 30;
-const UPDATE_TOTAL_TIMEOUT_SECS: u64 = 180;
+const UPDATE_READ_TIMEOUT_SECS: u64 = 45;
+const UPDATE_UI_INTERVAL_MS: u64 = 250;
+const UPDATE_LOG_INTERVAL_SECS: u64 = 5;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -248,6 +249,9 @@ fn install_latest_update(app: AppHandle, update: Update) {
         let downloaded = Arc::new(AtomicU64::new(0));
         let total_bytes = Arc::new(AtomicU64::new(0));
         let started = Instant::now();
+        let mut first_chunk_at: Option<Instant> = None;
+        let mut last_ui_at: Option<Instant> = None;
+        let mut last_log_at: Option<Instant> = None;
 
         let chunk_app = app.clone();
         let chunk_downloaded = downloaded.clone();
@@ -269,22 +273,49 @@ fn install_latest_update(app: AppHandle, update: Update) {
                     } else {
                         None
                     };
-                    let elapsed = started.elapsed().as_secs_f64().max(0.001);
+
+                    if first_chunk_at.is_none() {
+                        first_chunk_at = Some(Instant::now());
+                    }
+                    let elapsed = first_chunk_at
+                        .as_ref()
+                        .map(|first| first.elapsed().as_secs_f64())
+                        .unwrap_or_else(|| started.elapsed().as_secs_f64())
+                        .max(0.001);
                     let speed = (current as f64 / elapsed) as u64;
-                    render_update_ui(
-                        &chunk_app,
-                        "downloading",
-                        "正在下载更新…",
-                        "下载完成后会自动校验并安装",
-                        percent,
-                        current,
-                        (known_total > 0).then_some(known_total),
-                        speed,
-                    );
-                    update_log(
-                        &chunk_app,
-                        format!("download_progress bytes={current} total={known_total} speed_bps={speed}"),
-                    );
+                    let complete = known_total > 0 && current >= known_total;
+
+                    let should_render = complete
+                        || last_ui_at
+                            .as_ref()
+                            .map(|last| last.elapsed() >= Duration::from_millis(UPDATE_UI_INTERVAL_MS))
+                            .unwrap_or(true);
+                    if should_render {
+                        render_update_ui(
+                            &chunk_app,
+                            "downloading",
+                            "正在下载更新…",
+                            "下载完成后会自动校验并安装",
+                            percent,
+                            current,
+                            (known_total > 0).then_some(known_total),
+                            speed,
+                        );
+                        last_ui_at = Some(Instant::now());
+                    }
+
+                    let should_log = complete
+                        || last_log_at
+                            .as_ref()
+                            .map(|last| last.elapsed() >= Duration::from_secs(UPDATE_LOG_INTERVAL_SECS))
+                            .unwrap_or(true);
+                    if should_log {
+                        update_log(
+                            &chunk_app,
+                            format!("download_progress bytes={current} total={known_total} speed_bps={speed}"),
+                        );
+                        last_log_at = Some(Instant::now());
+                    }
                 },
                 move || {
                     let current = finish_downloaded.load(Ordering::Relaxed);
@@ -339,7 +370,6 @@ fn check_for_updates(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         let updater = match app
             .updater_builder()
-            .timeout(Duration::from_secs(UPDATE_TOTAL_TIMEOUT_SECS))
             .configure_client(|client| {
                 client
                     .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
