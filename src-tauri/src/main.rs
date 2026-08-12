@@ -4,13 +4,23 @@ use serde::Serialize;
 use serde_json::Value;
 use std::{
     fs,
+    fs::OpenOptions,
+    io::Write,
     path::PathBuf,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
-use tauri_plugin_updater::UpdaterExt;
+use tauri_plugin_updater::{Update, UpdaterExt};
 
 const CACHE_FOLDER: &str = "content-cache";
+const UPDATE_CONNECT_TIMEOUT_SECS: u64 = 12;
+const UPDATE_READ_TIMEOUT_SECS: u64 = 30;
+const UPDATE_TOTAL_TIMEOUT_SECS: u64 = 180;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,6 +28,18 @@ struct CacheStatus {
     enabled: bool,
     entries: usize,
     bytes: u64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateUiState {
+    phase: String,
+    title: String,
+    detail: String,
+    percent: Option<u8>,
+    downloaded: u64,
+    total: Option<u64>,
+    speed_bps: u64,
 }
 
 fn valid_cache_key(key: &str) -> bool {
@@ -120,56 +142,232 @@ fn desktop_cache_status(app: AppHandle) -> Result<CacheStatus, String> {
     Ok(CacheStatus { enabled: true, entries, bytes })
 }
 
-fn show_update_error(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.set_title("F.w 研究所");
+fn update_log(app: &AppHandle, message: impl AsRef<str>) {
+    let Ok(dir) = app.path().app_cache_dir() else {
+        return;
+    };
+    if fs::create_dir_all(&dir).is_err() {
+        return;
     }
-
-    app.dialog()
-        .message("更新没有安装成功，当前版本不会受到影响。请稍后重新打开软件再试。")
-        .title("F.w 研究所更新")
-        .kind(MessageDialogKind::Error)
-        .buttons(MessageDialogButtons::OkCustom("知道了".to_owned()))
-        .show(|_| {});
+    let path = dir.join("update.log");
+    let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) else {
+        return;
+    };
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|value| value.as_millis())
+        .unwrap_or_default();
+    let _ = writeln!(file, "{stamp} {}", message.as_ref());
 }
 
-fn install_latest_update(app: AppHandle) {
+fn ensure_update_ui(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.set_title("F.w 研究所 · 正在更新…");
+        let _ = window.eval(include_str!("update_ui.js"));
     }
+}
+
+fn render_update_ui(
+    app: &AppHandle,
+    phase: &str,
+    title: &str,
+    detail: impl Into<String>,
+    percent: Option<u8>,
+    downloaded: u64,
+    total: Option<u64>,
+    speed_bps: u64,
+) {
+    if let Some(window) = app.get_webview_window("main") {
+        let payload = UpdateUiState {
+            phase: phase.to_owned(),
+            title: title.to_owned(),
+            detail: detail.into(),
+            percent,
+            downloaded,
+            total,
+            speed_bps,
+        };
+        if let Ok(json) = serde_json::to_string(&payload) {
+            let _ = window.eval(format!("window.__FW_UPDATE_RENDER__?.({json});"));
+        }
+    }
+}
+
+fn show_update_error(app: &AppHandle, detail: String) {
+    update_log(app, format!("error {detail}"));
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_title("F.w 研究所 · 更新失败");
+    }
+    ensure_update_ui(app);
+    render_update_ui(
+        app,
+        "error",
+        "自动更新没有完成",
+        "可以重新尝试；如果仍然失败，先使用网页下载最新版。当前版本不会受到影响。",
+        None,
+        0,
+        None,
+        0,
+    );
+
+    let retry_app = app.clone();
+    app.dialog()
+        .message("自动更新没有完成。可以重新尝试；如果仍然失败，请使用网页下载最新版。当前版本不会受到影响。")
+        .title("F.w 研究所更新")
+        .kind(MessageDialogKind::Error)
+        .buttons(MessageDialogButtons::OkCancelCustom(
+            "重新尝试".to_owned(),
+            "关闭".to_owned(),
+        ))
+        .show(move |retry| {
+            if retry {
+                check_for_updates(retry_app);
+            }
+        });
+}
+
+fn install_latest_update(app: AppHandle, update: Update) {
+    let version = update.version.clone();
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_title(format!("F.w 研究所 · 正在更新到 {version}"));
+    }
+    ensure_update_ui(&app);
+    render_update_ui(
+        &app,
+        "connecting",
+        "正在连接更新服务器…",
+        format!("准备下载 Windows {version}"),
+        None,
+        0,
+        None,
+        0,
+    );
+    update_log(&app, format!("download_start version={version}"));
 
     tauri::async_runtime::spawn(async move {
-        let result = async {
-            let updater = app.updater()?;
-            if let Some(update) = updater.check().await? {
-                update
-                    .download_and_install(|_, _| {}, || {})
-                    .await?;
-                app.restart();
-            }
-            Ok::<(), tauri_plugin_updater::Error>(())
-        }
-        .await;
+        let downloaded = Arc::new(AtomicU64::new(0));
+        let total_bytes = Arc::new(AtomicU64::new(0));
+        let started = Instant::now();
 
-        if result.is_err() {
-            show_update_error(&app);
+        let chunk_app = app.clone();
+        let chunk_downloaded = downloaded.clone();
+        let chunk_total = total_bytes.clone();
+        let finish_app = app.clone();
+        let finish_downloaded = downloaded.clone();
+        let finish_total = total_bytes.clone();
+
+        let download_result = update
+            .download(
+                move |chunk, total| {
+                    let current = chunk_downloaded.fetch_add(chunk as u64, Ordering::Relaxed) + chunk as u64;
+                    if let Some(total) = total {
+                        chunk_total.store(total, Ordering::Relaxed);
+                    }
+                    let known_total = chunk_total.load(Ordering::Relaxed);
+                    let percent = if known_total > 0 {
+                        Some(((current.saturating_mul(100) / known_total).min(100)) as u8)
+                    } else {
+                        None
+                    };
+                    let elapsed = started.elapsed().as_secs_f64().max(0.001);
+                    let speed = (current as f64 / elapsed) as u64;
+                    render_update_ui(
+                        &chunk_app,
+                        "downloading",
+                        "正在下载更新…",
+                        "下载完成后会自动校验并安装",
+                        percent,
+                        current,
+                        (known_total > 0).then_some(known_total),
+                        speed,
+                    );
+                    update_log(
+                        &chunk_app,
+                        format!("download_progress bytes={current} total={known_total} speed_bps={speed}"),
+                    );
+                },
+                move || {
+                    let current = finish_downloaded.load(Ordering::Relaxed);
+                    let total = finish_total.load(Ordering::Relaxed);
+                    render_update_ui(
+                        &finish_app,
+                        "verifying",
+                        "下载完成，正在校验更新…",
+                        "正在验证安装包签名和完整性",
+                        Some(100),
+                        current,
+                        (total > 0).then_some(total),
+                        0,
+                    );
+                    update_log(&finish_app, format!("download_finished bytes={current} total={total}"));
+                },
+            )
+            .await;
+
+        let bytes = match download_result {
+            Ok(bytes) => bytes,
+            Err(error) => {
+                show_update_error(&app, format!("download_or_verify {error}"));
+                return;
+            }
+        };
+
+        update_log(&app, format!("verify_ok bytes={}", bytes.len()));
+        render_update_ui(
+            &app,
+            "installing",
+            "校验完成，正在启动安装…",
+            "安装程序接管后软件会退出，完成后自动重新打开",
+            Some(100),
+            bytes.len() as u64,
+            Some(bytes.len() as u64),
+            0,
+        );
+
+        if let Err(error) = update.install(bytes) {
+            show_update_error(&app, format!("install {error}"));
+            return;
         }
+
+        update_log(&app, "install_returned_ok");
+        app.restart();
     });
 }
 
 fn check_for_updates(app: AppHandle) {
+    update_log(&app, "check_start");
     tauri::async_runtime::spawn(async move {
-        let update = match app.updater() {
-            Ok(updater) => updater.check().await,
-            Err(_) => return,
+        let updater = match app
+            .updater_builder()
+            .timeout(Duration::from_secs(UPDATE_TOTAL_TIMEOUT_SECS))
+            .configure_client(|client| {
+                client
+                    .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
+                    .read_timeout(Duration::from_secs(UPDATE_READ_TIMEOUT_SECS))
+            })
+            .build()
+        {
+            Ok(updater) => updater,
+            Err(error) => {
+                update_log(&app, format!("check_builder_error {error}"));
+                return;
+            }
         };
 
-        if let Ok(Some(update)) = update {
+        let update = match updater.check().await {
+            Ok(update) => update,
+            Err(error) => {
+                update_log(&app, format!("check_error {error}"));
+                return;
+            }
+        };
+
+        if let Some(update) = update {
             let version = update.version.clone();
+            update_log(&app, format!("found version={version}"));
             let install_app = app.clone();
             app.dialog()
                 .message(format!(
-                    "发现新版本 {version}。更新会下载到当前安装位置，完成后自动重启；账号和缓存都会保留。"
+                    "发现新版本 {version}。点击立即更新后会直接开始下载，不再重复检查；下载过程会显示实时进度。账号和缓存都会保留。"
                 ))
                 .title("F.w 研究所更新")
                 .kind(MessageDialogKind::Info)
@@ -179,9 +377,11 @@ fn check_for_updates(app: AppHandle) {
                 ))
                 .show(move |confirmed| {
                     if confirmed {
-                        install_latest_update(install_app);
+                        install_latest_update(install_app, update);
                     }
                 });
+        } else {
+            update_log(&app, "no_update");
         }
     });
 }
