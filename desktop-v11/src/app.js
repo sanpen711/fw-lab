@@ -65,7 +65,11 @@ function renderAccount(next){
   setAvatar($('[data-account-avatar]'),user);setAvatar($('[data-profile-avatar]'),user);
   $('[data-profile-name]').textContent=user?.nickname||'研究员';$('[data-profile-email]').textContent=user?.email||'';
   const profile=$('[data-auth-view="profile"]');if(profile&&user){profile.elements.labCode.value=user.labCode||'';profile.elements.nickname.value=user.nickname||'';}
-  $$('[data-account-modal] button, [data-account-modal] input').forEach(node=>{if(!node.matches('[data-close-account]'))node.disabled=Boolean(next.busy);});
+  $$('[data-account-modal] button, [data-account-modal] input').forEach(node=>{
+    if(node.matches('[data-close-account]'))return;
+    const fixedProfileCode=node.name==='labCode'&&Boolean(node.closest('[data-auth-view="profile"]'));
+    node.disabled=fixedProfileCode||Boolean(next.busy);
+  });
   if(next.ready&&!user&&(currentView==='echo'||currentView==='buddy'))renderSocial();
   if(next.ready)renderFeed();
   if(next.ready)renderPolls();
