@@ -4,8 +4,8 @@
   "platform": "Windows 10/11 64 位",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
   "publishedAt": "2026-08-12T09:31:40.6272387Z",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "rollbackVersion": "1.1.2",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "rollbackVersion": "1.0.5",
   "sha256": "54d9ad785fa47aab46fe832b11902e20e7f4852af0ff23f3f466d9a70457e572",
   "version": "1.1.3"
 }
