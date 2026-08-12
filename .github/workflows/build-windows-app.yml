@@ -5,15 +5,11 @@ on:
     branches:
       - main
     paths:
+      - 'desktop-v11/**'
       - 'src-tauri/**'
       - 'package.json'
       - 'package-lock.json'
       - 'assets/icons/**'
-      - 'assets/fw-download-client.js'
-      - 'assets/fw-desktop-client.js'
-      - 'assets/fw-desktop-client.css'
-      - 'assets/app.js'
-      - 'tests/desktop-app-static.mjs'
       - '.github/workflows/build-windows-app.yml'
   workflow_dispatch:
 
@@ -36,6 +32,9 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop-v11/package-lock.json
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -46,41 +45,61 @@ jobs:
           workspaces: './src-tauri -> target'
 
       - name: Install dependencies
-        run: npm ci
+        shell: pwsh
+        run: |
+          npm ci
+          npm --prefix desktop-v11 ci
 
-      - name: Run desktop static checks
-        run: npm run test:desktop-app
+      - name: Verify Windows 1.1 local frontend
+        run: npm --prefix desktop-v11 run test:static
 
-      - name: Build NSIS installer
+      - name: Build Windows 1.1 NSIS installer
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-        run: npm run desktop:build
+        run: npx tauri build --config src-tauri/tauri.v11.conf.json --bundles nsis
 
-      - name: Prepare website download
+      - name: Prepare website download and updater metadata
         shell: pwsh
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
-          if (-not $installer) { throw 'Windows NSIS installer was not generated.' }
+          if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
+          if ($installer.Name -notmatch '1\.1\.0') { throw "Unexpected installer name: $($installer.Name)" }
+
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
+
+          $currentMetadata = Get-Content 'download/windows-version.json' -Raw | ConvertFrom-Json
+          if ($currentMetadata.version -eq '1.0.5' -and (Test-Path 'download/fw-lab-windows-latest.exe')) {
+            Copy-Item 'download/fw-lab-windows-latest.exe' 'download/fw-lab-windows-1.0.5-setup.exe' -Force
+            if (Test-Path 'download/fw-lab-windows-latest.exe.sig') {
+              Copy-Item 'download/fw-lab-windows-latest.exe.sig' 'download/fw-lab-windows-1.0.5-setup.exe.sig' -Force
+            }
+          }
+
           Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
           Copy-Item $signatureFile.FullName 'download/fw-lab-windows-latest.exe.sig' -Force
+
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
+          $notes = 'Windows 客户端升级为本地独立前端：首页、发牢骚、精神广场、学术研讨、观鸟台、回声、搭子、私聊和废话档案均已迁移；减少重复脚本、数据库查询、轮询和全局页面监听。'
+
           $metadata = @{
             available = $true
-            version = '1.0.5'
+            version = '1.1.0'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
             sha256 = $hash
-            notes = '扩展 Windows 本地增量缓存到学术研讨、观鸟台、废话档案、回声、搭子联系人和处理公告；取消容量与自动清理限制，并固定从首页启动。'
+            notes = $notes
+            rollbackVersion = '1.0.5'
+            rollbackUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe'
           }
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
+
           $updaterMetadata = @{
-            version = '1.0.5'
-            notes = $metadata.notes
+            version = '1.1.0'
+            notes = $notes
             pub_date = $publishedAt
             platforms = @{
               'windows-x86_64' = @{
@@ -94,10 +113,12 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.0.5
+          name: fw-lab-windows-1.1.0
           path: |
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
+            download/fw-lab-windows-1.0.5-setup.exe
+            download/fw-lab-windows-1.0.5-setup.exe.sig
             download/windows-updater.json
             download/windows-version.json
           if-no-files-found: error
@@ -110,9 +131,15 @@ jobs:
           git fetch origin main
           git pull --rebase --autostash origin main
           git add download/fw-lab-windows-latest.exe download/fw-lab-windows-latest.exe.sig download/windows-updater.json download/windows-version.json
+          if [ -f download/fw-lab-windows-1.0.5-setup.exe ]; then
+            git add download/fw-lab-windows-1.0.5-setup.exe
+          fi
+          if [ -f download/fw-lab-windows-1.0.5-setup.exe.sig ]; then
+            git add download/fw-lab-windows-1.0.5-setup.exe.sig
+          fi
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Build latest Windows app"
+            git commit -m "Release Windows 1.1.0"
             git push origin HEAD:main
           fi
