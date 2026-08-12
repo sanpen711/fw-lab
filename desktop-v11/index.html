@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f3efe7">
+  <title>F.w 研究所</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="app" class="app-shell" data-view="home">
+    <aside class="sidebar" aria-label="软件主导航">
+      <button class="brand" type="button" data-nav="home" aria-label="F.w 研究所首页">
+        <strong>F.w</strong><span>研究所</span>
+      </button>
+      <button class="compose-button" type="button" data-nav="compose">
+        <span aria-hidden="true">＋</span><b>发牢骚</b>
+      </button>
+      <nav class="nav-list">
+        <button class="nav-item active" type="button" data-nav="home"><span aria-hidden="true">⌂</span><b>首页</b></button>
+        <button class="nav-item" type="button" data-nav="square"><span aria-hidden="true">◌</span><b>精神广场</b></button>
+        <button class="nav-item" type="button" data-nav="rooms"><span aria-hidden="true">◇</span><b>学术研讨</b></button>
+        <button class="nav-item" type="button" data-nav="bird"><span aria-hidden="true">◉</span><b>观鸟台</b></button>
+        <button class="nav-item" type="button" data-nav="echo"><span aria-hidden="true">♢</span><b>回声</b><i class="badge" data-badge="echo" hidden></i></button>
+        <button class="nav-item" type="button" data-nav="buddy"><span aria-hidden="true">♧</span><b>搭子</b><i class="badge" data-badge="buddy" hidden></i></button>
+        <button class="nav-item" type="button" data-nav="archive"><span aria-hidden="true">▤</span><b>档案</b></button>
+      </nav>
+      <button class="nav-item account-button" type="button" data-open-account>
+        <span class="avatar avatar-small" data-account-avatar>FW</span><b data-account-label>注册 / 登录</b>
+      </button>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div><strong data-page-title>首页</strong><span data-page-subtitle>活动、公告和每天一句话都会放在这里</span></div>
+        <span class="connection-state" data-connection-state>已连接</span>
+      </header>
+
+      <section class="view active" data-view-panel="home">
+        <div class="home-wrap">
+          <article class="hero-card">
+            <p>FW LAB / LOW POWER MODE</p>
+            <h1>F.w 研究所</h1>
+            <h2>这里不要求你立刻振作。</h2>
+            <p class="hero-copy">一个临时放下情绪的地方。可以发牢骚、参与投票、围观离谱样本，也可以什么都不做，只是休息一下。</p>
+            <div class="hero-actions">
+              <button class="primary" type="button" data-nav="compose">去发一句牢骚</button>
+              <button class="secondary" type="button" data-open-account>进入研究所</button>
+            </div>
+          </article>
+          <div class="home-grid">
+            <button class="feature-card" type="button" data-nav="square"><small>01 / SQUARE</small><strong>精神广场</strong><span>匿名说点真话，也听听别人的今天。</span></button>
+            <button class="feature-card" type="button" data-nav="echo"><small>02 / ECHO</small><strong>回声</strong><span>评论、回复和互动集中收在这里。</span></button>
+            <button class="feature-card" type="button" data-nav="buddy"><small>03 / BUDDY</small><strong>搭子</strong><span>找到聊得来的人，安静说几句话。</span></button>
+          </div>
+          <p class="phase-note">Windows 1.1.0 本地前端 · 第一阶段</p>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="pending">
+        <div class="pending-card">
+          <span>LOCAL MIGRATION</span>
+          <h1 data-pending-title>功能迁移中</h1>
+          <p data-pending-copy>这个栏目将在后续阶段接入本地前端。当前正式版本的原有功能不会受影响。</p>
+          <button class="secondary" type="button" data-nav="home">返回首页</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" data-account-modal hidden>
+    <section class="account-panel" role="dialog" aria-modal="true" aria-labelledby="account-title">
+      <button class="close-button" type="button" data-close-account aria-label="关闭">×</button>
+      <p class="eyebrow">FW ACCOUNT</p>
+      <h2 id="account-title" data-account-title>账号登录</h2>
+      <p class="panel-copy" data-account-copy>输入邮箱和密码，进入研究所。</p>
+
+      <form class="account-form" data-auth-view="login">
+        <label>邮箱<input name="email" type="email" autocomplete="email" required></label>
+        <label>密码<input name="password" type="password" autocomplete="current-password" minlength="6" required></label>
+        <button class="primary full" type="submit">登录</button>
+        <div class="form-links"><button type="button" data-show-auth="register">没有账号？去注册</button><button type="button" data-show-auth="reset">忘记密码？</button></div>
+      </form>
+
+      <form class="account-form" data-auth-view="register" hidden>
+        <label>邮箱<input name="email" type="email" autocomplete="email" required></label>
+        <label>实验品编号<input name="labCode" maxlength="7" pattern="[A-Za-z0-9]{7}" placeholder="例如 FW2026A" required></label>
+        <label>密码<input name="password" type="password" autocomplete="new-password" minlength="6" required></label>
+        <label>确认密码<input name="password2" type="password" autocomplete="new-password" minlength="6" required></label>
+        <label class="consent"><input name="consent" type="checkbox" required><span>我已阅读并同意《F.w研究所声明》</span></label>
+        <button class="primary full" type="submit">发送邮箱验证码</button>
+        <div class="form-links"><button type="button" data-show-auth="login">返回登录</button></div>
+      </form>
+
+      <form class="account-form" data-auth-view="verify" hidden>
+        <p class="verify-tip" data-verify-tip>验证码已发送，请输入邮件中的验证码。</p>
+        <label>验证码<input name="token" inputmode="numeric" autocomplete="one-time-code" required></label>
+        <button class="primary full" type="submit">确认验证码，完成注册</button>
+        <div class="form-links"><button type="button" data-resend-code>重新发送</button><button type="button" data-show-auth="register">返回修改</button></div>
+      </form>
+
+      <form class="account-form" data-auth-view="reset" hidden>
+        <label>邮箱<input name="email" type="email" autocomplete="email" required></label>
+        <button class="primary full" type="submit">发送找回密码邮件</button>
+        <div class="form-links"><button type="button" data-show-auth="login">返回登录</button></div>
+      </form>
+
+      <form class="account-form" data-auth-view="profile" hidden>
+        <div class="profile-summary"><span class="avatar" data-profile-avatar>FW</span><div><strong data-profile-name>研究员</strong><span data-profile-email></span></div></div>
+        <label>实验品编号<input name="labCode" maxlength="7" disabled></label>
+        <label>昵称<input name="nickname" maxlength="12" required></label>
+        <label>头像<input name="avatar" type="file" accept="image/*"></label>
+        <button class="primary full" type="submit">保存资料</button>
+        <button class="secondary full" type="button" data-sign-out>退出登录</button>
+      </form>
+      <p class="form-status" data-form-status aria-live="polite"></p>
+    </section>
+  </div>
+
+  <div class="toast" data-toast role="status" aria-live="polite"></div>
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>
