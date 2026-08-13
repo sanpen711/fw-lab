@@ -1,11 +1,11 @@
 {
-  "rollbackVersion": "1.0.5",
-  "version": "1.1.6",
-  "available": true,
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "notes": "Windows 1.1.6：自动更新测速验证版。仅升级版本标识，完整保留 1.1.5 的下载吞吐修复，用于验证软件内下载速度、进度显示、校验和自动安装链路；其他功能与配色不变。",
-  "sha256": "aba766df1cb03efe70d9e324512f3e4b8e457018dccd7ca3e96322f263ebbcb7",
-  "publishedAt": "2026-08-13T08:19:50.1336128Z",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "platform": "Windows 10/11 64 位"
+  "publishedAt": "2026-08-13T09:04:06.5395825Z",
+  "available": true,
+  "rollbackVersion": "1.0.5",
+  "platform": "Windows 10/11 64 位",
+  "notes": "Windows 1.1.7：更新网络兼容版。自动更新优先使用绕过系统代理、IPv4、HTTP/1.1 的直连兼容通道；如果直连检查或下载失败，会自动回退 Windows 当前系统网络。错误弹窗同时显示具体网络/安装错误。其他功能与配色不变。",
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "version": "1.1.7",
+  "sha256": "ed4696a139c9f5407749ff83d5ea08f5b09b5c0023ac12ffcf0f92496429a34a"
 }

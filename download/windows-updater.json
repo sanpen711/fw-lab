@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.1.6：自动更新测速验证版。仅升级版本标识，完整保留 1.1.5 的下载吞吐修复，用于验证软件内下载速度、进度显示、校验和自动安装链路；其他功能与配色不变。",
-  "pub_date": "2026-08-13T08:19:50.1336128Z",
+  "notes": "Windows 1.1.7：更新网络兼容版。自动更新优先使用绕过系统代理、IPv4、HTTP/1.1 的直连兼容通道；如果直连检查或下载失败，会自动回退 Windows 当前系统网络。错误弹窗同时显示具体网络/安装错误。其他功能与配色不变。",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmZ6VHdyYTlXOXhKVFhUN1J2NDdpUTd0eXJVT3NnczdZandkTWFVK0pEZjBmVzBhamJYNTBJbHV1T2pVMmoyN1lpQWtFWEJBWTJET3plcm04YUphZXdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NjA5MTg5CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuNl94NjQtc2V0dXAuZXhlClNvMERRU2hEUjJqcVViR3BWT0hlTFV4dW8xckpka1k3NVRNNzZvc2lrKytLS3JwMk9jeDRMcnB3UmtON1FrU0Y3b3J5Rk1RWGhPQlFtdFB2bk9DZENBPT0K",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmVYdEVhcUE0SEdMRGo4T0IyM0ZKbHZjRHRZdmxlZHdTMnNBdE5Sc2p2SmtvVjFGV25NcXl0ejFGRWgzbWJPQklKRGI4aHdaT0xIL1U3QmJIV3N0aVFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NjExODQ1CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuN194NjQtc2V0dXAuZXhlCmU3YWYyQzlDNG5sMy9Lak4vcUpUdVZZYjZXRmVFT0FheWw0aUdXMWVDM0dVUkJUd2EvS1BpZ1Q5R1hlR1Z6Z05QSlFCSU8vU3hINUJoOUFvWmNwbUJnPT0K"
     }
   },
-  "version": "1.1.6"
+  "version": "1.1.7",
+  "pub_date": "2026-08-13T09:04:06.5395825Z"
 }
