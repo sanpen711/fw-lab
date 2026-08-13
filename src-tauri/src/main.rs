@@ -6,6 +6,7 @@ use std::{
     fs,
     fs::OpenOptions,
     io::Write,
+    net::{IpAddr, Ipv4Addr},
     path::PathBuf,
     sync::{
         atomic::{AtomicU64, Ordering},
@@ -22,6 +23,8 @@ const UPDATE_CONNECT_TIMEOUT_SECS: u64 = 12;
 const UPDATE_READ_TIMEOUT_SECS: u64 = 45;
 const UPDATE_UI_INTERVAL_MS: u64 = 250;
 const UPDATE_LOG_INTERVAL_SECS: u64 = 5;
+const UPDATE_MODE_DIRECT: &str = "direct-http1-ipv4";
+const UPDATE_MODE_SYSTEM: &str = "system-network";
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -203,7 +206,7 @@ fn show_update_error(app: &AppHandle, detail: String) {
         app,
         "error",
         "自动更新没有完成",
-        "可以重新尝试；如果仍然失败，先使用网页下载最新版。当前版本不会受到影响。",
+        format!("网络或安装阶段返回错误：{detail}"),
         None,
         0,
         None,
@@ -212,7 +215,9 @@ fn show_update_error(app: &AppHandle, detail: String) {
 
     let retry_app = app.clone();
     app.dialog()
-        .message("自动更新没有完成。可以重新尝试；如果仍然失败，请使用网页下载最新版。当前版本不会受到影响。")
+        .message(format!(
+            "自动更新没有完成。\n\n错误信息：{detail}\n\n可以重新尝试；如果仍然失败，请使用网页下载最新版。当前版本不会受到影响。"
+        ))
         .title("F.w 研究所更新")
         .kind(MessageDialogKind::Error)
         .buttons(MessageDialogButtons::OkCancelCustom(
@@ -226,7 +231,48 @@ fn show_update_error(app: &AppHandle, detail: String) {
         });
 }
 
-fn install_latest_update(app: AppHandle, update: Update) {
+fn check_for_updates_system_auto(app: AppHandle) {
+    update_log(&app, "fallback_system_check_start");
+    render_update_ui(
+        &app,
+        "connecting",
+        "直连通道失败，正在切换系统网络…",
+        "将自动使用 Windows 当前网络/代理设置重试一次",
+        None,
+        0,
+        None,
+        0,
+    );
+
+    tauri::async_runtime::spawn(async move {
+        let updater = match app
+            .updater_builder()
+            .configure_client(|client| {
+                client
+                    .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
+                    .read_timeout(Duration::from_secs(UPDATE_READ_TIMEOUT_SECS))
+            })
+            .build()
+        {
+            Ok(updater) => updater,
+            Err(error) => {
+                show_update_error(&app, format!("system_builder {error}"));
+                return;
+            }
+        };
+
+        match updater.check().await {
+            Ok(Some(update)) => {
+                update_log(&app, format!("fallback_system_found version={}", update.version));
+                install_latest_update(app, update, UPDATE_MODE_SYSTEM.to_owned());
+            }
+            Ok(None) => show_update_error(&app, "system_no_update_after_direct_failure".to_owned()),
+            Err(error) => show_update_error(&app, format!("system_check {error}")),
+        }
+    });
+}
+
+fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
     let version = update.version.clone();
     if let Some(window) = app.get_webview_window("main") {
         let window_title = format!("F.w 研究所 · 正在更新到 {version}");
@@ -237,13 +283,16 @@ fn install_latest_update(app: AppHandle, update: Update) {
         &app,
         "connecting",
         "正在连接更新服务器…",
-        format!("准备下载 Windows {version}"),
+        format!("准备下载 Windows {version} · 通道：{network_mode}"),
         None,
         0,
         None,
         0,
     );
-    update_log(&app, format!("download_start version={version}"));
+    update_log(
+        &app,
+        format!("download_start version={version} mode={network_mode}"),
+    );
 
     tauri::async_runtime::spawn(async move {
         let downloaded = Arc::new(AtomicU64::new(0));
@@ -259,6 +308,7 @@ fn install_latest_update(app: AppHandle, update: Update) {
         let finish_app = app.clone();
         let finish_downloaded = downloaded.clone();
         let finish_total = total_bytes.clone();
+        let progress_mode = network_mode.clone();
 
         let download_result = update
             .download(
@@ -295,7 +345,7 @@ fn install_latest_update(app: AppHandle, update: Update) {
                             &chunk_app,
                             "downloading",
                             "正在下载更新…",
-                            "下载完成后会自动校验并安装",
+                            format!("下载完成后会自动校验并安装 · 通道：{progress_mode}"),
                             percent,
                             current,
                             (known_total > 0).then_some(known_total),
@@ -312,7 +362,9 @@ fn install_latest_update(app: AppHandle, update: Update) {
                     if should_log {
                         update_log(
                             &chunk_app,
-                            format!("download_progress bytes={current} total={known_total} speed_bps={speed}"),
+                            format!(
+                                "download_progress mode={progress_mode} bytes={current} total={known_total} speed_bps={speed}"
+                            ),
                         );
                         last_log_at = Some(Instant::now());
                     }
@@ -338,12 +390,23 @@ fn install_latest_update(app: AppHandle, update: Update) {
         let bytes = match download_result {
             Ok(bytes) => bytes,
             Err(error) => {
-                show_update_error(&app, format!("download_or_verify {error}"));
+                update_log(
+                    &app,
+                    format!("download_failed mode={network_mode} error={error}"),
+                );
+                if network_mode == UPDATE_MODE_DIRECT {
+                    check_for_updates_system_auto(app.clone());
+                } else {
+                    show_update_error(&app, format!("{network_mode} download_or_verify {error}"));
+                }
                 return;
             }
         };
 
-        update_log(&app, format!("verify_ok bytes={}", bytes.len()));
+        update_log(
+            &app,
+            format!("verify_ok mode={network_mode} bytes={}", bytes.len()),
+        );
         render_update_ui(
             &app,
             "installing",
@@ -366,39 +429,73 @@ fn install_latest_update(app: AppHandle, update: Update) {
 }
 
 fn check_for_updates(app: AppHandle) {
-    update_log(&app, "check_start");
+    update_log(&app, "check_direct_start");
     tauri::async_runtime::spawn(async move {
-        let updater = match app
+        let direct_result = match app
             .updater_builder()
+            .no_proxy()
             .configure_client(|client| {
                 client
                     .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
                     .read_timeout(Duration::from_secs(UPDATE_READ_TIMEOUT_SECS))
+                    .http1_only()
+                    .local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
             })
             .build()
         {
-            Ok(updater) => updater,
-            Err(error) => {
-                update_log(&app, format!("check_builder_error {error}"));
-                return;
-            }
+            Ok(updater) => updater
+                .check()
+                .await
+                .map_err(|error| format!("direct_check {error}")),
+            Err(error) => Err(format!("direct_builder {error}")),
         };
 
-        let update = match updater.check().await {
-            Ok(update) => update,
-            Err(error) => {
-                update_log(&app, format!("check_error {error}"));
-                return;
+        let (update, network_mode) = match direct_result {
+            Ok(update) => {
+                update_log(&app, "check_direct_ok");
+                (update, UPDATE_MODE_DIRECT.to_owned())
+            }
+            Err(direct_error) => {
+                update_log(&app, format!("{direct_error}; fallback_system_check"));
+                let system_updater = match app
+                    .updater_builder()
+                    .configure_client(|client| {
+                        client
+                            .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
+                            .read_timeout(Duration::from_secs(UPDATE_READ_TIMEOUT_SECS))
+                    })
+                    .build()
+                {
+                    Ok(updater) => updater,
+                    Err(error) => {
+                        update_log(&app, format!("system_builder_error {error}"));
+                        return;
+                    }
+                };
+
+                match system_updater.check().await {
+                    Ok(update) => {
+                        update_log(&app, "check_system_ok");
+                        (update, UPDATE_MODE_SYSTEM.to_owned())
+                    }
+                    Err(error) => {
+                        update_log(&app, format!("system_check_error {error}"));
+                        return;
+                    }
+                }
             }
         };
 
         if let Some(update) = update {
             let version = update.version.clone();
-            update_log(&app, format!("found version={version}"));
+            update_log(
+                &app,
+                format!("found version={version} mode={network_mode}"),
+            );
             let install_app = app.clone();
             app.dialog()
                 .message(format!(
-                    "发现新版本 {version}。点击立即更新后会直接开始下载，不再重复检查；下载过程会显示实时进度。账号和缓存都会保留。"
+                    "发现新版本 {version}。点击立即更新后会直接开始下载；本版会优先使用兼容直连通道，必要时自动回退系统网络。下载过程会显示实时进度。账号和缓存都会保留。"
                 ))
                 .title("F.w 研究所更新")
                 .kind(MessageDialogKind::Info)
@@ -408,7 +505,7 @@ fn check_for_updates(app: AppHandle) {
                 ))
                 .show(move |confirmed| {
                     if confirmed {
-                        install_latest_update(install_app, update);
+                        install_latest_update(install_app, update, network_mode);
                     }
                 });
         } else {
