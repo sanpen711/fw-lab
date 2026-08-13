@@ -1,11 +1,11 @@
 {
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "notes": "Windows 1.1.5：修复自动更新下载过慢和超时失败。下载回调不再对每个网络数据块刷新 WebView 和同步写日志，进度界面限制为每 250ms 更新一次、日志每 5 秒记录一次；移除 180 秒总超时，仅保留连接和读取停滞超时。其他功能与配色不变。",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "available": true,
   "rollbackVersion": "1.0.5",
-  "publishedAt": "2026-08-12T10:06:04.6668736Z",
-  "sha256": "a805ef20b9b8c5ced0feb93016ff1b5403ba0fb3f494f72b03c3e537df097869",
-  "platform": "Windows 10/11 64 位",
-  "version": "1.1.5"
+  "version": "1.1.6",
+  "available": true,
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "notes": "Windows 1.1.6：自动更新测速验证版。仅升级版本标识，完整保留 1.1.5 的下载吞吐修复，用于验证软件内下载速度、进度显示、校验和自动安装链路；其他功能与配色不变。",
+  "sha256": "aba766df1cb03efe70d9e324512f3e4b8e457018dccd7ca3e96322f263ebbcb7",
+  "publishedAt": "2026-08-13T08:19:50.1336128Z",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "platform": "Windows 10/11 64 位"
 }
