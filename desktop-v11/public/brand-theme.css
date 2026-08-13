@@ -1,4 +1,4 @@
-/* F.w 研究所 Windows 1.1.6 classic desktop palette
+/* F.w 研究所 Windows 1.1.7 classic desktop palette
    Restores the pre-standalone Windows visual language exactly:
    warm paper + near-black structure + muted pink core actions.
    Presentation only: no data, routing, cache, realtime or social logic changes. */
@@ -97,7 +97,7 @@ html body .feature-card span{color:#756f64!important;}
 html body .feature-card:hover{border-color:rgba(217,121,121,.48)!important;}
 html body .phase-note{color:transparent!important;font-size:0!important;}
 html body .phase-note::after{
-  content:'Windows 1.1.6 本地前端 · 自动更新测速版'!important;
+  content:'Windows 1.1.7 本地前端 · 更新网络兼容版'!important;
   color:#8e877d!important;
   font-size:11px!important;
 }
