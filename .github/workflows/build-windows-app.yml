@@ -63,7 +63,7 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.1\.6') { throw "Unexpected installer name: $($installer.Name)" }
+          if ($installer.Name -notmatch '1\.1\.7') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
@@ -74,11 +74,11 @@ jobs:
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.1.6：自动更新测速验证版。仅升级版本标识，完整保留 1.1.5 的下载吞吐修复，用于验证软件内下载速度、进度显示、校验和自动安装链路；其他功能与配色不变。'
+          $notes = 'Windows 1.1.7：更新网络兼容版。自动更新优先使用绕过系统代理、IPv4、HTTP/1.1 的直连兼容通道；如果直连检查或下载失败，会自动回退 Windows 当前系统网络。错误弹窗同时显示具体网络/安装错误。其他功能与配色不变。'
 
           $metadata = @{
             available = $true
-            version = '1.1.6'
+            version = '1.1.7'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
@@ -90,7 +90,7 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.1.6'
+            version = '1.1.7'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
@@ -105,7 +105,7 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.1.6
+          name: fw-lab-windows-1.1.7
           path: |
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
@@ -145,6 +145,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.1.6"
+            git commit -m "Release Windows 1.1.7"
             git push origin HEAD:main
           fi
