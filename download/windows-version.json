@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.1.8：功能对齐版。补齐私聊图片/GIF/视频、精神广场帖子和评论视频发送与显示、评论举报、搭子资料查看/举报/拉黑、入馆须知/隐私政策和普通用户处理公告。首页不增加实时帖子流，管理员后台不迁入普通客户端。保留 1.1.7 的更新网络兼容方案。",
-  "publishedAt": "2026-08-18T08:23:02.9868125Z",
-  "rollbackVersion": "1.0.5",
-  "available": true,
-  "version": "1.1.8",
+  "notes": "Windows 1.1.9：状态清理版。移除电脑端发牢骚页面的旧状态选择，并隐藏精神广场帖子卡片与详情中的旧状态标签；数据库旧字段仅保留历史兼容。其他 1.1.8 功能保持不变。",
+  "sha256": "b61c088db9def8f7f1c3eadc44cb8c1449c0614f5aed55bb15ae01f5b23850a3",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
   "platform": "Windows 10/11 64 位",
-  "sha256": "737c3db91eebeb058ffc15320b0e977023f4a8b8ac9cec2d7cc262e59563c44c"
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "available": true,
+  "version": "1.1.9",
+  "rollbackVersion": "1.0.5",
+  "publishedAt": "2026-08-18T09:36:50.8003265Z"
 }
