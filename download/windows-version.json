@@ -1,11 +1,11 @@
 {
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "publishedAt": "2026-08-13T09:04:06.5395825Z",
-  "available": true,
   "rollbackVersion": "1.0.5",
-  "platform": "Windows 10/11 64 位",
-  "notes": "Windows 1.1.7：更新网络兼容版。自动更新优先使用绕过系统代理、IPv4、HTTP/1.1 的直连兼容通道；如果直连检查或下载失败，会自动回退 Windows 当前系统网络。错误弹窗同时显示具体网络/安装错误。其他功能与配色不变。",
+  "available": true,
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "version": "1.1.7",
-  "sha256": "ed4696a139c9f5407749ff83d5ea08f5b09b5c0023ac12ffcf0f92496429a34a"
+  "notes": "Windows 1.1.8：功能对齐版。补齐私聊图片/GIF/视频、精神广场帖子和评论视频发送与显示、评论举报、搭子资料查看/举报/拉黑、入馆须知/隐私政策和普通用户处理公告。首页不增加实时帖子流，管理员后台不迁入普通客户端。保留 1.1.7 的更新网络兼容方案。",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "publishedAt": "2026-08-18T08:16:05.9590621Z",
+  "sha256": "fc081284dcdec43d2701ebe24ac15a3de64c4fd1095df1e448272c2f5cf380e6",
+  "platform": "Windows 10/11 64 位",
+  "version": "1.1.8"
 }

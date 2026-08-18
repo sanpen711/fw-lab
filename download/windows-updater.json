@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.1.7：更新网络兼容版。自动更新优先使用绕过系统代理、IPv4、HTTP/1.1 的直连兼容通道；如果直连检查或下载失败，会自动回退 Windows 当前系统网络。错误弹窗同时显示具体网络/安装错误。其他功能与配色不变。",
   "platforms": {
     "windows-x86_64": {
       "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmVYdEVhcUE0SEdMRGo4T0IyM0ZKbHZjRHRZdmxlZHdTMnNBdE5Sc2p2SmtvVjFGV25NcXl0ejFGRWgzbWJPQklKRGI4aHdaT0xIL1U3QmJIV3N0aVFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NjExODQ1CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuN194NjQtc2V0dXAuZXhlCmU3YWYyQzlDNG5sMy9Lak4vcUpUdVZZYjZXRmVFT0FheWw0aUdXMWVDM0dVUkJUd2EvS1BpZ1Q5R1hlR1Z6Z05QSlFCSU8vU3hINUJoOUFvWmNwbUJnPT0K"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlRGeWdWcU5QYmdrZkZYZFk1ckRuU3Nwa096ZW83cTZDdjBGVUtPbE81eE1kTmVHN3FIMmJBYVdJYlJ4V3dLQWtvbkZFMDd2T1hKZlRkS1E3VkVYbHc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MDQwOTY1CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuOF94NjQtc2V0dXAuZXhlCjVLWlBXdGNpb05RSTJPb3dxZG1tYkVUL1lON3lZWjhoT2s2NTZnSXB6SXVJYk5VY0I1RlpnRXU2VklMQVRWcWlRWklJeTRsNnJ3TjFRSGZ6V0pWYUFBPT0K"
     }
   },
-  "version": "1.1.7",
-  "pub_date": "2026-08-13T09:04:06.5395825Z"
+  "notes": "Windows 1.1.8：功能对齐版。补齐私聊图片/GIF/视频、精神广场帖子和评论视频发送与显示、评论举报、搭子资料查看/举报/拉黑、入馆须知/隐私政策和普通用户处理公告。首页不增加实时帖子流，管理员后台不迁入普通客户端。保留 1.1.7 的更新网络兼容方案。",
+  "version": "1.1.8",
+  "pub_date": "2026-08-18T08:16:05.9590621Z"
 }
