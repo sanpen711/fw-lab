@@ -1,11 +1,11 @@
 {
+  "notes": "Windows 1.1.8：功能对齐版。补齐私聊图片/GIF/视频、精神广场帖子和评论视频发送与显示、评论举报、搭子资料查看/举报/拉黑、入馆须知/隐私政策和普通用户处理公告。首页不增加实时帖子流，管理员后台不迁入普通客户端。保留 1.1.7 的更新网络兼容方案。",
+  "publishedAt": "2026-08-18T08:23:02.9868125Z",
   "rollbackVersion": "1.0.5",
   "available": true,
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "notes": "Windows 1.1.8：功能对齐版。补齐私聊图片/GIF/视频、精神广场帖子和评论视频发送与显示、评论举报、搭子资料查看/举报/拉黑、入馆须知/隐私政策和普通用户处理公告。首页不增加实时帖子流，管理员后台不迁入普通客户端。保留 1.1.7 的更新网络兼容方案。",
+  "version": "1.1.8",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "publishedAt": "2026-08-18T08:16:05.9590621Z",
-  "sha256": "fc081284dcdec43d2701ebe24ac15a3de64c4fd1095df1e448272c2f5cf380e6",
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
   "platform": "Windows 10/11 64 位",
-  "version": "1.1.8"
+  "sha256": "737c3db91eebeb058ffc15320b0e977023f4a8b8ac9cec2d7cc262e59563c44c"
 }
