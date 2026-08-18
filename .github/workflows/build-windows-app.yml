@@ -63,7 +63,7 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.1\.8') { throw "Unexpected installer name: $($installer.Name)" }
+          if ($installer.Name -notmatch '1\.1\.9') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
@@ -74,11 +74,11 @@ jobs:
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.1.8：功能对齐版。补齐私聊图片/GIF/视频、精神广场帖子和评论视频发送与显示、评论举报、搭子资料查看/举报/拉黑、入馆须知/隐私政策和普通用户处理公告。首页不增加实时帖子流，管理员后台不迁入普通客户端。保留 1.1.7 的更新网络兼容方案。'
+          $notes = 'Windows 1.1.9：状态清理版。移除电脑端发牢骚页面的旧状态选择，并隐藏精神广场帖子卡片与详情中的旧状态标签；数据库旧字段仅保留历史兼容。其他 1.1.8 功能保持不变。'
 
           $metadata = @{
             available = $true
-            version = '1.1.8'
+            version = '1.1.9'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
@@ -90,7 +90,7 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.1.8'
+            version = '1.1.9'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
@@ -105,7 +105,7 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.1.8
+          name: fw-lab-windows-1.1.9
           path: |
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
@@ -145,6 +145,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.1.8"
+            git commit -m "Release Windows 1.1.9"
             git push origin HEAD:main
           fi
