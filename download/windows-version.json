@@ -1,11 +1,11 @@
 {
-  "platform": "Windows 10/11 64 位",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "version": "1.1.10",
-  "sha256": "97f0d69ed190fb6b55b97f32ebed087c37ab8bcd7068127d171267cd9dffc3d2",
-  "notes": "Windows 1.1.10：发布工具对齐版。电脑端发牢骚页面按网页版交互收起媒体与表情工具：输入框下方仅保留圆形表情按钮和加号按钮；表情按需展开，加号继续支持图片/GIF/视频；保留 1.1.9 状态清理和 1.1.8 功能对齐能力。",
   "rollbackVersion": "1.0.5",
+  "publishedAt": "2026-08-19T06:16:16.4407613Z",
+  "sha256": "b6934ed31748937f3e2ded9c49b1f864117b94fa3ea6f45331363695bd7838e0",
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
   "available": true,
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "publishedAt": "2026-08-19T03:52:54.2723034Z"
+  "platform": "Windows 10/11 64 位",
+  "version": "1.1.11",
+  "notes": "Windows 1.1.11：精神广场滚动修复版。保持现有双栏视觉不变，将左侧帖子列表与右侧帖子详情改为两个独立滚动区域；向下浏览左侧后再打开帖子，右侧详情仍固定在窗口内并从顶部正常显示。其他 1.1.10 功能保持不变。",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
 }
