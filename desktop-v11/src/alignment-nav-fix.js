@@ -1,3 +1,5 @@
+import './compose-ui-alignment.js';
+
 document.addEventListener('click',event=>{
   const regular=event.target.closest?.('[data-nav]');
   if(!regular)return;
