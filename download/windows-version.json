@@ -1,11 +1,11 @@
 {
-  "available": true,
-  "notes": "Windows 1.1.12：本地持久缓存版。默认在软件安装目录创建 Cache/fw-cache.db（SQLite），安装目录不可写时自动回退 AppData；精神广场、回声、搭子和私聊会先显示本地缓存，再后台同步 Supabase。每个私聊本地最多保留最近 200 条。保留 1.1.11 精神广场独立滚动修复。",
-  "platform": "Windows 10/11 64 位",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "version": "1.1.12",
-  "sha256": "1410290ba514aa96130f2d5f7532d0c9322cce2255c4b6465de5cf12d2ea78bd",
-  "rollbackVersion": "1.0.5",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "publishedAt": "2026-08-20T06:55:59.4750635Z"
+  "notes": "Windows 1.1.13：全局缓存补齐版。延续 1.1.12 安装目录 Cache/fw-cache.db 持久化缓存，将学术研讨、观鸟台、废话档案、账号资料、我的表情、通知红点、公开处理公告和公开资料页全部接入本地缓存；各页面优先显示本地数据，再后台同步 Supabase。精神广场、回声、搭子、私聊和 1.1.11 独立滚动修复继续保留。",
+  "sha256": "2cac0fbf20c93968ebc7f57537b3b5fb8530367cb5ee20e3bb4adbd1a882464f",
+  "publishedAt": "2026-08-20T08:09:03.8488627Z",
+  "rollbackVersion": "1.0.5",
+  "available": true,
+  "platform": "Windows 10/11 64 位",
+  "version": "1.1.13"
 }

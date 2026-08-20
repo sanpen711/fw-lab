@@ -1,11 +1,11 @@
 {
-  "version": "1.1.12",
+  "pub_date": "2026-08-20T08:09:03.8488627Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmRkT0FnYUpqMFU2RWpxNjEwTzFtdjdrSCtzeUVVeStDdHAzT0JyNFFMRGV2MTN6ZXpDMFR0OE14YytyV0MySTFLek81ZGU0QXJaZ2J3QVN1QmRjOUE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MjA4OTU4CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMTJfeDY0LXNldHVwLmV4ZQpwWUdmdDd0cUJoS1A3eDJZdGZ0Q2xlR2hMSHF5eVBxemFJa25GSWlnMEI4MWd3QStLRkFoRll6YXdUeitxTHl6VHBZNTg2bWJGcHZZSXF6YnRmOEVDQT09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWld1Y1Y4MkJsdlRVZERnVFp2YTVrYnY1dE02d0Y1L09PZXUzVU1pdXFiVkx1cVduU2w2aE9JVWk5R1dDSkFNbU1MbzYyZWs5OTM3cmZxdVNGdTdlZlFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MjEzMzQzCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMTNfeDY0LXNldHVwLmV4ZQplRExoWHFjNzM2RTJ2dzJsdzA4S2hjU3BZZngxTjAzbDVENngwa2hXbjBaNm5hNjBGZVpPazJwd1VDMFJOV3liSkVHSXI2aWRtMm9DbDBOMThNSHBDUT09Cg==",
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
     }
   },
-  "notes": "Windows 1.1.12：本地持久缓存版。默认在软件安装目录创建 Cache/fw-cache.db（SQLite），安装目录不可写时自动回退 AppData；精神广场、回声、搭子和私聊会先显示本地缓存，再后台同步 Supabase。每个私聊本地最多保留最近 200 条。保留 1.1.11 精神广场独立滚动修复。",
-  "pub_date": "2026-08-20T06:55:59.4750635Z"
+  "version": "1.1.13",
+  "notes": "Windows 1.1.13：全局缓存补齐版。延续 1.1.12 安装目录 Cache/fw-cache.db 持久化缓存，将学术研讨、观鸟台、废话档案、账号资料、我的表情、通知红点、公开处理公告和公开资料页全部接入本地缓存；各页面优先显示本地数据，再后台同步 Supabase。精神广场、回声、搭子、私聊和 1.1.11 独立滚动修复继续保留。"
 }
