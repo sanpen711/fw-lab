@@ -1,5 +1,6 @@
 import './compose-ui-alignment.js';
 import './square-scroll-fix.js';
+import './supplemental-cache.js';
 
 document.addEventListener('click',event=>{
   const regular=event.target.closest?.('[data-nav]');
