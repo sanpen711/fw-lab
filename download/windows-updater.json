@@ -1,11 +1,11 @@
 {
+  "version": "1.1.12",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlo3VGpka21OWUxvVXBTcURwQ2FnMk5tZ0JQUXhtbDVNR1Y0RTFEYUFOcmdzRzhPUGRkSlU0MXkvUW9USFgyTzZhUkZYSDV4OVF4aWFKYUJmYU12SkFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MTIwMTc1CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMTFfeDY0LXNldHVwLmV4ZQpLMWxNbDkwVFVxQ1dQZlB4dlJEMWNubEFUSFBHWll5cDc5d1NXSE52bkdnVmJsQjlGVGJBeEtaUVpTSis0RGg3WktVVkkxcmFOTW56ckp1clVibFNDdz09Cg==",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmRkT0FnYUpqMFU2RWpxNjEwTzFtdjdrSCtzeUVVeStDdHAzT0JyNFFMRGV2MTN6ZXpDMFR0OE14YytyV0MySTFLek81ZGU0QXJaZ2J3QVN1QmRjOUE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MjA4OTU4CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMTJfeDY0LXNldHVwLmV4ZQpwWUdmdDd0cUJoS1A3eDJZdGZ0Q2xlR2hMSHF5eVBxemFJa25GSWlnMEI4MWd3QStLRkFoRll6YXdUeitxTHl6VHBZNTg2bWJGcHZZSXF6YnRmOEVDQT09Cg=="
     }
   },
-  "notes": "Windows 1.1.11：精神广场滚动修复版。保持现有双栏视觉不变，将左侧帖子列表与右侧帖子详情改为两个独立滚动区域；向下浏览左侧后再打开帖子，右侧详情仍固定在窗口内并从顶部正常显示。其他 1.1.10 功能保持不变。",
-  "pub_date": "2026-08-19T06:16:16.4407613Z",
-  "version": "1.1.11"
+  "notes": "Windows 1.1.12：本地持久缓存版。默认在软件安装目录创建 Cache/fw-cache.db（SQLite），安装目录不可写时自动回退 AppData；精神广场、回声、搭子和私聊会先显示本地缓存，再后台同步 Supabase。每个私聊本地最多保留最近 200 条。保留 1.1.11 精神广场独立滚动修复。",
+  "pub_date": "2026-08-20T06:55:59.4750635Z"
 }
