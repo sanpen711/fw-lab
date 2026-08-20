@@ -63,7 +63,7 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.1\.13') { throw "Unexpected installer name: $($installer.Name)" }
+          if ($installer.Name -notmatch '1\.1\.14') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
@@ -74,11 +74,11 @@ jobs:
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.1.13：全局缓存补齐版。延续 1.1.12 安装目录 Cache/fw-cache.db 持久化缓存，将学术研讨、观鸟台、废话档案、账号资料、我的表情、通知红点、公开处理公告和公开资料页全部接入本地缓存；各页面优先显示本地数据，再后台同步 Supabase。精神广场、回声、搭子、私聊和 1.1.11 独立滚动修复继续保留。'
+          $notes = 'Windows 1.1.14：更新网络优化版。自动更新改为优先使用 Windows 系统网络和当前代理设置；只有系统网络检查或下载失败时，才切换 direct-http1-ipv4 兼容直连。保留 45 秒读取停滞超时、实时下载进度，以及 1.1.13 全局持久缓存能力。'
 
           $metadata = @{
             available = $true
-            version = '1.1.13'
+            version = '1.1.14'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
@@ -90,7 +90,7 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.1.13'
+            version = '1.1.14'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
@@ -105,7 +105,7 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.1.13
+          name: fw-lab-windows-1.1.14
           path: |
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
@@ -145,6 +145,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.1.13"
+            git commit -m "Release Windows 1.1.14"
             git push origin HEAD:main
           fi
