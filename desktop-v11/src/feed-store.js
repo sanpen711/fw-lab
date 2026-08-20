@@ -1,4 +1,5 @@
 import {authStore} from './auth-store.js';
+import {desktopCache} from './desktop-persistent-cache.js';
 
 const listeners=new Set();
 const client=authStore.client;
@@ -6,6 +7,7 @@ const state={loaded:false,loading:false,busy:false,error:'',posts:[],profiles:{}
 let squareChannel=null;
 let refreshTimer=null;
 let active=false;
+let hydratedCacheKey='';
 
 function snapshot(){return {...state,posts:state.posts.map(post=>({...post,comments:[...(post.comments||[])],reactions:[...(post.reactions||[])]})),profiles:{...state.profiles},reply:state.reply&&{...state.reply}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
@@ -20,6 +22,16 @@ function composeContent(text,{imageUrl='',mediaUrl='',mediaKind='',stickerUrls=[
   (stickerUrls||[]).slice(0,6).forEach(url=>{if(url)parts.push(encodeMarker('FW_USER_STICKER',url));});
   const url=mediaUrl||imageUrl;if(url)parts.push(encodeMarker(mediaKind==='video'?'FW_MEDIA_VIDEO':'FW_MEDIA_IMAGE',url));
   return parts.join('\n').trim();
+}
+function squareCacheUser(){return user()?.id||'public';}
+async function hydrateSquareCache(){
+  const cacheUser=squareCacheUser();if(hydratedCacheKey===cacheUser)return false;hydratedCacheKey=cacheUser;
+  const cached=await desktopCache.read('square',cacheUser);const payload=cached?.payload;
+  if(!payload||!Array.isArray(payload.posts))return false;
+  state.posts=payload.posts.slice(0,100);state.profiles=payload.profiles&&typeof payload.profiles==='object'?payload.profiles:{};state.loaded=true;state.loading=false;state.error='';emit();return true;
+}
+function persistSquareCache(){
+  const cacheUser=squareCacheUser();return desktopCache.write('square',cacheUser,{posts:state.posts.slice(0,100),profiles:state.profiles});
 }
 
 async function fetchProfiles(ids){
@@ -38,6 +50,7 @@ async function readComments(postIds){
 }
 
 async function load(force=false){
+  if(!force&&!state.loaded)await hydrateSquareCache();
   if(state.loading||(!force&&state.loaded))return state.posts;
   state.loading=true;state.error='';emit();
   try{
@@ -52,18 +65,22 @@ async function load(force=false){
     const commentsByPost={};comments.forEach(comment=>(commentsByPost[String(comment.post_id)]??=[]).push(comment));
     const reactionsByPost={};reactions.forEach(reaction=>(reactionsByPost[String(reaction.post_id)]??=[]).push(reaction));
     state.posts=posts.map(post=>({...post,comments:commentsByPost[String(post.id)]||[],reactions:reactionsByPost[String(post.id)]||[]}));
-    state.loaded=true;state.loading=false;emit();return state.posts;
+    state.loaded=true;state.loading=false;emit();persistSquareCache().catch(()=>{});return state.posts;
   }catch(error){state.loading=false;state.loaded=true;state.error=error.message||'精神广场读取失败。';emit();throw error;}
 }
 
 function scheduleRefresh(){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(active)load(true).catch(()=>{});},220);}
-function activate(){
-  active=true;if(squareChannel)return load();
-  squareChannel=client.channel('desktop-v11-square')
-    .on('postgres_changes',{event:'*',schema:'public',table:'posts'},scheduleRefresh)
-    .on('postgres_changes',{event:'*',schema:'public',table:'comments'},scheduleRefresh)
-    .on('postgres_changes',{event:'*',schema:'public',table:'reactions'},scheduleRefresh)
-    .subscribe();
+async function activate(){
+  active=true;
+  if(!squareChannel){
+    squareChannel=client.channel('desktop-v11-square')
+      .on('postgres_changes',{event:'*',schema:'public',table:'posts'},scheduleRefresh)
+      .on('postgres_changes',{event:'*',schema:'public',table:'comments'},scheduleRefresh)
+      .on('postgres_changes',{event:'*',schema:'public',table:'reactions'},scheduleRefresh)
+      .subscribe();
+  }
+  const cacheHit=await hydrateSquareCache();
+  if(cacheHit||state.loaded){load(true).catch(()=>{});return state.posts;}
   return load();
 }
 function deactivate(){active=false;clearTimeout(refreshTimer);if(squareChannel){client.removeChannel(squareChannel);squareChannel=null;}}
@@ -141,6 +158,6 @@ async function deletePost(postId){requireUser();fail(await client.rpc('fw_delete
 async function deleteComment(commentId){requireUser();fail(await client.rpc('fw_delete_own_comment',{p_comment_id:Number(commentId)}),'删除评论失败');await load(true);}
 async function report(targetType,targetId,reason){requireUser();const text=String(reason||'').trim();if(text.length<2)throw new Error('请至少写 2 个字的举报原因。');fail(await client.rpc('fw_submit_report',{p_target_type:targetType,p_target_id:String(targetId),p_reason:text}),'提交举报失败');}
 
-authStore.subscribe(auth=>{if(!auth.ready)return;if(!auth.user){deactivate();state.loaded=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;emit();}});
+authStore.subscribe(auth=>{if(!auth.ready)return;if(!auth.user){deactivate();state.loaded=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';emit();}});
 
 export const feedStore={state,activate,deactivate,load,openPost,closePost,setReply,clearReply,createPost,createComment,toggleReaction,deletePost,deleteComment,report,uploadImage,uploadMedia,composeContent,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};

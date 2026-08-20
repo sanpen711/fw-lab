@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod persistent_cache;
+
 use serde::Serialize;
 use serde_json::Value;
 use std::{
@@ -527,7 +529,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
-            let _ = cache_dir(app.handle());
+            let _ = persistent_cache::init(app.handle());
             check_for_updates(app.handle().clone());
             Ok(())
         })
@@ -535,7 +537,11 @@ fn main() {
             desktop_cache_read,
             desktop_cache_write,
             desktop_cache_remove,
-            desktop_cache_status
+            desktop_cache_status,
+            persistent_cache::desktop_persistent_cache_read,
+            persistent_cache::desktop_persistent_cache_write,
+            persistent_cache::desktop_persistent_cache_remove,
+            persistent_cache::desktop_persistent_cache_status
         ])
         .run(tauri::generate_context!())
         .expect("F.w 研究所 Windows 客户端启动失败");

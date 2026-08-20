@@ -1,4 +1,5 @@
 import {authStore} from './auth-store.js';
+import {desktopCache} from './desktop-persistent-cache.js';
 
 const ECHO_TYPES=['like','same','tissue','comment','comment_reply','chat_agree','system'];
 const PRIVATE_TYPE='private_message';
@@ -18,6 +19,8 @@ let chatChannel=null;
 let badgePromise=null;
 let badgeTimer=null;
 let replyCache={userId:'',at:0,rows:[]};
+let hydratedEchoUser='';
+let hydratedBuddyUser='';
 
 function emit(){const snapshot={...state,badges:{...state.badges},echo:{...state.echo},buddy:{...state.buddy},chat:{...state.chat},stickers:{...state.stickers}};listeners.forEach(fn=>fn(snapshot));}
 function countContent(){if(window.__FW_DESKTOP_V11__) window.__FW_DESKTOP_V11__.socialContentRequests=(window.__FW_DESKTOP_V11__.socialContentRequests||0)+1;}
@@ -25,13 +28,40 @@ function fail(result,label){if(result?.error) throw new Error(`${label}：${resu
 function currentUser(){return authStore.state.user && !authStore.state.user.cached ? authStore.state.user : null;}
 function unique(values){return Array.from(new Set((values||[]).filter(Boolean).map(String)));}
 
+async function hydrateEchoCache(userId){
+  if(!userId||hydratedEchoUser===userId)return false;hydratedEchoUser=userId;
+  const cached=await desktopCache.read('echo',userId);const payload=cached?.payload;
+  if(!payload||!Array.isArray(payload.rows))return false;
+  state.echo={loaded:true,loading:false,rows:payload.rows.slice(0,100),profiles:payload.profiles&&typeof payload.profiles==='object'?payload.profiles:{}};emit();return true;
+}
+function persistEchoCache(userId=currentUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('echo',userId,{rows:state.echo.rows.slice(0,100),profiles:state.echo.profiles});}
+async function hydrateBuddyCache(userId){
+  if(!userId||hydratedBuddyUser===userId)return false;hydratedBuddyUser=userId;
+  const cached=await desktopCache.read('buddy',userId);const payload=cached?.payload;
+  if(!payload||!Array.isArray(payload.rows))return false;
+  state.buddy={...state.buddy,loaded:true,loading:false,rows:payload.rows,profiles:payload.profiles||{},conversations:payload.conversations||[],latest:payload.latest||{},unread:payload.unread||{},search:[],searching:false};emit();return true;
+}
+function persistBuddyCache(userId=currentUser()?.id){
+  if(!userId)return Promise.resolve(false);
+  return desktopCache.write('buddy',userId,{rows:state.buddy.rows,profiles:state.buddy.profiles,conversations:state.buddy.conversations,latest:state.buddy.latest,unread:state.buddy.unread});
+}
+async function hydrateChatCache(userId,targetId){
+  const cached=await desktopCache.read('chat',userId,targetId);const payload=cached?.payload;
+  if(!payload||!Array.isArray(payload.rows))return false;
+  state.chat={targetId:String(targetId),conversationId:payload.conversationId||null,profile:payload.profile||state.buddy.profiles[targetId]||null,rows:payload.rows.slice(-200),loading:true,sending:false};emit();return true;
+}
+function persistChatCache(userId=currentUser()?.id){
+  if(!userId||!state.chat.targetId)return Promise.resolve(false);
+  return desktopCache.write('chat',userId,{conversationId:state.chat.conversationId,profile:state.chat.profile,rows:state.chat.rows.slice(-200)},state.chat.targetId);
+}
+
 function clearSocialState(){
   state.userId='';state.ready=true;state.error='';state.badges={echo:0,buddy:0};
   state.echo={loaded:false,loading:false,rows:[],profiles:{}};
   state.buddy={loaded:false,loading:false,tab:'messages',rows:[],profiles:{},conversations:[],latest:{},unread:{},search:[],searching:false};
   state.chat={targetId:'',conversationId:null,profile:null,rows:[],loading:false,sending:false};
   state.stickers={loaded:false,loading:false,rows:[]};
-  teardownChannels();emit();
+  hydratedEchoUser='';hydratedBuddyUser='';teardownChannels();emit();
 }
 
 async function fetchProfiles(ids,existing={}){
@@ -114,7 +144,8 @@ async function resolveReplyPosts(rows){
 async function loadEcho(force=false){
   const user=currentUser();
   if(!user?.id){state.echo={loaded:true,loading:false,rows:[],profiles:{}};emit();return;}
-  if(state.echo.loading||(!force&&state.echo.loaded)) return;
+  if(!force&&!state.echo.loaded){const hit=await hydrateEchoCache(user.id);if(hit){loadEcho(true).catch(()=>{});return state.echo.rows;}}
+  if(state.echo.loading||(!force&&state.echo.loaded)) return state.echo.rows;
   state.echo={...state.echo,loading:true};emit();
   try{
     countContent();
@@ -124,10 +155,11 @@ async function loadEcho(force=false){
     const fallback=(await replyFallback(user.id,force)).filter(row=>!formalTargets.has(String(row.target_id)));
     rows=rows.concat(fallback).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,100);
     const profiles=await fetchProfiles(rows.map(row=>row.actor_id),state.echo.profiles);
-    state.echo={loaded:true,loading:false,rows,profiles};emit();
+    state.echo={loaded:true,loading:false,rows,profiles};emit();persistEchoCache(user.id).catch(()=>{});
     const unread=rows.filter(row=>!row.is_read).map(row=>row.id);
     if(unread.length) await markEchoRead(unread);
-  }catch(error){state.echo={...state.echo,loaded:true,loading:false};state.error=error.message||'回声读取失败';emit();}
+    return state.echo.rows;
+  }catch(error){state.echo={...state.echo,loaded:true,loading:false};state.error=error.message||'回声读取失败';emit();return state.echo.rows;}
 }
 
 async function markEchoRead(ids){
@@ -135,7 +167,7 @@ async function markEchoRead(ids){
   const wanted=unique(ids);if(!wanted.length) return;
   const wantedSet=new Set(wanted);
   state.echo={...state.echo,rows:state.echo.rows.map(row=>wantedSet.has(String(row.id))?{...row,is_read:true}:row)};
-  state.badges={...state.badges,echo:0};emit();
+  state.badges={...state.badges,echo:0};emit();persistEchoCache(user.id).catch(()=>{});
   const fallback=wanted.filter(id=>id.startsWith('reply-')).map(id=>id.slice(6));
   if(fallback.length){const read=replyReadSet(user.id);fallback.forEach(id=>read.add(String(id)));saveReplyRead(user.id,read);}
   const database=wanted.filter(id=>/^\d+$/.test(id)).map(Number);
@@ -148,7 +180,8 @@ function otherId(row,userId){return String(row.requester_id)===String(userId)?St
 async function loadBuddy(force=false){
   const user=currentUser();
   if(!user?.id){state.buddy={...state.buddy,loaded:true,loading:false,rows:[],profiles:{},conversations:[],latest:{},unread:{}};emit();return;}
-  if(state.buddy.loading||(!force&&state.buddy.loaded)) return;
+  if(!force&&!state.buddy.loaded){const hit=await hydrateBuddyCache(user.id);if(hit){loadBuddy(true).catch(()=>{});return state.buddy.rows;}}
+  if(state.buddy.loading||(!force&&state.buddy.loaded)) return state.buddy.rows;
   state.buddy={...state.buddy,loading:true};emit();
   try{
     countContent();
@@ -173,8 +206,8 @@ async function loadBuddy(force=false){
         (messages.data||[]).forEach(row=>{const oid=convToBuddy[String(row.conversation_id)];if(oid&&!latest[oid]) latest[oid]=row;});
       }
     }
-    state.buddy={...state.buddy,loaded:true,loading:false,rows:friendships,profiles,conversations,latest,unread};emit();
-  }catch(error){state.buddy={...state.buddy,loaded:true,loading:false};state.error=error.message||'搭子读取失败';emit();}
+    state.buddy={...state.buddy,loaded:true,loading:false,rows:friendships,profiles,conversations,latest,unread};emit();persistBuddyCache(user.id).catch(()=>{});return state.buddy.rows;
+  }catch(error){state.buddy={...state.buddy,loaded:true,loading:false};state.error=error.message||'搭子读取失败';emit();return state.buddy.rows;}
 }
 
 function setBuddyTab(tab){closeChat();state.buddy={...state.buddy,tab:['messages','friends','new'].includes(tab)?tab:'messages',search:[]};emit();}
@@ -195,7 +228,7 @@ async function markPrivateRead(actorId){
   const user=currentUser();if(!user?.id||!actorId) return;
   const previousUnread=Number(state.buddy.unread[actorId]||0);
   state.buddy={...state.buddy,unread:{...state.buddy.unread,[actorId]:0}};
-  state.badges={...state.badges,buddy:Math.max(0,state.badges.buddy-previousUnread)};emit();
+  state.badges={...state.badges,buddy:Math.max(0,state.badges.buddy-previousUnread)};emit();persistBuddyCache(user.id).catch(()=>{});
   await client.from('notifications').update({is_read:true}).eq('user_id',user.id).eq('is_read',false).eq('type',PRIVATE_TYPE).eq('actor_id',actorId);
   await refreshBadges(true);
 }
@@ -205,24 +238,25 @@ function subscribeChat(conversationId){
   chatChannel=client.channel(`desktop-v11-chat-${conversationId}`)
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'private_messages',filter:`conversation_id=eq.${conversationId}`},payload=>{
       const row=payload.new;if(!row||row.is_deleted||state.chat.conversationId!==conversationId)return;
-      if(!state.chat.rows.some(item=>String(item.id)===String(row.id))){state.chat={...state.chat,rows:state.chat.rows.concat(row)};const user=currentUser();if(user&&String(row.sender_id)!==String(user.id)) markPrivateRead(String(row.sender_id));emit();}
+      if(!state.chat.rows.some(item=>String(item.id)===String(row.id))){state.chat={...state.chat,rows:state.chat.rows.concat(row).slice(-200)};const user=currentUser();if(user&&String(row.sender_id)!==String(user.id)) markPrivateRead(String(row.sender_id));emit();persistChatCache().catch(()=>{});}
     }).subscribe();
 }
 
 async function openChat(targetId){
   const user=currentUser();if(!user?.id) throw new Error('请先登录。');
   if(chatChannel){client.removeChannel(chatChannel);chatChannel=null;}
-  state.chat={targetId:String(targetId),conversationId:null,profile:state.buddy.profiles[targetId]||null,rows:[],loading:true,sending:false};emit();
+  const cacheHit=await hydrateChatCache(user.id,String(targetId));
+  if(!cacheHit){state.chat={targetId:String(targetId),conversationId:null,profile:state.buddy.profiles[targetId]||null,rows:[],loading:true,sending:false};emit();}
   try{
     const profiles=await fetchProfiles([targetId],state.buddy.profiles);state.buddy={...state.buddy,profiles};
     countContent();
     const convId=Number(fail(await client.rpc('fw_get_or_create_conversation',{target_user_id:targetId}),'打开私聊失败'));
     if(!Number.isFinite(convId)||convId<=0) throw new Error('私聊会话创建失败。');
     countContent();
-    const rows=fail(await client.from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id',convId).eq('is_deleted',false).order('created_at',{ascending:false}).limit(120),'读取私聊失败')||[];
-    state.chat={targetId:String(targetId),conversationId:convId,profile:profiles[targetId]||null,rows:rows.slice().reverse(),loading:false,sending:false};emit();
+    const rows=fail(await client.from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id',convId).eq('is_deleted',false).order('created_at',{ascending:false}).limit(200),'读取私聊失败')||[];
+    state.chat={targetId:String(targetId),conversationId:convId,profile:profiles[targetId]||null,rows:rows.slice().reverse(),loading:false,sending:false};emit();persistChatCache(user.id).catch(()=>{});
     await markPrivateRead(String(targetId));subscribeChat(convId);
-  }catch(error){state.chat={...state.chat,loading:false};emit();throw error;}
+  }catch(error){state.chat={...state.chat,loading:false};emit();if(!cacheHit)throw error;}
 }
 
 function closeChat(){if(chatChannel){client.removeChannel(chatChannel);chatChannel=null;}state.chat={targetId:'',conversationId:null,profile:null,rows:[],loading:false,sending:false};emit();}
@@ -239,9 +273,9 @@ async function sendMessage(text,{stickerUrl=''}={}){
     if(Number.isFinite(convId)&&convId>0&&state.chat.conversationId!==convId){state.chat={...state.chat,conversationId:convId};subscribeChat(convId);}
     countContent();
     const latest=fail(await client.from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id',state.chat.conversationId||convId).eq('is_deleted',false).order('id',{ascending:false}).limit(1),'刷新私聊失败')||[];
-    if(latest[0]&&!state.chat.rows.some(row=>String(row.id)===String(latest[0].id))) state.chat={...state.chat,rows:state.chat.rows.concat(latest[0])};
+    if(latest[0]&&!state.chat.rows.some(row=>String(row.id)===String(latest[0].id))) state.chat={...state.chat,rows:state.chat.rows.concat(latest[0]).slice(-200)};
     state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:latest[0]||state.buddy.latest[targetId]}};
-  }finally{state.chat={...state.chat,sending:false};emit();}
+  }finally{state.chat={...state.chat,sending:false};emit();persistChatCache().catch(()=>{});persistBuddyCache().catch(()=>{});}
 }
 
 async function loadStickers(force=false){
@@ -280,7 +314,7 @@ async function deleteSticker(id){
 
 async function bootForUser(userId){
   if(state.userId===userId) return;
-  teardownChannels();state.userId=userId;state.ready=true;startBadgeChannel(userId);emit();await refreshBadges(true);
+  teardownChannels();hydratedEchoUser='';hydratedBuddyUser='';state.userId=userId;state.ready=true;startBadgeChannel(userId);emit();await refreshBadges(true);
 }
 
 authStore.subscribe(auth=>{

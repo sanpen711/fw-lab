@@ -1,6 +1,6 @@
 [package]
 name = "fw-lab-desktop"
-version = "1.1.11"
+version = "1.1.12"
 description = "F.w 研究所 Windows 客户端"
 authors = ["F.w 研究所"]
 edition = "2021"
@@ -15,6 +15,7 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-window-state = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-updater = "2.10.1"
+rusqlite = { version = "0.32", features = ["bundled"] }
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
 
