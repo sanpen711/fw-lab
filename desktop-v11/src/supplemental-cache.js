@@ -3,7 +3,7 @@ import {desktopCache} from './desktop-persistent-cache.js';
 function cacheableHtml(node){
   if(!node)return'';
   const html=String(node.innerHTML||'').trim();
-  if(!html||/正在读取|读取资料\.\.\.|进入页面后读取/.test(node.textContent||''))return'';
+  if(!html||/正在读取|读取资料\.\.\.|进入页面后读取|读取失败|暂时读取失败/.test(node.textContent||''))return'';
   return html;
 }
 
