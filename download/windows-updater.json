@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-08-20T08:09:03.8488627Z",
+  "version": "1.1.14",
+  "notes": "Windows 1.1.14：更新网络优化版。自动更新改为优先使用 Windows 系统网络和当前代理设置；只有系统网络检查或下载失败时，才切换 direct-http1-ipv4 兼容直连。保留 45 秒读取停滞超时、实时下载进度，以及 1.1.13 全局持久缓存能力。",
+  "pub_date": "2026-08-20T08:27:51.2911509Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWld1Y1Y4MkJsdlRVZERnVFp2YTVrYnY1dE02d0Y1L09PZXUzVU1pdXFiVkx1cVduU2w2aE9JVWk5R1dDSkFNbU1MbzYyZWs5OTM3cmZxdVNGdTdlZlFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MjEzMzQzCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMTNfeDY0LXNldHVwLmV4ZQplRExoWHFjNzM2RTJ2dzJsdzA4S2hjU3BZZngxTjAzbDVENngwa2hXbjBaNm5hNjBGZVpPazJwd1VDMFJOV3liSkVHSXI2aWRtMm9DbDBOMThNSHBDUT09Cg==",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlIycGJzcnQvRXI2aFpVQlU0M3Jkbmc0NU95aGNkYVJZZEpUSUdkRG1ORm5sOGNFcEU4SSsyS0JGdTRQL3NVRTBkMnNibnlJZ1NiblFLQmtuYkdWSFFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MjE0NDcwCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMTRfeDY0LXNldHVwLmV4ZQpweGJjOThTZ3Z6NDdpUXltNHZ6aE5CMDEyRXBzZi9vMFJmTCszNG8rT0pEZTRNT3BSSnkxOHhNTHZaWm5SQ3VnZUVubEdCMVVMKzRYUXNCZVFsT1pCdz09Cg=="
     }
-  },
-  "version": "1.1.13",
-  "notes": "Windows 1.1.13：全局缓存补齐版。延续 1.1.12 安装目录 Cache/fw-cache.db 持久化缓存，将学术研讨、观鸟台、废话档案、账号资料、我的表情、通知红点、公开处理公告和公开资料页全部接入本地缓存；各页面优先显示本地数据，再后台同步 Supabase。精神广场、回声、搭子、私聊和 1.1.11 独立滚动修复继续保留。"
+  }
 }

@@ -1,11 +1,11 @@
 {
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "notes": "Windows 1.1.13：全局缓存补齐版。延续 1.1.12 安装目录 Cache/fw-cache.db 持久化缓存，将学术研讨、观鸟台、废话档案、账号资料、我的表情、通知红点、公开处理公告和公开资料页全部接入本地缓存；各页面优先显示本地数据，再后台同步 Supabase。精神广场、回声、搭子、私聊和 1.1.11 独立滚动修复继续保留。",
-  "sha256": "2cac0fbf20c93968ebc7f57537b3b5fb8530367cb5ee20e3bb4adbd1a882464f",
-  "publishedAt": "2026-08-20T08:09:03.8488627Z",
-  "rollbackVersion": "1.0.5",
-  "available": true,
   "platform": "Windows 10/11 64 位",
-  "version": "1.1.13"
+  "notes": "Windows 1.1.14：更新网络优化版。自动更新改为优先使用 Windows 系统网络和当前代理设置；只有系统网络检查或下载失败时，才切换 direct-http1-ipv4 兼容直连。保留 45 秒读取停滞超时、实时下载进度，以及 1.1.13 全局持久缓存能力。",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "version": "1.1.14",
+  "sha256": "007f14d0f7c940b93e61bd703654a87facff74c1cac4884bbe4deaf81846f04d",
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "available": true,
+  "rollbackVersion": "1.0.5",
+  "publishedAt": "2026-08-20T08:27:51.2911509Z"
 }
