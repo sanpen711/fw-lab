@@ -1,4 +1,5 @@
 import {authStore} from './auth-store.js';
+import {desktopCache} from './desktop-persistent-cache.js';
 
 const client=authStore.client;
 const listeners=new Set();
@@ -6,6 +7,7 @@ const state={loaded:false,loading:false,busy:false,error:'',posts:[],profiles:{}
 let channel=null;
 let active=false;
 let refreshTimer=null;
+let hydratedCache=false;
 
 function snapshot(){return {...state,posts:state.posts.map(post=>({...post,images:[...(post.images||[])],comments:[...(post.comments||[])],reactions:[...(post.reactions||[])]})),profiles:{...state.profiles}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
@@ -14,14 +16,23 @@ function count(){if(window.__FW_DESKTOP_V11__)window.__FW_DESKTOP_V11__.contentR
 function currentUser(){const user=authStore.state.user;return user&&!user.cached?user:null;}
 function requireUser(){const user=currentUser();if(!user)throw new Error('请先登录。');if(user.disabled)throw new Error('这个账号已被停用。');return user;}
 
+async function hydrateCache(){
+  if(hydratedCache)return false;hydratedCache=true;
+  const cached=await desktopCache.read('bird','public');const payload=cached?.payload;
+  if(!payload||!Array.isArray(payload.posts))return false;
+  state.posts=payload.posts.slice(0,100);state.profiles=payload.profiles&&typeof payload.profiles==='object'?payload.profiles:{};state.loaded=true;state.loading=false;state.error='';emit();return true;
+}
+function persistCache(){return desktopCache.write('bird','public',{posts:state.posts.slice(0,100),profiles:state.profiles});}
+
 async function load(force=false){
+  if(!force&&!state.loaded){const hit=await hydrateCache();if(hit){load(true).catch(()=>{});return state.posts;}}
   if(state.loading||(!force&&state.loaded))return state.posts;state.loading=true;state.error='';emit();
   try{
     count();const posts=fail(await client.from('bird_posts').select('id,user_id,title,content,display_mode,pen_name,images,created_at,updated_at').or('is_deleted.eq.false,is_deleted.is.null').order('created_at',{ascending:false}).limit(100),'读取观鸟台失败')||[];const ids=posts.map(post=>post.id);
     let comments=[];let reactions=[];if(ids.length){count();comments=fail(await client.from('bird_comments').select('id,post_id,user_id,content,created_at').in('post_id',ids).or('is_deleted.eq.false,is_deleted.is.null').order('created_at',{ascending:true}),'读取观鸟评论失败')||[];count();const result=await client.from('bird_reactions').select('id,post_id,user_id,type,created_at').in('post_id',ids);reactions=result.error?[]:(result.data||[]);}
     const profileIds=Array.from(new Set(posts.filter(post=>post.display_mode==='profile').map(post=>post.user_id).concat(comments.map(comment=>comment.user_id)).filter(Boolean)));if(profileIds.length){count();const rows=fail(await client.from('profiles').select('id,nickname,avatar_url').in('id',profileIds),'读取观察员资料失败')||[];const map={...state.profiles};rows.forEach(row=>{map[String(row.id)]=row;});state.profiles=map;}
-    const commentMap={};comments.forEach(row=>(commentMap[String(row.post_id)]??=[]).push(row));const reactionMap={};reactions.forEach(row=>(reactionMap[String(row.post_id)]??=[]).push(row));state.posts=posts.map(row=>({...row,images:Array.isArray(row.images)?row.images.filter(image=>image?.url):[],comments:commentMap[String(row.id)]||[],reactions:reactionMap[String(row.id)]||[]}));state.loaded=true;state.loading=false;emit();return state.posts;
-  }catch(error){state.loaded=true;state.loading=false;state.error=error.message||'观鸟台读取失败。';emit();throw error;}
+    const commentMap={};comments.forEach(row=>(commentMap[String(row.post_id)]??=[]).push(row));const reactionMap={};reactions.forEach(row=>(reactionMap[String(row.post_id)]??=[]).push(row));state.posts=posts.map(row=>({...row,images:Array.isArray(row.images)?row.images.filter(image=>image?.url):[],comments:commentMap[String(row.id)]||[],reactions:reactionMap[String(row.id)]||[]}));state.loaded=true;state.loading=false;emit();persistCache().catch(()=>{});return state.posts;
+  }catch(error){state.loaded=true;state.loading=false;state.error=error.message||'观鸟台读取失败。';emit();if(state.posts.length)return state.posts;throw error;}
 }
 
 function schedule(){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(active)load(true).catch(()=>{});},230);}
