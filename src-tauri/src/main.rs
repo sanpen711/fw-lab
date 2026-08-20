@@ -233,13 +233,13 @@ fn show_update_error(app: &AppHandle, detail: String) {
         });
 }
 
-fn check_for_updates_system_auto(app: AppHandle) {
-    update_log(&app, "fallback_system_check_start");
+fn check_for_updates_direct_auto(app: AppHandle) {
+    update_log(&app, "fallback_direct_check_start");
     render_update_ui(
         &app,
         "connecting",
-        "直连通道失败，正在切换系统网络…",
-        "将自动使用 Windows 当前网络/代理设置重试一次",
+        "系统网络失败，正在切换兼容直连…",
+        "将自动绕过系统代理，使用 HTTP/1.1 + IPv4 兼容通道重试一次",
         None,
         0,
         None,
@@ -249,27 +249,30 @@ fn check_for_updates_system_auto(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         let updater = match app
             .updater_builder()
+            .no_proxy()
             .configure_client(|client| {
                 client
                     .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
                     .read_timeout(Duration::from_secs(UPDATE_READ_TIMEOUT_SECS))
+                    .http1_only()
+                    .local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
             })
             .build()
         {
             Ok(updater) => updater,
             Err(error) => {
-                show_update_error(&app, format!("system_builder {error}"));
+                show_update_error(&app, format!("direct_builder {error}"));
                 return;
             }
         };
 
         match updater.check().await {
             Ok(Some(update)) => {
-                update_log(&app, format!("fallback_system_found version={}", update.version));
-                install_latest_update(app, update, UPDATE_MODE_SYSTEM.to_owned());
+                update_log(&app, format!("fallback_direct_found version={}", update.version));
+                install_latest_update(app, update, UPDATE_MODE_DIRECT.to_owned());
             }
-            Ok(None) => show_update_error(&app, "system_no_update_after_direct_failure".to_owned()),
-            Err(error) => show_update_error(&app, format!("system_check {error}")),
+            Ok(None) => show_update_error(&app, "direct_no_update_after_system_failure".to_owned()),
+            Err(error) => show_update_error(&app, format!("direct_check {error}")),
         }
     });
 }
@@ -396,8 +399,8 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
                     &app,
                     format!("download_failed mode={network_mode} error={error}"),
                 );
-                if network_mode == UPDATE_MODE_DIRECT {
-                    check_for_updates_system_auto(app.clone());
+                if network_mode == UPDATE_MODE_SYSTEM {
+                    check_for_updates_direct_auto(app.clone());
                 } else {
                     show_update_error(&app, format!("{network_mode} download_or_verify {error}"));
                 }
@@ -431,57 +434,57 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
 }
 
 fn check_for_updates(app: AppHandle) {
-    update_log(&app, "check_direct_start");
+    update_log(&app, "check_system_start");
     tauri::async_runtime::spawn(async move {
-        let direct_result = match app
+        let system_result = match app
             .updater_builder()
-            .no_proxy()
             .configure_client(|client| {
                 client
                     .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
                     .read_timeout(Duration::from_secs(UPDATE_READ_TIMEOUT_SECS))
-                    .http1_only()
-                    .local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
             })
             .build()
         {
             Ok(updater) => updater
                 .check()
                 .await
-                .map_err(|error| format!("direct_check {error}")),
-            Err(error) => Err(format!("direct_builder {error}")),
+                .map_err(|error| format!("system_check {error}")),
+            Err(error) => Err(format!("system_builder {error}")),
         };
 
-        let (update, network_mode) = match direct_result {
+        let (update, network_mode) = match system_result {
             Ok(update) => {
-                update_log(&app, "check_direct_ok");
-                (update, UPDATE_MODE_DIRECT.to_owned())
+                update_log(&app, "check_system_ok");
+                (update, UPDATE_MODE_SYSTEM.to_owned())
             }
-            Err(direct_error) => {
-                update_log(&app, format!("{direct_error}; fallback_system_check"));
-                let system_updater = match app
+            Err(system_error) => {
+                update_log(&app, format!("{system_error}; fallback_direct_check"));
+                let direct_updater = match app
                     .updater_builder()
+                    .no_proxy()
                     .configure_client(|client| {
                         client
                             .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
                             .read_timeout(Duration::from_secs(UPDATE_READ_TIMEOUT_SECS))
+                            .http1_only()
+                            .local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
                     })
                     .build()
                 {
                     Ok(updater) => updater,
                     Err(error) => {
-                        update_log(&app, format!("system_builder_error {error}"));
+                        show_update_error(&app, format!("{system_error}; direct_builder {error}"));
                         return;
                     }
                 };
 
-                match system_updater.check().await {
+                match direct_updater.check().await {
                     Ok(update) => {
-                        update_log(&app, "check_system_ok");
-                        (update, UPDATE_MODE_SYSTEM.to_owned())
+                        update_log(&app, "check_direct_ok");
+                        (update, UPDATE_MODE_DIRECT.to_owned())
                     }
                     Err(error) => {
-                        update_log(&app, format!("system_check_error {error}"));
+                        show_update_error(&app, format!("{system_error}; direct_check {error}"));
                         return;
                     }
                 }
@@ -497,7 +500,7 @@ fn check_for_updates(app: AppHandle) {
             let install_app = app.clone();
             app.dialog()
                 .message(format!(
-                    "发现新版本 {version}。点击立即更新后会直接开始下载；本版会优先使用兼容直连通道，必要时自动回退系统网络。下载过程会显示实时进度。账号和缓存都会保留。"
+                    "发现新版本 {version}。点击立即更新后会直接开始下载；本版会优先使用 Windows 系统网络，系统网络失败时再切换兼容直连通道。下载过程会显示实时进度。账号和缓存都会保留。"
                 ))
                 .title("F.w 研究所更新")
                 .kind(MessageDialogKind::Info)
