@@ -21,6 +21,8 @@ let badgeTimer=null;
 let replyCache={userId:'',at:0,rows:[]};
 let hydratedEchoUser='';
 let hydratedBuddyUser='';
+let hydratedStickersUser='';
+let hydratedBadgesUser='';
 
 function emit(){const snapshot={...state,badges:{...state.badges},echo:{...state.echo},buddy:{...state.buddy},chat:{...state.chat},stickers:{...state.stickers}};listeners.forEach(fn=>fn(snapshot));}
 function countContent(){if(window.__FW_DESKTOP_V11__) window.__FW_DESKTOP_V11__.socialContentRequests=(window.__FW_DESKTOP_V11__.socialContentRequests||0)+1;}
@@ -28,6 +30,13 @@ function fail(result,label){if(result?.error) throw new Error(`${label}：${resu
 function currentUser(){return authStore.state.user && !authStore.state.user.cached ? authStore.state.user : null;}
 function unique(values){return Array.from(new Set((values||[]).filter(Boolean).map(String)));}
 
+async function hydrateBadgesCache(userId){
+  if(!userId||hydratedBadgesUser===userId)return false;hydratedBadgesUser=userId;
+  const cached=await desktopCache.read('badges',userId);const payload=cached?.payload;
+  if(!payload?.badges)return false;
+  state.badges={echo:Number(payload.badges.echo||0),buddy:Number(payload.badges.buddy||0)};emit();return true;
+}
+function persistBadgesCache(userId=currentUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('badges',userId,{badges:state.badges});}
 async function hydrateEchoCache(userId){
   if(!userId||hydratedEchoUser===userId)return false;hydratedEchoUser=userId;
   const cached=await desktopCache.read('echo',userId);const payload=cached?.payload;
@@ -54,6 +63,13 @@ function persistChatCache(userId=currentUser()?.id){
   if(!userId||!state.chat.targetId)return Promise.resolve(false);
   return desktopCache.write('chat',userId,{conversationId:state.chat.conversationId,profile:state.chat.profile,rows:state.chat.rows.slice(-200)},state.chat.targetId);
 }
+async function hydrateStickersCache(userId){
+  if(!userId||hydratedStickersUser===userId)return false;hydratedStickersUser=userId;
+  const cached=await desktopCache.read('stickers',userId);const payload=cached?.payload;
+  if(!payload||!Array.isArray(payload.rows))return false;
+  state.stickers={loaded:true,loading:false,rows:payload.rows.slice(0,80)};emit();return true;
+}
+function persistStickersCache(userId=currentUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('stickers',userId,{rows:state.stickers.rows.slice(0,80)});}
 
 function clearSocialState(){
   state.userId='';state.ready=true;state.error='';state.badges={echo:0,buddy:0};
@@ -61,7 +77,7 @@ function clearSocialState(){
   state.buddy={loaded:false,loading:false,tab:'messages',rows:[],profiles:{},conversations:[],latest:{},unread:{},search:[],searching:false};
   state.chat={targetId:'',conversationId:null,profile:null,rows:[],loading:false,sending:false};
   state.stickers={loaded:false,loading:false,rows:[]};
-  hydratedEchoUser='';hydratedBuddyUser='';teardownChannels();emit();
+  hydratedEchoUser='';hydratedBuddyUser='';hydratedStickersUser='';hydratedBadgesUser='';teardownChannels();emit();
 }
 
 async function fetchProfiles(ids,existing={}){
@@ -77,6 +93,7 @@ function scheduleBadges(){clearTimeout(badgeTimer);badgeTimer=setTimeout(()=>ref
 async function refreshBadges(force=false){
   const user=currentUser();
   if(!user?.id){state.badges={echo:0,buddy:0};emit();return state.badges;}
+  if(!force&&hydratedBadgesUser!==user.id)await hydrateBadgesCache(user.id);
   if(badgePromise && !force) return badgePromise;
   if(badgePromise && force){await badgePromise;return refreshBadges(false);}
   badgePromise=(async()=>{
@@ -87,7 +104,7 @@ async function refreshBadges(force=false){
     ]);
     if(state.userId!==user.id) return state.badges;
     state.badges={echo:Number(echoResult.count||0),buddy:Number(privateResult.count||0)+Number(requestResult.count||0)};
-    emit();return state.badges;
+    emit();persistBadgesCache(user.id).catch(()=>{});return state.badges;
   })().catch(()=>state.badges).finally(()=>{badgePromise=null;});
   return badgePromise;
 }
@@ -167,7 +184,7 @@ async function markEchoRead(ids){
   const wanted=unique(ids);if(!wanted.length) return;
   const wantedSet=new Set(wanted);
   state.echo={...state.echo,rows:state.echo.rows.map(row=>wantedSet.has(String(row.id))?{...row,is_read:true}:row)};
-  state.badges={...state.badges,echo:0};emit();persistEchoCache(user.id).catch(()=>{});
+  state.badges={...state.badges,echo:0};emit();persistEchoCache(user.id).catch(()=>{});persistBadgesCache(user.id).catch(()=>{});
   const fallback=wanted.filter(id=>id.startsWith('reply-')).map(id=>id.slice(6));
   if(fallback.length){const read=replyReadSet(user.id);fallback.forEach(id=>read.add(String(id)));saveReplyRead(user.id,read);}
   const database=wanted.filter(id=>/^\d+$/.test(id)).map(Number);
@@ -228,7 +245,7 @@ async function markPrivateRead(actorId){
   const user=currentUser();if(!user?.id||!actorId) return;
   const previousUnread=Number(state.buddy.unread[actorId]||0);
   state.buddy={...state.buddy,unread:{...state.buddy.unread,[actorId]:0}};
-  state.badges={...state.badges,buddy:Math.max(0,state.badges.buddy-previousUnread)};emit();persistBuddyCache(user.id).catch(()=>{});
+  state.badges={...state.badges,buddy:Math.max(0,state.badges.buddy-previousUnread)};emit();persistBuddyCache(user.id).catch(()=>{});persistBadgesCache(user.id).catch(()=>{});
   await client.from('notifications').update({is_read:true}).eq('user_id',user.id).eq('is_read',false).eq('type',PRIVATE_TYPE).eq('actor_id',actorId);
   await refreshBadges(true);
 }
@@ -280,10 +297,11 @@ async function sendMessage(text,{stickerUrl=''}={}){
 
 async function loadStickers(force=false){
   const user=currentUser();if(!user?.id) return [];
+  if(!force&&!state.stickers.loaded){const hit=await hydrateStickersCache(user.id);if(hit){loadStickers(true).catch(()=>{});return state.stickers.rows;}}
   if(state.stickers.loading||(!force&&state.stickers.loaded)) return state.stickers.rows;
   state.stickers={...state.stickers,loading:true};emit();
-  try{countContent();const rows=fail(await client.from('user_stickers').select('id,image_url,file_name,file_size,mime_type,storage_path,created_at').eq('user_id',user.id).eq('is_deleted',false).order('created_at',{ascending:false}).limit(80),'读取我的表情失败')||[];state.stickers={loaded:true,loading:false,rows};emit();return rows;}
-  catch(error){state.stickers={...state.stickers,loaded:true,loading:false};emit();throw error;}
+  try{countContent();const rows=fail(await client.from('user_stickers').select('id,image_url,file_name,file_size,mime_type,storage_path,created_at').eq('user_id',user.id).eq('is_deleted',false).order('created_at',{ascending:false}).limit(80),'读取我的表情失败')||[];state.stickers={loaded:true,loading:false,rows};emit();persistStickersCache(user.id).catch(()=>{});return rows;}
+  catch(error){state.stickers={...state.stickers,loaded:true,loading:false};emit();if(state.stickers.rows.length)return state.stickers.rows;throw error;}
 }
 
 async function uploadSticker(file){
@@ -301,20 +319,20 @@ async function uploadSticker(file){
     const imageUrl=client.storage.from('stickers').getPublicUrl(path).data.publicUrl;
     const saved=await client.from('user_stickers').insert({user_id:user.id,image_url:imageUrl,storage_path:path,file_name:file.name||safe,file_size:file.size,mime_type:file.type}).select('id,image_url,file_name,file_size,mime_type,storage_path,created_at').single();
     if(saved.error){await client.storage.from('stickers').remove([path]);throw saved.error;}
-    state.stickers={loaded:true,loading:false,rows:[saved.data,...state.stickers.rows].slice(0,80)};emit();return saved.data;
+    state.stickers={loaded:true,loading:false,rows:[saved.data,...state.stickers.rows].slice(0,80)};emit();persistStickersCache(user.id).catch(()=>{});return saved.data;
   }catch(error){state.stickers={...state.stickers,loading:false};emit();throw new Error(`添加表情失败：${error.message||error}`);}
 }
 
 async function deleteSticker(id){
-  const row=state.stickers.rows.find(item=>String(item.id)===String(id));if(!row)return;
+  const user=currentUser();const row=state.stickers.rows.find(item=>String(item.id)===String(id));if(!row)return;
   const result=await client.from('user_stickers').update({is_deleted:true}).eq('id',row.id);if(result.error)throw new Error(`删除表情失败：${result.error.message}`);
-  state.stickers={...state.stickers,rows:state.stickers.rows.filter(item=>String(item.id)!==String(id))};emit();
+  state.stickers={...state.stickers,rows:state.stickers.rows.filter(item=>String(item.id)!==String(id))};emit();if(user?.id)persistStickersCache(user.id).catch(()=>{});
   if(row.storage_path) client.storage.from('stickers').remove([row.storage_path]).catch(()=>{});
 }
 
 async function bootForUser(userId){
   if(state.userId===userId) return;
-  teardownChannels();hydratedEchoUser='';hydratedBuddyUser='';state.userId=userId;state.ready=true;startBadgeChannel(userId);emit();await refreshBadges(true);
+  teardownChannels();hydratedEchoUser='';hydratedBuddyUser='';hydratedStickersUser='';hydratedBadgesUser='';state.userId=userId;state.ready=true;startBadgeChannel(userId);emit();await hydrateBadgesCache(userId);await refreshBadges(true);
 }
 
 authStore.subscribe(auth=>{
