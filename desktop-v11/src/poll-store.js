@@ -1,4 +1,5 @@
 import {authStore} from './auth-store.js';
+import {desktopCache} from './desktop-persistent-cache.js';
 
 const client=authStore.client;
 const listeners=new Set();
@@ -6,15 +7,26 @@ const state={loaded:false,loading:false,busy:false,error:'',polls:[],profiles:{}
 let channel=null;
 let active=false;
 let refreshTimer=null;
+let hydratedCacheUser='';
 
 function snapshot(){return {...state,polls:state.polls.map(poll=>({...poll,options:[...(poll.options||[])],stats:{...(poll.stats||{})},myVote:poll.myVote&&{...poll.myVote}})),profiles:{...state.profiles}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
 function fail(result,label){if(result?.error)throw new Error(`${label}：${result.error.message}`);return result?.data;}
 function count(){if(window.__FW_DESKTOP_V11__)window.__FW_DESKTOP_V11__.contentRequests=(window.__FW_DESKTOP_V11__.contentRequests||0)+1;}
 function currentUser(){const user=authStore.state.user;return user&&!user.cached?user:null;}
+function cacheUser(){return authStore.state.user?.id||'public';}
 function requireUser(){const user=currentUser();if(!user)throw new Error('请先登录。');if(user.disabled)throw new Error('这个账号已被停用。');return user;}
 
+async function hydrateCache(){
+  const userId=cacheUser();if(hydratedCacheUser===userId)return false;hydratedCacheUser=userId;
+  const cached=await desktopCache.read('polls',userId);const payload=cached?.payload;
+  if(!payload||!Array.isArray(payload.polls))return false;
+  state.polls=payload.polls.slice(0,80);state.profiles=payload.profiles&&typeof payload.profiles==='object'?payload.profiles:{};state.dailyCount=payload.dailyCount??null;state.loaded=true;state.loading=false;state.error='';emit();return true;
+}
+function persistCache(){return desktopCache.write('polls',cacheUser(),{polls:state.polls.slice(0,80),profiles:state.profiles,dailyCount:state.dailyCount});}
+
 async function load(force=false){
+  if(!force&&!state.loaded){const hit=await hydrateCache();if(hit){load(true).catch(()=>{});return state.polls;}}
   if(state.loading||(!force&&state.loaded))return state.polls;state.loading=true;state.error='';emit();
   try{
     count();const rows=fail(await client.from('polls').select('id,user_id,title,is_official,created_at,ends_at,closed_at,conclusion').eq('is_deleted',false).order('is_official',{ascending:false}).order('created_at',{ascending:false}).limit(80),'读取课题失败')||[];
@@ -28,8 +40,8 @@ async function load(force=false){
     const optionMap={};options.forEach(row=>(optionMap[String(row.poll_id)]??=[]).push(row));const statMap={};const participants={};const idSet=new Set(ids.map(String));stats.forEach(row=>{if(!idSet.has(String(row.poll_id)))return;(statMap[String(row.poll_id)]??={})[String(row.option_id)]=Number(row.vote_count||0);participants[String(row.poll_id)]=Number(row.poll_participant_count||0);});const voteMap={};votes.forEach(row=>{if(idSet.has(String(row.poll_id)))voteMap[String(row.poll_id)]={poll_id:row.poll_id,option_id:row.option_id};});
     state.polls=rows.map(row=>({...row,options:optionMap[String(row.id)]||[],stats:statMap[String(row.id)]||{},participantCount:participants[String(row.id)]||0,myVote:voteMap[String(row.id)]||null}));
     if(currentUser()){const daily=await client.rpc('fw_my_poll_daily_count');state.dailyCount=daily.error?null:Number(daily.data||0);}else state.dailyCount=null;
-    state.loaded=true;state.loading=false;emit();return state.polls;
-  }catch(error){state.loaded=true;state.loading=false;state.error=error.message||'课题读取失败。';emit();throw error;}
+    state.loaded=true;state.loading=false;emit();persistCache().catch(()=>{});return state.polls;
+  }catch(error){state.loaded=true;state.loading=false;state.error=error.message||'课题读取失败。';emit();if(state.polls.length)return state.polls;throw error;}
 }
 
 function schedule(){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(active)load(true).catch(()=>{});},240);}
@@ -43,5 +55,5 @@ async function addOption(pollId,label){const clean=String(label||'').trim();if(!
 async function deleteOption(optionId){return mutate(()=>client.rpc('fw_delete_my_poll_option',{p_option_id:Number(optionId)}).then(result=>fail(result,'删除选项失败')));}
 async function promote(pollId){const user=requireUser();if(user.role!=='admin')throw new Error('只有管理员可以设置官方课题。');return mutate(()=>client.rpc('fw_promote_poll_to_official',{p_poll_id:Number(pollId)}).then(result=>fail(result,'设置官方课题失败')));}
 
-authStore.subscribe(auth=>{if(!auth.ready)return;if(!auth.user){deactivate();state.loaded=false;state.polls=[];state.profiles={};state.dailyCount=null;emit();}else if(active)load(true).catch(()=>{});});
+authStore.subscribe(auth=>{if(!auth.ready)return;if(!auth.user){deactivate();hydratedCacheUser='';state.loaded=false;state.polls=[];state.profiles={};state.dailyCount=null;emit();return;}const key=cacheUser();if(hydratedCacheUser&&hydratedCacheUser!==key){hydratedCacheUser='';state.loaded=false;}if(active)load(false).catch(()=>{});});
 export const pollStore={state,activate,deactivate,load,createPoll,vote,addOption,deleteOption,promote,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};
