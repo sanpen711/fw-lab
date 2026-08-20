@@ -1,5 +1,6 @@
 import {createClient} from '@supabase/supabase-js';
 import {ACCOUNT_CACHE_KEY, PASSWORD_RESET_URL, SUPABASE_ANON_KEY, SUPABASE_URL} from './config.js';
+import {desktopCache} from './desktop-persistent-cache.js';
 
 const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storageKey:'fw-lab-auth-token'}
@@ -20,6 +21,14 @@ function persistUser(user){
     if(user) localStorage.setItem(ACCOUNT_CACHE_KEY, JSON.stringify(user));
     else localStorage.removeItem(ACCOUNT_CACHE_KEY);
   }catch{}
+  if(user?.id) desktopCache.write('profile',user.id,{user:{...user,cached:false}}).catch(()=>{});
+}
+
+async function hydrateProfileCache(userId){
+  if(!userId)return false;
+  const cached=await desktopCache.read('profile',userId);const user=cached?.payload?.user;
+  if(!user||String(user.id)!==String(userId))return false;
+  state.user={...user,cached:true};emit();return true;
 }
 
 function emit(){
@@ -69,8 +78,10 @@ async function boot(){
     try{
       const data=fail(await client.auth.getSession(), '读取登录状态失败');
       state.session=data?.session || null;
-      if(state.session?.user) await readProfile(state.session.user, true);
-      else {state.user=null;persistUser(null);}
+      if(state.session?.user){
+        if(!state.user||String(state.user.id)!==String(state.session.user.id))await hydrateProfileCache(state.session.user.id);
+        await readProfile(state.session.user, true);
+      }else {state.user=null;persistUser(null);}
     }catch(error){
       state.error=error.message || String(error);
     }finally{
@@ -84,7 +95,10 @@ async function boot(){
     if(event === 'SIGNED_OUT' || !session?.user){
       lastProfileUserId='';state.user=null;persistUser(null);emit();return;
     }
-    if(event === 'SIGNED_IN' || event === 'USER_UPDATED') readProfile(session.user, event === 'USER_UPDATED').catch(()=>{});
+    if(event === 'SIGNED_IN' || event === 'USER_UPDATED'){
+      if(!state.user||String(state.user.id)!==String(session.user.id))hydrateProfileCache(session.user.id).catch(()=>{});
+      readProfile(session.user, event === 'USER_UPDATED').catch(()=>{});
+    }
   });
   return bootPromise;
 }
@@ -103,7 +117,7 @@ async function signIn(email,password){
   return withBusy(async()=>{
     const data=fail(await client.auth.signInWithPassword({email:String(email || '').trim(),password:String(password || '')}), '登录失败');
     state.session=data?.session || null;
-    if(data?.user) await readProfile(data.user,true);
+    if(data?.user){await hydrateProfileCache(data.user.id);await readProfile(data.user,true);}
     return state.user;
   });
 }
