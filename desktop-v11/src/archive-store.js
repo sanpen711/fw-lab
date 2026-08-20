@@ -1,8 +1,10 @@
 import {authStore} from './auth-store.js';
+import {desktopCache} from './desktop-persistent-cache.js';
 
 const client=authStore.client;
 const listeners=new Set();
 const state={loaded:false,loading:false,error:'',weekly:{like:[],same:[],tissue:[]},daily:{like:[],same:[],tissue:[]},ranges:null};
+let hydratedCache=false;
 
 function snapshot(){return {...state,weekly:{like:[...state.weekly.like],same:[...state.weekly.same],tissue:[...state.weekly.tissue]},daily:{like:[...state.daily.like],same:[...state.daily.same],tissue:[...state.daily.tissue]},ranges:state.ranges&&{...state.ranges}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
@@ -20,13 +22,24 @@ function rank(posts,reactions,profiles,start,end,type,limit){
   return Object.values(users).sort((a,b)=>b.score-a.score||String(a.nickname).localeCompare(String(b.nickname),'zh-CN')).slice(0,limit);
 }
 
+async function hydrateCache(){
+  if(hydratedCache)return false;hydratedCache=true;
+  const cached=await desktopCache.read('archive','public');const payload=cached?.payload;
+  if(!payload?.weekly||!payload?.daily)return false;
+  state.weekly={like:[...(payload.weekly.like||[])],same:[...(payload.weekly.same||[])],tissue:[...(payload.weekly.tissue||[])]};
+  state.daily={like:[...(payload.daily.like||[])],same:[...(payload.daily.same||[])],tissue:[...(payload.daily.tissue||[])]};
+  state.ranges=payload.ranges&&typeof payload.ranges==='object'?payload.ranges:null;state.loaded=true;state.loading=false;state.error='';emit();return true;
+}
+function persistCache(){return desktopCache.write('archive','public',{weekly:state.weekly,daily:state.daily,ranges:state.ranges});}
+
 async function load(force=false){
+  if(!force&&!state.loaded){const hit=await hydrateCache();if(hit){load(true).catch(()=>{});return snapshot();}}
   if(state.loading||(!force&&state.loaded))return snapshot();state.loading=true;state.error='';emit();
   try{
     const span=ranges();count();const posts=fail(await client.from('posts').select('id,user_id,content,status_tag,created_at').eq('is_deleted',false).gte('created_at',span.lastMonday.toISOString()).lt('created_at',span.today.toISOString()).order('created_at',{ascending:false}).limit(1000),'读取档案帖子失败')||[];const ids=posts.map(post=>post.id);let reactions=[];let profileRows=[];
     if(ids.length){count();reactions=fail(await client.from('reactions').select('post_id,user_id,type').in('post_id',ids),'读取档案互动失败')||[];const userIds=Array.from(new Set(posts.map(post=>post.user_id).filter(Boolean)));if(userIds.length){count();profileRows=fail(await client.from('profiles').select('id,nickname,avatar_url').in('id',userIds),'读取档案用户失败')||[];}}
-    const profiles={};profileRows.forEach(row=>{profiles[String(row.id)]=row;});const weekly={};const daily={};['like','same','tissue'].forEach(type=>{weekly[type]=rank(posts,reactions,profiles,span.lastMonday,span.thisMonday,type,3);daily[type]=rank(posts,reactions,profiles,span.yesterday,span.today,type,10);});state.weekly=weekly;state.daily=daily;state.ranges=Object.fromEntries(Object.entries(span).map(([key,value])=>[key,value.toISOString()]));state.loaded=true;state.loading=false;emit();return snapshot();
-  }catch(error){state.loaded=true;state.loading=false;state.error=error.message||'废话档案读取失败。';emit();throw error;}
+    const profiles={};profileRows.forEach(row=>{profiles[String(row.id)]=row;});const weekly={};const daily={};['like','same','tissue'].forEach(type=>{weekly[type]=rank(posts,reactions,profiles,span.lastMonday,span.thisMonday,type,3);daily[type]=rank(posts,reactions,profiles,span.yesterday,span.today,type,10);});state.weekly=weekly;state.daily=daily;state.ranges=Object.fromEntries(Object.entries(span).map(([key,value])=>[key,value.toISOString()]));state.loaded=true;state.loading=false;emit();persistCache().catch(()=>{});return snapshot();
+  }catch(error){state.loaded=true;state.loading=false;state.error=error.message||'废话档案读取失败。';emit();if(state.weekly.like.length||state.weekly.same.length||state.weekly.tissue.length||state.daily.like.length||state.daily.same.length||state.daily.tissue.length)return snapshot();throw error;}
 }
 
 export const archiveStore={state,load,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};
