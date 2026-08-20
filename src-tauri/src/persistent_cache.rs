@@ -1,11 +1,17 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use serde_json::Value;
-use std::{fs, path::{Path, PathBuf}, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    sync::OnceLock,
+    time::{SystemTime, UNIX_EPOCH},
+};
 use tauri::{AppHandle, Manager};
 
 const CACHE_FOLDER: &str = "Cache";
 const CACHE_DB_FILE: &str = "fw-cache.db";
+static CACHE_LOCATION: OnceLock<(PathBuf, bool)> = OnceLock::new();
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -39,22 +45,43 @@ fn prepare_dir(dir: &Path) -> Result<(), String> {
 }
 
 fn resolve_cache_dir(app: &AppHandle) -> Result<(PathBuf, bool), String> {
-    if let Ok(exe) = std::env::current_exe() {
+    if let Some((dir, fallback)) = CACHE_LOCATION.get() {
+        return Ok((dir.clone(), *fallback));
+    }
+
+    let resolved = if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             let preferred = parent.join(CACHE_FOLDER);
             if prepare_dir(&preferred).is_ok() {
-                return Ok((preferred, false));
+                Some((preferred, false))
+            } else {
+                None
             }
+        } else {
+            None
         }
-    }
+    } else {
+        None
+    };
 
-    let fallback = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| format!("无法定位备用缓存目录：{error}"))?
-        .join(CACHE_FOLDER);
-    prepare_dir(&fallback)?;
-    Ok((fallback, true))
+    let (dir, fallback) = if let Some(value) = resolved {
+        value
+    } else {
+        let fallback = app
+            .path()
+            .app_data_dir()
+            .map_err(|error| format!("无法定位备用缓存目录：{error}"))?
+            .join(CACHE_FOLDER);
+        prepare_dir(&fallback)?;
+        (fallback, true)
+    };
+
+    let _ = CACHE_LOCATION.set((dir.clone(), fallback));
+    if let Some((cached, cached_fallback)) = CACHE_LOCATION.get() {
+        Ok((cached.clone(), *cached_fallback))
+    } else {
+        Ok((dir, fallback))
+    }
 }
 
 fn dir_bytes(dir: &Path) -> u64 {
@@ -92,7 +119,7 @@ fn open_db(app: &AppHandle) -> Result<(Connection, PathBuf, bool), String> {
     Ok((connection, path, fallback))
 }
 
-fn status_from(app: &AppHandle, connection: &Connection, path: &Path, fallback: bool) -> Result<PersistentCacheStatus, String> {
+fn status_from(connection: &Connection, path: &Path, fallback: bool) -> Result<PersistentCacheStatus, String> {
     let entries: u64 = connection
         .query_row("SELECT COUNT(*) FROM cache_entries", [], |row| row.get(0))
         .map_err(|error| format!("无法统计缓存条目：{error}"))?;
@@ -108,7 +135,7 @@ fn status_from(app: &AppHandle, connection: &Connection, path: &Path, fallback: 
 
 pub fn init(app: &AppHandle) -> Result<PersistentCacheStatus, String> {
     let (connection, path, fallback) = open_db(app)?;
-    status_from(app, &connection, &path, fallback)
+    status_from(&connection, &path, fallback)
 }
 
 #[tauri::command]
@@ -153,7 +180,7 @@ pub fn desktop_persistent_cache_write(app: AppHandle, key: String, value: Value)
             params![key, raw, updated_at],
         )
         .map_err(|error| format!("无法写入本地缓存：{error}"))?;
-    status_from(&app, &connection, &path, fallback)
+    status_from(&connection, &path, fallback)
 }
 
 #[tauri::command]
@@ -165,11 +192,11 @@ pub fn desktop_persistent_cache_remove(app: AppHandle, key: String) -> Result<Pe
     connection
         .execute("DELETE FROM cache_entries WHERE cache_key = ?1", params![key])
         .map_err(|error| format!("无法删除本地缓存：{error}"))?;
-    status_from(&app, &connection, &path, fallback)
+    status_from(&connection, &path, fallback)
 }
 
 #[tauri::command]
 pub fn desktop_persistent_cache_status(app: AppHandle) -> Result<PersistentCacheStatus, String> {
     let (connection, path, fallback) = open_db(&app)?;
-    status_from(&app, &connection, &path, fallback)
+    status_from(&connection, &path, fallback)
 }
