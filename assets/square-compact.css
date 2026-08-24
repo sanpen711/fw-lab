@@ -12,14 +12,16 @@
   padding-bottom:54px;
 }
 .square-hero{
-  min-height:270px;
+  min-height:430px;
 }
 .square-hero-inner{
-  display:block!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(440px,560px);
+  gap:54px;
   align-items:start;
   min-height:auto!important;
   padding-top:28px!important;
-  padding-bottom:42px!important;
+  padding-bottom:54px!important;
 }
 .square-hero-copy{
   padding-top:10px;
@@ -30,6 +32,10 @@
 .square-hero .hero-copy{
   max-width:760px;
   font-size:23px;
+}
+.square-hero-compose-slot{
+  position:relative;
+  z-index:3;
 }
 .square-hero-compose{
   width:100%;
@@ -153,6 +159,12 @@
 .compose-page-form{max-width:620px;}
 .compose-page-form textarea{min-height:180px;}
 @media(max-width:1180px){
+  .square-hero-inner{
+    grid-template-columns:1fr;
+  }
+  .square-hero-compose-slot{
+    max-width:760px;
+  }
   .compose-hero-inner{grid-template-columns:minmax(200px,300px) minmax(420px,1fr);}
 }
 @media(max-width:980px){
