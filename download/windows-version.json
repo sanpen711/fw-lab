@@ -1,11 +1,11 @@
 {
-  "publishedAt": "2026-09-04T08:43:07.3174527Z",
-  "version": "1.1.16",
-  "sha256": "e7a8d3418b80ee76fdd11a8b2895021ee055bb63426536f66b84c439a3ece1c9",
-  "rollbackVersion": "1.0.5",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "sha256": "cc10cbfae084b67b06e0f5fd884d8435edf1eae984cf77f1dab5f648048b68ad",
+  "version": "1.1.17",
+  "notes": "Windows 1.1.17：更新安装确认修复版。安装过程改为可见，下载、校验和安装提示分开显示；只有新软件自动重新打开才提示为更新完成。继续包含搭子长聊天独立滚动和流畅度修复。",
   "available": true,
-  "notes": "Windows 1.1.16：搭子滚动与更新提速版。搭子页面固定在窗口内，长聊天只滚动聊天记录，输入框、顶部和侧栏不再被带着下滑；自动更新安装包改用独立版本发布地址，系统网络持续低速时会自动切换兼容直连通道。继续包含 1.1.15 的搭子流畅度修复。",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
   "platform": "Windows 10/11 64 位",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "rollbackVersion": "1.0.5",
+  "publishedAt": "2026-09-04T09:52:46.7787026Z"
 }
