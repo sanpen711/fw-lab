@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-09-04T08:04:35.2318699Z",
-  "version": "1.1.16",
   "notes": "Windows 1.1.16：搭子滚动与更新提速版。搭子页面固定在窗口内，长聊天只滚动聊天记录，输入框、顶部和侧栏不再被带着下滑；自动更新安装包改用独立版本发布地址，系统网络持续低速时会自动切换兼容直连通道。继续包含 1.1.15 的搭子流畅度修复。",
+  "version": "1.1.16",
+  "pub_date": "2026-09-04T08:43:07.3174527Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlZNNzdBQWl6bjNkaS85alFQa01Ec2NTQlU1bmVHdmx4ejF2dzVkZ2JrK1l5UWU0M2tveCtIWVlneCt4WWFvZmplYTdCNlhndWIxR1JEUFg4Z3RkYVFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NTA5MDc0CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMTZfeDY0LXNldHVwLmV4ZQpmQlpSdTRlVjFwbGhEMHNkRmVOQkx3R216ZFJobkRRTURHUXc0SE0yS0g3dGMzcDdUSCtWSk5UMEJYNTlTNEdLTHlXdzFXYU5nQ0VndTlMMk45UlZEZz09Cg==",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmJsdXJIb3NPT2x1TjB4TmZ2dHlTQlptTDhRN0ZXVUI1ZEtaZzFDMUJiOVpBYURtdXZJVUtmam45QWg1TTBOaHJoaC9BeVpaYXhPZ3hJaDEvZEtIOEFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NTExMzg2CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMTZfeDY0LXNldHVwLmV4ZQpTUjhoRFJ6RXRJSFltbTBCMXhEeG5TNUlRL1JOYWk3dmgrdDhTREFiTkJ1ZnlxK2twZjNnYWM0RHB0dnhvbmR0a3pPcit2MGxDd0pVMkgveEtheEtDUT09Cg=="
     }
   }
 }
