@@ -159,9 +159,9 @@ assert.match(styles,/\.chat-column\{[^}]*min-height:0;height:100%;overflow:hidde
 assert.match(squareScroll,/\.square-feed\{min-height:0;overflow-y:auto/,'左侧帖子列表必须独立滚动');
 assert.match(squareScroll,/\.detail-scroll\{height:100%;min-height:0;overflow-y:auto/,'右侧详情必须独立滚动');
 assert.match(squareScroll,/attributeFilter:\['data-view'\]/,'滚动锁监听必须只观察 data-view，不能监听整棵 DOM');
-assert.match(windowsWorkflow,/cdn\.jsdelivr\.net\/gh\/sanpen711\/fw-lab@windows-cdn\/fw-lab-windows-1\.1\.16-setup\.exe/,'自动更新必须使用面向静态文件的轻量 CDN 分支');
+assert.match(windowsWorkflow,/url = 'https:\/\/fwyanjiusuo\.com\/download\/fw-lab-windows-latest\.exe'/,'自动更新必须使用已验证可下载的网站线路');
 assert.match(windowsWorkflow,/gh release create/,'Windows 构建必须发布独立版本安装包');
-assert.match(windowsWorkflow,/git switch --orphan windows-cdn-build/,'CDN 分支必须只包含安装包，不能携带整个源码仓库');
+assert.doesNotMatch(windowsWorkflow,/cdn\.jsdelivr\.net|windows-cdn-build/,'自动更新不能再发布到会拒绝安装包的 CDN 线路');
 assert.match(auth,/createClient\(SUPABASE_URL, SUPABASE_ANON_KEY/);
 assert.equal((auth.match(/createClient\(/g)||[]).length,1,'Supabase 客户端必须只有一个实例');
 assert.match(auth,/client\.auth\.getSession\(\)/);
