@@ -106,7 +106,7 @@ function enhanceChatUploader(){
 }
 async function sendChatMedia(file){
   if(chatMediaBusy)return;const targetId=String(socialStore.state.chat.targetId||'');if(!targetId)throw new Error('先选择一个搭子。');chatMediaBusy=true;enhanceChatUploader();
-  try{toast('正在处理媒体...');const uploaded=await uploadMedia(file,'private');const payload=marker(uploaded.kind==='video'?'FW_MEDIA_VIDEO':'FW_MEDIA_IMAGE',uploaded.url);const result=await client.rpc('fw_send_private_message_to_user',{target_user_id:targetId,message_text:payload});if(result.error)throw new Error(`发送失败：${result.error.message}`);await socialStore.openChat(targetId);await socialStore.loadBuddy(true);toast(uploaded.kind==='video'?'视频已发送。':'图片已发送。');}
+  try{toast('正在处理媒体...');const uploaded=await uploadMedia(file,'private');const payload=marker(uploaded.kind==='video'?'FW_MEDIA_VIDEO':'FW_MEDIA_IMAGE',uploaded.url);await socialStore.sendMessage(payload);toast(uploaded.kind==='video'?'视频已发送。':'图片已发送。');}
   finally{chatMediaBusy=false;enhanceChatUploader();}
 }
 

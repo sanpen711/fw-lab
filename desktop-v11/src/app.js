@@ -21,7 +21,8 @@ let archiveState=archiveStore.state;
 let currentAuthView='login';
 let currentView='home';
 let emojiTab='emoji';
-let lastChatSignature='';
+let lastChatRenderSignature='';
+let socialRenderMemo=null;
 let pollFilter='all';
 let pollCreateOpen=false;
 let birdComposeOpen=false;
@@ -60,7 +61,7 @@ function richContent(value){
 }
 
 function renderAccount(next){
-  accountState=next;const user=next.user;
+  const previousUserId=String(accountState.user?.id||'');accountState=next;const user=next.user;
   $('[data-account-label]').textContent=user?user.nickname:(next.ready?'注册 / 登录':'正在连接…');
   setAvatar($('[data-account-avatar]'),user);setAvatar($('[data-profile-avatar]'),user);
   $('[data-profile-name]').textContent=user?.nickname||'研究员';$('[data-profile-email]').textContent=user?.email||'';
@@ -70,7 +71,7 @@ function renderAccount(next){
     const fixedProfileCode=node.name==='labCode'&&Boolean(node.closest('[data-auth-view="profile"]'));
     node.disabled=fixedProfileCode||Boolean(next.busy);
   });
-  if(next.ready&&!user&&(currentView==='echo'||currentView==='buddy'))renderSocial();
+  if(next.ready&&previousUserId!==String(user?.id||''))renderSocial();
   if(next.ready)renderFeed();
   if(next.ready)renderPolls();
   if(next.ready)renderBird();
@@ -242,10 +243,11 @@ function renderBuddyList(){
 function messageBubble(row){const mine=String(row.sender_id)===String(accountState.user?.id);const sticker=decodeSticker(row.content);return `<article class="chat-message ${mine?'mine':''}"><small>${mine?'你':esc(socialState.chat.profile?.nickname||'搭子')}</small><div class="chat-bubble ${sticker?'sticker':''}">${sticker?`<img src="${esc(sticker)}" alt="表情">`:esc(row.content)}</div><time>${esc(timeText(row.created_at))}</time></article>`;}
 function renderChat(){
   const chat=socialState.chat;const messages=$('[data-chat-messages]');const input=$('[data-chat-compose] input');const submit=$('[data-chat-compose] button[type="submit"]');const emoji=$('[data-emoji-toggle]');
-  $('[data-chat-title]').textContent=chat.targetId?`和 ${chat.profile?.nickname||'搭子'} 私聊`:'选择一个搭子';$('[data-chat-subtitle]').textContent=chat.targetId?(chat.profile?.lab_code?`实验品编号：${chat.profile.lab_code}`:'实验品编号：未设置'):'左边点一个消息或搭子，右边直接聊天。';$('[data-close-chat]').hidden=!chat.targetId;
+  $('[data-chat-title]').textContent=chat.targetId?`和 ${chat.profile?.nickname||'搭子'} 私聊`:'选择一个搭子';$('[data-chat-subtitle]').textContent=chat.targetId?`${chat.profile?.lab_code?`实验品编号：${chat.profile.lab_code}`:'实验品编号：未设置'}${chat.loading?' · 正在同步':''}`:'左边点一个消息或搭子，右边直接聊天。';$('[data-close-chat]').hidden=!chat.targetId;
   const enabled=Boolean(chat.targetId&&!chat.loading);input.disabled=!enabled;submit.disabled=!enabled||chat.sending;emoji.disabled=!enabled;input.placeholder=enabled?'说一句只给搭子看的话，最多 300 字...':'先从左侧选择一个搭子';submit.textContent=chat.sending?'发送中...':'发送';
-  const signature=(chat.rows||[]).map(row=>row.id).join('|');const shouldScroll=signature!==lastChatSignature;lastChatSignature=signature;
-  if(chat.loading){messages.innerHTML='<div class="state-card">正在打开私聊...</div>';return;}if(!chat.targetId){messages.innerHTML='<div class="state-card">还没有选择聊天对象。</div>';return;}if(!chat.rows.length){messages.innerHTML='<div class="state-card">还没有私聊消息。可以先低功耗地打个招呼。</div>';return;}
+  const signature=[chat.targetId,chat.loading&&!(chat.rows||[]).length?'loading':'ready',chat.profile?.nickname||'',...(chat.rows||[]).map(row=>`${row.id}:${row.is_deleted?'1':'0'}:${row.content}`)].join('|');
+  if(signature===lastChatRenderSignature)return;const shouldScroll=Boolean(chat.targetId&&(chat.rows||[]).length);lastChatRenderSignature=signature;
+  if(chat.loading&&!chat.rows.length){messages.innerHTML='<div class="state-card">正在打开私聊...</div>';return;}if(!chat.targetId){messages.innerHTML='<div class="state-card">还没有选择聊天对象。</div>';return;}if(!chat.rows.length){messages.innerHTML='<div class="state-card">还没有私聊消息。可以先低功耗地打个招呼。</div>';return;}
   messages.innerHTML=chat.rows.map(messageBubble).join('');if(shouldScroll)requestAnimationFrame(()=>{messages.scrollTop=messages.scrollHeight;});
 }
 
@@ -256,7 +258,16 @@ function renderEmojiPanel(){
   body.innerHTML=`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>＋ 添加表情</button><span>${socialState.stickers.rows.length}/80 · 最大 1MB</span></div>`+(socialState.stickers.rows.length?`<div class="sticker-grid">${socialState.stickers.rows.map(row=>`<div class="sticker-item"><button type="button" data-send-sticker="${esc(row.image_url)}"><img src="${esc(row.image_url)}" alt="表情"></button><button class="sticker-delete" type="button" data-delete-sticker="${esc(row.id)}" aria-label="删除表情">×</button></div>`).join('')}</div>`:'<div class="state-card small">还没有添加自定义表情；可以添加 JPG、PNG、WebP 或 GIF。</div>');
 }
 
-function renderSocial(next=socialState){socialState=next;setBadge('echo',next.badges.echo);setBadge('buddy',next.badges.buddy);renderEcho();renderBuddyList();renderChat();if(!$('[data-emoji-panel]').hidden)renderEmojiPanel();if(currentView==='compose'||currentView==='square')renderFeed();}
+function renderSocial(next=socialState){
+  const previous=socialRenderMemo;const userId=String(accountState.user?.id||'');socialState=next;
+  const badgesChanged=!previous||previous.echoBadge!==next.badges.echo||previous.buddyBadge!==next.badges.buddy;
+  const echoChanged=!previous||previous.userId!==userId||previous.echoRows!==next.echo.rows||previous.echoProfiles!==next.echo.profiles||previous.echoLoaded!==next.echo.loaded||previous.echoLoading!==next.echo.loading;
+  const buddyChanged=!previous||previous.userId!==userId||previous.buddyRows!==next.buddy.rows||previous.buddyProfiles!==next.buddy.profiles||previous.buddyLatest!==next.buddy.latest||previous.buddyUnread!==next.buddy.unread||previous.buddySearch!==next.buddy.search||previous.buddyTab!==next.buddy.tab||previous.buddyLoaded!==next.buddy.loaded||previous.buddyLoading!==next.buddy.loading||previous.chatTarget!==next.chat.targetId;
+  const chatChanged=!previous||previous.userId!==userId||previous.chatTarget!==next.chat.targetId||previous.chatConversation!==next.chat.conversationId||previous.chatProfile!==next.chat.profile||previous.chatRows!==next.chat.rows||previous.chatLoading!==next.chat.loading||previous.chatSending!==next.chat.sending;
+  const stickersChanged=!previous||previous.stickerRows!==next.stickers.rows||previous.stickerLoaded!==next.stickers.loaded||previous.stickerLoading!==next.stickers.loading;
+  if(badgesChanged){setBadge('echo',next.badges.echo);setBadge('buddy',next.badges.buddy);}if(echoChanged)renderEcho();if(buddyChanged)renderBuddyList();if(chatChanged)renderChat();if(stickersChanged&&!$('[data-emoji-panel]').hidden)renderEmojiPanel();if(stickersChanged&&(currentView==='compose'||currentView==='square'))renderFeed();
+  socialRenderMemo={userId,echoBadge:next.badges.echo,buddyBadge:next.badges.buddy,echoRows:next.echo.rows,echoProfiles:next.echo.profiles,echoLoaded:next.echo.loaded,echoLoading:next.echo.loading,buddyRows:next.buddy.rows,buddyProfiles:next.buddy.profiles,buddyLatest:next.buddy.latest,buddyUnread:next.buddy.unread,buddySearch:next.buddy.search,buddyTab:next.buddy.tab,buddyLoaded:next.buddy.loaded,buddyLoading:next.buddy.loading,chatTarget:next.chat.targetId,chatConversation:next.chat.conversationId,chatProfile:next.chat.profile,chatRows:next.chat.rows,chatLoading:next.chat.loading,chatSending:next.chat.sending,stickerRows:next.stickers.rows,stickerLoaded:next.stickers.loaded,stickerLoading:next.stickers.loading};
+}
 
 function bindNavigation(){
   document.addEventListener('click',async event=>{
@@ -325,7 +336,7 @@ function bindForms(){
   $('[data-resend-code]').addEventListener('click',()=>runForm($('[data-auth-view="verify"]'),()=>authStore.resendRegistration(),result=>{toast(`验证码已重新发送至 ${result.email}。`);}));
   $('[data-sign-out]').addEventListener('click',()=>runForm($('[data-auth-view="profile"]'),()=>authStore.signOut(),()=>{toast('已退出登录。');showAuth('login');}));
   $('[data-buddy-search]').addEventListener('submit',event=>{event.preventDefault();socialStore.searchProfiles(new FormData(event.currentTarget).get('q')).catch(error=>toast(error.message||'搜索失败。'));});
-  $('[data-chat-compose]').addEventListener('submit',async event=>{event.preventDefault();const input=event.currentTarget.elements.message;const text=input.value;try{await socialStore.sendMessage(text);input.value='';input.focus();}catch(error){toast(error.message||'发送失败。');}});
+  $('[data-chat-compose]').addEventListener('submit',async event=>{event.preventDefault();const input=event.currentTarget.elements.message;const text=input.value;try{const targetId=await socialStore.sendMessage(text);if(String(socialStore.state.chat.targetId)===String(targetId)){input.value='';input.focus();}}catch(error){toast(error.message||'发送失败。');}});
   $('[data-sticker-file]').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;try{await socialStore.uploadSticker(file);toast('表情已添加。');}catch(error){toast(error.message||'添加表情失败。');}});
   document.addEventListener('input',event=>{
     const birdForm=event.target.closest?.('[data-bird-compose-form]');if(birdForm){if(event.target.name==='title')birdDraft.title=event.target.value;if(event.target.name==='content')birdDraft.content=event.target.value;if(event.target.name==='penName')birdDraft.penName=event.target.value;return;}

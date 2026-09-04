@@ -18,6 +18,14 @@ let badgeChannel=null;
 let chatChannel=null;
 let badgePromise=null;
 let badgeTimer=null;
+let badgeRefreshQueued=false;
+let buddyTimer=null;
+let buddyPromise=null;
+let buddyRefreshQueued=false;
+let chatOpenToken=0;
+let pendingMessageSequence=0;
+const privateReadPromises=new Map();
+const privateReadQueued=new Set();
 let replyCache={userId:'',at:0,rows:[]};
 let hydratedEchoUser='';
 let hydratedBuddyUser='';
@@ -54,14 +62,15 @@ function persistBuddyCache(userId=currentUser()?.id){
   if(!userId)return Promise.resolve(false);
   return desktopCache.write('buddy',userId,{rows:state.buddy.rows,profiles:state.buddy.profiles,conversations:state.buddy.conversations,latest:state.buddy.latest,unread:state.buddy.unread});
 }
-async function hydrateChatCache(userId,targetId){
+async function hydrateChatCache(userId,targetId,openToken=chatOpenToken){
   const cached=await desktopCache.read('chat',userId,targetId);const payload=cached?.payload;
+  if(openToken!==chatOpenToken||state.userId!==userId)return false;
   if(!payload||!Array.isArray(payload.rows))return false;
-  state.chat={targetId:String(targetId),conversationId:payload.conversationId||null,profile:payload.profile||state.buddy.profiles[targetId]||null,rows:payload.rows.slice(-200),loading:true,sending:false};emit();return true;
+  state.chat={targetId:String(targetId),conversationId:payload.conversationId||null,profile:payload.profile||state.buddy.profiles[targetId]||null,rows:payload.rows.filter(row=>!row.__pending).slice(-200),loading:true,sending:false};emit();return true;
 }
 function persistChatCache(userId=currentUser()?.id){
   if(!userId||!state.chat.targetId)return Promise.resolve(false);
-  return desktopCache.write('chat',userId,{conversationId:state.chat.conversationId,profile:state.chat.profile,rows:state.chat.rows.slice(-200)},state.chat.targetId);
+  const rows=state.chat.rows.filter(row=>!row.__pending);return desktopCache.write('chat',userId,{conversationId:state.chat.conversationId,profile:state.chat.profile,rows:rows.slice(-200)},state.chat.targetId);
 }
 async function hydrateStickersCache(userId){
   if(!userId||hydratedStickersUser===userId)return false;hydratedStickersUser=userId;
@@ -89,13 +98,13 @@ async function fetchProfiles(ids,existing={}){
 }
 
 function scheduleBadges(){clearTimeout(badgeTimer);badgeTimer=setTimeout(()=>refreshBadges(true),180);}
+function scheduleBuddyReload(){clearTimeout(buddyTimer);buddyTimer=setTimeout(()=>loadBuddy(true),180);}
 
 async function refreshBadges(force=false){
   const user=currentUser();
   if(!user?.id){state.badges={echo:0,buddy:0};emit();return state.badges;}
   if(!force&&hydratedBadgesUser!==user.id)await hydrateBadgesCache(user.id);
-  if(badgePromise && !force) return badgePromise;
-  if(badgePromise && force){await badgePromise;return refreshBadges(false);}
+  if(badgePromise){if(force)badgeRefreshQueued=true;return badgePromise;}
   badgePromise=(async()=>{
     const [echoResult,privateResult,requestResult]=await Promise.all([
       client.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',user.id).eq('is_read',false).in('type',ECHO_TYPES),
@@ -105,12 +114,12 @@ async function refreshBadges(force=false){
     if(state.userId!==user.id) return state.badges;
     state.badges={echo:Number(echoResult.count||0),buddy:Number(privateResult.count||0)+Number(requestResult.count||0)};
     emit();persistBadgesCache(user.id).catch(()=>{});return state.badges;
-  })().catch(()=>state.badges).finally(()=>{badgePromise=null;});
+  })().catch(()=>state.badges).finally(()=>{badgePromise=null;if(badgeRefreshQueued){badgeRefreshQueued=false;queueMicrotask(()=>refreshBadges(false));}});
   return badgePromise;
 }
 
 function teardownChannels(){
-  clearTimeout(badgeTimer);
+  clearTimeout(badgeTimer);clearTimeout(buddyTimer);badgeRefreshQueued=false;buddyRefreshQueued=false;chatOpenToken+=1;privateReadPromises.clear();privateReadQueued.clear();
   if(badgeChannel){client.removeChannel(badgeChannel);badgeChannel=null;}
   if(chatChannel){client.removeChannel(chatChannel);chatChannel=null;}
 }
@@ -118,9 +127,21 @@ function teardownChannels(){
 function startBadgeChannel(userId){
   if(badgeChannel) client.removeChannel(badgeChannel);
   badgeChannel=client.channel(`desktop-v11-unread-${userId}`)
-    .on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:`user_id=eq.${userId}`},scheduleBadges)
-    .on('postgres_changes',{event:'*',schema:'public',table:'friendships',filter:`receiver_id=eq.${userId}`},()=>{scheduleBadges();if(state.buddy.loaded) loadBuddy(true);})
-    .on('postgres_changes',{event:'*',schema:'public',table:'friendships',filter:`requester_id=eq.${userId}`},()=>{if(state.buddy.loaded) loadBuddy(true);})
+    .on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:`user_id=eq.${userId}`},payload=>{
+      if(state.userId!==userId)return;
+      const row=payload?.new||payload?.old||{};scheduleBadges();
+      if(payload?.eventType==='INSERT'&&row.type===PRIVATE_TYPE&&state.buddy.loaded){
+        const actorId=String(row.actor_id||'');const active=actorId&&String(state.chat.targetId)===actorId;
+        if(actorId){
+          const unread={...state.buddy.unread,[actorId]:active?0:Number(state.buddy.unread[actorId]||0)+1};
+          const preview={id:`notice-${row.target_id||row.id}`,sender_id:actorId,content:row.content||'',created_at:row.created_at};
+          state.buddy={...state.buddy,unread,latest:{...state.buddy.latest,[actorId]:preview}};emit();persistBuddyCache(userId).catch(()=>{});
+          if(active)markPrivateRead(actorId).catch(()=>{});
+        }
+      }
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'friendships',filter:`receiver_id=eq.${userId}`},()=>{if(state.userId!==userId)return;scheduleBadges();if(state.buddy.loaded)scheduleBuddyReload();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'friendships',filter:`requester_id=eq.${userId}`},()=>{if(state.userId!==userId)return;if(state.buddy.loaded)scheduleBuddyReload();})
     .subscribe();
 }
 
@@ -198,9 +219,10 @@ async function loadBuddy(force=false){
   const user=currentUser();
   if(!user?.id){state.buddy={...state.buddy,loaded:true,loading:false,rows:[],profiles:{},conversations:[],latest:{},unread:{}};emit();return;}
   if(!force&&!state.buddy.loaded){const hit=await hydrateBuddyCache(user.id);if(hit){loadBuddy(true).catch(()=>{});return state.buddy.rows;}}
-  if(state.buddy.loading||(!force&&state.buddy.loaded)) return state.buddy.rows;
+  if(buddyPromise){if(force)buddyRefreshQueued=true;return buddyPromise;}
+  if(!force&&state.buddy.loaded) return state.buddy.rows;
   state.buddy={...state.buddy,loading:true};emit();
-  try{
+  buddyPromise=(async()=>{try{
     countContent();
     const friendships=fail(await client.from('friendships').select('id,requester_id,receiver_id,status,created_at,updated_at').or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`).order('updated_at',{ascending:false}),'读取搭子列表失败')||[];
     const profiles=await fetchProfiles(friendships.flatMap(row=>[row.requester_id,row.receiver_id]),state.buddy.profiles);
@@ -223,11 +245,19 @@ async function loadBuddy(force=false){
         (messages.data||[]).forEach(row=>{const oid=convToBuddy[String(row.conversation_id)];if(oid&&!latest[oid]) latest[oid]=row;});
       }
     }
+    if(state.userId!==user.id)return state.buddy.rows;
     state.buddy={...state.buddy,loaded:true,loading:false,rows:friendships,profiles,conversations,latest,unread};emit();persistBuddyCache(user.id).catch(()=>{});return state.buddy.rows;
-  }catch(error){state.buddy={...state.buddy,loaded:true,loading:false};state.error=error.message||'搭子读取失败';emit();return state.buddy.rows;}
+  }catch(error){if(state.userId===user.id){state.buddy={...state.buddy,loaded:true,loading:false};state.error=error.message||'搭子读取失败';emit();}return state.buddy.rows;}
+  finally{buddyPromise=null;if(buddyRefreshQueued){buddyRefreshQueued=false;queueMicrotask(()=>loadBuddy(true));}}})();
+  return buddyPromise;
 }
 
-function setBuddyTab(tab){closeChat();state.buddy={...state.buddy,tab:['messages','friends','new'].includes(tab)?tab:'messages',search:[]};emit();}
+function setBuddyTab(tab){
+  const nextTab=['messages','friends','new'].includes(tab)?tab:'messages';
+  if(chatChannel){client.removeChannel(chatChannel);chatChannel=null;}chatOpenToken+=1;
+  state.chat={targetId:'',conversationId:null,profile:null,rows:[],loading:false,sending:false};
+  state.buddy={...state.buddy,tab:nextTab,search:[]};emit();
+}
 
 async function searchProfiles(query){
   const keyword=String(query||'').trim();if(keyword.length<2) throw new Error('至少输入 2 个字符；邮箱需要输入完整邮箱。');
@@ -243,40 +273,67 @@ async function removeFriendship(id){return runBuddyMutation('fw_remove_friendshi
 
 async function markPrivateRead(actorId){
   const user=currentUser();if(!user?.id||!actorId) return;
-  const previousUnread=Number(state.buddy.unread[actorId]||0);
-  state.buddy={...state.buddy,unread:{...state.buddy.unread,[actorId]:0}};
-  state.badges={...state.badges,buddy:Math.max(0,state.badges.buddy-previousUnread)};emit();persistBuddyCache(user.id).catch(()=>{});persistBadgesCache(user.id).catch(()=>{});
-  await client.from('notifications').update({is_read:true}).eq('user_id',user.id).eq('is_read',false).eq('type',PRIVATE_TYPE).eq('actor_id',actorId);
-  await refreshBadges(true);
+  const key=String(actorId);const existing=privateReadPromises.get(key);if(existing){privateReadQueued.add(key);return existing;}
+  const previousUnread=Number(state.buddy.unread[key]||0);
+  if(previousUnread>0){state.buddy={...state.buddy,unread:{...state.buddy.unread,[key]:0}};state.badges={...state.badges,buddy:Math.max(0,state.badges.buddy-previousUnread)};emit();persistBuddyCache(user.id).catch(()=>{});persistBadgesCache(user.id).catch(()=>{});}
+  const promise=client.from('notifications').update({is_read:true}).eq('user_id',user.id).eq('is_read',false).eq('type',PRIVATE_TYPE).eq('actor_id',key).then(result=>{if(result?.error)scheduleBadges();}).finally(()=>{if(privateReadPromises.get(key)===promise)privateReadPromises.delete(key);if(privateReadQueued.delete(key))queueMicrotask(()=>markPrivateRead(key));});
+  privateReadPromises.set(key,promise);return promise;
 }
 
+function mergeMessages(...groups){
+  const byId=new Map();groups.flat().filter(row=>row&&!row.is_deleted).forEach(row=>byId.set(String(row.id),row));
+  return Array.from(byId.values()).sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0)||String(a.id).localeCompare(String(b.id),undefined,{numeric:true})).slice(-200);
+}
+function mergeRealtimeMessage(row){
+  let rows=state.chat.rows;
+  if(!String(row.id).startsWith('pending-')){const pendingIndex=rows.findIndex(item=>item.__pending&&String(item.sender_id)===String(row.sender_id)&&item.content===row.content);if(pendingIndex>=0)rows=rows.filter((_,index)=>index!==pendingIndex);}
+  return mergeMessages(rows,row);
+}
+function reconcileSentMessage(conversationId,targetId){
+  if(!Number.isFinite(Number(conversationId))||Number(conversationId)<=0)return;
+  countContent();client.from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id',conversationId).eq('is_deleted',false).order('id',{ascending:false}).limit(1).then(result=>{
+    const row=result?.data?.[0];if(result?.error||!row)return;
+    state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:row}};
+    if(String(state.chat.targetId)===String(targetId)&&Number(state.chat.conversationId)===Number(conversationId)){state.chat={...state.chat,rows:mergeRealtimeMessage(row)};persistChatCache().catch(()=>{});}emit();persistBuddyCache().catch(()=>{});
+  }).catch(()=>{});
+}
 function subscribeChat(conversationId){
   if(chatChannel) client.removeChannel(chatChannel);
   chatChannel=client.channel(`desktop-v11-chat-${conversationId}`)
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'private_messages',filter:`conversation_id=eq.${conversationId}`},payload=>{
       const row=payload.new;if(!row||row.is_deleted||state.chat.conversationId!==conversationId)return;
-      if(!state.chat.rows.some(item=>String(item.id)===String(row.id))){state.chat={...state.chat,rows:state.chat.rows.concat(row).slice(-200)};const user=currentUser();if(user&&String(row.sender_id)!==String(user.id)) markPrivateRead(String(row.sender_id));emit();persistChatCache().catch(()=>{});}
+      if(!state.chat.rows.some(item=>String(item.id)===String(row.id))){
+        const targetId=String(state.chat.targetId);const user=currentUser();const incoming=user&&String(row.sender_id)!==String(user.id);const previousUnread=Number(state.buddy.unread[targetId]||0);
+        state.chat={...state.chat,rows:mergeRealtimeMessage(row)};
+        state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:row},unread:incoming?{...state.buddy.unread,[targetId]:0}:state.buddy.unread};
+        if(incoming&&previousUnread>0)state.badges={...state.badges,buddy:Math.max(0,state.badges.buddy-previousUnread)};
+        emit();persistChatCache().catch(()=>{});persistBuddyCache().catch(()=>{});if(incoming)markPrivateRead(targetId).catch(()=>{});
+      }
     }).subscribe();
 }
 
 async function openChat(targetId){
   const user=currentUser();if(!user?.id) throw new Error('请先登录。');
+  const wantedTarget=String(targetId);const openToken=++chatOpenToken;
   if(chatChannel){client.removeChannel(chatChannel);chatChannel=null;}
-  const cacheHit=await hydrateChatCache(user.id,String(targetId));
-  if(!cacheHit){state.chat={targetId:String(targetId),conversationId:null,profile:state.buddy.profiles[targetId]||null,rows:[],loading:true,sending:false};emit();}
+  const cacheHit=await hydrateChatCache(user.id,wantedTarget,openToken);
+  if(openToken!==chatOpenToken)return;
+  if(!cacheHit){state.chat={targetId:wantedTarget,conversationId:null,profile:state.buddy.profiles[wantedTarget]||null,rows:[],loading:true,sending:false};emit();}
   try{
-    const profiles=await fetchProfiles([targetId],state.buddy.profiles);state.buddy={...state.buddy,profiles};
+    const profiles=await fetchProfiles([wantedTarget],state.buddy.profiles);if(openToken!==chatOpenToken)return;state.buddy={...state.buddy,profiles};
     countContent();
-    const convId=Number(fail(await client.rpc('fw_get_or_create_conversation',{target_user_id:targetId}),'打开私聊失败'));
+    const convId=Number(fail(await client.rpc('fw_get_or_create_conversation',{target_user_id:wantedTarget}),'打开私聊失败'));if(openToken!==chatOpenToken)return;
     if(!Number.isFinite(convId)||convId<=0) throw new Error('私聊会话创建失败。');
+    state.chat={...state.chat,targetId:wantedTarget,conversationId:convId,profile:profiles[wantedTarget]||null,loading:true};subscribeChat(convId);emit();
     countContent();
     const rows=fail(await client.from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id',convId).eq('is_deleted',false).order('created_at',{ascending:false}).limit(200),'读取私聊失败')||[];
-    state.chat={targetId:String(targetId),conversationId:convId,profile:profiles[targetId]||null,rows:rows.slice().reverse(),loading:false,sending:false};emit();persistChatCache(user.id).catch(()=>{});
-    await markPrivateRead(String(targetId));subscribeChat(convId);
-  }catch(error){state.chat={...state.chat,loading:false};emit();if(!cacheHit)throw error;}
+    if(openToken!==chatOpenToken)return;
+    state.chat={targetId:wantedTarget,conversationId:convId,profile:profiles[wantedTarget]||null,rows:mergeMessages(rows.slice().reverse(),state.chat.rows),loading:false,sending:false};emit();persistChatCache(user.id).catch(()=>{});
+    markPrivateRead(wantedTarget).catch(()=>{});
+  }catch(error){if(openToken!==chatOpenToken)return;state.chat={...state.chat,loading:false};emit();if(!cacheHit)throw error;}
 }
 
-function closeChat(){if(chatChannel){client.removeChannel(chatChannel);chatChannel=null;}state.chat={targetId:'',conversationId:null,profile:null,rows:[],loading:false,sending:false};emit();}
+function closeChat(){if(!state.chat.targetId&&!chatChannel)return;if(chatChannel){client.removeChannel(chatChannel);chatChannel=null;}chatOpenToken+=1;state.chat={targetId:'',conversationId:null,profile:null,rows:[],loading:false,sending:false};emit();}
 function hasLink(text){return /(https?:\/\/|www\.|[a-z0-9][a-z0-9-]*\.(com|net|org|xyz|top|cn|cc|io|me|vip|club|site|info|online|shop|live|app)(\/|$|\s))/i.test(text||'');}
 function stickerPayload(url){return `[[FW_USER_STICKER:${btoa(String(url||''))}]]`;}
 
@@ -284,15 +341,15 @@ async function sendMessage(text,{stickerUrl=''}={}){
   const targetId=state.chat.targetId;const content=stickerUrl?stickerPayload(stickerUrl):String(text||'').trim();
   if(!targetId) throw new Error('先选择一个搭子。');if(!content) return;
   if(!stickerUrl&&content.length>300) throw new Error('私聊最多 300 字。');if(!stickerUrl&&hasLink(content)) throw new Error('私聊暂不支持链接。');
-  state.chat={...state.chat,sending:true};emit();
+  const user=currentUser();const previousLatest=state.buddy.latest[targetId]||null;const pendingId=`pending-${Date.now()}-${++pendingMessageSequence}`;const pending={id:pendingId,conversation_id:state.chat.conversationId,sender_id:user?.id,content,is_deleted:false,created_at:new Date().toISOString(),__pending:true};
+  state.chat={...state.chat,sending:true,rows:mergeMessages(state.chat.rows,pending)};state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:pending}};emit();
   try{
     countContent();const convId=Number(fail(await client.rpc('fw_send_private_message_to_user',{target_user_id:targetId,message_text:content}),'发送失败'));
-    if(Number.isFinite(convId)&&convId>0&&state.chat.conversationId!==convId){state.chat={...state.chat,conversationId:convId};subscribeChat(convId);}
-    countContent();
-    const latest=fail(await client.from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id',state.chat.conversationId||convId).eq('is_deleted',false).order('id',{ascending:false}).limit(1),'刷新私聊失败')||[];
-    if(latest[0]&&!state.chat.rows.some(row=>String(row.id)===String(latest[0].id))) state.chat={...state.chat,rows:state.chat.rows.concat(latest[0]).slice(-200)};
-    state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:latest[0]||state.buddy.latest[targetId]}};
-  }finally{state.chat={...state.chat,sending:false};emit();persistChatCache().catch(()=>{});persistBuddyCache().catch(()=>{});}
+    if(String(state.chat.targetId)===String(targetId)&&Number.isFinite(convId)&&convId>0&&state.chat.conversationId!==convId){state.chat={...state.chat,conversationId:convId};subscribeChat(convId);}
+    reconcileSentMessage(convId||state.chat.conversationId,targetId);
+  }catch(error){if(String(state.chat.targetId)===String(targetId))state.chat={...state.chat,rows:state.chat.rows.filter(row=>String(row.id)!==pendingId)};if(String(state.buddy.latest[targetId]?.id)===pendingId)state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:previousLatest}};throw error;
+  }finally{if(String(state.chat.targetId)===String(targetId))state.chat={...state.chat,sending:false};emit();persistChatCache().catch(()=>{});persistBuddyCache().catch(()=>{});}
+  return targetId;
 }
 
 async function loadStickers(force=false){
