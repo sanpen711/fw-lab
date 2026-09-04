@@ -1,11 +1,11 @@
 {
-  "platform": "Windows 10/11 64 位",
-  "notes": "Windows 1.1.14：更新网络优化版。自动更新改为优先使用 Windows 系统网络和当前代理设置；只有系统网络检查或下载失败时，才切换 direct-http1-ipv4 兼容直连。保留 45 秒读取停滞超时、实时下载进度，以及 1.1.13 全局持久缓存能力。",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "version": "1.1.14",
-  "sha256": "007f14d0f7c940b93e61bd703654a87facff74c1cac4884bbe4deaf81846f04d",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
   "available": true,
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
   "rollbackVersion": "1.0.5",
-  "publishedAt": "2026-08-20T08:27:51.2911509Z"
+  "version": "1.1.15",
+  "platform": "Windows 10/11 64 位",
+  "publishedAt": "2026-09-04T06:00:42.9816638Z",
+  "notes": "Windows 1.1.15：搭子流畅度修复版。聊天和搭子列表改为局部刷新，合并重复的红点、已读与好友请求查询；打开会话先建立实时订阅再合并历史消息，快速切换不再串聊；文字和媒体发送即时显示并在后台校准。继续保留系统网络优先更新与全局持久缓存能力。",
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "sha256": "cfec8f78785d1dc552335368fb4ad21b9fb8265f7f334e8f2c8c5ba876c4dcd4"
 }
