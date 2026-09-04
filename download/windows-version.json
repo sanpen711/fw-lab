@@ -1,11 +1,11 @@
 {
-  "available": true,
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "available": true,
   "rollbackVersion": "1.0.5",
-  "version": "1.1.15",
+  "sha256": "e0d53545981859a12fbf5b690bdd3b207a7d5a001222a3839173b4e5589e7f8a",
+  "version": "1.1.16",
   "platform": "Windows 10/11 64 位",
-  "publishedAt": "2026-09-04T06:00:42.9816638Z",
-  "notes": "Windows 1.1.15：搭子流畅度修复版。聊天和搭子列表改为局部刷新，合并重复的红点、已读与好友请求查询；打开会话先建立实时订阅再合并历史消息，快速切换不再串聊；文字和媒体发送即时显示并在后台校准。继续保留系统网络优先更新与全局持久缓存能力。",
+  "publishedAt": "2026-09-04T06:35:21.5733432Z",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "sha256": "cfec8f78785d1dc552335368fb4ad21b9fb8265f7f334e8f2c8c5ba876c4dcd4"
+  "notes": "Windows 1.1.16：搭子滚动与更新提速版。搭子页面固定在窗口内，长聊天只滚动聊天记录，输入框、顶部和侧栏不再被带着下滑；自动更新安装包改用独立版本发布地址，系统网络持续低速时会自动切换兼容直连通道。继续包含 1.1.15 的搭子流畅度修复。"
 }
