@@ -72,7 +72,7 @@
         "https://fwyanjiusuo.com/download/windows-updater.json"
       ],
       "windows": {
-        "installMode": "passive"
+        "installMode": "basicUi"
       }
     }
   }

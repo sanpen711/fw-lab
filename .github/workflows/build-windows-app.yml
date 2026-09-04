@@ -63,24 +63,24 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.1\.16') { throw "Unexpected installer name: $($installer.Name)" }
+          if ($installer.Name -notmatch '1\.1\.17') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
 
           Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
           Copy-Item $signatureFile.FullName 'download/fw-lab-windows-latest.exe.sig' -Force
-          Copy-Item $installer.FullName 'download/fw-lab-windows-1.1.16-setup.exe' -Force
-          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.1.16-setup.exe.sig' -Force
+          Copy-Item $installer.FullName 'download/fw-lab-windows-1.1.17-setup.exe' -Force
+          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.1.17-setup.exe.sig' -Force
 
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.1.16：搭子滚动与更新提速版。搭子页面固定在窗口内，长聊天只滚动聊天记录，输入框、顶部和侧栏不再被带着下滑；自动更新安装包改用独立版本发布地址，系统网络持续低速时会自动切换兼容直连通道。继续包含 1.1.15 的搭子流畅度修复。'
+          $notes = 'Windows 1.1.17：更新安装确认修复版。安装过程改为可见，下载、校验和安装提示分开显示；只有新软件自动重新打开才提示为更新完成。继续包含搭子长聊天独立滚动和流畅度修复。'
 
           $metadata = @{
             available = $true
-            version = '1.1.16'
+            version = '1.1.17'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
@@ -92,7 +92,7 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.1.16'
+            version = '1.1.17'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
@@ -107,10 +107,10 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.1.16
+          name: fw-lab-windows-1.1.17
           path: |
-            download/fw-lab-windows-1.1.16-setup.exe
-            download/fw-lab-windows-1.1.16-setup.exe.sig
+            download/fw-lab-windows-1.1.17-setup.exe
+            download/fw-lab-windows-1.1.17-setup.exe.sig
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
             download/windows-updater.json
@@ -122,14 +122,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag='windows-v1.1.16'
-          asset='download/fw-lab-windows-1.1.16-setup.exe'
-          signature='download/fw-lab-windows-1.1.16-setup.exe.sig'
+          tag='windows-v1.1.17'
+          asset='download/fw-lab-windows-1.1.17-setup.exe'
+          signature='download/fw-lab-windows-1.1.17-setup.exe.sig'
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" "$signature" --clobber
           else
-            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.16' --notes '修复搭子长聊天带动整页滚动，并为更新下载增加版本独立地址和持续低速自动换线。'
+            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.17' --notes '让更新安装阶段可见，并明确区分下载完成与真正安装完成；继续包含搭子滚动与流畅度修复。'
           fi
 
       - name: Publish installer to website
@@ -164,6 +164,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.1.16"
+            git commit -m "Release Windows 1.1.17"
             git push origin HEAD:main
           fi

@@ -355,7 +355,7 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
                             &chunk_app,
                             "downloading",
                             "正在下载更新…",
-                            format!("下载完成后会自动校验并安装 · 通道：{progress_mode}"),
+                            format!("下载完成不代表更新完成；随后还会校验并安装 · 通道：{progress_mode}"),
                             percent,
                             current,
                             (known_total > 0).then_some(known_total),
@@ -385,8 +385,8 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
                 render_update_ui(
                     &finish_app,
                     "verifying",
-                    "下载完成，正在校验更新…",
-                    "正在验证安装包签名和完整性",
+                    "安装包已下载，正在校验…",
+                    "还没有更新完成，请不要手动退出软件",
                     Some(100),
                     current,
                     (total > 0).then_some(total),
@@ -469,7 +469,7 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
             &app,
             "installing",
             "校验完成，正在启动安装…",
-            "安装程序接管后软件会退出，完成后自动重新打开",
+            "接下来会显示安装进度；只有新软件自动重新打开才表示更新完成",
             Some(100),
             bytes.len() as u64,
             Some(bytes.len() as u64),
@@ -553,7 +553,7 @@ fn check_for_updates(app: AppHandle) {
             let install_app = app.clone();
             app.dialog()
                 .message(format!(
-                    "发现新版本 {version}。点击立即更新后会直接开始下载；本版会优先使用 Windows 系统网络，遇到失败或持续低速时自动切换兼容直连通道。下载过程会显示实时进度。账号和缓存都会保留。"
+                    "发现新版本 {version}。点击立即更新后会先下载安装包，遇到失败或持续低速时自动切换兼容直连通道，再显示安装进度；只有软件自动重新打开才表示更新完成，请不要在中途手动退出。账号和缓存都会保留。"
                 ))
                 .title("F.w 研究所更新")
                 .kind(MessageDialogKind::Info)
