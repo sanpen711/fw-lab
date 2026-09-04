@@ -25,6 +25,9 @@ const UPDATE_CONNECT_TIMEOUT_SECS: u64 = 12;
 const UPDATE_READ_TIMEOUT_SECS: u64 = 45;
 const UPDATE_UI_INTERVAL_MS: u64 = 250;
 const UPDATE_LOG_INTERVAL_SECS: u64 = 5;
+const UPDATE_SLOW_GRACE_SECS: u64 = 4;
+const UPDATE_SLOW_SAMPLE_SECS: u64 = 4;
+const UPDATE_SLOW_MIN_BPS: u64 = 96 * 1024;
 const UPDATE_MODE_DIRECT: &str = "direct-http1-ipv4";
 const UPDATE_MODE_SYSTEM: &str = "system-network";
 
@@ -313,12 +316,14 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
         let finish_app = app.clone();
         let finish_downloaded = downloaded.clone();
         let finish_total = total_bytes.clone();
+        let watchdog_downloaded = downloaded.clone();
         let progress_mode = network_mode.clone();
 
-        let download_result = update
-            .download(
-                move |chunk, total| {
-                    let current = chunk_downloaded.fetch_add(chunk as u64, Ordering::Relaxed) + chunk as u64;
+        let download_future = update.download(
+            move |chunk, total| {
+                    let current = chunk_downloaded
+                        .fetch_add(chunk as u64, Ordering::Relaxed)
+                        + chunk as u64;
                     if let Some(total) = total {
                         chunk_total.store(total, Ordering::Relaxed);
                     }
@@ -373,28 +378,61 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
                         );
                         last_log_at = Some(Instant::now());
                     }
-                },
-                move || {
-                    let current = finish_downloaded.load(Ordering::Relaxed);
-                    let total = finish_total.load(Ordering::Relaxed);
-                    render_update_ui(
-                        &finish_app,
-                        "verifying",
-                        "下载完成，正在校验更新…",
-                        "正在验证安装包签名和完整性",
-                        Some(100),
-                        current,
-                        (total > 0).then_some(total),
-                        0,
-                    );
-                    update_log(&finish_app, format!("download_finished bytes={current} total={total}"));
-                },
-            )
-            .await;
+            },
+            move || {
+                let current = finish_downloaded.load(Ordering::Relaxed);
+                let total = finish_total.load(Ordering::Relaxed);
+                render_update_ui(
+                    &finish_app,
+                    "verifying",
+                    "下载完成，正在校验更新…",
+                    "正在验证安装包签名和完整性",
+                    Some(100),
+                    current,
+                    (total > 0).then_some(total),
+                    0,
+                );
+                update_log(
+                    &finish_app,
+                    format!("download_finished bytes={current} total={total}"),
+                );
+            },
+        );
+        tokio::pin!(download_future);
+
+        let low_speed_watchdog = async move {
+            tokio::time::sleep(Duration::from_secs(UPDATE_SLOW_GRACE_SECS)).await;
+            let before = watchdog_downloaded.load(Ordering::Relaxed);
+            tokio::time::sleep(Duration::from_secs(UPDATE_SLOW_SAMPLE_SECS)).await;
+            let after = watchdog_downloaded.load(Ordering::Relaxed);
+            after.saturating_sub(before) / UPDATE_SLOW_SAMPLE_SECS
+        };
+        tokio::pin!(low_speed_watchdog);
+
+        let download_result = if network_mode == UPDATE_MODE_SYSTEM {
+            tokio::select! {
+                result = &mut download_future => Some(result),
+                observed_bps = &mut low_speed_watchdog => {
+                    if observed_bps < UPDATE_SLOW_MIN_BPS {
+                        update_log(
+                            &app,
+                            format!(
+                                "download_slow mode={network_mode} speed_bps={observed_bps} threshold_bps={UPDATE_SLOW_MIN_BPS}"
+                            ),
+                        );
+                        None
+                    } else {
+                        Some(download_future.await)
+                    }
+                }
+            }
+        } else {
+            Some(download_future.await)
+        };
 
         let bytes = match download_result {
-            Ok(bytes) => bytes,
-            Err(error) => {
+            Some(Ok(bytes)) => bytes,
+            Some(Err(error)) => {
                 update_log(
                     &app,
                     format!("download_failed mode={network_mode} error={error}"),
@@ -404,6 +442,21 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
                 } else {
                     show_update_error(&app, format!("{network_mode} download_or_verify {error}"));
                 }
+                return;
+            }
+            None => {
+                let known_total = total_bytes.load(Ordering::Relaxed);
+                render_update_ui(
+                    &app,
+                    "connecting",
+                    "当前线路持续低速，正在自动换线…",
+                    "将绕过系统代理，改用 HTTP/1.1 + IPv4 兼容通道重新下载",
+                    None,
+                    0,
+                    (known_total > 0).then_some(known_total),
+                    0,
+                );
+                check_for_updates_direct_auto(app.clone());
                 return;
             }
         };
@@ -500,7 +553,7 @@ fn check_for_updates(app: AppHandle) {
             let install_app = app.clone();
             app.dialog()
                 .message(format!(
-                    "发现新版本 {version}。点击立即更新后会直接开始下载；本版会优先使用 Windows 系统网络，系统网络失败时再切换兼容直连通道。下载过程会显示实时进度。账号和缓存都会保留。"
+                    "发现新版本 {version}。点击立即更新后会直接开始下载；本版会优先使用 Windows 系统网络，遇到失败或持续低速时自动切换兼容直连通道。下载过程会显示实时进度。账号和缓存都会保留。"
                 ))
                 .title("F.w 研究所更新")
                 .kind(MessageDialogKind::Info)

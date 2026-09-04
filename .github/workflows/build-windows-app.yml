@@ -63,22 +63,24 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.1\.15') { throw "Unexpected installer name: $($installer.Name)" }
+          if ($installer.Name -notmatch '1\.1\.16') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
 
           Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
           Copy-Item $signatureFile.FullName 'download/fw-lab-windows-latest.exe.sig' -Force
+          Copy-Item $installer.FullName 'download/fw-lab-windows-1.1.16-setup.exe' -Force
+          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.1.16-setup.exe.sig' -Force
 
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.1.15：搭子流畅度修复版。聊天和搭子列表改为局部刷新，合并重复的红点、已读与好友请求查询；打开会话先建立实时订阅再合并历史消息，快速切换不再串聊；文字和媒体发送即时显示并在后台校准。继续保留系统网络优先更新与全局持久缓存能力。'
+          $notes = 'Windows 1.1.16：搭子滚动与更新提速版。搭子页面固定在窗口内，长聊天只滚动聊天记录，输入框、顶部和侧栏不再被带着下滑；自动更新安装包改用独立版本发布地址，系统网络持续低速时会自动切换兼容直连通道。继续包含 1.1.15 的搭子流畅度修复。'
 
           $metadata = @{
             available = $true
-            version = '1.1.15'
+            version = '1.1.16'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
@@ -90,13 +92,13 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.1.15'
+            version = '1.1.16'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
               'windows-x86_64' = @{
                 signature = $signature
-                url = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
+                url = 'https://github.com/sanpen711/fw-lab/releases/download/windows-v1.1.16/fw-lab-windows-1.1.16-setup.exe'
               }
             }
           }
@@ -105,13 +107,30 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.1.15
+          name: fw-lab-windows-1.1.16
           path: |
+            download/fw-lab-windows-1.1.16-setup.exe
+            download/fw-lab-windows-1.1.16-setup.exe.sig
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
             download/windows-updater.json
             download/windows-version.json
           if-no-files-found: error
+
+      - name: Publish versioned installer release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag='windows-v1.1.16'
+          asset='download/fw-lab-windows-1.1.16-setup.exe'
+          signature='download/fw-lab-windows-1.1.16-setup.exe.sig'
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$asset" "$signature" --clobber
+          else
+            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.16' --notes '修复搭子长聊天带动整页滚动，并为更新下载增加版本独立地址和持续低速自动换线。'
+          fi
 
       - name: Publish installer to website
         shell: bash
@@ -145,6 +164,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.1.15"
+            git commit -m "Release Windows 1.1.16"
             git push origin HEAD:main
           fi
