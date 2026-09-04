@@ -2,7 +2,7 @@
   "version": "1.1.16",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/sanpen711/fw-lab/releases/download/windows-v1.1.16/fw-lab-windows-1.1.16-setup.exe",
+      "url": "https://cdn.jsdelivr.net/gh/sanpen711/fw-lab@windows-cdn/fw-lab-windows-1.1.16-setup.exe",
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlhTeVhuc1BwaWtjYWsyTlUvUHRFeWNQTjN6VThiZ0MyQ2JaSEU2YU1UZG1heFRkOUpUUUZZenJ4ZExqRjVVK25tdDFKOTBUSVZVR3AycDRXRmFtRGcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NTAzNzIwCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMTZfeDY0LXNldHVwLmV4ZQoyaGR3a2ZUcVRFaHJNWTNPM2t1Q25GSEt0UFhaUENVa21BVi9kVGZnUE9QWkwySlQwK1pKazdFN0xRMWZYOHgxYjlEdHBDSVNrVkpVWkJaU1N1UzdEQT09Cg=="
     }
   },

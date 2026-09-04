@@ -98,7 +98,7 @@ jobs:
             platforms = @{
               'windows-x86_64' = @{
                 signature = $signature
-                url = 'https://github.com/sanpen711/fw-lab/releases/download/windows-v1.1.16/fw-lab-windows-1.1.16-setup.exe'
+                url = 'https://cdn.jsdelivr.net/gh/sanpen711/fw-lab@windows-cdn/fw-lab-windows-1.1.16-setup.exe'
               }
             }
           }
@@ -131,6 +131,24 @@ jobs:
           else
             gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.16' --notes '修复搭子长聊天带动整页滚动，并为更新下载增加版本独立地址和持续低速自动换线。'
           fi
+
+      - name: Publish lightweight CDN branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          cdn_dir="$(mktemp -d)"
+          trap 'git worktree remove --force "$cdn_dir" >/dev/null 2>&1 || true' EXIT
+          git worktree add --detach "$cdn_dir" HEAD
+          cd "$cdn_dir"
+          git switch --orphan windows-cdn-build
+          git rm -rf . >/dev/null 2>&1 || true
+          cp "$GITHUB_WORKSPACE/download/fw-lab-windows-1.1.16-setup.exe" .
+          cp "$GITHUB_WORKSPACE/download/fw-lab-windows-1.1.16-setup.exe.sig" .
+          git add fw-lab-windows-1.1.16-setup.exe fw-lab-windows-1.1.16-setup.exe.sig
+          git commit -m "cdn: publish Windows 1.1.16 installer"
+          git push --force origin HEAD:windows-cdn
 
       - name: Publish installer to website
         shell: bash
