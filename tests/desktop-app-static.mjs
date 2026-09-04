@@ -180,6 +180,8 @@ const square = read('square.html');
 assert.match(compose, /data-post-form data-post-redirect="square\.html"/);
 assert.match(compose, /class="hero-title">发牢骚</);
 assert.match(square, /data-post-form/);
+assert.match(desktopClient, /function removeSquareComposer\(\)/);
+assert.match(desktopClient, /form\.closest\('\.square-hero-compose-slot'\)/);
 assert.match(square, /class="feed-list" data-feed/);
 assert.match(appLoader, /'compose\.html':'square'/);
 assert.match(appLoader, /form\.dataset\.postRedirect/);

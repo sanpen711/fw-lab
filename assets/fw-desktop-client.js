@@ -121,6 +121,14 @@
     location.href = 'compose.html';
   }
 
+  function removeSquareComposer(){
+    if(pageName() !== 'square.html') return;
+    var form = document.querySelector('[data-post-form]');
+    var slot = form && form.closest('.square-hero-compose-slot');
+    if(slot) slot.remove();
+    else if(form) form.remove();
+  }
+
   function markPageReady(){
     document.documentElement.classList.remove('fw-desktop-preparing');
     document.body.classList.remove('fw-desktop-navigating');
@@ -351,6 +359,7 @@
   }
 
   function boot(){
+    removeSquareComposer();
     buildShell();
     bind();
     setupRouteIntent();
