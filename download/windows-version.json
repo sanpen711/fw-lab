@@ -1,11 +1,11 @@
 {
-  "sha256": "cc10cbfae084b67b06e0f5fd884d8435edf1eae984cf77f1dab5f648048b68ad",
-  "version": "1.1.17",
-  "notes": "Windows 1.1.17：更新安装确认修复版。安装过程改为可见，下载、校验和安装提示分开显示；只有新软件自动重新打开才提示为更新完成。继续包含搭子长聊天独立滚动和流畅度修复。",
-  "available": true,
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "platform": "Windows 10/11 64 位",
+  "notes": "Windows 1.1.18：旧启动入口修复版。更新安装完成时会把桌面、开始菜单和已有任务栏快捷方式重新指向刚安装的新版，避免新版退出后又从旧入口打开 1.1.14。继续包含搭子长聊天独立滚动和更新安装确认修复。",
+  "publishedAt": "2026-09-04T10:30:02.6541771Z",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "platform": "Windows 10/11 64 位",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "available": true,
   "rollbackVersion": "1.0.5",
-  "publishedAt": "2026-09-04T09:52:46.7787026Z"
+  "sha256": "0b05b2ca0849676205d49ad79c625380df8559f68ce940316ce85d3bbb258b19",
+  "version": "1.1.18"
 }

@@ -1,11 +1,11 @@
 {
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlJYNU1TamxNTWliUTlIUkhDLzgwV0NWZVZDWVp2L1ZCK2xPZU13dVphWC92MjlLalNtejcrUSt0MDZOaTFWV21EczVpZXBQY1RPanM5dEtOc3h0ZFEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NTE1NTY2CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMTdfeDY0LXNldHVwLmV4ZQpCUkZXZkpoQ3dpdUY4M2FGYXovZ1MrR0xGNWdHZ2RiSm41aHdJbW84Qm0rMmY2RGZQWDExYnRDZTM5d2NZUS9hQ1AzMUdTMGFQbDVGTWxXdFNXWjNCZz09Cg==",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlJmTmdVU3JOR2llNWdhbVdBTFdSRjJncUZxTVp6Tkdxc0xucE9MZVY5RWxpRG55SGV1MUl4alVpZVRwaFZSZnVYclg3Q2JlT0xMNGdRS2czNTEreFE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NTE3ODAyCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMThfeDY0LXNldHVwLmV4ZQp4U20xSCswdnN0YkxrWTh3K0FKQmdJLzdyWkxqbUduOEhiOVNZaCthTSs5WFMvT1Z1cGdJSWZiSmY1bkdRek5NNG1wMkwrblEwY011bzFkY0ZaVVdEZz09Cg=="
     }
   },
-  "pub_date": "2026-09-04T09:52:46.7787026Z",
-  "notes": "Windows 1.1.17：更新安装确认修复版。安装过程改为可见，下载、校验和安装提示分开显示；只有新软件自动重新打开才提示为更新完成。继续包含搭子长聊天独立滚动和流畅度修复。",
-  "version": "1.1.17"
+  "version": "1.1.18",
+  "notes": "Windows 1.1.18：旧启动入口修复版。更新安装完成时会把桌面、开始菜单和已有任务栏快捷方式重新指向刚安装的新版，避免新版退出后又从旧入口打开 1.1.14。继续包含搭子长聊天独立滚动和更新安装确认修复。",
+  "pub_date": "2026-09-04T10:30:02.6541771Z"
 }
