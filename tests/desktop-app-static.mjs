@@ -12,6 +12,7 @@ assert.equal(config.identifier, 'com.fwyanjiusuo.desktop');
 assert.equal(config.build.frontendDist, 'https://fwyanjiusuo.com/');
 assert.deepEqual(config.bundle.targets, ['nsis']);
 assert.equal(config.bundle.windows.nsis.installMode, 'currentUser');
+assert.equal(config.bundle.windows.nsis.installerHooks, 'windows-installer-hooks.nsh');
 assert.equal(config.version, '1.0.5');
 assert.equal(config.app.windows[0].url, 'https://fwyanjiusuo.com/index.html');
 assert.match(config.app.windows[0].userAgent, /FWYanjiusuoDesktop\/1\.0\.5/);
@@ -24,6 +25,12 @@ assert.equal(config.bundle.createUpdaterArtifacts, true);
 assert.match(config.plugins.updater.endpoints[0], /download\/windows-updater\.json$/);
 assert.equal(config.plugins.updater.windows.installMode, 'basicUi');
 assert.ok(config.plugins.updater.pubkey.length > 80);
+
+const installerHooks = read('src-tauri/windows-installer-hooks.nsh');
+assert.match(installerHooks, /NSIS_HOOK_POSTINSTALL/);
+assert.match(installerHooks, /CreateShortcut "\$DESKTOP\\\$\{PRODUCTNAME\}\.lnk" "\$INSTDIR\\\$\{MAINBINARYNAME\}\.exe"/);
+assert.match(installerHooks, /User Pinned\\TaskBar/);
+assert.match(installerHooks, /SetShortcutTarget/);
 
 const cargo = read('src-tauri/Cargo.toml');
 assert.match(cargo, /tauri-plugin-single-instance/);
@@ -234,8 +241,8 @@ assert.match(workflow, /npm --prefix desktop-v11 run test:static/, '正式构建
 assert.match(workflow, /npx tauri build --config src-tauri\/tauri\.v11\.conf\.json --bundles nsis/, '正式构建必须使用 Windows 1.1 本地前端配置');
 assert.match(workflow, /fw-lab-windows-latest\.exe/);
 assert.match(workflow, /TAURI_SIGNING_PRIVATE_KEY/);
-assert.match(workflow, /fw-lab-windows-1\.1\.17/);
-assert.match(workflow, /version = '1\.1\.17'/);
+assert.match(workflow, /fw-lab-windows-1\.1\.18/);
+assert.match(workflow, /version = '1\.1\.18'/);
 assert.match(workflow, /fw-lab-windows-1\.0\.5-setup\.exe/, '正式发布必须保留 Windows 1.0.5 回退安装包');
 assert.match(workflow, /rollbackVersion = '1\.0\.5'/);
 assert.match(workflow, /fw-lab-windows-latest\.exe\.sig/);

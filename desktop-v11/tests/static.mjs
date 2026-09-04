@@ -6,11 +6,11 @@ import {fileURLToPath} from 'node:url';
 const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
 const read=path=>readFileSync(resolve(root,path),'utf8');
 const config=JSON.parse(read('src-tauri/tauri.v11.conf.json'));
-assert.equal(config.version,'1.1.17');
+assert.equal(config.version,'1.1.18');
 assert.equal(config.build.frontendDist,'../desktop-v11/dist');
 assert.equal(config.build.devUrl,'http://127.0.0.1:1421');
 assert.equal(config.app.windows[0].url,'index.html');
-assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.1\.17/);
+assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.1\.18/);
 assert.doesNotMatch(JSON.stringify(config),/fwyanjiusuo\.com\/index\.html/);
 assert.match(config.app.security.csp,/supabase\.co/);
 assert.match(config.app.security.csp,/media-src/,'本地客户端必须允许 Supabase 媒体播放');
@@ -45,7 +45,7 @@ assert.match(theme,/\.compose-button[\s\S]*background:#d97979!important/,'发牢
 assert.match(theme,/\.status-options/,'旧发帖状态选择必须在桌面端被隐藏');
 assert.match(theme,/\.square-post \.post-meta>span:first-child/,'精神广场卡片不得再显示旧状态标签');
 assert.match(theme,/\.detail-post \.post-meta>span:first-child/,'帖子详情不得再显示旧状态标签');
-assert.match(cargo,/version = "1\.1\.17"/);
+assert.match(cargo,/version = "1\.1\.18"/);
 assert.match(cargo,/tauri-plugin-updater = "2\.10\.1"/);
 assert.match(cargo,/rusqlite = \{ version = "0\.32", features = \["bundled"\] \}/,'持久缓存必须使用内置 SQLite，不能依赖用户额外安装数据库');
 assert.match(rust,/mod persistent_cache;/,'Rust 主程序必须注册持久缓存模块');
@@ -150,7 +150,7 @@ assert.match(composeUi,/data-compose-compact-media/,'发布页必须提供独立
 assert.match(composeUi,/\.media-tools\{display:none!important\}/,'旧的大号添加图片\/视频工具行必须收起');
 assert.match(composeUi,/pickerOpen/,'我的表情面板必须按需展开而不是常驻');
 assert.match(composeUi,/\[data-compose-image\]/,'加号必须继续复用现有图片\/视频上传能力');
-assert.match(squareScroll,/Windows 1\.1\.17 本地前端 · 更新安装确认修复版/,'右下角版本标识必须更新');
+assert.match(squareScroll,/Windows 1\.1\.18 本地前端 · 旧入口修复版/,'右下角版本标识必须更新');
 assert.match(squareScroll,/square-scroll-locked/,'精神广场必须锁住整页滚动');
 assert.match(squareScroll,/buddy-scroll-locked/,'搭子页必须锁住整页滚动');
 assert.match(squareScroll,/\.chat-messages\{min-height:0;overflow-y:auto/,'搭子聊天记录必须独立滚动');
@@ -243,4 +243,4 @@ assert.doesNotMatch(alignment,/data-admin-panel|admin_list_profiles|站长处理
 assert.match(app,/contentRequests:0/);
 assert.match(app,/fixedProfileCode\|\|Boolean\(next\.busy\)/);
 assert.doesNotMatch(app,/location\.href|window\.location\.replace|fwyanjiusuo\.com/);
-console.log('Windows 1.1.17 visible installer, buddy scroll, updater speed and global cache checks passed');
+console.log('Windows 1.1.18 shortcut repair, visible installer, buddy scroll, updater speed and global cache checks passed');
