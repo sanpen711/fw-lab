@@ -1,11 +1,11 @@
 {
-  "version": "1.1.20",
-  "publishedAt": "2026-09-05T02:31:57.9793461Z",
-  "notes": "Windows 1.1.20：自定义快捷方式保留版。更新只替换原安装目录中的程序，不再强制新建或覆盖桌面快捷方式；用户自行修改的快捷方式名称和图标会继续保留并打开当前版本。继续包含精神广场缓存修复和开始菜单稳定入口。",
-  "platform": "Windows 10/11 64 位",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "sha256": "226979658ddd8cb3a00ea84afe8a852e6474c6ba3762a519aa70183fee276564",
+  "version": "1.1.21",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "rollbackVersion": "1.0.5",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
   "available": true,
-  "rollbackVersion": "1.0.5"
+  "sha256": "317276e410549b699dc3f956a818aafad407dd827c71194d43cb5708d62d1e04",
+  "platform": "Windows 10/11 64 位",
+  "publishedAt": "2026-09-05T03:22:35.0936639Z",
+  "notes": "Windows 1.1.21：精神广场重启缓存修复版。应用重启后会先使用本机恢复的账号读取上次缓存并立即显示，再在后台静默刷新；不再因联网确认尚未完成而读错缓存。继续保留用户自定义桌面快捷方式。"
 }
