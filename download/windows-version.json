@@ -1,11 +1,11 @@
 {
-  "rollbackVersion": "1.0.5",
-  "publishedAt": "2026-09-05T06:26:18.1875767Z",
-  "sha256": "a580796b88692b832554e982f6f2368f4b2b5e12b548fbad3f8b40ec9dc54d96",
+  "notes": "Windows 1.1.23：用户资料同步修复版。精神广场、回声、搭子、私聊以及其他显示用户资料的缓存页面会先显示本地内容，再单独静默刷新可见用户的最新昵称和头像；不再因旧缓存长期显示修改前的资料。继续保留全局缓存、自定义快捷方式和更新线路修复。",
   "available": true,
-  "notes": "Windows 1.1.22：全局缓存时序修复版。搭子、回声、私聊、自定义表情和红点会在账号联网确认前先显示本地缓存，确认后自动静默同步；学术研讨、观鸟台和档案的后台更新不再覆盖缓存首屏。继续保留精神广场与自定义快捷方式修复。",
-  "version": "1.1.22",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
   "platform": "Windows 10/11 64 位",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+  "version": "1.1.23",
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "rollbackVersion": "1.0.5",
+  "sha256": "8bffd0f58b44654bbb6197310972de6bee8574ac06ff6e9a8d3d7195f57b8e9c",
+  "publishedAt": "2026-09-05T07:30:00.2751423Z"
 }
