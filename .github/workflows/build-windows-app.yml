@@ -63,24 +63,24 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.1\.21') { throw "Unexpected installer name: $($installer.Name)" }
+          if ($installer.Name -notmatch '1\.1\.22') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
 
           Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
           Copy-Item $signatureFile.FullName 'download/fw-lab-windows-latest.exe.sig' -Force
-          Copy-Item $installer.FullName 'download/fw-lab-windows-1.1.21-setup.exe' -Force
-          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.1.21-setup.exe.sig' -Force
+          Copy-Item $installer.FullName 'download/fw-lab-windows-1.1.22-setup.exe' -Force
+          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.1.22-setup.exe.sig' -Force
 
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.1.21：精神广场重启缓存修复版。应用重启后会先使用本机恢复的账号读取上次缓存并立即显示，再在后台静默刷新；不再因联网确认尚未完成而读错缓存。继续保留用户自定义桌面快捷方式。'
+          $notes = 'Windows 1.1.22：全局缓存时序修复版。搭子、回声、私聊、自定义表情和红点会在账号联网确认前先显示本地缓存，确认后自动静默同步；学术研讨、观鸟台和档案的后台更新不再覆盖缓存首屏。继续保留精神广场与自定义快捷方式修复。'
 
           $metadata = @{
             available = $true
-            version = '1.1.21'
+            version = '1.1.22'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
@@ -92,7 +92,7 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.1.21'
+            version = '1.1.22'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
@@ -107,10 +107,10 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.1.21
+          name: fw-lab-windows-1.1.22
           path: |
-            download/fw-lab-windows-1.1.21-setup.exe
-            download/fw-lab-windows-1.1.21-setup.exe.sig
+            download/fw-lab-windows-1.1.22-setup.exe
+            download/fw-lab-windows-1.1.22-setup.exe.sig
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
             download/windows-updater.json
@@ -122,14 +122,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag='windows-v1.1.21'
-          asset='download/fw-lab-windows-1.1.21-setup.exe'
-          signature='download/fw-lab-windows-1.1.21-setup.exe.sig'
+          tag='windows-v1.1.22'
+          asset='download/fw-lab-windows-1.1.22-setup.exe'
+          signature='download/fw-lab-windows-1.1.22-setup.exe.sig'
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" "$signature" --clobber
           else
-            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.21' --notes '修复应用重启后精神广场读错缓存键的问题：先显示上次本地内容，再静默刷新；继续保留用户自定义桌面快捷方式。'
+            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.22' --notes '修复搭子、回声、私聊、表情和红点在启动阶段无法先显示缓存的问题，并让其他缓存页面静默更新。'
           fi
 
       - name: Publish installer to website
@@ -164,6 +164,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.1.21"
+            git commit -m "Release Windows 1.1.22"
             git push origin HEAD:main
           fi

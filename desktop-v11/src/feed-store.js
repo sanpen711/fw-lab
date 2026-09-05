@@ -12,6 +12,7 @@ let hydratedCacheKey='';
 let lastSyncedAt=0;
 let loadPromise=null;
 let refreshQueued=false;
+let lastAuthUserId='';
 
 function snapshot(){return {...state,posts:state.posts.map(post=>({...post,comments:[...(post.comments||[])],reactions:[...(post.reactions||[])]})),profiles:{...state.profiles},reply:state.reply&&{...state.reply}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
@@ -177,6 +178,11 @@ async function deletePost(postId){requireUser();fail(await client.rpc('fw_delete
 async function deleteComment(commentId){requireUser();fail(await client.rpc('fw_delete_own_comment',{p_comment_id:Number(commentId)}),'删除评论失败');await load(true);}
 async function report(targetType,targetId,reason){requireUser();const text=String(reason||'').trim();if(text.length<2)throw new Error('请至少写 2 个字的举报原因。');fail(await client.rpc('fw_submit_report',{p_target_type:targetType,p_target_id:String(targetId),p_reason:text}),'提交举报失败');}
 
-authStore.subscribe(auth=>{if(!auth.ready)return;if(!auth.user){deactivate();state.loaded=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();}});
+authStore.subscribe(auth=>{
+  const nextUserId=String(auth.user?.id||'');const switched=Boolean(nextUserId&&((lastAuthUserId&&nextUserId!==lastAuthUserId)||(hydratedCacheKey&&hydratedCacheKey!==nextUserId)));lastAuthUserId=nextUserId;
+  if(switched){state.loaded=false;state.loading=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();if(active)load(false).catch(()=>{});}
+  if(!auth.ready)return;
+  if(!auth.user){deactivate();state.loaded=false;state.loading=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();}
+});
 
 export const feedStore={state,activate,deactivate,load,openPost,closePost,setReply,clearReply,createPost,createComment,toggleReaction,deletePost,deleteComment,report,uploadImage,uploadMedia,composeContent,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};

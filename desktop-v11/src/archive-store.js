@@ -10,6 +10,7 @@ function snapshot(){return {...state,weekly:{like:[...state.weekly.like],same:[.
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
 function fail(result,label){if(result?.error)throw new Error(`${label}：${result.error.message}`);return result?.data;}
 function count(){if(window.__FW_DESKTOP_V11__)window.__FW_DESKTOP_V11__.contentRequests=(window.__FW_DESKTOP_V11__.contentRequests||0)+1;}
+function contentSignature(weekly,daily,rangesValue){try{return JSON.stringify([weekly,daily,rangesValue]);}catch{return'';}}
 function startOfDay(value=new Date()){const date=new Date(value);date.setHours(0,0,0,0);return date;}
 function addDays(value,days){const date=new Date(value);date.setDate(date.getDate()+days);return date;}
 function ranges(){const today=startOfDay();const yesterday=addDays(today,-1);const sinceMonday=(today.getDay()+6)%7;const thisMonday=addDays(today,-sinceMonday);const lastMonday=addDays(thisMonday,-7);return{today,yesterday,thisMonday,lastMonday,nextDay:addDays(today,1),nextMonday:addDays(thisMonday,7)};}
@@ -34,12 +35,12 @@ function persistCache(){return desktopCache.write('archive','public',{weekly:sta
 
 async function load(force=false){
   if(!force&&!state.loaded){const hit=await hydrateCache();if(hit){load(true).catch(()=>{});return snapshot();}}
-  if(state.loading||(!force&&state.loaded))return snapshot();state.loading=true;state.error='';emit();
+  if(state.loading||(!force&&state.loaded))return snapshot();const showInitial=!state.loaded;const previousSignature=contentSignature(state.weekly,state.daily,state.ranges);state.loading=true;state.error='';if(showInitial)emit();
   try{
     const span=ranges();count();const posts=fail(await client.from('posts').select('id,user_id,content,status_tag,created_at').eq('is_deleted',false).gte('created_at',span.lastMonday.toISOString()).lt('created_at',span.today.toISOString()).order('created_at',{ascending:false}).limit(1000),'读取档案帖子失败')||[];const ids=posts.map(post=>post.id);let reactions=[];let profileRows=[];
     if(ids.length){count();reactions=fail(await client.from('reactions').select('post_id,user_id,type').in('post_id',ids),'读取档案互动失败')||[];const userIds=Array.from(new Set(posts.map(post=>post.user_id).filter(Boolean)));if(userIds.length){count();profileRows=fail(await client.from('profiles').select('id,nickname,avatar_url').in('id',userIds),'读取档案用户失败')||[];}}
-    const profiles={};profileRows.forEach(row=>{profiles[String(row.id)]=row;});const weekly={};const daily={};['like','same','tissue'].forEach(type=>{weekly[type]=rank(posts,reactions,profiles,span.lastMonday,span.thisMonday,type,3);daily[type]=rank(posts,reactions,profiles,span.yesterday,span.today,type,10);});state.weekly=weekly;state.daily=daily;state.ranges=Object.fromEntries(Object.entries(span).map(([key,value])=>[key,value.toISOString()]));state.loaded=true;state.loading=false;emit();persistCache().catch(()=>{});return snapshot();
-  }catch(error){state.loaded=true;state.loading=false;state.error=error.message||'废话档案读取失败。';emit();if(state.weekly.like.length||state.weekly.same.length||state.weekly.tissue.length||state.daily.like.length||state.daily.same.length||state.daily.tissue.length)return snapshot();throw error;}
+    const profiles={};profileRows.forEach(row=>{profiles[String(row.id)]=row;});const weekly={};const daily={};['like','same','tissue'].forEach(type=>{weekly[type]=rank(posts,reactions,profiles,span.lastMonday,span.thisMonday,type,3);daily[type]=rank(posts,reactions,profiles,span.yesterday,span.today,type,10);});state.weekly=weekly;state.daily=daily;state.ranges=Object.fromEntries(Object.entries(span).map(([key,value])=>[key,value.toISOString()]));const changed=previousSignature!==contentSignature(state.weekly,state.daily,state.ranges);state.loaded=true;state.loading=false;await persistCache();if(changed||showInitial)emit();return snapshot();
+  }catch(error){state.loaded=true;state.loading=false;state.error=error.message||'废话档案读取失败。';if(showInitial)emit();if(state.weekly.like.length||state.weekly.same.length||state.weekly.tissue.length||state.daily.like.length||state.daily.same.length||state.daily.tissue.length)return snapshot();throw error;}
 }
 
 export const archiveStore={state,load,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};

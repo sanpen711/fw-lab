@@ -31,12 +31,18 @@ let hydratedEchoUser='';
 let hydratedBuddyUser='';
 let hydratedStickersUser='';
 let hydratedBadgesUser='';
+let hydratedChatUser='';
+let echoRequested=false;
+let buddyRequested=false;
+let stickersRequested=false;
 
 function emit(){const snapshot={...state,badges:{...state.badges},echo:{...state.echo},buddy:{...state.buddy},chat:{...state.chat},stickers:{...state.stickers}};listeners.forEach(fn=>fn(snapshot));}
 function countContent(){if(window.__FW_DESKTOP_V11__) window.__FW_DESKTOP_V11__.socialContentRequests=(window.__FW_DESKTOP_V11__.socialContentRequests||0)+1;}
 function fail(result,label){if(result?.error) throw new Error(`${label}：${result.error.message}`);return result?.data;}
+function cacheUser(){return authStore.state.user||null;}
 function currentUser(){return authStore.state.user && !authStore.state.user.cached ? authStore.state.user : null;}
 function unique(values){return Array.from(new Set((values||[]).filter(Boolean).map(String)));}
+function contentSignature(...values){try{return JSON.stringify(values);}catch{return'';}}
 
 async function hydrateBadgesCache(userId){
   if(!userId||hydratedBadgesUser===userId)return false;hydratedBadgesUser=userId;
@@ -44,31 +50,32 @@ async function hydrateBadgesCache(userId){
   if(!payload?.badges)return false;
   state.badges={echo:Number(payload.badges.echo||0),buddy:Number(payload.badges.buddy||0)};emit();return true;
 }
-function persistBadgesCache(userId=currentUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('badges',userId,{badges:state.badges});}
+function persistBadgesCache(userId=cacheUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('badges',userId,{badges:state.badges});}
 async function hydrateEchoCache(userId){
   if(!userId||hydratedEchoUser===userId)return false;hydratedEchoUser=userId;
   const cached=await desktopCache.read('echo',userId);const payload=cached?.payload;
   if(!payload||!Array.isArray(payload.rows))return false;
   state.echo={loaded:true,loading:false,rows:payload.rows.slice(0,100),profiles:payload.profiles&&typeof payload.profiles==='object'?payload.profiles:{}};emit();return true;
 }
-function persistEchoCache(userId=currentUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('echo',userId,{rows:state.echo.rows.slice(0,100),profiles:state.echo.profiles});}
+function persistEchoCache(userId=cacheUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('echo',userId,{rows:state.echo.rows.slice(0,100),profiles:state.echo.profiles});}
 async function hydrateBuddyCache(userId){
   if(!userId||hydratedBuddyUser===userId)return false;hydratedBuddyUser=userId;
   const cached=await desktopCache.read('buddy',userId);const payload=cached?.payload;
   if(!payload||!Array.isArray(payload.rows))return false;
   state.buddy={...state.buddy,loaded:true,loading:false,rows:payload.rows,profiles:payload.profiles||{},conversations:payload.conversations||[],latest:payload.latest||{},unread:payload.unread||{},search:[],searching:false};emit();return true;
 }
-function persistBuddyCache(userId=currentUser()?.id){
+function persistBuddyCache(userId=cacheUser()?.id){
   if(!userId)return Promise.resolve(false);
   return desktopCache.write('buddy',userId,{rows:state.buddy.rows,profiles:state.buddy.profiles,conversations:state.buddy.conversations,latest:state.buddy.latest,unread:state.buddy.unread});
 }
 async function hydrateChatCache(userId,targetId,openToken=chatOpenToken){
+  hydratedChatUser=userId;
   const cached=await desktopCache.read('chat',userId,targetId);const payload=cached?.payload;
-  if(openToken!==chatOpenToken||state.userId!==userId)return false;
+  if(openToken!==chatOpenToken||String(cacheUser()?.id||'')!==String(userId))return false;
   if(!payload||!Array.isArray(payload.rows))return false;
   state.chat={targetId:String(targetId),conversationId:payload.conversationId||null,profile:payload.profile||state.buddy.profiles[targetId]||null,rows:payload.rows.filter(row=>!row.__pending).slice(-200),loading:true,sending:false};emit();return true;
 }
-function persistChatCache(userId=currentUser()?.id){
+function persistChatCache(userId=cacheUser()?.id){
   if(!userId||!state.chat.targetId)return Promise.resolve(false);
   const rows=state.chat.rows.filter(row=>!row.__pending);return desktopCache.write('chat',userId,{conversationId:state.chat.conversationId,profile:state.chat.profile,rows:rows.slice(-200)},state.chat.targetId);
 }
@@ -78,7 +85,7 @@ async function hydrateStickersCache(userId){
   if(!payload||!Array.isArray(payload.rows))return false;
   state.stickers={loaded:true,loading:false,rows:payload.rows.slice(0,80)};emit();return true;
 }
-function persistStickersCache(userId=currentUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('stickers',userId,{rows:state.stickers.rows.slice(0,80)});}
+function persistStickersCache(userId=cacheUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('stickers',userId,{rows:state.stickers.rows.slice(0,80)});}
 
 function clearSocialState(){
   state.userId='';state.ready=true;state.error='';state.badges={echo:0,buddy:0};
@@ -86,7 +93,7 @@ function clearSocialState(){
   state.buddy={loaded:false,loading:false,tab:'messages',rows:[],profiles:{},conversations:[],latest:{},unread:{},search:[],searching:false};
   state.chat={targetId:'',conversationId:null,profile:null,rows:[],loading:false,sending:false};
   state.stickers={loaded:false,loading:false,rows:[]};
-  hydratedEchoUser='';hydratedBuddyUser='';hydratedStickersUser='';hydratedBadgesUser='';teardownChannels();emit();
+  hydratedEchoUser='';hydratedBuddyUser='';hydratedStickersUser='';hydratedBadgesUser='';hydratedChatUser='';teardownChannels();emit();
 }
 
 async function fetchProfiles(ids,existing={}){
@@ -102,7 +109,7 @@ function scheduleBuddyReload(){clearTimeout(buddyTimer);buddyTimer=setTimeout(()
 
 async function refreshBadges(force=false){
   const user=currentUser();
-  if(!user?.id){state.badges={echo:0,buddy:0};emit();return state.badges;}
+  if(!user?.id)return state.badges;
   if(!force&&hydratedBadgesUser!==user.id)await hydrateBadgesCache(user.id);
   if(badgePromise){if(force)badgeRefreshQueued=true;return badgePromise;}
   badgePromise=(async()=>{
@@ -112,8 +119,8 @@ async function refreshBadges(force=false){
       client.from('friendships').select('id',{count:'exact',head:true}).eq('receiver_id',user.id).eq('status','pending')
     ]);
     if(state.userId!==user.id) return state.badges;
-    state.badges={echo:Number(echoResult.count||0),buddy:Number(privateResult.count||0)+Number(requestResult.count||0)};
-    emit();persistBadgesCache(user.id).catch(()=>{});return state.badges;
+    const next={echo:Number(echoResult.count||0),buddy:Number(privateResult.count||0)+Number(requestResult.count||0)};const changed=contentSignature(state.badges)!==contentSignature(next);
+    state.badges=next;await persistBadgesCache(user.id);if(changed)emit();return state.badges;
   })().catch(()=>state.badges).finally(()=>{badgePromise=null;if(badgeRefreshQueued){badgeRefreshQueued=false;queueMicrotask(()=>refreshBadges(false));}});
   return badgePromise;
 }
@@ -180,11 +187,15 @@ async function resolveReplyPosts(rows){
 }
 
 async function loadEcho(force=false){
+  echoRequested=true;
+  const identity=cacheUser();
+  if(!identity?.id)return state.echo.rows;
+  if(!force&&!state.echo.loaded){const hit=await hydrateEchoCache(identity.id);if(hit){if(currentUser()?.id)loadEcho(true).catch(()=>{});return state.echo.rows;}}
   const user=currentUser();
-  if(!user?.id){state.echo={loaded:true,loading:false,rows:[],profiles:{}};emit();return;}
-  if(!force&&!state.echo.loaded){const hit=await hydrateEchoCache(user.id);if(hit){loadEcho(true).catch(()=>{});return state.echo.rows;}}
+  if(!user?.id){if(!state.echo.loaded&&!state.echo.loading){state.echo={...state.echo,loading:true};emit();}return state.echo.rows;}
   if(state.echo.loading||(!force&&state.echo.loaded)) return state.echo.rows;
-  state.echo={...state.echo,loading:true};emit();
+  const showInitial=!state.echo.loaded;const previousSignature=contentSignature(state.echo.rows,state.echo.profiles);
+  state.echo={...state.echo,loading:true};if(showInitial)emit();
   try{
     countContent();
     let rows=fail(await client.from('notifications').select('id,actor_id,type,target_type,target_id,content,is_read,created_at').eq('user_id',user.id).in('type',ECHO_TYPES).order('created_at',{ascending:false}).limit(100),'读取回声失败')||[];
@@ -192,12 +203,12 @@ async function loadEcho(force=false){
     const formalTargets=new Set(rows.filter(row=>row.type==='comment_reply'&&row.target_id).map(row=>String(row.target_id)));
     const fallback=(await replyFallback(user.id,force)).filter(row=>!formalTargets.has(String(row.target_id)));
     rows=rows.concat(fallback).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,100);
-    const profiles=await fetchProfiles(rows.map(row=>row.actor_id),state.echo.profiles);
-    state.echo={loaded:true,loading:false,rows,profiles};emit();persistEchoCache(user.id).catch(()=>{});
+    const profiles=await fetchProfiles(rows.map(row=>row.actor_id),state.echo.profiles);if(state.userId!==user.id)return state.echo.rows;const changed=previousSignature!==contentSignature(rows,profiles);
+    state.echo={loaded:true,loading:false,rows,profiles};await persistEchoCache(user.id);if(changed||showInitial)emit();
     const unread=rows.filter(row=>!row.is_read).map(row=>row.id);
     if(unread.length) await markEchoRead(unread);
     return state.echo.rows;
-  }catch(error){state.echo={...state.echo,loaded:true,loading:false};state.error=error.message||'回声读取失败';emit();return state.echo.rows;}
+  }catch(error){state.echo={...state.echo,loaded:true,loading:false};state.error=error.message||'回声读取失败';if(showInitial)emit();return state.echo.rows;}
 }
 
 async function markEchoRead(ids){
@@ -216,12 +227,16 @@ async function markEchoRead(ids){
 function otherId(row,userId){return String(row.requester_id)===String(userId)?String(row.receiver_id):String(row.requester_id);}
 
 async function loadBuddy(force=false){
+  buddyRequested=true;
+  const identity=cacheUser();
+  if(!identity?.id)return state.buddy.rows;
+  if(!force&&!state.buddy.loaded){const hit=await hydrateBuddyCache(identity.id);if(hit){if(currentUser()?.id)loadBuddy(true).catch(()=>{});return state.buddy.rows;}}
   const user=currentUser();
-  if(!user?.id){state.buddy={...state.buddy,loaded:true,loading:false,rows:[],profiles:{},conversations:[],latest:{},unread:{}};emit();return;}
-  if(!force&&!state.buddy.loaded){const hit=await hydrateBuddyCache(user.id);if(hit){loadBuddy(true).catch(()=>{});return state.buddy.rows;}}
+  if(!user?.id){if(!state.buddy.loaded&&!state.buddy.loading){state.buddy={...state.buddy,loading:true};emit();}return state.buddy.rows;}
   if(buddyPromise){if(force)buddyRefreshQueued=true;return buddyPromise;}
   if(!force&&state.buddy.loaded) return state.buddy.rows;
-  state.buddy={...state.buddy,loading:true};emit();
+  const showInitial=!state.buddy.loaded;const previousSignature=contentSignature(state.buddy.rows,state.buddy.profiles,state.buddy.conversations,state.buddy.latest,state.buddy.unread);
+  state.buddy={...state.buddy,loading:true};if(showInitial)emit();
   buddyPromise=(async()=>{try{
     countContent();
     const friendships=fail(await client.from('friendships').select('id,requester_id,receiver_id,status,created_at,updated_at').or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`).order('updated_at',{ascending:false}),'读取搭子列表失败')||[];
@@ -246,8 +261,9 @@ async function loadBuddy(force=false){
       }
     }
     if(state.userId!==user.id)return state.buddy.rows;
-    state.buddy={...state.buddy,loaded:true,loading:false,rows:friendships,profiles,conversations,latest,unread};emit();persistBuddyCache(user.id).catch(()=>{});return state.buddy.rows;
-  }catch(error){if(state.userId===user.id){state.buddy={...state.buddy,loaded:true,loading:false};state.error=error.message||'搭子读取失败';emit();}return state.buddy.rows;}
+    const changed=previousSignature!==contentSignature(friendships,profiles,conversations,latest,unread);
+    state.buddy={...state.buddy,loaded:true,loading:false,rows:friendships,profiles,conversations,latest,unread};await persistBuddyCache(user.id);if(changed||showInitial)emit();return state.buddy.rows;
+  }catch(error){if(state.userId===user.id){state.buddy={...state.buddy,loaded:true,loading:false};state.error=error.message||'搭子读取失败';if(showInitial)emit();}return state.buddy.rows;}
   finally{buddyPromise=null;if(buddyRefreshQueued){buddyRefreshQueued=false;queueMicrotask(()=>loadBuddy(true));}}})();
   return buddyPromise;
 }
@@ -313,12 +329,13 @@ function subscribeChat(conversationId){
 }
 
 async function openChat(targetId){
-  const user=currentUser();if(!user?.id) throw new Error('请先登录。');
+  const identity=cacheUser();if(!identity?.id)throw new Error('请先登录。');const user=currentUser();
   const wantedTarget=String(targetId);const openToken=++chatOpenToken;
   if(chatChannel){client.removeChannel(chatChannel);chatChannel=null;}
-  const cacheHit=await hydrateChatCache(user.id,wantedTarget,openToken);
+  const cacheHit=await hydrateChatCache(identity.id,wantedTarget,openToken);
   if(openToken!==chatOpenToken)return;
   if(!cacheHit){state.chat={targetId:wantedTarget,conversationId:null,profile:state.buddy.profiles[wantedTarget]||null,rows:[],loading:true,sending:false};emit();}
+  if(!user?.id)return state.chat.rows;
   try{
     const profiles=await fetchProfiles([wantedTarget],state.buddy.profiles);if(openToken!==chatOpenToken)return;state.buddy={...state.buddy,profiles};
     countContent();
@@ -328,7 +345,7 @@ async function openChat(targetId){
     countContent();
     const rows=fail(await client.from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id',convId).eq('is_deleted',false).order('created_at',{ascending:false}).limit(200),'读取私聊失败')||[];
     if(openToken!==chatOpenToken)return;
-    state.chat={targetId:wantedTarget,conversationId:convId,profile:profiles[wantedTarget]||null,rows:mergeMessages(rows.slice().reverse(),state.chat.rows),loading:false,sending:false};emit();persistChatCache(user.id).catch(()=>{});
+    state.chat={targetId:wantedTarget,conversationId:convId,profile:profiles[wantedTarget]||null,rows:mergeMessages(rows.slice().reverse(),state.chat.rows),loading:false,sending:false};await persistChatCache(user.id);emit();
     markPrivateRead(wantedTarget).catch(()=>{});
   }catch(error){if(openToken!==chatOpenToken)return;state.chat={...state.chat,loading:false};emit();if(!cacheHit)throw error;}
 }
@@ -353,12 +370,13 @@ async function sendMessage(text,{stickerUrl=''}={}){
 }
 
 async function loadStickers(force=false){
-  const user=currentUser();if(!user?.id) return [];
-  if(!force&&!state.stickers.loaded){const hit=await hydrateStickersCache(user.id);if(hit){loadStickers(true).catch(()=>{});return state.stickers.rows;}}
+  stickersRequested=true;const identity=cacheUser();if(!identity?.id)return state.stickers.rows;
+  if(!force&&!state.stickers.loaded){const hit=await hydrateStickersCache(identity.id);if(hit){if(currentUser()?.id)loadStickers(true).catch(()=>{});return state.stickers.rows;}}
+  const user=currentUser();if(!user?.id){if(!state.stickers.loaded&&!state.stickers.loading){state.stickers={...state.stickers,loading:true};emit();}return state.stickers.rows;}
   if(state.stickers.loading||(!force&&state.stickers.loaded)) return state.stickers.rows;
-  state.stickers={...state.stickers,loading:true};emit();
-  try{countContent();const rows=fail(await client.from('user_stickers').select('id,image_url,file_name,file_size,mime_type,storage_path,created_at').eq('user_id',user.id).eq('is_deleted',false).order('created_at',{ascending:false}).limit(80),'读取我的表情失败')||[];state.stickers={loaded:true,loading:false,rows};emit();persistStickersCache(user.id).catch(()=>{});return rows;}
-  catch(error){state.stickers={...state.stickers,loaded:true,loading:false};emit();if(state.stickers.rows.length)return state.stickers.rows;throw error;}
+  const showInitial=!state.stickers.loaded;const previousSignature=contentSignature(state.stickers.rows);state.stickers={...state.stickers,loading:true};if(showInitial)emit();
+  try{countContent();const rows=fail(await client.from('user_stickers').select('id,image_url,file_name,file_size,mime_type,storage_path,created_at').eq('user_id',user.id).eq('is_deleted',false).order('created_at',{ascending:false}).limit(80),'读取我的表情失败')||[];if(state.userId!==user.id)return state.stickers.rows;const changed=previousSignature!==contentSignature(rows);state.stickers={loaded:true,loading:false,rows};await persistStickersCache(user.id);if(changed||showInitial)emit();return rows;}
+  catch(error){state.stickers={...state.stickers,loaded:true,loading:false};if(showInitial)emit();if(state.stickers.rows.length)return state.stickers.rows;throw error;}
 }
 
 async function uploadSticker(file){
@@ -389,13 +407,19 @@ async function deleteSticker(id){
 
 async function bootForUser(userId){
   if(state.userId===userId) return;
-  teardownChannels();hydratedEchoUser='';hydratedBuddyUser='';hydratedStickersUser='';hydratedBadgesUser='';state.userId=userId;state.ready=true;startBadgeChannel(userId);emit();await hydrateBadgesCache(userId);await refreshBadges(true);
+  const cachedOwners=[hydratedEchoUser,hydratedBuddyUser,hydratedStickersUser,hydratedBadgesUser,hydratedChatUser].filter(Boolean);const switching=Boolean((state.userId&&state.userId!==userId)||cachedOwners.some(owner=>owner!==userId));const chatTarget=switching?'':state.chat.targetId;
+  teardownChannels();
+  if(switching){state.echo={loaded:false,loading:false,rows:[],profiles:{}};state.buddy={loaded:false,loading:false,tab:'messages',rows:[],profiles:{},conversations:[],latest:{},unread:{},search:[],searching:false};state.chat={targetId:'',conversationId:null,profile:null,rows:[],loading:false,sending:false};state.stickers={loaded:false,loading:false,rows:[]};}
+  if(!state.echo.loaded)state.echo={...state.echo,loading:false};if(!state.buddy.loaded)state.buddy={...state.buddy,loading:false};if(!state.stickers.loaded)state.stickers={...state.stickers,loading:false};
+  hydratedEchoUser='';hydratedBuddyUser='';hydratedStickersUser='';hydratedBadgesUser='';hydratedChatUser='';state.userId=userId;state.ready=true;startBadgeChannel(userId);emit();await hydrateBadgesCache(userId);
+  const tasks=[refreshBadges(true)];if(echoRequested)tasks.push(loadEcho(true));if(buddyRequested)tasks.push(loadBuddy(true));if(stickersRequested)tasks.push(loadStickers(true));if(chatTarget)tasks.push(openChat(chatTarget));await Promise.allSettled(tasks);
 }
 
 authStore.subscribe(auth=>{
-  if(!auth.ready) return;
-  if(!auth.user||auth.user.cached){if(!auth.user) clearSocialState();return;}
-  bootForUser(auth.user.id);
+  if(auth.user?.id&&auth.user.cached){hydrateBadgesCache(auth.user.id).catch(()=>{});return;}
+  if(!auth.ready)return;
+  if(!auth.user){clearSocialState();return;}
+  bootForUser(auth.user.id).catch(()=>{});
 });
 
 export const socialStore={
