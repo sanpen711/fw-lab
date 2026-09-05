@@ -1,10 +1,10 @@
-; Keep every normal Windows launch entry pointed at the copy that was just installed.
-; This repairs machines that still have a desktop, Start Menu, or taskbar shortcut
-; targeting an older F.w installation after the updater successfully starts the new one.
+; Keep standard Start Menu and taskbar entries pointed at the installed copy.
+; Do not create or rewrite a desktop shortcut here: users may deliberately rename it
+; and choose a discreet custom icon. Since updates keep the same executable path,
+; those custom desktop shortcuts continue to launch the current version unchanged.
 !macro NSIS_HOOK_POSTINSTALL
   CreateDirectory "$SMPROGRAMS\${STARTMENUFOLDER}"
   CreateShortcut "$SMPROGRAMS\${STARTMENUFOLDER}\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
-  CreateShortcut "$DESKTOP\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
 
   ${If} ${FileExists} "$SMPROGRAMS\${PRODUCTNAME}.lnk"
     !insertmacro SetShortcutTarget "$SMPROGRAMS\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
