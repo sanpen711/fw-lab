@@ -4,10 +4,14 @@ import {desktopCache} from './desktop-persistent-cache.js';
 const listeners=new Set();
 const client=authStore.client;
 const state={loaded:false,loading:false,busy:false,error:'',posts:[],profiles:{},openPostId:'',reply:null};
+const SQUARE_CACHE_FRESH_MS=60*1000;
 let squareChannel=null;
 let refreshTimer=null;
 let active=false;
 let hydratedCacheKey='';
+let lastSyncedAt=0;
+let loadPromise=null;
+let refreshQueued=false;
 
 function snapshot(){return {...state,posts:state.posts.map(post=>({...post,comments:[...(post.comments||[])],reactions:[...(post.reactions||[])]})),profiles:{...state.profiles},reply:state.reply&&{...state.reply}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
@@ -24,11 +28,13 @@ function composeContent(text,{imageUrl='',mediaUrl='',mediaKind='',stickerUrls=[
   return parts.join('\n').trim();
 }
 function squareCacheUser(){return user()?.id||'public';}
+function isSquareFresh(){return lastSyncedAt>0&&Date.now()-lastSyncedAt<SQUARE_CACHE_FRESH_MS;}
+function contentSignature(posts,profiles){try{return JSON.stringify([posts,profiles]);}catch{return'';}}
 async function hydrateSquareCache(){
-  const cacheUser=squareCacheUser();if(hydratedCacheKey===cacheUser)return false;hydratedCacheKey=cacheUser;
+  const cacheUser=squareCacheUser();if(hydratedCacheKey===cacheUser)return false;hydratedCacheKey=cacheUser;lastSyncedAt=0;
   const cached=await desktopCache.read('square',cacheUser);const payload=cached?.payload;
   if(!payload||!Array.isArray(payload.posts))return false;
-  state.posts=payload.posts.slice(0,100);state.profiles=payload.profiles&&typeof payload.profiles==='object'?payload.profiles:{};state.loaded=true;state.loading=false;state.error='';emit();return true;
+  state.posts=payload.posts.slice(0,100);state.profiles=payload.profiles&&typeof payload.profiles==='object'?payload.profiles:{};state.loaded=true;state.loading=false;state.error='';lastSyncedAt=Number(cached.savedAt||0);emit();return true;
 }
 function persistSquareCache(){
   const cacheUser=squareCacheUser();return desktopCache.write('square',cacheUser,{posts:state.posts.slice(0,100),profiles:state.profiles});
@@ -51,9 +57,11 @@ async function readComments(postIds){
 
 async function load(force=false){
   if(!force&&!state.loaded)await hydrateSquareCache();
-  if(state.loading||(!force&&state.loaded))return state.posts;
-  state.loading=true;state.error='';emit();
-  try{
+  if(!force&&state.loaded&&isSquareFresh())return state.posts;
+  if(loadPromise){if(force)refreshQueued=true;return loadPromise;}
+  const showInitial=!state.loaded;const previousSignature=contentSignature(state.posts,state.profiles);
+  state.loading=true;state.error='';if(showInitial)emit();
+  loadPromise=(async()=>{try{
     countContent();const posts=fail(await client.from('posts').select('id,user_id,content,status_tag,created_at').or('is_deleted.eq.false,is_deleted.is.null').order('created_at',{ascending:false}).limit(100),'读取精神广场失败')||[];
     const ids=posts.map(post=>post.id);
     const [comments,reactionResult]=await Promise.all([
@@ -64,9 +72,12 @@ async function load(force=false){
     await fetchProfiles(posts.map(post=>post.user_id).concat(comments.map(comment=>comment.user_id)));
     const commentsByPost={};comments.forEach(comment=>(commentsByPost[String(comment.post_id)]??=[]).push(comment));
     const reactionsByPost={};reactions.forEach(reaction=>(reactionsByPost[String(reaction.post_id)]??=[]).push(reaction));
-    state.posts=posts.map(post=>({...post,comments:commentsByPost[String(post.id)]||[],reactions:reactionsByPost[String(post.id)]||[]}));
-    state.loaded=true;state.loading=false;emit();persistSquareCache().catch(()=>{});return state.posts;
-  }catch(error){state.loading=false;state.loaded=true;state.error=error.message||'精神广场读取失败。';emit();throw error;}
+    const nextPosts=posts.map(post=>({...post,comments:commentsByPost[String(post.id)]||[],reactions:reactionsByPost[String(post.id)]||[]}));
+    const changed=previousSignature!==contentSignature(nextPosts,state.profiles);
+    state.posts=nextPosts;state.loaded=true;state.loading=false;state.error='';lastSyncedAt=Date.now();if(changed||showInitial)emit();persistSquareCache().catch(()=>{});return state.posts;
+  }catch(error){state.loading=false;state.loaded=true;state.error=error.message||'精神广场读取失败。';if(showInitial||!state.posts.length)emit();throw error;}
+  finally{loadPromise=null;if(refreshQueued&&active){refreshQueued=false;queueMicrotask(()=>load(true).catch(()=>{}));}}})();
+  return loadPromise;
 }
 
 function scheduleRefresh(){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(active)load(true).catch(()=>{});},220);}
@@ -80,10 +91,10 @@ async function activate(){
       .subscribe();
   }
   const cacheHit=await hydrateSquareCache();
-  if(cacheHit||state.loaded){load(true).catch(()=>{});return state.posts;}
+  if(cacheHit||state.loaded){if(!isSquareFresh())load(true).catch(()=>{});return state.posts;}
   return load();
 }
-function deactivate(){active=false;clearTimeout(refreshTimer);if(squareChannel){client.removeChannel(squareChannel);squareChannel=null;}}
+function deactivate(){active=false;refreshQueued=false;clearTimeout(refreshTimer);if(squareChannel){client.removeChannel(squareChannel);squareChannel=null;}}
 
 function openPost(postId){state.openPostId=String(postId||'');state.reply=null;emit();}
 function closePost(){state.openPostId='';state.reply=null;emit();}
@@ -158,6 +169,6 @@ async function deletePost(postId){requireUser();fail(await client.rpc('fw_delete
 async function deleteComment(commentId){requireUser();fail(await client.rpc('fw_delete_own_comment',{p_comment_id:Number(commentId)}),'删除评论失败');await load(true);}
 async function report(targetType,targetId,reason){requireUser();const text=String(reason||'').trim();if(text.length<2)throw new Error('请至少写 2 个字的举报原因。');fail(await client.rpc('fw_submit_report',{p_target_type:targetType,p_target_id:String(targetId),p_reason:text}),'提交举报失败');}
 
-authStore.subscribe(auth=>{if(!auth.ready)return;if(!auth.user){deactivate();state.loaded=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';emit();}});
+authStore.subscribe(auth=>{if(!auth.ready)return;if(!auth.user){deactivate();state.loaded=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();}});
 
 export const feedStore={state,activate,deactivate,load,openPost,closePost,setReply,clearReply,createPost,createComment,toggleReaction,deletePost,deleteComment,report,uploadImage,uploadMedia,composeContent,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};
