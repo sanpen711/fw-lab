@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-09-05T01:43:39.5390581Z",
-  "notes": "Windows 1.1.19：精神广场缓存修复版。重复进入广场时直接复用内存和 SQLite 内容，一分钟内不重复请求数据库；过期后静默后台同步，内容没有变化时不再重绘整个列表。实时帖子、评论和互动更新继续保留。",
+  "notes": "Windows 1.1.20：自定义快捷方式保留版。更新只替换原安装目录中的程序，不再强制新建或覆盖桌面快捷方式；用户自行修改的快捷方式名称和图标会继续保留并打开当前版本。继续包含精神广场缓存修复和开始菜单稳定入口。",
+  "version": "1.1.20",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlZwSThHTDkrbFNlUGNmWXR2K3p3QzY2cHFKNUpSbUJjVjFtS2VLNHpPMFJIdXdrMmtGNGtndmNVVUhSVlFsT3hTc0RVTEt6blZpZzFqSmJjdlYrNmdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NTcyNjE4CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMTlfeDY0LXNldHVwLmV4ZQp3R3J0ZGlmZ1QxbzdnZ1A5VitLazRqUVdYeElqL0VHUDdQcjJoRzAxR3dFTVdaVFAvM1VSWjUrN24yTVZiQ21oV3c4NUs5aFNmM1p5RnBsUmZyc3NBQT09Cg==",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmZDbzNjTnQ5Tm5CSStDOWhFbDRGMnltVlgvbFlPamJDSGhKMzhwY3Z3bEZ6c2ZNTFBOeUtWQWRpU0RrcitWUVhQOElETkxtYUpjM2tiMkduUHkxOHcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NTc1NTE3CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjBfeDY0LXNldHVwLmV4ZQp3Y0pFbzd4c0k2eEJlbTkvejJkM1ZFckhTSG5qTEU2Mzl1NTAxd2JWK2krUnpRU0U5SStYN1cxdTBSZzJ5Z1puVVhUUHUyb3hhMkdlWUI3aTBybXBEdz09Cg==",
       "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
     }
   },
-  "version": "1.1.19"
+  "pub_date": "2026-09-05T02:31:57.9793461Z"
 }
