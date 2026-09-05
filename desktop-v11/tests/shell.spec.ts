@@ -58,7 +58,7 @@ test('发牢骚和精神广场均为本地页面且内容按需读取',async({pa
   await page.goto('/');
   const original=page.url();
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
-  await page.locator('.compose-button[data-nav="compose"]').click();
+  await page.locator('.hero-actions [data-nav="compose"]').click();
   await expect(page.locator('[data-view-panel="compose"]')).toHaveClass(/active/);
   await expect(page.getByRole('heading',{name:'发一句牢骚'})).toBeVisible();
   await expect(page.getByText('登录后发牢骚')).toBeVisible();
@@ -88,17 +88,17 @@ test('学术研讨为本地按需页面并保留投票分类',async({page})=>{
   expect(page.url()).toBe(original);
 });
 
-test('观鸟台为本地双栏按需页面',async({page})=>{
+test('新闻专区为本地双栏按需页面',async({page})=>{
   await page.goto('/');
   const original=page.url();
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
   await page.locator('[data-nav="bird"].nav-item').click();
   await expect(page.locator('[data-view-panel="bird"]')).toHaveClass(/active/);
-  await expect(page.getByRole('heading',{name:'观鸟台'})).toBeVisible();
-  await expect(page.locator('[data-bird-detail]')).toContainText('选择一个离谱品种');
+  await expect(page.getByRole('heading',{name:'新闻专区'})).toBeVisible();
+  await expect(page.locator('[data-bird-detail]')).toContainText('选择一条内容');
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBeGreaterThan(0);
   await page.locator('[data-bird-compose-toggle]').click();
-  await expect(page.getByText('登录后收录品种')).toBeVisible();
+  await expect(page.getByText('登录后发布内容')).toBeVisible();
   expect(page.url()).toBe(original);
 });
 

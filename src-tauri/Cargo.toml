@@ -1,6 +1,6 @@
 [package]
 name = "fw-lab-desktop"
-version = "1.1.23"
+version = "1.1.24"
 description = "F.w 研究所 Windows 客户端"
 authors = ["F.w 研究所"]
 edition = "2021"

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#f3efe7">
+  <meta name="theme-color" content="#ffffff">
   <title>F.w 研究所</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/brand-theme.css">
@@ -12,17 +12,17 @@
   <div id="app" class="app-shell" data-view="home">
     <aside class="sidebar" aria-label="软件主导航">
       <button class="brand" type="button" data-nav="home" aria-label="F.w 研究所首页">
-        <strong>F.w</strong><span>研究所</span>
+        <strong>F.W</strong><span>研究所</span>
       </button>
       <button class="compose-button" type="button" data-nav="compose">
         <span aria-hidden="true">＋</span><b>发牢骚</b>
       </button>
       <nav class="nav-list">
         <button class="nav-item active" type="button" data-nav="home"><span aria-hidden="true">⌂</span><b>首页</b></button>
-        <button class="nav-item" type="button" data-nav="square"><span aria-hidden="true">◌</span><b>精神广场</b></button>
-        <button class="nav-item" type="button" data-nav="rooms"><span aria-hidden="true">◇</span><b>学术研讨</b></button>
-        <button class="nav-item" type="button" data-nav="bird"><span aria-hidden="true">◉</span><b>观鸟台</b></button>
-        <button class="nav-item" type="button" data-nav="echo"><span aria-hidden="true">♢</span><b>回声</b><i class="badge" data-badge="echo" hidden></i></button>
+        <button class="nav-item" type="button" data-nav="square"><span aria-hidden="true">◉</span><b>精神广场</b></button>
+        <button class="nav-item" type="button" data-nav="rooms"><span aria-hidden="true">▣</span><b>学术研讨</b></button>
+        <button class="nav-item" type="button" data-nav="bird"><span aria-hidden="true">▤</span><b>新闻专区</b></button>
+        <button class="nav-item" type="button" data-nav="echo"><span aria-hidden="true">◌</span><b>回声</b><i class="badge" data-badge="echo" hidden></i></button>
         <button class="nav-item" type="button" data-nav="buddy"><span aria-hidden="true">♧</span><b>搭子</b><i class="badge" data-badge="buddy" hidden></i></button>
         <button class="nav-item" type="button" data-nav="archive"><span aria-hidden="true">▤</span><b>档案</b></button>
       </nav>
@@ -40,19 +40,28 @@
       <section class="view active" data-view-panel="home">
         <div class="home-wrap">
           <article class="hero-card">
-            <p>FW LAB / LOW POWER MODE</p>
-            <h1>F.w 研究所</h1>
-            <h2>这里不要求你立刻振作。</h2>
-            <p class="hero-copy">一个临时放下情绪的地方。可以发牢骚、参与投票、围观离谱样本，也可以什么都不做，只是休息一下。</p>
-            <div class="hero-actions">
-              <button class="primary" type="button" data-nav="compose">去发一句牢骚</button>
-              <button class="secondary" type="button" data-open-account>进入研究所</button>
+            <div class="hero-content">
+              <p class="hero-eyebrow">FW LAB / LOW POWER MODE</p>
+              <h1>F.w 研究所</h1>
+              <h2>放下个人素质，享受缺德人生</h2>
+              <p class="hero-copy">随时吐槽、随时发泄、随时释放自己、不要攻击他人，<br>可参与投票、围观离谱事件。</p>
+              <div class="hero-actions">
+                <button class="primary" type="button" data-nav="compose">开始吐槽!</button>
+              </div>
+            </div>
+            <div class="hero-visual" aria-hidden="true">
+              <img src="/hero-office.webp" alt="">
+              <span class="hero-note note-day">今天又是<br>不想当人类的一天<i></i></span>
+              <span class="hero-note note-poll">遇到奇葩同事，<br>你会？<small>A. 当场开怼&nbsp;&nbsp; 12%<br>B. 表面微笑&nbsp;&nbsp; 88% <b>✓</b></small><i></i></span>
+              <span class="hero-note note-lie">这世界挺癫，<br>我先躺了<i></i></span>
+              <span class="hero-note note-open">吐槽大会<br>今日开放中...<i></i></span>
+              <span class="hero-note note-news">围观一下<br>离谱事件<i></i></span>
             </div>
           </article>
           <div class="home-grid">
-            <button class="feature-card" type="button" data-nav="square"><small>01 / SQUARE</small><strong>精神广场</strong><span>匿名说点真话，也听听别人的今天。</span></button>
-            <button class="feature-card" type="button" data-nav="echo"><small>02 / ECHO</small><strong>回声</strong><span>评论、回复和互动集中收在这里。</span></button>
-            <button class="feature-card" type="button" data-nav="buddy"><small>03 / BUDDY</small><strong>搭子</strong><span>找到聊得来的人，安静说几句话。</span></button>
+            <button class="feature-card" type="button" data-nav="square"><strong>精神广场</strong><span>匿名说点真话，也听听别人的今天。</span></button>
+            <button class="feature-card" type="button" data-nav="echo"><strong>回声</strong><span>评论、回复和互动集中收在这里。</span></button>
+            <button class="feature-card" type="button" data-nav="buddy"><strong>搭子</strong><span>找到聊得来的人，安静说几句话。</span></button>
           </div>
           <p class="phase-note">Windows 1.1 本地前端</p>
         </div>
@@ -96,11 +105,11 @@
       <section class="view" data-view-panel="bird">
         <div class="bird-page">
           <section class="bird-feed-column">
-            <div class="section-heading bird-heading"><div><p>SPECIMEN WATCH</p><h1>观鸟台</h1><span>收录研究所里值得围观的离谱品种。</span></div><div class="section-actions"><button class="secondary compact" type="button" data-bird-refresh>刷新</button><button class="primary compact" type="button" data-bird-compose-toggle>收录品种</button></div></div>
+            <div class="section-heading bird-heading"><div><p>NEWS DESK</p><h1>新闻专区</h1><span>收录研究所里值得围观的离谱事件与长图文。</span></div><div class="section-actions"><button class="secondary compact" type="button" data-bird-refresh>刷新</button><button class="primary compact" type="button" data-bird-compose-toggle>发布内容</button></div></div>
             <div class="bird-compose-host" data-bird-compose-host hidden></div>
-            <div class="bird-feed" data-bird-feed><div class="state-card">进入观鸟台后读取观察记录。</div></div>
+            <div class="bird-feed" data-bird-feed><div class="state-card">进入新闻专区后读取内容。</div></div>
           </section>
-          <aside class="bird-detail-column" data-bird-detail><div class="post-detail-empty"><b>选择一个离谱品种</b><span>查看完整观察记录、图片、评论和标记。</span></div></aside>
+          <aside class="bird-detail-column" data-bird-detail><div class="post-detail-empty"><b>选择一条内容</b><span>查看完整正文、图片、评论和互动。</span></div></aside>
         </div>
       </section>
 

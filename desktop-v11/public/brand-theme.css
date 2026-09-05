@@ -1,47 +1,45 @@
-/* F.w 研究所 Windows 1.1.10 classic desktop palette
-   Restores the pre-standalone Windows visual language exactly:
-   warm paper + near-black structure + muted pink core actions.
-   Presentation only: no data, routing, cache, realtime or social logic changes. */
+/* F.w 研究所 Windows 1.1.24 — screenshot-led desktop visual system.
+   Presentation only: routing, data, cache, realtime and social logic stay unchanged. */
 
 :root{
-  --bg:#eee9df!important;
-  --paper:#fffdf7!important;
-  --ink:#1b1b18!important;
-  --muted:#756f64!important;
-  --line:rgba(27,27,24,.13)!important;
-  --accent:#d97979!important;
-  --deep:#181916!important;
+  --bg:#f7f7f6!important;
+  --paper:#ffffff!important;
+  --ink:#152b25!important;
+  --muted:#737b78!important;
+  --line:#e4ddd3!important;
+  --accent:#ff969e!important;
+  --deep:#152b25!important;
+  --rail:124px!important;
 }
 
-html,body{
-  background:#eee9df!important;
-  color:#1b1b18!important;
-}
-
+html,body{background:#f7f7f6!important;color:#152b25!important;}
+html body .app-shell{padding-left:124px!important;}
 html body .sidebar{
-  color:#f9f5ec!important;
-  background:#181916!important;
-  border-right-color:rgba(255,255,255,.08)!important;
-  box-shadow:10px 0 32px rgba(25,23,18,.08)!important;
+  width:124px!important;
+  gap:4px!important;
+  padding:26px 14px 14px!important;
+  border-right:1px solid #e8e2da!important;
+  background:#fff!important;
+  color:#152b25!important;
+  box-shadow:none!important;
 }
-html body .brand strong{color:#fff!important;}
-html body .brand span{color:#d9d2c5!important;}
-html body .compose-button{
-  background:#d97979!important;
-  color:#fff!important;
-  box-shadow:0 9px 20px rgba(217,121,121,.20)!important;
-}
-html body .compose-button:hover{background:#e48686!important;}
-html body .nav-item{color:#bdb9af!important;}
-html body .nav-item:hover{background:rgba(255,255,255,.07)!important;color:#fff!important;}
-html body .nav-item.active{
-  background:#f6f1e7!important;
-  color:#1b1b18!important;
-  box-shadow:0 9px 22px rgba(0,0,0,.18)!important;
-}
-html body .account-button{border-top-color:rgba(255,255,255,.10)!important;}
-html body .account-button:hover{background:transparent!important;color:#fff!important;}
-html body .badge{background:#d97979!important;color:#fff!important;}
+html body .brand{padding:0 14px!important;color:#152b25!important;}
+html body .brand strong{color:#152b25!important;font:900 24px/1 Georgia,serif!important;letter-spacing:-.08em!important;}
+html body .brand span{display:none!important;}
+html body .compose-button{display:none!important;}
+html body .nav-list{gap:2px!important;margin-top:68px!important;}
+html body .nav-item{min-height:43px!important;gap:8px!important;padding:0 12px!important;border-radius:12px!important;color:#263a34!important;}
+html body .nav-item>span:not(.avatar){width:17px!important;font-size:15px!important;color:#152b25!important;}
+html body .nav-item b{font-size:12px!important;white-space:nowrap!important;}
+html body .nav-item:hover{background:#fff2f3!important;color:#152b25!important;}
+html body .nav-item.active{background:#ffe5e8!important;color:#ff7f8b!important;box-shadow:none!important;}
+html body .nav-item.active>span:not(.avatar){color:#ff7f8b!important;}
+html body .nav-item[data-nav="echo"]{margin-top:auto!important;}
+html body .badge{right:5px!important;top:5px!important;background:#ff8791!important;color:#fff!important;}
+html body .account-button{width:48px!important;min-height:48px!important;margin:12px 0 0 12px!important;padding:0!important;border:0!important;border-radius:50%!important;}
+html body .account-button:hover{background:#fff2f3!important;}
+html body .account-button b{display:none!important;}
+html body .account-button .avatar-small{width:42px!important;height:42px!important;}
 
 html body .main-content,
 html body .view,
@@ -49,87 +47,91 @@ html body .home-wrap,
 html body .compose-page,
 html body .rooms-page,
 html body .archive-page,
-html body .social-page{
-  background:#eee9df!important;
-}
-html body .topbar{
-  border-bottom-color:rgba(27,27,24,.12)!important;
-  background:rgba(238,233,223,.94)!important;
-}
-html body .section-heading{
-  border-bottom-color:rgba(27,27,24,.13)!important;
-  background:rgba(255,253,247,.72)!important;
-}
+html body .social-page{background:#fff!important;}
+html body .topbar{height:68px!important;padding:0 28px!important;border-bottom:1px solid #e8e2da!important;background:rgba(255,255,255,.96)!important;box-shadow:none!important;}
+html body .topbar strong{color:#152b25!important;}
+html body .app-shell[data-view="home"] .topbar{display:none!important;}
+html body .app-shell[data-view="home"] .view{min-height:100vh!important;}
 
+html body .home-wrap{position:relative!important;width:min(1080px,calc(100% - 86px))!important;min-height:100vh!important;margin:0 auto!important;padding:53px 0 30px!important;}
 html body .hero-card{
-  background:#181916!important;
-  color:#fffdf7!important;
-  box-shadow:0 18px 45px rgba(24,25,22,.16)!important;
+  position:relative!important;
+  display:block!important;
+  overflow:hidden!important;
+  min-height:462px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:20px!important;
+  background:linear-gradient(120deg,#faf7f4 0%,#f7f4f0 55%,#f0ece7 100%)!important;
+  color:#101513!important;
+  box-shadow:none!important;
 }
-html body .hero-card:after{
-  border-color:rgba(255,253,247,.15)!important;
-  box-shadow:0 0 0 55px rgba(255,253,247,.035),0 0 0 110px rgba(255,253,247,.025)!important;
+html body .hero-card::after{display:none!important;}
+html body .hero-content{position:relative!important;z-index:3!important;width:58%!important;padding:48px 0 42px 58px!important;}
+html body .hero-eyebrow{margin:0!important;color:#ff8994!important;font-size:10px!important;font-weight:900!important;letter-spacing:.03em!important;}
+html body .hero-card h1{margin:39px 0 20px!important;color:#050706!important;font:900 clamp(56px,6vw,82px)/.92 "Microsoft YaHei UI","PingFang SC",sans-serif!important;letter-spacing:-.09em!important;}
+html body .hero-card h2{margin:0!important;color:#0a0d0c!important;font-size:27px!important;line-height:1.35!important;letter-spacing:.01em!important;}
+html body .hero-copy{margin:23px 0 0!important;color:#202623!important;font-size:15px!important;line-height:1.55!important;}
+html body .hero-actions{margin-top:30px!important;}
+html body .hero-card .primary{min-width:154px!important;min-height:51px!important;padding:0 24px!important;border:0!important;border-radius:17px!important;background:#ffe1e4!important;color:#111514!important;box-shadow:none!important;font-size:17px!important;}
+html body .hero-card .primary:hover{background:#ffd4d8!important;transform:translateY(-1px)!important;}
+html body .hero-visual{position:absolute!important;z-index:1!important;inset:0 0 0 54%!important;overflow:hidden!important;}
+html body .hero-visual::before{content:""!important;position:absolute!important;inset:26px 22px -80px 70px!important;border-radius:50% 50% 0 0!important;background:linear-gradient(110deg,rgba(235,232,228,.6),rgba(255,255,255,.92))!important;}
+html body .hero-visual>img{position:absolute!important;z-index:1!important;right:-2px!important;bottom:-26px!important;width:91%!important;height:94%!important;object-fit:cover!important;object-position:center 44%!important;mix-blend-mode:multiply!important;filter:saturate(.75) contrast(.98)!important;}
+html body .hero-note{
+  position:absolute!important;
+  z-index:2!important;
+  display:block!important;
+  padding:13px 15px!important;
+  border:1px solid rgba(211,205,198,.55)!important;
+  border-radius:11px!important;
+  background:rgba(255,255,255,.9)!important;
+  color:#202522!important;
+  box-shadow:0 14px 34px rgba(51,43,35,.08)!important;
+  font-size:14px!important;
+  font-weight:800!important;
+  line-height:1.35!important;
+  transform:rotate(var(--tilt,0deg))!important;
+  backdrop-filter:blur(5px)!important;
 }
-html body .hero-card>p:first-child,
-html body .eyebrow,
-html body .pending-card>span,
+html body .hero-note>i{position:absolute!important;right:14px!important;top:-9px!important;width:18px!important;height:18px!important;border:1px solid #df7581!important;border-radius:50%!important;background:linear-gradient(135deg,#ffd2d6,#ee8c96)!important;box-shadow:0 4px 8px rgba(176,94,102,.2)!important;}
+html body .hero-note small{display:block!important;margin-top:7px!important;font-size:9px!important;font-weight:500!important;line-height:1.65!important;}
+html body .hero-note small b{display:inline-grid!important;width:13px!important;height:13px!important;place-items:center!important;border-radius:50%!important;background:#ff9ba4!important;color:#fff!important;font-size:8px!important;}
+html body .note-day{--tilt:5deg;left:40%!important;top:30px!important;}
+html body .note-poll{--tilt:-4deg;left:20%!important;top:108px!important;}
+html body .note-lie{--tilt:3deg;right:32px!important;top:78px!important;}
+html body .note-open{--tilt:3deg;left:12%!important;bottom:84px!important;font-size:12px!important;}
+html body .note-news{--tilt:-3deg;right:12px!important;bottom:72px!important;font-size:12px!important;}
+
+html body .home-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important;margin-top:32px!important;}
+html body .feature-card{position:relative!important;min-height:161px!important;padding:23px!important;border:1px solid #e4d8c8!important;border-radius:18px!important;background:#fffaf2!important;color:#152b25!important;box-shadow:none!important;}
+html body .feature-card strong{font-size:22px!important;color:#152b25!important;}
+html body .feature-card span{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;}
+html body .feature-card:hover{border-color:#efb9bd!important;background:#fff6f2!important;transform:translateY(-2px)!important;}
+html body .phase-note{right:3px!important;bottom:12px!important;color:transparent!important;font-size:0!important;}
+html body .phase-note::after{color:#aaa49d!important;font-size:10px!important;}
+
+/* Shared desktop surfaces follow the home page's white / cream / pink language. */
+html body .section-heading{border-bottom-color:#e7e0d7!important;background:#fffaf4!important;}
 html body .section-heading p,
 html body .chat-heading p,
+html body .eyebrow,
+html body .pending-card>span,
 html body .archive-hero small,
-html body .archive-section header small{
-  color:#e59a9a!important;
-}
-html body .hero-copy{color:#d9d2c5!important;}
-html body .hero-card .primary{
-  border-color:#d97979!important;
-  background:#d97979!important;
-  color:#fff!important;
-}
-html body .hero-card .primary:hover{background:#e48686!important;}
-html body .hero-card .secondary{border-color:rgba(255,255,255,.30)!important;color:#fff!important;}
-html body .feature-card{
-  border-color:rgba(27,27,24,.13)!important;
-  background:#fffdf7!important;
-  color:#1b1b18!important;
-}
-html body .feature-card small{color:#a85f5f!important;}
-html body .feature-card span{color:#756f64!important;}
-html body .feature-card:hover{border-color:rgba(217,121,121,.48)!important;}
-html body .phase-note{color:transparent!important;font-size:0!important;}
-html body .phase-note::after{
-  content:'Windows 1.1.10 本地前端 · 发布工具对齐版'!important;
-  color:#8e877d!important;
-  font-size:11px!important;
-}
-
-/* “发牢骚状态”已从产品中移除：保留数据库旧字段仅用于历史兼容。 */
-html body .compose-card>label:has(+ .status-options),
-html body .status-options,
-html body .square-post .post-meta>span:first-child,
-html body .detail-post .post-meta>span:first-child{
-  display:none!important;
-}
-
-html body .primary{
-  border-color:#d97979!important;
-  background:#d97979!important;
-  color:#fff!important;
-  box-shadow:0 8px 20px rgba(217,121,121,.16)!important;
-}
-html body .primary:hover{background:#e48686!important;}
+html body .archive-section header small{color:#ef8790!important;}
+html body .primary{border-color:#ff969e!important;background:#ff969e!important;color:#fff!important;box-shadow:none!important;}
+html body .primary:hover{background:#f48791!important;}
+html body .secondary{border-color:#ddd6cd!important;background:#fff!important;color:#152b25!important;}
+html body .secondary:hover{border-color:#efb4ba!important;background:#fff7f7!important;}
 html body button:focus-visible,
 html body input:focus-visible,
 html body textarea:focus-visible,
-html body a:focus-visible{outline-color:rgba(217,121,121,.35)!important;}
+html body a:focus-visible{outline-color:rgba(255,150,158,.38)!important;}
 html body .buddy-tabs button.active,
 html body .emoji-tabs button.active,
 html body .reaction-row button.active,
 html body .poll-filters button.active,
-html body .archive-tabs button.active{
-  border-color:#181916!important;
-  background:#181916!important;
-  color:#fff!important;
-}
+html body .archive-tabs button.active{border-color:#152b25!important;background:#152b25!important;color:#fff!important;}
 
 html body .pending-card,
 html body .state-card,
@@ -145,66 +147,98 @@ html body .echo-item,
 html body .buddy-item,
 html body .chat-heading,
 html body .chat-bubble,
-html body .account-panel{
-  background:#fffdf7!important;
-  color:#1b1b18!important;
-}
-html body .state-card{background:rgba(255,253,247,.74)!important;}
+html body .account-panel{background:#fff!important;color:#152b25!important;box-shadow:none!important;}
+html body .state-card{background:#fffaf4!important;border-color:#e5ddd4!important;}
 html body .buddy-column,
 html body .square-feed,
 html body .bird-compose-host,
-html body .bird-feed{background:#eee9df!important;}
+html body .bird-feed{background:#f3f0ea!important;}
 html body .chat-column,
 html body .post-detail-column,
-html body .bird-detail-column{background:#fffdf7!important;}
-html body .chat-messages{
-  background-color:#fffdf7!important;
-  background-image:linear-gradient(rgba(27,27,24,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(27,27,24,.035) 1px,transparent 1px)!important;
-}
+html body .bird-detail-column{background:#fff!important;}
+html body .chat-messages{background-color:#fff!important;background-image:linear-gradient(rgba(21,43,37,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(21,43,37,.035) 1px,transparent 1px)!important;}
 html body .social-avatar,
 html body .archive-award>header>i,
 html body .archive-avatar,
-html body .archive-rule{background:#181916!important;color:#fff!important;}
-html body .chat-message.mine .chat-bubble{
-  border-color:#181916!important;
-  background:#181916!important;
-  color:#fff!important;
-}
-html body .buddy-search button{background:#181916!important;color:#fff!important;}
+html body .archive-rule{background:#152b25!important;color:#fff!important;}
+html body .chat-message.mine .chat-bubble{border-color:#152b25!important;background:#152b25!important;color:#fff!important;}
+html body .buddy-search button{background:#152b25!important;color:#fff!important;}
 html body .buddy-item:hover,
-html body .buddy-item.active{border-color:rgba(217,121,121,.48)!important;}
+html body .buddy-item.active{border-color:#f0afb5!important;background:#fff8f8!important;}
 html body .buddy-item.unread,
-html body .echo-item.unread{border-color:rgba(217,121,121,.58)!important;background:#fff5ef!important;}
+html body .echo-item.unread{border-color:#f0afb5!important;background:#fff7f3!important;}
 html body .buddy-section h3,
 html body .echo-main time,
 html body .buddy-main time,
 html body .bird-label,
-html body .archive-winner strong{color:#a65d5d!important;}
+html body .archive-winner strong{color:#bb666d!important;}
 html body .square-post.active,
-html body .bird-card:hover{border-color:#d97979!important;}
+html body .bird-card:hover{border-color:#ff969e!important;}
 html body .post-meta span,
 html body .poll-tags span,
 html body .daily-count,
 html body .replying,
-html body .poll-conclusion{background:#f1e6df!important;color:#875656!important;}
+html body .poll-conclusion{background:#fff0ee!important;color:#9c5f64!important;}
 html body .comment-actions button,
 html body .replying button,
-html body .form-links button{color:#975858!important;}
-
-html body .archive-hero{
-  background:linear-gradient(135deg,#181916,#2b2728)!important;
-  color:#fffdf7!important;
-  box-shadow:0 16px 40px rgba(24,25,22,.16)!important;
-}
+html body .form-links button{color:#ad646a!important;}
+html body .compose-card,
+html body .poll-create-card,
+html body .bird-compose-card,
+html body .comment-compose-card{background:#fffaf4!important;border-color:#e4ddd3!important;box-shadow:none!important;}
+html body input,
+html body textarea{border-color:#ddd7cf!important;background:#fff!important;color:#152b25!important;}
+html body .archive-hero{background:linear-gradient(135deg,#152b25,#28443c)!important;color:#fff!important;box-shadow:none!important;}
 html body .archive-hero p,
-html body .archive-rule span{color:#d9d2c5!important;}
-html body .archive-award blockquote{border-left-color:#d97979!important;background:#f8e9e5!important;}
-html body .modal{background:rgba(15,15,14,.54)!important;}
-html body .account-panel{box-shadow:0 28px 80px rgba(15,15,14,.25)!important;}
-html body .toast{background:#181916!important;color:#fff!important;}
+html body .archive-rule span{color:#dce4e1!important;}
+html body .archive-award blockquote{border-left-color:#ff969e!important;background:#fff1ef!important;}
+html body .modal{background:rgba(22,28,26,.42)!important;}
+html body .account-panel{border:1px solid #e7dfd5!important;box-shadow:0 28px 80px rgba(21,43,37,.18)!important;}
+html body .toast{background:#152b25!important;color:#fff!important;}
 html body .bird-cover span,
 html body .sticker-delete,
-html body .bird-preview-grid button{background:rgba(24,25,22,.84)!important;color:#fff!important;}
+html body .bird-preview-grid button{background:rgba(21,43,37,.86)!important;color:#fff!important;}
+html body .connection-state::before{background:#6b9b7e!important;}
+html body .connection-state.offline::before{background:#ff969e!important;}
 
-html body .connection-state:before{background:#6b9b7e!important;}
-html body .connection-state.offline:before{background:#d97979!important;}
+/* Legacy post-status fields stay hidden while old records remain compatible. */
+html body .compose-card>label:has(+ .status-options),
+html body .status-options,
+html body .square-post .post-meta>span:first-child,
+html body .detail-post .post-meta>span:first-child{display:none!important;}
+
+@media(max-width:1050px){
+  html body .home-wrap{width:calc(100% - 46px)!important;}
+  html body .hero-content{width:62%!important;padding-left:42px!important;}
+  html body .hero-card h1{font-size:57px!important;}
+  html body .hero-visual{left:52%!important;}
+  html body .note-day{left:43%!important;}
+}
+
+@media(max-width:930px){
+  :root{--rail:78px!important;}
+  html body .app-shell{padding-left:78px!important;}
+  html body .sidebar{width:78px!important;padding-inline:9px!important;}
+  html body .brand{justify-content:center!important;padding-inline:0!important;}
+  html body .nav-list{margin-top:54px!important;}
+  html body .nav-item{justify-content:center!important;padding:0!important;}
+  html body .nav-item b{display:none!important;}
+  html body .nav-item>span:not(.avatar){width:auto!important;}
+  html body .account-button{margin-left:6px!important;}
+  html body .home-wrap{width:calc(100% - 36px)!important;padding-top:36px!important;}
+  html body .hero-card{min-height:430px!important;}
+  html body .hero-content{width:64%!important;padding:42px 0 36px 34px!important;}
+  html body .hero-card h1{font-size:51px!important;}
+  html body .hero-card h2{font-size:23px!important;}
+  html body .hero-copy{font-size:13px!important;}
+  html body .hero-note{transform:scale(.82) rotate(var(--tilt,0deg))!important;}
+  html body .home-grid{gap:10px!important;margin-top:18px!important;}
+}
+
+@media(max-width:790px){
+  html body .hero-content{width:100%!important;padding-right:28px!important;}
+  html body .hero-visual{left:38%!important;opacity:.16!important;}
+  html body .hero-note{display:none!important;}
+  html body .home-grid{grid-template-columns:1fr!important;}
+  html body .feature-card{min-height:100px!important;}
+}

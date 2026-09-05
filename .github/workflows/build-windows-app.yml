@@ -63,24 +63,24 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.1\.23') { throw "Unexpected installer name: $($installer.Name)" }
+          if ($installer.Name -notmatch '1\.1\.24') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
 
           Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
           Copy-Item $signatureFile.FullName 'download/fw-lab-windows-latest.exe.sig' -Force
-          Copy-Item $installer.FullName 'download/fw-lab-windows-1.1.23-setup.exe' -Force
-          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.1.23-setup.exe.sig' -Force
+          Copy-Item $installer.FullName 'download/fw-lab-windows-1.1.24-setup.exe' -Force
+          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.1.24-setup.exe.sig' -Force
 
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.1.23：用户资料同步修复版。精神广场、回声、搭子、私聊以及其他显示用户资料的缓存页面会先显示本地内容，再单独静默刷新可见用户的最新昵称和头像；不再因旧缓存长期显示修改前的资料。继续保留全局缓存、自定义快捷方式和更新线路修复。'
+          $notes = 'Windows 1.1.24：电脑端视觉统一版。首页按新版设计重做，采用白色、暖灰、深绿和浅粉视觉；观鸟台更名为新闻专区；精神广场、学术研讨、回声、搭子、档案及账号弹窗统一为同一套卡片、按钮和留白。所有原有功能、缓存、私聊、更新线路和自定义快捷方式保持不变。'
 
           $metadata = @{
             available = $true
-            version = '1.1.23'
+            version = '1.1.24'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
@@ -92,7 +92,7 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.1.23'
+            version = '1.1.24'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
@@ -107,10 +107,10 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.1.23
+          name: fw-lab-windows-1.1.24
           path: |
-            download/fw-lab-windows-1.1.23-setup.exe
-            download/fw-lab-windows-1.1.23-setup.exe.sig
+            download/fw-lab-windows-1.1.24-setup.exe
+            download/fw-lab-windows-1.1.24-setup.exe.sig
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
             download/windows-updater.json
@@ -122,14 +122,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag='windows-v1.1.23'
-          asset='download/fw-lab-windows-1.1.23-setup.exe'
-          signature='download/fw-lab-windows-1.1.23-setup.exe.sig'
+          tag='windows-v1.1.24'
+          asset='download/fw-lab-windows-1.1.24-setup.exe'
+          signature='download/fw-lab-windows-1.1.24-setup.exe.sig'
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" "$signature" --clobber
           else
-            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.23' --notes '修复精神广场、回声、搭子、私聊及其他缓存页面长期显示旧昵称和旧头像的问题。'
+            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.24' --notes '重做电脑端首页并统一全软件视觉，观鸟台更名为新闻专区；功能与数据逻辑保持不变。'
           fi
 
       - name: Publish installer to website
@@ -164,6 +164,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.1.23"
+            git commit -m "Release Windows 1.1.24"
             git push origin HEAD:main
           fi
