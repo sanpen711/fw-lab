@@ -1,11 +1,11 @@
 {
+  "pub_date": "2026-09-05T01:43:39.5390581Z",
+  "notes": "Windows 1.1.19：精神广场缓存修复版。重复进入广场时直接复用内存和 SQLite 内容，一分钟内不重复请求数据库；过期后静默后台同步，内容没有变化时不再重绘整个列表。实时帖子、评论和互动更新继续保留。",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlJmTmdVU3JOR2llNWdhbVdBTFdSRjJncUZxTVp6Tkdxc0xucE9MZVY5RWxpRG55SGV1MUl4alVpZVRwaFZSZnVYclg3Q2JlT0xMNGdRS2czNTEreFE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NTE3ODAyCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMThfeDY0LXNldHVwLmV4ZQp4U20xSCswdnN0YkxrWTh3K0FKQmdJLzdyWkxqbUduOEhiOVNZaCthTSs5WFMvT1Z1cGdJSWZiSmY1bkdRek5NNG1wMkwrblEwY011bzFkY0ZaVVdEZz09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlZwSThHTDkrbFNlUGNmWXR2K3p3QzY2cHFKNUpSbUJjVjFtS2VLNHpPMFJIdXdrMmtGNGtndmNVVUhSVlFsT3hTc0RVTEt6blZpZzFqSmJjdlYrNmdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NTcyNjE4CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMTlfeDY0LXNldHVwLmV4ZQp3R3J0ZGlmZ1QxbzdnZ1A5VitLazRqUVdYeElqL0VHUDdQcjJoRzAxR3dFTVdaVFAvM1VSWjUrN24yTVZiQ21oV3c4NUs5aFNmM1p5RnBsUmZyc3NBQT09Cg==",
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
     }
   },
-  "version": "1.1.18",
-  "notes": "Windows 1.1.18：旧启动入口修复版。更新安装完成时会把桌面、开始菜单和已有任务栏快捷方式重新指向刚安装的新版，避免新版退出后又从旧入口打开 1.1.14。继续包含搭子长聊天独立滚动和更新安装确认修复。",
-  "pub_date": "2026-09-04T10:30:02.6541771Z"
+  "version": "1.1.19"
 }

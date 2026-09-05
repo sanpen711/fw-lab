@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.1.18：旧启动入口修复版。更新安装完成时会把桌面、开始菜单和已有任务栏快捷方式重新指向刚安装的新版，避免新版退出后又从旧入口打开 1.1.14。继续包含搭子长聊天独立滚动和更新安装确认修复。",
-  "publishedAt": "2026-09-04T10:30:02.6541771Z",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
   "platform": "Windows 10/11 64 位",
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "available": true,
+  "publishedAt": "2026-09-05T01:43:39.5390581Z",
+  "version": "1.1.19",
+  "notes": "Windows 1.1.19：精神广场缓存修复版。重复进入广场时直接复用内存和 SQLite 内容，一分钟内不重复请求数据库；过期后静默后台同步，内容没有变化时不再重绘整个列表。实时帖子、评论和互动更新继续保留。",
+  "sha256": "064beba1276ec981b384c8544c4187929898abb23c1f29076bab417a25ae7415",
   "rollbackVersion": "1.0.5",
-  "sha256": "0b05b2ca0849676205d49ad79c625380df8559f68ce940316ce85d3bbb258b19",
-  "version": "1.1.18"
+  "available": true
 }
