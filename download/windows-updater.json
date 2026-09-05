@@ -2,10 +2,10 @@
   "platforms": {
     "windows-x86_64": {
       "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlpMYnFIMDB3eGFRdU1YRFVHd0NmeXRqZHJKRVYxYmpFNzdtZ01XQ2p1T2c1SDVMUkg1QkFjOXkwNzZGVmY3aTlVd0xjekFpK3AyL2FycGJsN3BZNXdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NTc4NTU0CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjFfeDY0LXNldHVwLmV4ZQptMHF2d1ZDejByOGFiTndMeko0Uk1rUWlzYVRRTjNzcWJ0YnVMOVl3Q291MDZvVEJrVEJaMnp1Z0FFb21MT0ZjU3EwNmtrc1BIejR1L3E2MEJUZHFBQT09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmFIUU9VYlV3cElzVlZCY09nM1VicXlmQ1ljeHVlc0tydkhsNkhtUlRnNEZtSUFXR2hPaVkzVDd4NXhuZVhPR2dkeERoS04xWHZmNTdYeWRTb3JwNmdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NTg5NTc3CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjJfeDY0LXNldHVwLmV4ZQpZZnYyYVNwSnYrZldCQVBhQkx1VU1IRHlKYjBScFlIMjhIZkVqRm5LL2QwcmpQZTV1VUZpQVJBRTl1UGNFZXc3TE1GU25kR3M4b1VyR2VQVUVsdlRDUT09Cg=="
     }
   },
-  "version": "1.1.21",
-  "pub_date": "2026-09-05T03:22:35.0936639Z",
-  "notes": "Windows 1.1.21：精神广场重启缓存修复版。应用重启后会先使用本机恢复的账号读取上次缓存并立即显示，再在后台静默刷新；不再因联网确认尚未完成而读错缓存。继续保留用户自定义桌面快捷方式。"
+  "notes": "Windows 1.1.22：全局缓存时序修复版。搭子、回声、私聊、自定义表情和红点会在账号联网确认前先显示本地缓存，确认后自动静默同步；学术研讨、观鸟台和档案的后台更新不再覆盖缓存首屏。继续保留精神广场与自定义快捷方式修复。",
+  "pub_date": "2026-09-05T06:26:18.1875767Z",
+  "version": "1.1.22"
 }

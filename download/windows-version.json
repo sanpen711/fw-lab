@@ -1,11 +1,11 @@
 {
-  "version": "1.1.21",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
   "rollbackVersion": "1.0.5",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "publishedAt": "2026-09-05T06:26:18.1875767Z",
+  "sha256": "a580796b88692b832554e982f6f2368f4b2b5e12b548fbad3f8b40ec9dc54d96",
   "available": true,
-  "sha256": "317276e410549b699dc3f956a818aafad407dd827c71194d43cb5708d62d1e04",
+  "notes": "Windows 1.1.22：全局缓存时序修复版。搭子、回声、私聊、自定义表情和红点会在账号联网确认前先显示本地缓存，确认后自动静默同步；学术研讨、观鸟台和档案的后台更新不再覆盖缓存首屏。继续保留精神广场与自定义快捷方式修复。",
+  "version": "1.1.22",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
   "platform": "Windows 10/11 64 位",
-  "publishedAt": "2026-09-05T03:22:35.0936639Z",
-  "notes": "Windows 1.1.21：精神广场重启缓存修复版。应用重启后会先使用本机恢复的账号读取上次缓存并立即显示，再在后台静默刷新；不再因联网确认尚未完成而读错缓存。继续保留用户自定义桌面快捷方式。"
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
 }
