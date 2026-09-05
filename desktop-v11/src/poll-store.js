@@ -8,6 +8,7 @@ let channel=null;
 let active=false;
 let refreshTimer=null;
 let hydratedCacheUser='';
+let profileRefreshPromise=null;
 
 function snapshot(){return {...state,polls:state.polls.map(poll=>({...poll,options:[...(poll.options||[])],stats:{...(poll.stats||{})},myVote:poll.myVote&&{...poll.myVote}})),profiles:{...state.profiles}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
@@ -25,6 +26,14 @@ async function hydrateCache(){
   state.polls=payload.polls.slice(0,80);state.profiles=payload.profiles&&typeof payload.profiles==='object'?payload.profiles:{};state.dailyCount=payload.dailyCount??null;state.loaded=true;state.loading=false;state.error='';emit();return true;
 }
 function persistCache(){return desktopCache.write('polls',cacheUser(),{polls:state.polls.slice(0,80),profiles:state.profiles,dailyCount:state.dailyCount});}
+
+function refreshVisibleProfiles(){
+  if(profileRefreshPromise)return profileRefreshPromise;
+  const owner=cacheUser();const ids=Array.from(new Set(state.polls.map(row=>row.user_id).filter(Boolean).map(String)));if(!ids.length)return Promise.resolve(state.profiles);
+  const previousSignature=contentSignature([],state.profiles,null);
+  profileRefreshPromise=(async()=>{count();const rows=fail(await client.from('profiles').select('id,nickname,avatar_url').in('id',ids),'读取发起人资料失败')||[];if(cacheUser()!==owner)return state.profiles;const profiles={...state.profiles};rows.forEach(row=>{profiles[String(row.id)]=row;});const changed=previousSignature!==contentSignature([],profiles,null);if(changed){state.profiles=profiles;await persistCache();emit();}return profiles;})().catch(()=>state.profiles).finally(()=>{profileRefreshPromise=null;});
+  return profileRefreshPromise;
+}
 
 async function load(force=false){
   if(!force&&!state.loaded){const hit=await hydrateCache();if(hit){load(true).catch(()=>{});return state.polls;}}
@@ -46,7 +55,7 @@ async function load(force=false){
 }
 
 function schedule(){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(active)load(true).catch(()=>{});},240);}
-function activate(){active=true;if(!channel){channel=client.channel('desktop-v11-polls').on('postgres_changes',{event:'*',schema:'public',table:'polls'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'poll_options'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'poll_votes'},schedule).subscribe();}return load();}
+function activate(){active=true;if(!channel){channel=client.channel('desktop-v11-polls').on('postgres_changes',{event:'*',schema:'public',table:'polls'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'poll_options'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'poll_votes'},schedule).subscribe();}const result=load();if(state.loaded)refreshVisibleProfiles().catch(()=>{});return result;}
 function deactivate(){active=false;clearTimeout(refreshTimer);if(channel){client.removeChannel(channel);channel=null;}}
 
 async function mutate(action){requireUser();if(state.busy)throw new Error('正在处理，请稍候。');state.busy=true;emit();try{const result=await action();await load(true);return result;}finally{state.busy=false;emit();}}

@@ -5,6 +5,7 @@ const client=authStore.client;
 const listeners=new Set();
 const state={loaded:false,loading:false,error:'',weekly:{like:[],same:[],tissue:[]},daily:{like:[],same:[],tissue:[]},ranges:null};
 let hydratedCache=false;
+let profileRefreshPromise=null;
 
 function snapshot(){return {...state,weekly:{like:[...state.weekly.like],same:[...state.weekly.same],tissue:[...state.weekly.tissue]},daily:{like:[...state.daily.like],same:[...state.daily.same],tissue:[...state.daily.tissue]},ranges:state.ranges&&{...state.ranges}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
@@ -33,9 +34,17 @@ async function hydrateCache(){
 }
 function persistCache(){return desktopCache.write('archive','public',{weekly:state.weekly,daily:state.daily,ranges:state.ranges});}
 
+function refreshVisibleProfiles(){
+  if(profileRefreshPromise)return profileRefreshPromise;
+  const entries=['like','same','tissue'].flatMap(type=>[...(state.weekly[type]||[]),...(state.daily[type]||[])]);const ids=Array.from(new Set(entries.map(row=>row.user_id).filter(Boolean).map(String)));if(!ids.length)return Promise.resolve(snapshot());
+  const previousSignature=contentSignature(state.weekly,state.daily,state.ranges);
+  profileRefreshPromise=(async()=>{count();const rows=fail(await client.from('profiles').select('id,nickname,avatar_url').in('id',ids),'读取档案用户失败')||[];const profiles={};rows.forEach(row=>{profiles[String(row.id)]=row;});const patch=groups=>Object.fromEntries(['like','same','tissue'].map(type=>[type,(groups[type]||[]).map(entry=>{const profile=profiles[String(entry.user_id)];return profile?{...entry,nickname:profile.nickname||'匿名研究员',avatar_url:profile.avatar_url||''}:entry;})]));const weekly=patch(state.weekly);const daily=patch(state.daily);const changed=previousSignature!==contentSignature(weekly,daily,state.ranges);if(changed){state.weekly=weekly;state.daily=daily;await persistCache();emit();}return snapshot();})().catch(()=>snapshot()).finally(()=>{profileRefreshPromise=null;});
+  return profileRefreshPromise;
+}
+
 async function load(force=false){
   if(!force&&!state.loaded){const hit=await hydrateCache();if(hit){load(true).catch(()=>{});return snapshot();}}
-  if(state.loading||(!force&&state.loaded))return snapshot();const showInitial=!state.loaded;const previousSignature=contentSignature(state.weekly,state.daily,state.ranges);state.loading=true;state.error='';if(showInitial)emit();
+  if(state.loading)return snapshot();if(!force&&state.loaded){refreshVisibleProfiles().catch(()=>{});return snapshot();}const showInitial=!state.loaded;const previousSignature=contentSignature(state.weekly,state.daily,state.ranges);state.loading=true;state.error='';if(showInitial)emit();
   try{
     const span=ranges();count();const posts=fail(await client.from('posts').select('id,user_id,content,status_tag,created_at').eq('is_deleted',false).gte('created_at',span.lastMonday.toISOString()).lt('created_at',span.today.toISOString()).order('created_at',{ascending:false}).limit(1000),'读取档案帖子失败')||[];const ids=posts.map(post=>post.id);let reactions=[];let profileRows=[];
     if(ids.length){count();reactions=fail(await client.from('reactions').select('post_id,user_id,type').in('post_id',ids),'读取档案互动失败')||[];const userIds=Array.from(new Set(posts.map(post=>post.user_id).filter(Boolean)));if(userIds.length){count();profileRows=fail(await client.from('profiles').select('id,nickname,avatar_url').in('id',userIds),'读取档案用户失败')||[];}}

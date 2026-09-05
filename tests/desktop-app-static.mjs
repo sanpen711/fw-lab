@@ -242,8 +242,8 @@ assert.match(workflow, /npm --prefix desktop-v11 run test:static/, '正式构建
 assert.match(workflow, /npx tauri build --config src-tauri\/tauri\.v11\.conf\.json --bundles nsis/, '正式构建必须使用 Windows 1.1 本地前端配置');
 assert.match(workflow, /fw-lab-windows-latest\.exe/);
 assert.match(workflow, /TAURI_SIGNING_PRIVATE_KEY/);
-assert.match(workflow, /fw-lab-windows-1\.1\.22/);
-assert.match(workflow, /version = '1\.1\.22'/);
+assert.match(workflow, /fw-lab-windows-1\.1\.23/);
+assert.match(workflow, /version = '1\.1\.23'/);
 assert.match(workflow, /fw-lab-windows-1\.0\.5-setup\.exe/, '正式发布必须保留 Windows 1.0.5 回退安装包');
 assert.match(workflow, /rollbackVersion = '1\.0\.5'/);
 assert.match(workflow, /fw-lab-windows-latest\.exe\.sig/);

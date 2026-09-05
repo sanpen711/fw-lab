@@ -8,6 +8,7 @@ let channel=null;
 let active=false;
 let refreshTimer=null;
 let hydratedCache=false;
+let profileRefreshPromise=null;
 
 function snapshot(){return {...state,posts:state.posts.map(post=>({...post,images:[...(post.images||[])],comments:[...(post.comments||[])],reactions:[...(post.reactions||[])]})),profiles:{...state.profiles}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
@@ -25,6 +26,14 @@ async function hydrateCache(){
 }
 function persistCache(){return desktopCache.write('bird','public',{posts:state.posts.slice(0,100),profiles:state.profiles});}
 
+function refreshVisibleProfiles(){
+  if(profileRefreshPromise)return profileRefreshPromise;
+  const ids=Array.from(new Set(state.posts.filter(post=>post.display_mode==='profile').map(post=>post.user_id).concat(state.posts.flatMap(post=>(post.comments||[]).map(comment=>comment.user_id))).filter(Boolean).map(String)));if(!ids.length)return Promise.resolve(state.profiles);
+  const previousSignature=contentSignature([],state.profiles);
+  profileRefreshPromise=(async()=>{count();const rows=fail(await client.from('profiles').select('id,nickname,avatar_url').in('id',ids),'读取观察员资料失败')||[];const profiles={...state.profiles};rows.forEach(row=>{profiles[String(row.id)]=row;});const changed=previousSignature!==contentSignature([],profiles);if(changed){state.profiles=profiles;await persistCache();emit();}return profiles;})().catch(()=>state.profiles).finally(()=>{profileRefreshPromise=null;});
+  return profileRefreshPromise;
+}
+
 async function load(force=false){
   if(!force&&!state.loaded){const hit=await hydrateCache();if(hit){load(true).catch(()=>{});return state.posts;}}
   if(state.loading||(!force&&state.loaded))return state.posts;const showInitial=!state.loaded;const previousSignature=contentSignature(state.posts,state.profiles);state.loading=true;state.error='';if(showInitial)emit();
@@ -37,7 +46,7 @@ async function load(force=false){
 }
 
 function schedule(){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(active)load(true).catch(()=>{});},230);}
-function activate(){active=true;if(!channel){channel=client.channel('desktop-v11-bird').on('postgres_changes',{event:'*',schema:'public',table:'bird_posts'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'bird_comments'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'bird_reactions'},schedule).subscribe();}return load();}
+function activate(){active=true;if(!channel){channel=client.channel('desktop-v11-bird').on('postgres_changes',{event:'*',schema:'public',table:'bird_posts'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'bird_comments'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'bird_reactions'},schedule).subscribe();}const result=load();if(state.loaded)refreshVisibleProfiles().catch(()=>{});return result;}
 function deactivate(){active=false;clearTimeout(refreshTimer);if(channel){client.removeChannel(channel);channel=null;}}
 function openPost(id){state.openPostId=String(id||'');emit();}
 function closePost(){state.openPostId='';emit();}

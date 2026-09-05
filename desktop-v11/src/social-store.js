@@ -22,6 +22,8 @@ let badgeRefreshQueued=false;
 let buddyTimer=null;
 let buddyPromise=null;
 let buddyRefreshQueued=false;
+let echoProfilePromise=null;
+let buddyProfilePromise=null;
 let chatOpenToken=0;
 let pendingMessageSequence=0;
 const privateReadPromises=new Map();
@@ -73,7 +75,7 @@ async function hydrateChatCache(userId,targetId,openToken=chatOpenToken){
   const cached=await desktopCache.read('chat',userId,targetId);const payload=cached?.payload;
   if(openToken!==chatOpenToken||String(cacheUser()?.id||'')!==String(userId))return false;
   if(!payload||!Array.isArray(payload.rows))return false;
-  state.chat={targetId:String(targetId),conversationId:payload.conversationId||null,profile:payload.profile||state.buddy.profiles[targetId]||null,rows:payload.rows.filter(row=>!row.__pending).slice(-200),loading:true,sending:false};emit();return true;
+  state.chat={targetId:String(targetId),conversationId:payload.conversationId||null,profile:state.buddy.profiles[targetId]||payload.profile||null,rows:payload.rows.filter(row=>!row.__pending).slice(-200),loading:true,sending:false};emit();return true;
 }
 function persistChatCache(userId=cacheUser()?.id){
   if(!userId||!state.chat.targetId)return Promise.resolve(false);
@@ -96,12 +98,28 @@ function clearSocialState(){
   hydratedEchoUser='';hydratedBuddyUser='';hydratedStickersUser='';hydratedBadgesUser='';hydratedChatUser='';teardownChannels();emit();
 }
 
-async function fetchProfiles(ids,existing={}){
-  const missing=unique(ids).filter(id=>!existing[id]);
-  if(!missing.length) return existing;
+async function fetchProfiles(ids,existing={},refresh=false){
+  const requested=unique(ids);const wanted=refresh?requested:requested.filter(id=>!existing[id]);
+  if(!wanted.length) return existing;
   countContent();
-  const rows=fail(await client.from('profiles').select('id,nickname,avatar_url,lab_code').in('id',missing),'读取研究员资料失败')||[];
+  const rows=fail(await client.from('profiles').select('id,nickname,avatar_url,lab_code').in('id',wanted),'读取研究员资料失败')||[];
   const map={...existing};rows.forEach(row=>{map[row.id]=row;});return map;
+}
+
+function refreshEchoProfiles(){
+  if(echoProfilePromise)return echoProfilePromise;
+  const user=currentUser();const ids=unique(state.echo.rows.map(row=>row.actor_id));if(!user?.id||!ids.length)return Promise.resolve(state.echo.profiles);
+  const previousSignature=contentSignature(state.echo.profiles);
+  echoProfilePromise=fetchProfiles(ids,state.echo.profiles,true).then(async profiles=>{if(state.userId!==user.id)return state.echo.profiles;const changed=previousSignature!==contentSignature(profiles);if(changed){state.echo={...state.echo,profiles};await persistEchoCache(user.id);emit();}return profiles;}).catch(()=>state.echo.profiles).finally(()=>{echoProfilePromise=null;});
+  return echoProfilePromise;
+}
+
+function refreshBuddyProfiles(){
+  if(buddyProfilePromise)return buddyProfilePromise;
+  const user=currentUser();const ids=unique(state.buddy.rows.flatMap(row=>[row.requester_id,row.receiver_id]).concat(state.chat.targetId||[]));if(!user?.id||!ids.length)return Promise.resolve(state.buddy.profiles);
+  const previousSignature=contentSignature(state.buddy.profiles);
+  buddyProfilePromise=fetchProfiles(ids,state.buddy.profiles,true).then(async profiles=>{if(state.userId!==user.id)return state.buddy.profiles;const changed=previousSignature!==contentSignature(profiles);if(changed){state.buddy={...state.buddy,profiles};if(state.chat.targetId&&profiles[state.chat.targetId])state.chat={...state.chat,profile:profiles[state.chat.targetId]};await persistBuddyCache(user.id);if(state.chat.targetId)await persistChatCache(user.id);emit();}return profiles;}).catch(()=>state.buddy.profiles).finally(()=>{buddyProfilePromise=null;});
+  return buddyProfilePromise;
 }
 
 function scheduleBadges(){clearTimeout(badgeTimer);badgeTimer=setTimeout(()=>refreshBadges(true),180);}
@@ -193,7 +211,8 @@ async function loadEcho(force=false){
   if(!force&&!state.echo.loaded){const hit=await hydrateEchoCache(identity.id);if(hit){if(currentUser()?.id)loadEcho(true).catch(()=>{});return state.echo.rows;}}
   const user=currentUser();
   if(!user?.id){if(!state.echo.loaded&&!state.echo.loading){state.echo={...state.echo,loading:true};emit();}return state.echo.rows;}
-  if(state.echo.loading||(!force&&state.echo.loaded)) return state.echo.rows;
+  if(state.echo.loading)return state.echo.rows;
+  if(!force&&state.echo.loaded){refreshEchoProfiles().catch(()=>{});return state.echo.rows;}
   const showInitial=!state.echo.loaded;const previousSignature=contentSignature(state.echo.rows,state.echo.profiles);
   state.echo={...state.echo,loading:true};if(showInitial)emit();
   try{
@@ -203,7 +222,7 @@ async function loadEcho(force=false){
     const formalTargets=new Set(rows.filter(row=>row.type==='comment_reply'&&row.target_id).map(row=>String(row.target_id)));
     const fallback=(await replyFallback(user.id,force)).filter(row=>!formalTargets.has(String(row.target_id)));
     rows=rows.concat(fallback).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,100);
-    const profiles=await fetchProfiles(rows.map(row=>row.actor_id),state.echo.profiles);if(state.userId!==user.id)return state.echo.rows;const changed=previousSignature!==contentSignature(rows,profiles);
+    const profiles=await fetchProfiles(rows.map(row=>row.actor_id),state.echo.profiles,true);if(state.userId!==user.id)return state.echo.rows;const changed=previousSignature!==contentSignature(rows,profiles);
     state.echo={loaded:true,loading:false,rows,profiles};await persistEchoCache(user.id);if(changed||showInitial)emit();
     const unread=rows.filter(row=>!row.is_read).map(row=>row.id);
     if(unread.length) await markEchoRead(unread);
@@ -234,13 +253,13 @@ async function loadBuddy(force=false){
   const user=currentUser();
   if(!user?.id){if(!state.buddy.loaded&&!state.buddy.loading){state.buddy={...state.buddy,loading:true};emit();}return state.buddy.rows;}
   if(buddyPromise){if(force)buddyRefreshQueued=true;return buddyPromise;}
-  if(!force&&state.buddy.loaded) return state.buddy.rows;
+  if(!force&&state.buddy.loaded){refreshBuddyProfiles().catch(()=>{});return state.buddy.rows;}
   const showInitial=!state.buddy.loaded;const previousSignature=contentSignature(state.buddy.rows,state.buddy.profiles,state.buddy.conversations,state.buddy.latest,state.buddy.unread);
   state.buddy={...state.buddy,loading:true};if(showInitial)emit();
   buddyPromise=(async()=>{try{
     countContent();
     const friendships=fail(await client.from('friendships').select('id,requester_id,receiver_id,status,created_at,updated_at').or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`).order('updated_at',{ascending:false}),'读取搭子列表失败')||[];
-    const profiles=await fetchProfiles(friendships.flatMap(row=>[row.requester_id,row.receiver_id]),state.buddy.profiles);
+    const profiles=await fetchProfiles(friendships.flatMap(row=>[row.requester_id,row.receiver_id]),state.buddy.profiles,true);
     const accepted=friendships.filter(row=>row.status==='accepted');
     const buddyIds=accepted.map(row=>otherId(row,user.id));
     let unread={};let conversations=[];let latest={};
@@ -337,7 +356,7 @@ async function openChat(targetId){
   if(!cacheHit){state.chat={targetId:wantedTarget,conversationId:null,profile:state.buddy.profiles[wantedTarget]||null,rows:[],loading:true,sending:false};emit();}
   if(!user?.id)return state.chat.rows;
   try{
-    const profiles=await fetchProfiles([wantedTarget],state.buddy.profiles);if(openToken!==chatOpenToken)return;state.buddy={...state.buddy,profiles};
+    const profiles=await fetchProfiles([wantedTarget],state.buddy.profiles,true);if(openToken!==chatOpenToken)return;state.buddy={...state.buddy,profiles};persistBuddyCache(user.id).catch(()=>{});
     countContent();
     const convId=Number(fail(await client.rpc('fw_get_or_create_conversation',{target_user_id:wantedTarget}),'打开私聊失败'));if(openToken!==chatOpenToken)return;
     if(!Number.isFinite(convId)||convId<=0) throw new Error('私聊会话创建失败。');

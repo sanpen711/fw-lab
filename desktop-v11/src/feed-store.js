@@ -11,8 +11,10 @@ let active=false;
 let hydratedCacheKey='';
 let lastSyncedAt=0;
 let loadPromise=null;
+let profileRefreshPromise=null;
 let refreshQueued=false;
 let lastAuthUserId='';
+let profileGeneration=0;
 
 function snapshot(){return {...state,posts:state.posts.map(post=>({...post,comments:[...(post.comments||[])],reactions:[...(post.reactions||[])]})),profiles:{...state.profiles},reply:state.reply&&{...state.reply}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
@@ -49,10 +51,20 @@ function persistSquareCache(){
   const cacheUser=squareCacheUser();return desktopCache.write('square',cacheUser,{posts:state.posts.slice(0,100),profiles:state.profiles});
 }
 
-async function fetchProfiles(ids){
-  const missing=unique(ids).filter(id=>!state.profiles[id]);if(!missing.length)return state.profiles;
-  countContent();const rows=fail(await client.from('profiles').select('id,nickname,avatar_url,lab_code').in('id',missing),'读取研究员资料失败')||[];
+async function fetchProfiles(ids,refresh=false){
+  const generation=profileGeneration;const requested=unique(ids);const wanted=refresh?requested:requested.filter(id=>!state.profiles[id]);if(!wanted.length)return state.profiles;
+  countContent();const rows=fail(await client.from('profiles').select('id,nickname,avatar_url,lab_code').in('id',wanted),'读取研究员资料失败')||[];
+  if(generation!==profileGeneration)return state.profiles;
   const profiles={...state.profiles};rows.forEach(row=>{profiles[String(row.id)]=row;});state.profiles=profiles;return profiles;
+}
+
+function visibleProfileIds(){return unique(state.posts.flatMap(post=>[post.user_id,...(post.comments||[]).map(comment=>comment.user_id)]));}
+function refreshVisibleProfiles(){
+  if(profileRefreshPromise)return profileRefreshPromise;
+  const generation=profileGeneration;const ids=visibleProfileIds();if(!ids.length)return Promise.resolve(state.profiles);
+  const previousSignature=contentSignature([],state.profiles);
+  profileRefreshPromise=fetchProfiles(ids,true).then(async profiles=>{if(generation!==profileGeneration)return state.profiles;const changed=previousSignature!==contentSignature([],profiles);if(changed){await persistSquareCache();emit();}return profiles;}).catch(()=>state.profiles).finally(()=>{profileRefreshPromise=null;});
+  return profileRefreshPromise;
 }
 
 async function readComments(postIds){
@@ -78,7 +90,7 @@ async function load(force=false){
       ids.length?(countContent(),client.from('reactions').select('id,post_id,user_id,type,created_at').in('post_id',ids)):Promise.resolve({data:[],error:null})
     ]);
     const reactions=fail(reactionResult,'读取互动失败')||[];
-    await fetchProfiles(posts.map(post=>post.user_id).concat(comments.map(comment=>comment.user_id)));
+    await fetchProfiles(posts.map(post=>post.user_id).concat(comments.map(comment=>comment.user_id)),true);
     const commentsByPost={};comments.forEach(comment=>(commentsByPost[String(comment.post_id)]??=[]).push(comment));
     const reactionsByPost={};reactions.forEach(reaction=>(reactionsByPost[String(reaction.post_id)]??=[]).push(reaction));
     const nextPosts=posts.map(post=>({...post,comments:commentsByPost[String(post.id)]||[],reactions:reactionsByPost[String(post.id)]||[]}));
@@ -100,7 +112,7 @@ async function activate(){
       .subscribe();
   }
   const cacheHit=await hydrateSquareCache();
-  if(cacheHit||state.loaded){if(!isSquareFresh())load(true).catch(()=>{});return state.posts;}
+  if(cacheHit||state.loaded){if(!isSquareFresh())load(true).catch(()=>{});else refreshVisibleProfiles().catch(()=>{});return state.posts;}
   return load();
 }
 function deactivate(){active=false;refreshQueued=false;clearTimeout(refreshTimer);if(squareChannel){client.removeChannel(squareChannel);squareChannel=null;}}
@@ -180,9 +192,9 @@ async function report(targetType,targetId,reason){requireUser();const text=Strin
 
 authStore.subscribe(auth=>{
   const nextUserId=String(auth.user?.id||'');const switched=Boolean(nextUserId&&((lastAuthUserId&&nextUserId!==lastAuthUserId)||(hydratedCacheKey&&hydratedCacheKey!==nextUserId)));lastAuthUserId=nextUserId;
-  if(switched){state.loaded=false;state.loading=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();if(active)load(false).catch(()=>{});}
+  if(switched){profileGeneration+=1;state.loaded=false;state.loading=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();if(active)load(false).catch(()=>{});}
   if(!auth.ready)return;
-  if(!auth.user){deactivate();state.loaded=false;state.loading=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();}
+  if(!auth.user){profileGeneration+=1;deactivate();state.loaded=false;state.loading=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();}
 });
 
 export const feedStore={state,activate,deactivate,load,openPost,closePost,setReply,clearReply,createPost,createComment,toggleReaction,deletePost,deleteComment,report,uploadImage,uploadMedia,composeContent,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};
