@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.1.23：用户资料同步修复版。精神广场、回声、搭子、私聊以及其他显示用户资料的缓存页面会先显示本地内容，再单独静默刷新可见用户的最新昵称和头像；不再因旧缓存长期显示修改前的资料。继续保留全局缓存、自定义快捷方式和更新线路修复。",
-  "available": true,
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "platform": "Windows 10/11 64 位",
-  "version": "1.1.23",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "notes": "Windows 1.1.24：电脑端视觉统一版。首页按新版设计重做，采用白色、暖灰、深绿和浅粉视觉；观鸟台更名为新闻专区；精神广场、学术研讨、回声、搭子、档案及账号弹窗统一为同一套卡片、按钮和留白。所有原有功能、缓存、私聊、更新线路和自定义快捷方式保持不变。",
+  "sha256": "31b17e0beea8d158dcaefc252c5a8eae3bb1ec473ee745d7e34ae428b9fbc571",
   "rollbackVersion": "1.0.5",
-  "sha256": "8bffd0f58b44654bbb6197310972de6bee8574ac06ff6e9a8d3d7195f57b8e9c",
-  "publishedAt": "2026-09-05T07:30:00.2751423Z"
+  "available": true,
+  "platform": "Windows 10/11 64 位",
+  "version": "1.1.24",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "publishedAt": "2026-09-05T10:01:20.2426659Z"
 }
