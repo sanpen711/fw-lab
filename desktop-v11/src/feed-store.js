@@ -27,13 +27,21 @@ function composeContent(text,{imageUrl='',mediaUrl='',mediaKind='',stickerUrls=[
   const url=mediaUrl||imageUrl;if(url)parts.push(encodeMarker(mediaKind==='video'?'FW_MEDIA_VIDEO':'FW_MEDIA_IMAGE',url));
   return parts.join('\n').trim();
 }
-function squareCacheUser(){return user()?.id||'public';}
+// 缓存可以使用启动时从本机恢复的账号；只有发帖等写操作才必须等待联网确认。
+// 之前复用了 user()，会把 cached:true 的本机账号误判成 public，导致重启后读错缓存键。
+function squareCacheUser(){return authStore.state.user?.id||'public';}
 function isSquareFresh(){return lastSyncedAt>0&&Date.now()-lastSyncedAt<SQUARE_CACHE_FRESH_MS;}
 function contentSignature(posts,profiles){try{return JSON.stringify([posts,profiles]);}catch{return'';}}
+function validSquareCache(cached){return cached?.payload&&Array.isArray(cached.payload.posts);}
+async function readSquareCache(cacheUser){
+  const primary=await desktopCache.read('square',cacheUser);if(validSquareCache(primary))return primary;
+  // 1.1.20 在账号联网确认前可能把同一份公开广场内容写入 public，升级后兼容读取一次。
+  if(cacheUser!=='public'){const fallback=await desktopCache.read('square','public');if(validSquareCache(fallback))return fallback;}
+  return null;
+}
 async function hydrateSquareCache(){
   const cacheUser=squareCacheUser();if(hydratedCacheKey===cacheUser)return false;hydratedCacheKey=cacheUser;lastSyncedAt=0;
-  const cached=await desktopCache.read('square',cacheUser);const payload=cached?.payload;
-  if(!payload||!Array.isArray(payload.posts))return false;
+  const cached=await readSquareCache(cacheUser);const payload=cached?.payload;if(!payload)return false;
   state.posts=payload.posts.slice(0,100);state.profiles=payload.profiles&&typeof payload.profiles==='object'?payload.profiles:{};state.loaded=true;state.loading=false;state.error='';lastSyncedAt=Number(cached.savedAt||0);emit();return true;
 }
 function persistSquareCache(){
@@ -74,7 +82,7 @@ async function load(force=false){
     const reactionsByPost={};reactions.forEach(reaction=>(reactionsByPost[String(reaction.post_id)]??=[]).push(reaction));
     const nextPosts=posts.map(post=>({...post,comments:commentsByPost[String(post.id)]||[],reactions:reactionsByPost[String(post.id)]||[]}));
     const changed=previousSignature!==contentSignature(nextPosts,state.profiles);
-    state.posts=nextPosts;state.loaded=true;state.loading=false;state.error='';lastSyncedAt=Date.now();if(changed||showInitial)emit();persistSquareCache().catch(()=>{});return state.posts;
+    state.posts=nextPosts;state.loaded=true;state.loading=false;state.error='';lastSyncedAt=Date.now();await persistSquareCache();if(changed||showInitial)emit();return state.posts;
   }catch(error){state.loading=false;state.loaded=true;state.error=error.message||'精神广场读取失败。';if(showInitial||!state.posts.length)emit();throw error;}
   finally{loadPromise=null;if(refreshQueued&&active){refreshQueued=false;queueMicrotask(()=>load(true).catch(()=>{}));}}})();
   return loadPromise;
