@@ -1,11 +1,11 @@
 {
   "platforms": {
     "windows-x86_64": {
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmYwRUJmWUp2RjlvWFYxcWZXYURBNWpRR2tJZXVoRWkxZzZIUVhZNGh0aG1wb2l0UmRnd2Y5Y0p3amFMVVpyS1BDcVZNcDA4MEMrQWhzeXR2cy9MYlFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NzcwOTQwCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjZfeDY0LXNldHVwLmV4ZQpJQ29nYVlMTlZBT2tpcDNDM2hSaHZQb3ZpRzJHOUdBckNxYkQwcmg3M2cwbWIxdU1SWHhuWUkzcnY3MnRuSGdMWHEzMnBTQTdIbjN2TndCcE5wL2dDZz09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlk1aVlaZkFaTEtuK3pMbGlveStlbE13cituYS83OVl4NnBqZllYZG9FSXo5NUpjbmtsUWk1eHNrbTBFbFlTcW44Z1ZrdU5nOVhJa1o2OHkrSVQrTnc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4Nzc0NDYzCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjdfeDY0LXNldHVwLmV4ZQo0c05MMUovNlRqMGwwYzVqRFpEU0RuWkNrcWI2VjdGZXN0eklqNEdjbjVQZUxiQk1aank4UHRXcUlia3h4RVY0SldtMW5CWGFIeGNhVUxIVE1ISy9CQT09Cg==",
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
     }
   },
-  "pub_date": "2026-09-07T08:49:00.9515908Z",
-  "version": "1.1.26",
-  "notes": "Windows 1.1.26：页面标题精简版。移除电脑端除首页外各页面重复的顶部通用标题、说明和“已连接”状态，仅保留页面内容区自身的标题与说明，并收回原先预留的顶部空间。功能、缓存和数据逻辑保持不变。"
+  "notes": "Windows 1.1.27：点赞交互精简版。精神广场移除“俺也一样”和“递纸巾”，档案同步删除共鸣榜与纸巾榜；左侧帖子卡片可以直接点赞，点击评论或帖子其他区域仍在右侧打开详情。历史数据库记录保留兼容，网页、PWA 与手机端不变。",
+  "pub_date": "2026-09-07T09:47:44.1087340Z",
+  "version": "1.1.27"
 }
