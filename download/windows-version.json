@@ -1,11 +1,11 @@
 {
   "rollbackVersion": "1.0.5",
+  "notes": "Windows 1.1.26：页面标题精简版。移除电脑端除首页外各页面重复的顶部通用标题、说明和“已连接”状态，仅保留页面内容区自身的标题与说明，并收回原先预留的顶部空间。功能、缓存和数据逻辑保持不变。",
+  "sha256": "c401dc8a5fd84bac6811d712c6df6ee019dcf838a19a5327aa2e174768ebc563",
   "available": true,
-  "version": "1.1.25",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "notes": "Windows 1.1.25：导航图标对齐版。电脑端左侧导航按照首页设计统一更换为线性轮廓图标：首页、精神广场、学术研讨、新闻专区、回声、搭子、档案，以及入馆须知和处理公告均不再使用字符占位图标。其他视觉、功能、缓存和数据逻辑保持不变。",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "sha256": "e35b6d7b1043153af33aca391bdc315969c6892a00e16ca0e3450c36ac1f37a8",
+  "publishedAt": "2026-09-07T08:49:00.9515908Z",
   "platform": "Windows 10/11 64 位",
-  "publishedAt": "2026-09-07T08:35:18.4473482Z"
+  "version": "1.1.26"
 }
