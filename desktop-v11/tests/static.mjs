@@ -6,11 +6,11 @@ import {fileURLToPath} from 'node:url';
 const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
 const read=path=>readFileSync(resolve(root,path),'utf8');
 const config=JSON.parse(read('src-tauri/tauri.v11.conf.json'));
-assert.equal(config.version,'1.1.25');
+assert.equal(config.version,'1.1.26');
 assert.equal(config.build.frontendDist,'../desktop-v11/dist');
 assert.equal(config.build.devUrl,'http://127.0.0.1:1421');
 assert.equal(config.app.windows[0].url,'index.html');
-assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.1\.25/);
+assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.1\.26/);
 assert.doesNotMatch(JSON.stringify(config),/fwyanjiusuo\.com\/index\.html/);
 assert.match(config.app.security.csp,/supabase\.co/);
 assert.match(config.app.security.csp,/media-src/,'本地客户端必须允许 Supabase 媒体播放');
@@ -49,7 +49,11 @@ for(const icon of ['home','brain','discussion','news','echo','buddy','archive','
   assert.match(read(`desktop-v11/public/nav-icons/${icon}.svg`),/<svg[\s\S]*stroke="#000"/,`${icon} 必须使用本地 SVG 轮廓图标`);
 }
 assert.match(theme,/\.compose-button\{display:none!important/,'首页改用首屏开始吐槽按钮，侧栏不重复放大按钮');
-assert.match(theme,/\[data-view="home"\] \.topbar\{display:none!important/,'首页必须保持设计稿的无顶部栏布局');
+assert.doesNotMatch(html,/class="topbar"|data-page-title|data-page-subtitle|data-connection-state/,'所有页面必须移除重复的通用标题栏和连接状态');
+assert.doesNotMatch(app,/data-page-title|data-page-subtitle|data-connection-state|bindConnection/,'页面切换不能依赖已移除的通用标题栏');
+assert.match(theme,/\.view,[\s\S]*\.social-page\{min-height:100vh!important/,'移除通用标题栏后，各页面必须收回顶部高度');
+assert.match(theme,/\.buddy-page,[\s\S]*\.bird-page\{height:100vh!important/,'双栏页面必须使用完整窗口高度');
+assert.doesNotMatch(squareScroll,/100vh - 68px/,'精神广场和搭子不能继续预留已删除标题栏的高度');
 assert.match(theme,/\.hero-card[\s\S]*background:linear-gradient\(120deg,#faf7f4/,'首页主视觉必须使用新版暖白背景');
 assert.match(html,/src="\/hero-office\.webp"/,'首页必须使用独立人物场景素材，不能嵌入整张参考截图');
 assert.match(html,/放下个人素质，享受缺德人生/,'首页主文案必须与参考截图一致');
@@ -62,7 +66,7 @@ assert.doesNotMatch(html,/>观鸟台</,'桌面端不能继续显示旧的观鸟�
 assert.match(theme,/\.status-options/,'旧发帖状态选择必须在桌面端被隐藏');
 assert.match(theme,/\.square-post \.post-meta>span:first-child/,'精神广场卡片不得再显示旧状态标签');
 assert.match(theme,/\.detail-post \.post-meta>span:first-child/,'帖子详情不得再显示旧状态标签');
-assert.match(cargo,/version = "1\.1\.25"/);
+assert.match(cargo,/version = "1\.1\.26"/);
 assert.match(cargo,/tauri-plugin-updater = "2\.10\.1"/);
 assert.match(cargo,/rusqlite = \{ version = "0\.32", features = \["bundled"\] \}/,'持久缓存必须使用内置 SQLite，不能依赖用户额外安装数据库');
 assert.match(rust,/mod persistent_cache;/,'Rust 主程序必须注册持久缓存模块');
@@ -204,7 +208,7 @@ assert.match(composeUi,/data-compose-compact-media/,'发布页必须提供独立
 assert.match(composeUi,/\.media-tools\{display:none!important\}/,'旧的大号添加图片\/视频工具行必须收起');
 assert.match(composeUi,/pickerOpen/,'我的表情面板必须按需展开而不是常驻');
 assert.match(composeUi,/\[data-compose-image\]/,'加号必须继续复用现有图片\/视频上传能力');
-assert.match(squareScroll,/Windows 1\.1\.25 本地前端 · 导航图标对齐版/,'右下角版本标识必须更新');
+assert.match(squareScroll,/Windows 1\.1\.26 本地前端 · 页面标题精简版/,'右下角版本标识必须更新');
 assert.match(squareScroll,/square-scroll-locked/,'精神广场必须锁住整页滚动');
 assert.match(squareScroll,/buddy-scroll-locked/,'搭子页必须锁住整页滚动');
 assert.match(squareScroll,/\.chat-messages\{min-height:0;overflow-y:auto/,'搭子聊天记录必须独立滚动');
@@ -297,4 +301,4 @@ assert.doesNotMatch(alignment,/data-admin-panel|admin_list_profiles|站长处理
 assert.match(app,/contentRequests:0/);
 assert.match(app,/fixedProfileCode\|\|Boolean\(next\.busy\)/);
 assert.doesNotMatch(app,/location\.href|window\.location\.replace|fwyanjiusuo\.com/);
-console.log('Windows 1.1.25 navigation icon alignment and cache checks passed');
+console.log('Windows 1.1.26 compact page header and cache checks passed');

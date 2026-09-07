@@ -87,7 +87,7 @@ function openAccount(){const modal=$('[data-account-modal]');modal.hidden=false;
 function closeAccount(){$('[data-account-modal]').hidden=true;document.body.classList.remove('modal-open');setFormStatus('');}
 
 function navigate(view){
-  const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;$('[data-page-title]').textContent=route[0];$('[data-page-subtitle]').textContent=route[1];
+  const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
   const localViews=['home','compose','square','rooms','bird','echo','buddy','archive'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
@@ -358,6 +358,4 @@ function bindForms(){
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('回声已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
-function bindConnection(){const render=()=>{const online=navigator.onLine!==false;const node=$('[data-connection-state]');node.textContent=online?'已连接':'网络已断开';node.classList.toggle('offline',!online);};window.addEventListener('online',render);window.addEventListener('offline',render);render();}
-
-bindNavigation();bindForms();bindConnection();authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();
+bindNavigation();bindForms();authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();

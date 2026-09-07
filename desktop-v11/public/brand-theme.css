@@ -1,4 +1,4 @@
-/* F.w 研究所 Windows 1.1.25 — Figma-aligned desktop visual system.
+/* F.w 研究所 Windows 1.1.26 — Figma-aligned desktop visual system.
    Presentation only: routing, data, cache, realtime and social logic stay unchanged. */
 
 :root{
@@ -58,10 +58,14 @@ html body .compose-page,
 html body .rooms-page,
 html body .archive-page,
 html body .social-page{background:#fff!important;}
-html body .topbar{height:68px!important;padding:0 28px!important;border-bottom:1px solid #e8e2da!important;background:rgba(255,255,255,.96)!important;box-shadow:none!important;}
-html body .topbar strong{color:#152b25!important;}
-html body .app-shell[data-view="home"] .topbar{display:none!important;}
-html body .app-shell[data-view="home"] .view{min-height:100vh!important;}
+html body .view,
+html body .compose-page,
+html body .rooms-page,
+html body .archive-page,
+html body .social-page{min-height:100vh!important;}
+html body .buddy-page,
+html body .square-page,
+html body .bird-page{height:100vh!important;}
 
 html body .home-wrap{position:relative!important;width:min(1080px,calc(100% - 86px))!important;min-height:100vh!important;margin:0 auto!important;padding:53px 0 30px!important;}
 html body .hero-card{

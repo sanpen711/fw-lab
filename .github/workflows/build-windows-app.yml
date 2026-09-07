@@ -63,24 +63,24 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.1\.25') { throw "Unexpected installer name: $($installer.Name)" }
+          if ($installer.Name -notmatch '1\.1\.26') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
 
           Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
           Copy-Item $signatureFile.FullName 'download/fw-lab-windows-latest.exe.sig' -Force
-          Copy-Item $installer.FullName 'download/fw-lab-windows-1.1.25-setup.exe' -Force
-          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.1.25-setup.exe.sig' -Force
+          Copy-Item $installer.FullName 'download/fw-lab-windows-1.1.26-setup.exe' -Force
+          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.1.26-setup.exe.sig' -Force
 
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.1.25：导航图标对齐版。电脑端左侧导航按照首页设计统一更换为线性轮廓图标：首页、精神广场、学术研讨、新闻专区、回声、搭子、档案，以及入馆须知和处理公告均不再使用字符占位图标。其他视觉、功能、缓存和数据逻辑保持不变。'
+          $notes = 'Windows 1.1.26：页面标题精简版。移除电脑端除首页外各页面重复的顶部通用标题、说明和“已连接”状态，仅保留页面内容区自身的标题与说明，并收回原先预留的顶部空间。功能、缓存和数据逻辑保持不变。'
 
           $metadata = @{
             available = $true
-            version = '1.1.25'
+            version = '1.1.26'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
@@ -92,7 +92,7 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.1.25'
+            version = '1.1.26'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
@@ -107,10 +107,10 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.1.25
+          name: fw-lab-windows-1.1.26
           path: |
-            download/fw-lab-windows-1.1.25-setup.exe
-            download/fw-lab-windows-1.1.25-setup.exe.sig
+            download/fw-lab-windows-1.1.26-setup.exe
+            download/fw-lab-windows-1.1.26-setup.exe.sig
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
             download/windows-updater.json
@@ -122,14 +122,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag='windows-v1.1.25'
-          asset='download/fw-lab-windows-1.1.25-setup.exe'
-          signature='download/fw-lab-windows-1.1.25-setup.exe.sig'
+          tag='windows-v1.1.26'
+          asset='download/fw-lab-windows-1.1.26-setup.exe'
+          signature='download/fw-lab-windows-1.1.26-setup.exe.sig'
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" "$signature" --clobber
           else
-            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.25' --notes '按首页设计统一电脑端左侧导航的线性图标；其他视觉、功能、缓存与数据逻辑保持不变。'
+            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.26' --notes '移除电脑端各功能页重复的顶部通用标题、说明和连接状态，仅保留页面自身标题并使用完整窗口高度；功能、缓存与数据逻辑保持不变。'
           fi
 
       - name: Publish installer to website
@@ -164,6 +164,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.1.25"
+            git commit -m "Release Windows 1.1.26"
             git push origin HEAD:main
           fi
