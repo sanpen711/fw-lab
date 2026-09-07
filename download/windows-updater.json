@@ -1,11 +1,11 @@
 {
+  "pub_date": "2026-09-07T08:35:18.4473482Z",
   "notes": "Windows 1.1.25：导航图标对齐版。电脑端左侧导航按照首页设计统一更换为线性轮廓图标：首页、精神广场、学术研讨、新闻专区、回声、搭子、档案，以及入馆须知和处理公告均不再使用字符占位图标。其他视觉、功能、缓存和数据逻辑保持不变。",
-  "pub_date": "2026-09-07T01:32:00.2990367Z",
   "version": "1.1.25",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWldIS0VNUkxBZjJBckR2TlI4ek9oVmlOdmNZQmo4blBHRUMvek15U01CWHpPWVhMYVBHcDhkK0F2WnJVZ1hQdVVPWFhpSEJ1NUR5Q2NObUFMVnAveHc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NzQ0NzE5CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjVfeDY0LXNldHVwLmV4ZQo1RTBsNmtWWkpXWHFJZm53MmwyNDB3SkVSbzY1dURuYXE3SktNZ0hDZGtMNFBRWVNXNkZJK0ZESkRUR3RUWHRQWkFERlQwdFVTZmdTdVJQeTNQZ2FDZz09Cg==",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmRNT3c0V1dicnVlNTBTcjNIWTYzencyK2VRYkc3QjhJbFE0TVlHajI1M1FwNVB3Z3FxOWxTUzZjcnNDU2JNbjJEc0NMZER2OU9IVEY2VEFDZFdlK1FnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NzcwMTE3CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjVfeDY0LXNldHVwLmV4ZQp5NUFFeVVGL3hoVkZUcFlkZEZDWVBHRktLTnhvTlV2VWZUM3IzQWJ2aW40MUlDSFZibzZCWHJIcFZFZk4xM2N3N0MxUFlNQzUraktMemNoWkp3N0JEUT09Cg=="
     }
   }
 }

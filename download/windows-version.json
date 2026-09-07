@@ -1,11 +1,11 @@
 {
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "publishedAt": "2026-09-07T01:32:00.2990367Z",
-  "available": true,
-  "sha256": "68bb4ee9f3047107e6834f535ff85b0d44990f36d7f70b2022d722acf4f73a29",
   "rollbackVersion": "1.0.5",
-  "platform": "Windows 10/11 64 位",
+  "available": true,
+  "version": "1.1.25",
+  "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
   "notes": "Windows 1.1.25：导航图标对齐版。电脑端左侧导航按照首页设计统一更换为线性轮廓图标：首页、精神广场、学术研讨、新闻专区、回声、搭子、档案，以及入馆须知和处理公告均不再使用字符占位图标。其他视觉、功能、缓存和数据逻辑保持不变。",
-  "version": "1.1.25"
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "sha256": "e35b6d7b1043153af33aca391bdc315969c6892a00e16ca0e3450c36ac1f37a8",
+  "platform": "Windows 10/11 64 位",
+  "publishedAt": "2026-09-07T08:35:18.4473482Z"
 }
