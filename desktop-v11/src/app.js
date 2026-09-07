@@ -4,6 +4,7 @@ import {feedStore} from './feed-store.js';
 import {pollStore} from './poll-store.js';
 import {birdStore} from './bird-store.js';
 import {archiveStore} from './archive-store.js';
+import {homeWidgets} from './home-widgets.js';
 import {APP_VERSION} from './config.js';
 
 const $=selector=>document.querySelector(selector);
@@ -356,4 +357,4 @@ function bindForms(){
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('回声已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
-bindNavigation();bindForms();authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();
+bindNavigation();bindForms();homeWidgets.init({toast,openAccount});authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();

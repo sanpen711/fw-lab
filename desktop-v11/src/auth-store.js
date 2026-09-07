@@ -1,5 +1,5 @@
 import {createClient} from '@supabase/supabase-js';
-import {ACCOUNT_CACHE_KEY, PASSWORD_RESET_URL, SUPABASE_ANON_KEY, SUPABASE_URL} from './config.js';
+import {ACCOUNT_CACHE_KEY, APP_VERSION, PASSWORD_RESET_URL, SUPABASE_ANON_KEY, SUPABASE_URL} from './config.js';
 import {desktopCache} from './desktop-persistent-cache.js';
 
 const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -198,6 +198,29 @@ async function updateProfile({nickname,avatarFile}){
   });
 }
 
+async function submitFeedback({category,content}){
+  return withBusy(async()=>{
+    if(!state.ready) throw new Error('账号仍在连接，请稍后再试。');
+    if(!state.session?.user) throw new Error('请先登录后再提交反馈。');
+    const text=String(content||'').trim().slice(0,500);
+    if(text.length<4) throw new Error('请至少写 4 个字。');
+    const allowed=['功能问题','使用建议','其他'];
+    const entry={
+      category:allowed.includes(category)?category:'其他',
+      content:text,
+      version:APP_VERSION,
+      platform:'windows',
+      createdAt:new Date().toISOString()
+    };
+    const metadata=state.session.user.user_metadata||{};
+    const previous=Array.isArray(metadata.fw_feedback_history)?metadata.fw_feedback_history:[];
+    const result=await client.auth.updateUser({data:{fw_feedback:entry,fw_feedback_history:[entry,...previous].slice(0,5)}});
+    if(result.error) throw new Error(`反馈提交失败：${result.error.message}`);
+    if(result.data?.user) state.session={...state.session,user:result.data.user};
+    return entry;
+  });
+}
+
 async function signOut(){
   return withBusy(async()=>{fail(await client.auth.signOut(), '退出失败');});
 }
@@ -213,5 +236,6 @@ export const authStore={
   resendRegistration,
   sendPasswordReset,
   updateProfile,
+  submitFeedback,
   signOut
 };

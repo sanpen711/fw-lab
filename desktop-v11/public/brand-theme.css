@@ -1,4 +1,4 @@
-/* F.w 研究所 Windows 1.1.27 — Figma-aligned desktop visual system. */
+/* F.w 研究所 Windows 1.1.28 — Figma-aligned desktop visual system. */
 
 :root{
   --bg:#f7f7f6!important;
@@ -121,6 +121,28 @@ html body .feature-card{position:relative!important;min-height:161px!important;p
 html body .feature-card strong{font-size:22px!important;color:#152b25!important;}
 html body .feature-card span{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;}
 html body .feature-card:hover{border-color:#efb9bd!important;background:#fff6f2!important;transform:translateY(-2px)!important;}
+html body .home-tool-card{display:block!important;overflow:hidden!important;text-align:left!important;}
+html body .home-tool-card::before{content:""!important;position:absolute!important;right:-28px!important;top:-34px!important;width:104px!important;height:104px!important;border-radius:50%!important;background:rgba(255,150,158,.1)!important;}
+html body .home-tool-card small{position:relative!important;z-index:1!important;display:block!important;margin:0!important;color:#ef8790!important;font-size:9px!important;font-weight:900!important;letter-spacing:.12em!important;}
+html body .home-tool-card strong{position:relative!important;z-index:1!important;display:block!important;margin:20px 0 8px!important;font-size:26px!important;line-height:1.15!important;letter-spacing:-.03em!important;}
+html body .home-tool-card p{position:relative!important;z-index:1!important;margin:0!important;color:#4f5e59!important;font-size:13px!important;line-height:1.5!important;}
+html body .home-tool-card em{position:absolute!important;z-index:1!important;left:23px!important;bottom:18px!important;color:#9a9288!important;font-size:10px!important;font-style:normal!important;}
+html body .weather-card{background:linear-gradient(135deg,#fffaf2,#f3f8f5)!important;}
+html body .offwork-card{background:linear-gradient(135deg,#fffaf2,#fff2f3)!important;}
+html body .offwork-card strong{font-variant-numeric:tabular-nums!important;letter-spacing:.02em!important;}
+html body .feedback-card{background:linear-gradient(135deg,#fffaf2,#fff8ee)!important;}
+html body .home-tool-panel{width:min(440px,calc(100vw - 50px))!important;}
+html body .home-tool-panel [data-home-tool-view][hidden]{display:none!important;}
+html body .home-tool-form select,
+html body .home-tool-form textarea{width:100%!important;padding:11px 13px!important;border:1px solid #ddd6cd!important;border-radius:11px!important;background:#fff!important;color:#152b25!important;font:inherit!important;resize:vertical!important;}
+html body .home-tool-form select{min-height:43px!important;}
+html body .home-tool-form textarea{min-height:116px!important;line-height:1.6!important;}
+html body .home-tool-form select:focus-visible,
+html body .home-tool-form textarea:focus-visible{outline:3px solid rgba(255,150,158,.32)!important;outline-offset:2px!important;}
+html body .home-tool-form button:disabled,
+html body .home-tool-form input:disabled,
+html body .home-tool-form select:disabled,
+html body .home-tool-form textarea:disabled{cursor:wait!important;opacity:.6!important;}
 html body .phase-note{right:3px!important;bottom:12px!important;color:transparent!important;font-size:0!important;}
 html body .phase-note::after{color:#aaa49d!important;font-size:10px!important;}
 

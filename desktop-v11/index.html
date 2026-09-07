@@ -54,9 +54,24 @@
             </div>
           </article>
           <div class="home-grid">
-            <button class="feature-card" type="button" data-nav="square"><strong>精神广场</strong><span>匿名说点真话，也听听别人的今天。</span></button>
-            <button class="feature-card" type="button" data-nav="echo"><strong>回声</strong><span>评论、回复和互动集中收在这里。</span></button>
-            <button class="feature-card" type="button" data-nav="buddy"><strong>搭子</strong><span>找到聊得来的人，安静说几句话。</span></button>
+            <button class="feature-card home-tool-card weather-card" type="button" data-weather-open>
+              <small>LOCAL WEATHER</small>
+              <strong data-weather-main>设置天气</strong>
+              <p data-weather-detail>点击选择你所在的城市</p>
+              <em data-weather-meta>无需定位权限</em>
+            </button>
+            <button class="feature-card home-tool-card offwork-card" type="button" data-offwork-open>
+              <small>OFF DUTY COUNTDOWN</small>
+              <strong data-offwork-value>设置时间</strong>
+              <p data-offwork-detail>今天几点下班？</p>
+              <em data-offwork-meta>点击设置下班时间</em>
+            </button>
+            <button class="feature-card home-tool-card feedback-card" type="button" data-feedback-open>
+              <small>FEEDBACK</small>
+              <strong>反馈意见</strong>
+              <p>遇到问题，或者有个小建议</p>
+              <em>登录后可直接提交</em>
+            </button>
           </div>
           <p class="phase-note">Windows 1.1 本地前端</p>
         </div>
@@ -216,6 +231,50 @@
         <button class="secondary full" type="button" data-sign-out>退出登录</button>
       </form>
       <p class="form-status" data-form-status aria-live="polite"></p>
+    </section>
+  </div>
+
+  <div class="modal home-tool-modal" data-home-tool-modal hidden>
+    <section class="account-panel home-tool-panel" role="dialog" aria-modal="true" aria-label="首页工具设置">
+      <button class="close-button" type="button" data-close-home-tool aria-label="关闭">×</button>
+
+      <div data-home-tool-view="weather" hidden>
+        <p class="eyebrow">LOCAL WEATHER</p>
+        <h2>设置天气</h2>
+        <p class="panel-copy">输入城市名称即可，不会读取你的定位。</p>
+        <form class="account-form home-tool-form" data-weather-form>
+          <label>城市<input name="city" maxlength="40" autocomplete="off" placeholder="例如：北京、上海、成都" required></label>
+          <button class="primary full" type="submit">保存并读取天气</button>
+        </form>
+      </div>
+
+      <div data-home-tool-view="offwork" hidden>
+        <p class="eyebrow">OFF DUTY COUNTDOWN</p>
+        <h2>设置下班时间</h2>
+        <p class="panel-copy">只保存在这台电脑上，随时可以再修改。</p>
+        <form class="account-form home-tool-form" data-offwork-form>
+          <label>下班时间<input name="time" type="time" value="18:00" required></label>
+          <button class="primary full" type="submit">开始倒计时</button>
+        </form>
+      </div>
+
+      <div data-home-tool-view="feedback" hidden>
+        <p class="eyebrow">FEEDBACK</p>
+        <h2>反馈意见</h2>
+        <p class="panel-copy">简单说一下遇到的问题或想要的功能。</p>
+        <form class="account-form home-tool-form" data-feedback-form>
+          <label>反馈类型
+            <select name="category">
+              <option value="功能问题">功能问题</option>
+              <option value="使用建议">使用建议</option>
+              <option value="其他">其他</option>
+            </select>
+          </label>
+          <label>反馈内容<textarea name="content" maxlength="500" rows="5" placeholder="请尽量写清楚发生了什么……" required></textarea></label>
+          <button class="primary full" type="submit">提交反馈</button>
+        </form>
+      </div>
+      <p class="form-status" data-home-tool-status aria-live="polite"></p>
     </section>
   </div>
 

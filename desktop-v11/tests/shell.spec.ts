@@ -18,6 +18,27 @@ test('本地首页保留桌面视觉和完整导航框架',async({page})=>{
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
 });
 
+test('首页轻工具按天气、下班倒计时和反馈意见排列',async({page})=>{
+  await page.goto('/');
+  const cards=page.locator('.home-grid .home-tool-card');
+  await expect(cards).toHaveCount(3);
+  await expect(cards.nth(0)).toContainText('设置天气');
+  await expect(cards.nth(1)).toContainText('设置时间');
+  await expect(cards.nth(2)).toContainText('反馈意见');
+
+  await page.locator('[data-offwork-open]').click();
+  await expect(page.locator('[data-home-tool-view="offwork"]')).toBeVisible();
+  await page.locator('[data-offwork-form] input[name="time"]').fill('17:30');
+  await page.locator('[data-offwork-form]').evaluate((form:HTMLFormElement)=>form.requestSubmit());
+  await expect(page.locator('[data-home-tool-modal]')).toBeHidden();
+  await expect(page.locator('[data-offwork-meta]')).toContainText('点击修改');
+
+  await page.locator('[data-feedback-open]').click();
+  await expect(page.locator('[data-home-tool-view="feedback"]')).toBeVisible();
+  await page.locator('[data-close-home-tool]').click();
+  await expect(page.locator('[data-home-tool-modal]')).toBeHidden();
+});
+
 test('回声已经是本地页面且导航不会重载网页',async({page})=>{
   await page.goto('/');
   const original=page.url();
