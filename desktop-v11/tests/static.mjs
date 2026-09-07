@@ -6,11 +6,11 @@ import {fileURLToPath} from 'node:url';
 const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
 const read=path=>readFileSync(resolve(root,path),'utf8');
 const config=JSON.parse(read('src-tauri/tauri.v11.conf.json'));
-assert.equal(config.version,'1.1.24');
+assert.equal(config.version,'1.1.25');
 assert.equal(config.build.frontendDist,'../desktop-v11/dist');
 assert.equal(config.build.devUrl,'http://127.0.0.1:1421');
 assert.equal(config.app.windows[0].url,'index.html');
-assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.1\.24/);
+assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.1\.25/);
 assert.doesNotMatch(JSON.stringify(config),/fwyanjiusuo\.com\/index\.html/);
 assert.match(config.app.security.csp,/supabase\.co/);
 assert.match(config.app.security.csp,/media-src/,'本地客户端必须允许 Supabase 媒体播放');
@@ -43,6 +43,11 @@ assert.match(theme,/--accent:#ff969e!important/,'Windows 主操作必须使用�
 assert.match(theme,/--rail:124px!important/,'桌面侧栏必须按新版首页缩窄');
 assert.match(theme,/\.sidebar\{[\s\S]*background:#fff!important[\s\S]*box-shadow:none!important/,'左侧栏必须为无阴影白色侧栏');
 assert.match(theme,/\.nav-item\.active\{background:#ffe5e8!important/,'当前导航必须使用浅粉色选中态');
+assert.match(theme,/\.nav-item \.nav-icon\{[\s\S]*background-color:currentColor!important/,'左侧导航必须使用可跟随选中态变色的线性图标');
+for(const icon of ['home','brain','discussion','news','echo','buddy','archive','info','notice']){
+  assert.match(theme,new RegExp(`nav-icon-${icon}`),`${icon} 图标必须接入统一导航样式`);
+  assert.match(read(`desktop-v11/public/nav-icons/${icon}.svg`),/<svg[\s\S]*stroke="#000"/,`${icon} 必须使用本地 SVG 轮廓图标`);
+}
 assert.match(theme,/\.compose-button\{display:none!important/,'首页改用首屏开始吐槽按钮，侧栏不重复放大按钮');
 assert.match(theme,/\[data-view="home"\] \.topbar\{display:none!important/,'首页必须保持设计稿的无顶部栏布局');
 assert.match(theme,/\.hero-card[\s\S]*background:linear-gradient\(120deg,#faf7f4/,'首页主视觉必须使用新版暖白背景');
@@ -50,12 +55,14 @@ assert.match(html,/src="\/hero-office\.webp"/,'首页必须使用独立人物场
 assert.match(html,/放下个人素质，享受缺德人生/,'首页主文案必须与参考截图一致');
 assert.match(html,/开始吐槽!/,'首页必须保留可用的发帖入口');
 assert.match(html,/data-nav="bird"[^>]*>[\s\S]*?<b>新闻专区<\/b>/,'原观鸟台导航必须显示为新闻专区');
+for(const icon of ['home','brain','discussion','news','echo','buddy','archive'])assert.match(html,new RegExp(`nav-icon nav-icon-${icon}`),`${icon} 图标必须出现在主导航`);
+assert.doesNotMatch(html,/[⌂◉▣▤◌♧]/,'电脑端主导航不能继续使用字符占位图标');
 assert.match(html,/<p>NEWS DESK<\/p><h1>新闻专区<\/h1>/,'新闻专区页面标题必须同步更新');
 assert.doesNotMatch(html,/>观鸟台</,'桌面端不能继续显示旧的观鸟台名称');
 assert.match(theme,/\.status-options/,'旧发帖状态选择必须在桌面端被隐藏');
 assert.match(theme,/\.square-post \.post-meta>span:first-child/,'精神广场卡片不得再显示旧状态标签');
 assert.match(theme,/\.detail-post \.post-meta>span:first-child/,'帖子详情不得再显示旧状态标签');
-assert.match(cargo,/version = "1\.1\.24"/);
+assert.match(cargo,/version = "1\.1\.25"/);
 assert.match(cargo,/tauri-plugin-updater = "2\.10\.1"/);
 assert.match(cargo,/rusqlite = \{ version = "0\.32", features = \["bundled"\] \}/,'持久缓存必须使用内置 SQLite，不能依赖用户额外安装数据库');
 assert.match(rust,/mod persistent_cache;/,'Rust 主程序必须注册持久缓存模块');
@@ -197,7 +204,7 @@ assert.match(composeUi,/data-compose-compact-media/,'发布页必须提供独立
 assert.match(composeUi,/\.media-tools\{display:none!important\}/,'旧的大号添加图片\/视频工具行必须收起');
 assert.match(composeUi,/pickerOpen/,'我的表情面板必须按需展开而不是常驻');
 assert.match(composeUi,/\[data-compose-image\]/,'加号必须继续复用现有图片\/视频上传能力');
-assert.match(squareScroll,/Windows 1\.1\.24 本地前端 · 视觉统一版/,'右下角版本标识必须更新');
+assert.match(squareScroll,/Windows 1\.1\.25 本地前端 · 导航图标对齐版/,'右下角版本标识必须更新');
 assert.match(squareScroll,/square-scroll-locked/,'精神广场必须锁住整页滚动');
 assert.match(squareScroll,/buddy-scroll-locked/,'搭子页必须锁住整页滚动');
 assert.match(squareScroll,/\.chat-messages\{min-height:0;overflow-y:auto/,'搭子聊天记录必须独立滚动');
@@ -290,4 +297,4 @@ assert.doesNotMatch(alignment,/data-admin-panel|admin_list_profiles|站长处理
 assert.match(app,/contentRequests:0/);
 assert.match(app,/fixedProfileCode\|\|Boolean\(next\.busy\)/);
 assert.doesNotMatch(app,/location\.href|window\.location\.replace|fwyanjiusuo\.com/);
-console.log('Windows 1.1.24 visual alignment and cache checks passed');
+console.log('Windows 1.1.25 navigation icon alignment and cache checks passed');

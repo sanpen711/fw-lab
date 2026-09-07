@@ -14,7 +14,7 @@ if(app){
   const style=document.createElement('style');
   style.id='fw-square-scroll-fix';
   style.textContent=`
-    html body .phase-note::after{content:'Windows 1.1.24 本地前端 · 视觉统一版'!important}
+    html body .phase-note::after{content:'Windows 1.1.25 本地前端 · 导航图标对齐版'!important}
     body.square-scroll-locked{height:100vh;overflow:hidden!important}
     body.square-scroll-locked #app{height:100vh;min-height:0;overflow:hidden}
     body.square-scroll-locked .main-content{height:100vh;min-height:0;overflow:hidden}

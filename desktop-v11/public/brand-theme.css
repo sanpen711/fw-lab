@@ -1,4 +1,4 @@
-/* F.w 研究所 Windows 1.1.24 — screenshot-led desktop visual system.
+/* F.w 研究所 Windows 1.1.25 — Figma-aligned desktop visual system.
    Presentation only: routing, data, cache, realtime and social logic stay unchanged. */
 
 :root{
@@ -30,6 +30,16 @@ html body .compose-button{display:none!important;}
 html body .nav-list{gap:2px!important;margin-top:68px!important;}
 html body .nav-item{min-height:43px!important;gap:8px!important;padding:0 12px!important;border-radius:12px!important;color:#263a34!important;}
 html body .nav-item>span:not(.avatar){width:17px!important;font-size:15px!important;color:#152b25!important;}
+html body .nav-item .nav-icon{display:block!important;width:17px!important;height:17px!important;flex:0 0 17px!important;background-color:currentColor!important;-webkit-mask-position:center!important;mask-position:center!important;-webkit-mask-repeat:no-repeat!important;mask-repeat:no-repeat!important;-webkit-mask-size:contain!important;mask-size:contain!important;}
+html body .nav-icon-home{-webkit-mask-image:url('/nav-icons/home.svg')!important;mask-image:url('/nav-icons/home.svg')!important;}
+html body .nav-icon-brain{-webkit-mask-image:url('/nav-icons/brain.svg')!important;mask-image:url('/nav-icons/brain.svg')!important;}
+html body .nav-icon-discussion{-webkit-mask-image:url('/nav-icons/discussion.svg')!important;mask-image:url('/nav-icons/discussion.svg')!important;}
+html body .nav-icon-news{-webkit-mask-image:url('/nav-icons/news.svg')!important;mask-image:url('/nav-icons/news.svg')!important;}
+html body .nav-icon-echo{-webkit-mask-image:url('/nav-icons/echo.svg')!important;mask-image:url('/nav-icons/echo.svg')!important;}
+html body .nav-icon-buddy{-webkit-mask-image:url('/nav-icons/buddy.svg')!important;mask-image:url('/nav-icons/buddy.svg')!important;}
+html body .nav-icon-archive{-webkit-mask-image:url('/nav-icons/archive.svg')!important;mask-image:url('/nav-icons/archive.svg')!important;}
+html body .nav-icon-info{-webkit-mask-image:url('/nav-icons/info.svg')!important;mask-image:url('/nav-icons/info.svg')!important;}
+html body .nav-icon-notice{-webkit-mask-image:url('/nav-icons/notice.svg')!important;mask-image:url('/nav-icons/notice.svg')!important;}
 html body .nav-item b{font-size:12px!important;white-space:nowrap!important;}
 html body .nav-item:hover{background:#fff2f3!important;color:#152b25!important;}
 html body .nav-item.active{background:#ffe5e8!important;color:#ff7f8b!important;box-shadow:none!important;}
