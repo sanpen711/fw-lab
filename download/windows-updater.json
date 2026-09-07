@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.1.24：电脑端视觉统一版。首页按新版设计重做，采用白色、暖灰、深绿和浅粉视觉；观鸟台更名为新闻专区；精神广场、学术研讨、回声、搭子、档案及账号弹窗统一为同一套卡片、按钮和留白。所有原有功能、缓存、私聊、更新线路和自定义快捷方式保持不变。",
+  "notes": "Windows 1.1.25：导航图标对齐版。电脑端左侧导航按照首页设计统一更换为线性轮廓图标：首页、精神广场、学术研讨、新闻专区、回声、搭子、档案，以及入馆须知和处理公告均不再使用字符占位图标。其他视觉、功能、缓存和数据逻辑保持不变。",
+  "pub_date": "2026-09-07T01:32:00.2990367Z",
+  "version": "1.1.25",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlVRWklFeHY1TklBcGVpelJrSVAyYVJMTVc4QmdDZHBoazdYTWcySTV5NzN0RktQaUJocGF3R1JZMEd4NzFnOGN5OVdYWGU5bmYvaDMwUUVQeFJ5OHdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NjAyNDc5CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjRfeDY0LXNldHVwLmV4ZQp1MTlyRDlyT09PN1puT3hZclZ0SkhvOWFLU3NoK25SZ0tYcFJHUzBFVjBDR2lueU9wWDJISkxEc1hhUGxrcHVYcC8wYll4amFUSUlTTlRxMmk0WUtDQT09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWldIS0VNUkxBZjJBckR2TlI4ek9oVmlOdmNZQmo4blBHRUMvek15U01CWHpPWVhMYVBHcDhkK0F2WnJVZ1hQdVVPWFhpSEJ1NUR5Q2NObUFMVnAveHc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NzQ0NzE5CWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjVfeDY0LXNldHVwLmV4ZQo1RTBsNmtWWkpXWHFJZm53MmwyNDB3SkVSbzY1dURuYXE3SktNZ0hDZGtMNFBRWVNXNkZJK0ZESkRUR3RUWHRQWkFERlQwdFVTZmdTdVJQeTNQZ2FDZz09Cg==",
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
     }
-  },
-  "pub_date": "2026-09-05T10:01:20.2426659Z",
-  "version": "1.1.24"
+  }
 }
