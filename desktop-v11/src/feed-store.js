@@ -87,7 +87,7 @@ async function load(force=false){
     const ids=posts.map(post=>post.id);
     const [comments,reactionResult]=await Promise.all([
       readComments(ids),
-      ids.length?(countContent(),client.from('reactions').select('id,post_id,user_id,type,created_at').in('post_id',ids)):Promise.resolve({data:[],error:null})
+      ids.length?(countContent(),client.from('reactions').select('id,post_id,user_id,type,created_at').in('post_id',ids).eq('type','like')):Promise.resolve({data:[],error:null})
     ]);
     const reactions=fail(reactionResult,'读取互动失败')||[];
     await fetchProfiles(posts.map(post=>post.user_id).concat(comments.map(comment=>comment.user_id)),true);
@@ -178,7 +178,7 @@ async function createComment({postId,text,imageFile=null,stickerUrls=[]}){
 }
 
 async function toggleReaction(postId,type){
-  const current=requireUser();const allowed=['like','same','tissue'];if(!allowed.includes(type))throw new Error('未知互动类型。');
+  const current=requireUser();const allowed=['like'];if(!allowed.includes(type))throw new Error('未知互动类型。');
   const post=state.posts.find(row=>String(row.id)===String(postId));if(!post)throw new Error('帖子已经不存在。');
   const existing=(post.reactions||[]).find(row=>String(row.user_id)===String(current.id)&&row.type===type);
   if(existing)fail(await client.from('reactions').delete().eq('id',existing.id).eq('user_id',current.id),'撤回互动失败');

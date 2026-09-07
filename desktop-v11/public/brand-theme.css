@@ -1,5 +1,4 @@
-/* F.w 研究所 Windows 1.1.26 — Figma-aligned desktop visual system.
-   Presentation only: routing, data, cache, realtime and social logic stay unchanged. */
+/* F.w 研究所 Windows 1.1.27 — Figma-aligned desktop visual system. */
 
 :root{
   --bg:#f7f7f6!important;
@@ -188,6 +187,12 @@ html body .bird-label,
 html body .archive-winner strong{color:#bb666d!important;}
 html body .square-post.active,
 html body .bird-card:hover{border-color:#ff969e!important;}
+html body .post-stats{gap:8px!important;}
+html body .post-stats button{min-height:29px!important;padding:0 10px!important;border:1px solid #e1dbd3!important;border-radius:999px!important;background:#fff!important;color:#737b78!important;font-size:10px!important;font-weight:800!important;cursor:pointer!important;}
+html body .post-stats button:hover{border-color:#efb4ba!important;background:#fff7f7!important;color:#ad646a!important;}
+html body .post-stats .post-like-button.active{border-color:#152b25!important;background:#152b25!important;color:#fff!important;}
+html body .archive-award-grid,
+html body .archive-history{grid-template-columns:minmax(0,1fr)!important;}
 html body .post-meta span,
 html body .poll-tags span,
 html body .daily-count,

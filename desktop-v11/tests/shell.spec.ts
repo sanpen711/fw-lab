@@ -109,11 +109,11 @@ test('废话档案为本地按需榜单页面',async({page})=>{
   await page.locator('[data-nav="archive"].nav-item').click();
   await expect(page.locator('[data-view-panel="archive"]')).toHaveClass(/active/);
   await expect(page.getByRole('heading',{name:'废话档案',exact:true})).toBeVisible();
-  await expect(page.getByText('上周低功耗荣誉榜')).toBeVisible();
-  await expect(page.getByText('昨日情绪残留榜')).toBeVisible();
-  await expect(page.locator('[data-archive-daily="like"]')).toBeVisible();
-  await expect(page.locator('[data-archive-daily="same"]')).toBeVisible();
-  await expect(page.locator('[data-archive-daily="tissue"]')).toBeVisible();
+  await expect(page.getByText('上周点赞荣誉榜')).toBeVisible();
+  await expect(page.getByText('昨日点赞榜')).toBeVisible();
+  await expect(page.locator('[data-archive-daily]')).toHaveCount(0);
+  await expect(page.getByText('共鸣王')).toHaveCount(0);
+  await expect(page.getByText('纸巾王')).toHaveCount(0);
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBeGreaterThan(0);
   expect(page.url()).toBe(original);
 });

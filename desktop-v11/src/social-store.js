@@ -1,7 +1,7 @@
 import {authStore} from './auth-store.js';
 import {desktopCache} from './desktop-persistent-cache.js';
 
-const ECHO_TYPES=['like','same','tissue','comment','comment_reply','chat_agree','system'];
+const ECHO_TYPES=['like','comment','comment_reply','chat_agree','system'];
 const PRIVATE_TYPE='private_message';
 const REPLY_READ_PREFIX='fw:desktop:v11:reply-read:';
 const listeners=new Set();
@@ -57,7 +57,7 @@ async function hydrateEchoCache(userId){
   if(!userId||hydratedEchoUser===userId)return false;hydratedEchoUser=userId;
   const cached=await desktopCache.read('echo',userId);const payload=cached?.payload;
   if(!payload||!Array.isArray(payload.rows))return false;
-  state.echo={loaded:true,loading:false,rows:payload.rows.slice(0,100),profiles:payload.profiles&&typeof payload.profiles==='object'?payload.profiles:{}};emit();return true;
+  state.echo={loaded:true,loading:false,rows:payload.rows.filter(row=>ECHO_TYPES.includes(row.type)).slice(0,100),profiles:payload.profiles&&typeof payload.profiles==='object'?payload.profiles:{}};emit();return true;
 }
 function persistEchoCache(userId=cacheUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('echo',userId,{rows:state.echo.rows.slice(0,100),profiles:state.echo.profiles});}
 async function hydrateBuddyCache(userId){
