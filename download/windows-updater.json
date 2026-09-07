@@ -1,11 +1,11 @@
 {
+  "version": "1.1.28",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlk1aVlaZkFaTEtuK3pMbGlveStlbE13cituYS83OVl4NnBqZllYZG9FSXo5NUpjbmtsUWk1eHNrbTBFbFlTcW44Z1ZrdU5nOVhJa1o2OHkrSVQrTnc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4Nzc0NDYzCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjdfeDY0LXNldHVwLmV4ZQo0c05MMUovNlRqMGwwYzVqRFpEU0RuWkNrcWI2VjdGZXN0eklqNEdjbjVQZUxiQk1aank4UHRXcUlia3h4RVY0SldtMW5CWGFIeGNhVUxIVE1ISy9CQT09Cg==",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmRJQ3dnMDNTQUNBQjFrTVdPRWdmWWlTUFZHb0RpTlpJSksrdEM4YlFZOGVmNHVZdUlFTEwveUxjQ2xmdmRqVU5MejRKWHM3ZWpVMUJ3OHhqM3BJY2c0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NzkwMDExCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjhfeDY0LXNldHVwLmV4ZQpnaGtML3ZpWldRZ3J1cGxjZzFYWFhodk5VRWRONTJTdndwU0N6aGlPeDVrdWw1bXFCZ3N2QXM5am9XSzNlS0YrSkhZcHZOYWYwc2dJc29venRTSkRCZz09Cg=="
     }
   },
-  "notes": "Windows 1.1.27：点赞交互精简版。精神广场移除“俺也一样”和“递纸巾”，档案同步删除共鸣榜与纸巾榜；左侧帖子卡片可以直接点赞，点击评论或帖子其他区域仍在右侧打开详情。历史数据库记录保留兼容，网页、PWA 与手机端不变。",
-  "pub_date": "2026-09-07T09:47:44.1087340Z",
-  "version": "1.1.27"
+  "notes": "Windows 1.1.28：首页轻工具版。首页下方改为天气、下班倒计时与反馈意见；天气支持城市设置和半小时缓存更新，下班时间保存在本机，登录用户可提交最近 5 条反馈。网页、PWA 与手机端不变。",
+  "pub_date": "2026-09-07T14:06:51.9890551Z"
 }
