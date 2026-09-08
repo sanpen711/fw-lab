@@ -57,11 +57,11 @@ jobs:
         shell: pwsh
         run: |
           $baseUrl = 'https://ekbovsmxbiplhyrzxoyw.supabase.co/functions/v1/fw-weather'
-          $search = Invoke-RestMethod -Method Get -Uri "$baseUrl?action=search&q=%E6%9B%B9%E5%8E%BF" -TimeoutSec 20
+          $search = Invoke-RestMethod -Method Get -Uri "${baseUrl}?action=search&q=%E6%9B%B9%E5%8E%BF" -TimeoutSec 20
           $location = @($search.locations | Where-Object { $_.name -eq '曹县' }) | Select-Object -First 1
           if (-not $location) { throw 'County search did not return Cao County.' }
 
-          $current = Invoke-RestMethod -Method Get -Uri "$baseUrl?action=current&lat=$($location.latitude)&lon=$($location.longitude)" -TimeoutSec 20
+          $current = Invoke-RestMethod -Method Get -Uri "${baseUrl}?action=current&lat=$($location.latitude)&lon=$($location.longitude)" -TimeoutSec 20
           if ($null -eq $current.current.temperature) { throw 'Current weather did not return a temperature.' }
           if ([string]::IsNullOrWhiteSpace([string]$current.current.conditionText)) { throw 'Current weather did not return a condition.' }
           Write-Host "County weather verified: $($location.label), $($current.current.temperature) C, $($current.current.conditionText)"
