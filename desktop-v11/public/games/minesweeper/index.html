@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>扫雷</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header><div><h1>扫雷</h1><p>左键翻开格子，右键插旗。</p></div><strong id="status">安全摸鱼中</strong></header>
+    <div class="toolbar">
+      <button class="active" type="button" data-level="easy">简单</button>
+      <button type="button" data-level="medium">中等</button>
+      <button type="button" id="restart">重新开始</button>
+    </div>
+    <div class="board-wrap"><canvas id="jsminesweeper" aria-label="扫雷棋盘"></canvas></div>
+    <p class="hint">棋盘顶部左侧是剩余雷数，右侧是用时；点击中间笑脸也能重新开始。</p>
+  </main>
+  <script src="jsminesweeper.js"></script>
+  <script src="launcher.js"></script>
+</body>
+</html>

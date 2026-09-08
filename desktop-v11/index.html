@@ -7,6 +7,7 @@
   <title>F.w 研究所</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/brand-theme.css">
+  <link rel="stylesheet" href="/game-center.css">
 </head>
 <body>
   <div id="app" class="app-shell" data-view="home">
@@ -22,6 +23,7 @@
         <button class="nav-item" type="button" data-nav="square"><span class="nav-icon nav-icon-brain" aria-hidden="true"></span><b>精神广场</b></button>
         <button class="nav-item" type="button" data-nav="rooms"><span class="nav-icon nav-icon-discussion" aria-hidden="true"></span><b>学术研讨</b></button>
         <button class="nav-item" type="button" data-nav="bird"><span class="nav-icon nav-icon-news" aria-hidden="true"></span><b>新闻专区</b></button>
+        <button class="nav-item" type="button" data-nav="games"><span class="nav-icon nav-icon-game" aria-hidden="true"></span><b>小游戏</b></button>
         <button class="nav-item" type="button" data-nav="echo"><span class="nav-icon nav-icon-echo" aria-hidden="true"></span><b>回声</b><i class="badge" data-badge="echo" hidden></i></button>
         <button class="nav-item" type="button" data-nav="buddy"><span class="nav-icon nav-icon-buddy" aria-hidden="true"></span><b>搭子</b><i class="badge" data-badge="buddy" hidden></i></button>
         <button class="nav-item" type="button" data-nav="archive"><span class="nav-icon nav-icon-archive" aria-hidden="true"></span><b>档案</b></button>
@@ -118,6 +120,36 @@
             <div class="bird-feed" data-bird-feed><div class="state-card">进入新闻专区后读取内容。</div></div>
           </section>
           <aside class="bird-detail-column" data-bird-detail><div class="post-detail-empty"><b>选择一条内容</b><span>查看完整正文、图片、评论和互动。</span></div></aside>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="games">
+        <div class="games-page">
+          <div class="section-heading games-heading">
+            <div><h1>小游戏</h1><span>不用登录，点开就玩；成绩和进度只保存在这台电脑上。</span></div>
+          </div>
+          <div class="game-hall" data-game-hall>
+            <div class="game-grid">
+              <button class="game-card game-card-2048" type="button" data-game-open="2048"><i>2048</i><b>2048</b><span>合并相同数字，看看今天能摸到多高。</span><em>方向键操作</em></button>
+              <button class="game-card game-card-mines" type="button" data-game-open="minesweeper"><i>✦</i><b>扫雷</b><span>排除安全区域，别让第一杯咖啡先炸了。</span><em>鼠标操作</em></button>
+              <button class="game-card game-card-snake" type="button" data-game-open="snake"><i>⌁</i><b>贪吃蛇</b><span>方向键控制，越吃越长，也越来越忙。</span><em>方向键操作</em></button>
+              <button class="game-card game-card-sudoku" type="button" data-game-open="sudoku"><i>9</i><b>数独</b><span>从简单到困难，安静消耗一点上班时间。</span><em>鼠标和键盘</em></button>
+              <button class="game-card game-card-reaction" type="button" data-game-open="reaction"><i>⚡</i><b>反应测试</b><span>等画面变绿再点击，测测今天还醒着没有。</span><em>单局约 5 秒</em></button>
+              <button class="game-card game-card-catch" type="button" data-game-open="catch"><i>⌄</i><b>接住掉落物</b><span>移动托盘接住文件，别让工作掉到地上。</span><em>单局 45 秒</em></button>
+            </div>
+            <details class="game-licenses">
+              <summary>开源许可</summary>
+              <p>2048、扫雷、贪吃蛇和数独基于 MIT 许可的开源项目；完整许可证随安装包保存在各游戏目录。反应测试和接住掉落物由 F.w 研究所制作。</p>
+            </details>
+          </div>
+          <div class="game-stage" data-game-stage hidden>
+            <header>
+              <button class="secondary compact" type="button" data-game-back>返回小游戏</button>
+              <div><b data-game-title>小游戏</b><span data-game-tip></span></div>
+              <button class="secondary compact" type="button" data-game-reload>重新开始</button>
+            </header>
+            <iframe data-game-frame title="小游戏" referrerpolicy="no-referrer"></iframe>
+          </div>
         </div>
       </section>
 
@@ -281,5 +313,6 @@
   <script type="module" src="/src/app.js"></script>
   <script type="module" src="/src/alignment-nav-fix.js"></script>
   <script type="module" src="/src/feature-alignment.js"></script>
+  <script type="module" src="/src/game-center.js"></script>
 </body>
 </html>

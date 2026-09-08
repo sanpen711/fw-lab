@@ -123,6 +123,21 @@ test('新闻专区为本地双栏按需页面',async({page})=>{
   expect(page.url()).toBe(original);
 });
 
+test('小游戏在电脑端内部打开且离开后卸载',async({page})=>{
+  await page.goto('/');
+  const original=page.url();
+  await page.locator('[data-nav="games"].nav-item').click();
+  await expect(page.locator('[data-view-panel="games"]')).toHaveClass(/active/);
+  await expect(page.locator('[data-game-open]')).toHaveCount(6);
+  await page.locator('[data-game-open="reaction"]').click();
+  await expect(page.locator('[data-game-stage]')).toBeVisible();
+  await expect(page.frameLocator('[data-game-frame]').getByText('测试一下今天还醒着吗')).toBeVisible();
+  expect(page.url()).toBe(original);
+  await page.locator('[data-game-back]').click();
+  await expect(page.locator('[data-game-hall]')).toBeVisible();
+  await expect(page.locator('[data-game-stage]')).toBeHidden();
+});
+
 test('废话档案为本地按需榜单页面',async({page})=>{
   await page.goto('/');
   const original=page.url();

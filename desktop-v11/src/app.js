@@ -10,7 +10,7 @@ import {APP_VERSION} from './config.js';
 const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
 const routes={
-  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],bird:['新闻专区','看看研究所里此刻发生了什么'],echo:['回声','评论、回复和互动都在这里'],buddy:['搭子','左边选人，右边直接聊天'],archive:['档案','翻一翻被留下来的研究记录']
+  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],bird:['新闻专区','看看研究所里此刻发生了什么'],games:['小游戏','不用跳出软件，点开直接玩'],echo:['回声','评论、回复和互动都在这里'],buddy:['搭子','左边选人，右边直接聊天'],archive:['档案','翻一翻被留下来的研究记录']
 };
 const EMOJIS=['😀','😄','😂','🤣','😊','🥰','😍','😘','😋','😎','🤔','🙃','😴','🥱','😭','🥺','😤','😡','🤯','😱','👍','👎','👏','🙏','💪','🤝','❤️','💔','✨','🎉','☕','🍉','🐟','🫠','🫡','🤡'];
 let accountState={ready:false,busy:false,user:null};
@@ -89,7 +89,7 @@ function closeAccount(){$('[data-account-modal]').hidden=true;document.body.clas
 function navigate(view){
   const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
-  const localViews=['home','compose','square','rooms','bird','echo','buddy','archive'];
+  const localViews=['home','compose','square','rooms','bird','games','echo','buddy','archive'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
   if(!localViews.includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
   $('[data-emoji-panel]').hidden=true;
@@ -97,12 +97,14 @@ function navigate(view){
   if(view!=='square')feedStore.deactivate();
   if(view!=='rooms')pollStore.deactivate();
   if(view!=='bird')birdStore.deactivate();
+  if(view!=='games')window.__FW_GAMES__?.close();
   if(view==='echo')socialStore.loadEcho();
   if(view==='buddy')socialStore.loadBuddy();
   if(view==='compose'){socialStore.loadStickers().catch(()=>{});renderFeed();}
   if(view==='square')feedStore.activate().then(()=>{const raw=sessionStorage.getItem('fw:desktop:v11:pending-post');if(!raw)return;sessionStorage.removeItem('fw:desktop:v11:pending-post');try{const pending=JSON.parse(raw);feedStore.openPost(pending.id);}catch{}}).catch(error=>toast(error.message||'精神广场读取失败。'));
   if(view==='rooms')pollStore.activate().catch(error=>toast(error.message||'课题读取失败。'));
   if(view==='bird')birdStore.activate().catch(error=>toast(error.message||'新闻专区读取失败。'));
+  if(view==='games')window.__FW_GAMES__?.activate();
   if(view==='archive')archiveStore.load().catch(error=>toast(error.message||'废话档案读取失败。'));
 }
 

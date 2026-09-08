@@ -1,0 +1,25 @@
+F.w 研究所 Windows 小游戏第三方许可说明
+
+以下项目按 MIT License 使用和随安装包分发，许可证全文分别保存在对应游戏目录中。
+
+1. 2048
+   Copyright (c) 2014 Gabriele Cirulli
+   Source: https://github.com/gabrielecirulli/2048
+   Revision: 478b6ec346e3787f589e4af751378d06ded4cbbc
+
+2. JSMinesweeper
+   Copyright (c) 2018 Ayman Bagabas
+   Source: https://github.com/aymanbagabas/jsminesweeper
+   Revision: 27eb1d09cf6ca06f8a0a160b596a916056f13d44
+
+3. Snake Game
+   Copyright (c) 2023 Ramazan Çetinkaya
+   Source: https://github.com/ramazancetinkaya/snake-game
+   Revision: 86eec749ee92df92f0db89871465cd7f5b36e1a9
+
+4. Super Sudoku
+   Copyright (c) 2023 Tom Nick
+   Source: https://github.com/TN1ck/super-sudoku
+   Revision: 165dcdba85f01624faf2acfd1524fdd8ac8bef63
+
+反应测试与接住掉落物为 F.w 研究所本地小游戏，不包含第三方游戏代码。

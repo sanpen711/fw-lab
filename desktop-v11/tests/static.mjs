@@ -6,11 +6,11 @@ import {fileURLToPath} from 'node:url';
 const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
 const read=path=>readFileSync(resolve(root,path),'utf8');
 const config=JSON.parse(read('src-tauri/tauri.v11.conf.json'));
-assert.equal(config.version,'1.2.1');
+assert.equal(config.version,'1.2.2');
 assert.equal(config.build.frontendDist,'../desktop-v11/dist');
 assert.equal(config.build.devUrl,'http://127.0.0.1:1421');
 assert.equal(config.app.windows[0].url,'index.html');
-assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.2\.1/);
+assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.2\.2/);
 assert.doesNotMatch(JSON.stringify(config),/fwyanjiusuo\.com\/index\.html/);
 assert.match(config.app.security.csp,/supabase\.co/);
 assert.doesNotMatch(config.app.security.csp,/open-meteo/,'Windows 不应再直连旧天气服务');
@@ -40,6 +40,9 @@ const updateUi=read('src-tauri/src/update_ui.js');
 const cargo=read('src-tauri/Cargo.toml');
 const styles=read('desktop-v11/styles.css');
 const windowsWorkflow=read('.github/workflows/build-windows-app.yml');
+const gameCenter=read('desktop-v11/src/game-center.js');
+const gameStyles=read('desktop-v11/public/game-center.css');
+const gameNotices=read('desktop-v11/public/games/THIRD_PARTY_NOTICES.txt');
 assert.match(theme,/--bg:#f7f7f6!important/,'Windows 背景必须使用新版浅灰白');
 assert.match(theme,/--paper:#ffffff!important/,'Windows 卡片必须使用新版白色');
 assert.match(theme,/--deep:#152b25!important/,'Windows 结构色必须使用新版深绿');
@@ -48,7 +51,7 @@ assert.match(theme,/--rail:124px!important/,'桌面侧栏必须按新版首页�
 assert.match(theme,/\.sidebar\{[\s\S]*background:#fff!important[\s\S]*box-shadow:none!important/,'左侧栏必须为无阴影白色侧栏');
 assert.match(theme,/\.nav-item\.active\{background:#ffe5e8!important/,'当前导航必须使用浅粉色选中态');
 assert.match(theme,/\.nav-item \.nav-icon\{[\s\S]*background-color:currentColor!important/,'左侧导航必须使用可跟随选中态变色的线性图标');
-for(const icon of ['home','brain','discussion','news','echo','buddy','archive','info','notice']){
+for(const icon of ['home','brain','discussion','news','game','echo','buddy','archive','info','notice']){
   assert.match(theme,new RegExp(`nav-icon-${icon}`),`${icon} 图标必须接入统一导航样式`);
   assert.match(read(`desktop-v11/public/nav-icons/${icon}.svg`),/<svg[\s\S]*stroke="#000"/,`${icon} 必须使用本地 SVG 轮廓图标`);
 }
@@ -71,14 +74,29 @@ assert.match(html,/data-weather-form/,'天气卡片必须提供城市设置表�
 assert.match(html,/data-offwork-form/,'下班倒计时必须提供时间设置表单');
 assert.match(html,/data-feedback-form/,'反馈卡片必须提供简短反馈表单');
 assert.match(html,/data-nav="bird"[^>]*>[\s\S]*?<b>新闻专区<\/b>/,'原观鸟台导航必须显示为新闻专区');
-for(const icon of ['home','brain','discussion','news','echo','buddy','archive'])assert.match(html,new RegExp(`nav-icon nav-icon-${icon}`),`${icon} 图标必须出现在主导航`);
+for(const icon of ['home','brain','discussion','news','game','echo','buddy','archive'])assert.match(html,new RegExp(`nav-icon nav-icon-${icon}`),`${icon} 图标必须出现在主导航`);
+assert.match(html,/data-nav="games"[\s\S]*?<b>小游戏<\/b>/,'小游戏必须作为电脑端左侧导航入口');
+for(const id of ['2048','minesweeper','snake','sudoku','reaction','catch'])assert.match(html,new RegExp(`data-game-open="${id}"`),`${id} 必须出现在小游戏大厅`);
+assert.match(html,/data-game-frame/,'小游戏必须在软件内部框架中运行');
+assert.doesNotMatch(gameCenter,/https?:\/\//,'小游戏运行入口不能跳转到外部站点');
+assert.match(gameCenter,/localStorage\.setItem\('fw:desktop:v11:last-game'/,'小游戏大厅必须仅在本机记录最近游戏');
+assert.match(gameStyles,/\.game-stage iframe\{width:100%;height:100%;border:0/,'游戏运行区域必须占满电脑端内容区');
+assert.match(config.app.security.csp,/frame-src 'self'/,'CSP 必须只允许内置本地游戏页面');
+assert.match(config.app.security.csp,/frame-ancestors 'self'/,'内置游戏必须允许由本地电脑端页面承载');
+for(const id of ['2048','minesweeper','snake','sudoku']){
+  assert.match(gameNotices,new RegExp(`(?:${id==='minesweeper'?'JSMinesweeper':id==='snake'?'Snake Game':id==='sudoku'?'Super Sudoku':'2048'})`,'i'),`${id} 必须写入第三方许可说明`);
+  assert.match(read(`desktop-v11/public/games/${id}/LICENSE${id==='2048'?'.txt':''}`),/MIT License/i,`${id} 必须随包保留 MIT 许可证`);
+}
+assert.doesNotMatch(read('desktop-v11/public/games/sudoku/index.html'),/fonts\.googleapis\.com/,'内置数独不得依赖在线字体');
+assert.match(read('desktop-v11/public/games/reaction/app.js'),/fw-game-reaction-best/,'反应测试必须在本机保存最佳成绩');
+assert.match(read('desktop-v11/public/games/catch/app.js'),/fw-game-catch-best/,'接住掉落物必须在本机保存最高分');
 assert.doesNotMatch(html,/[⌂◉▣▤◌♧]/,'电脑端主导航不能继续使用字符占位图标');
 assert.match(html,/<p>NEWS DESK<\/p><h1>新闻专区<\/h1>/,'新闻专区页面标题必须同步更新');
 assert.doesNotMatch(html,/>观鸟台</,'桌面端不能继续显示旧的观鸟台名称');
 assert.match(theme,/\.status-options/,'旧发帖状态选择必须在桌面端被隐藏');
 assert.match(theme,/\.square-post \.post-meta>span:first-child/,'精神广场卡片不得再显示旧状态标签');
 assert.match(theme,/\.detail-post \.post-meta>span:first-child/,'帖子详情不得再显示旧状态标签');
-assert.match(cargo,/version = "1\.2\.1"/);
+assert.match(cargo,/version = "1\.2\.2"/);
 assert.match(cargo,/tauri-plugin-updater = "2\.10\.1"/);
 assert.match(cargo,/rusqlite = \{ version = "0\.32", features = \["bundled"\] \}/,'持久缓存必须使用内置 SQLite，不能依赖用户额外安装数据库');
 assert.match(rust,/mod persistent_cache;/,'Rust 主程序必须注册持久缓存模块');
@@ -220,7 +238,7 @@ assert.match(composeUi,/data-compose-compact-media/,'发布页必须提供独立
 assert.match(composeUi,/\.media-tools\{display:none!important\}/,'旧的大号添加图片\/视频工具行必须收起');
 assert.match(composeUi,/pickerOpen/,'我的表情面板必须按需展开而不是常驻');
 assert.match(composeUi,/\[data-compose-image\]/,'加号必须继续复用现有图片\/视频上传能力');
-assert.match(squareScroll,/Windows 1\.2\.1 本地前端 · 首页工具居中版/,'右下角版本标识必须更新');
+assert.match(squareScroll,/Windows 1\.2\.2 本地前端 · 小游戏版/,'右下角版本标识必须更新');
 assert.match(squareScroll,/square-scroll-locked/,'精神广场必须锁住整页滚动');
 assert.match(squareScroll,/buddy-scroll-locked/,'搭子页必须锁住整页滚动');
 assert.match(squareScroll,/\.chat-messages\{min-height:0;overflow-y:auto/,'搭子聊天记录必须独立滚动');
@@ -337,4 +355,4 @@ assert.doesNotMatch(alignment,/data-admin-panel|admin_list_profiles|站长处理
 assert.match(app,/contentRequests:0/);
 assert.match(app,/fixedProfileCode\|\|Boolean\(next\.busy\)/);
 assert.doesNotMatch(app,/location\.href|window\.location\.replace|fwyanjiusuo\.com/);
-console.log('Windows 1.2.1 centered home tools and county weather checks passed');
+console.log('Windows 1.2.2 local game center, centered home tools and county weather checks passed');
