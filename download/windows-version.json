@@ -1,11 +1,11 @@
 {
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "publishedAt": "2026-09-08T01:14:01.9215669Z",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+  "notes": "Windows 1.2.1：首页天气、下班倒计时和反馈意见卡片移除英文标题，内容整体居中；县区天气、缓存和功能逻辑保持不变。网页、PWA 与手机端不变。",
+  "version": "1.2.1",
+  "platform": "Windows 10/11 64 位",
   "rollbackVersion": "1.0.5",
-  "version": "1.1.29",
-  "sha256": "c5418bcf31cbde1f083bafe49f14cfab9a963c7c55fbe4a31688197849098bb0",
+  "sha256": "99416ce20395a7f8ade91061ac5f70c88b46411033faa5f7b1b9b7a783b2d3f7",
   "available": true,
-  "notes": "Windows 1.1.29：天气改用和风天气服务，支持中国县、区和县级市搜索并显示完整省市归属；天气每小时最多更新一次，继续优先显示本机缓存。网页、PWA 与手机端不变。",
-  "platform": "Windows 10/11 64 位"
+  "publishedAt": "2026-09-08T01:44:30.3892271Z"
 }
