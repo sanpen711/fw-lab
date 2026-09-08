@@ -6,11 +6,11 @@ import {fileURLToPath} from 'node:url';
 const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
 const read=path=>readFileSync(resolve(root,path),'utf8');
 const config=JSON.parse(read('src-tauri/tauri.v11.conf.json'));
-assert.equal(config.version,'1.1.29');
+assert.equal(config.version,'1.2.1');
 assert.equal(config.build.frontendDist,'../desktop-v11/dist');
 assert.equal(config.build.devUrl,'http://127.0.0.1:1421');
 assert.equal(config.app.windows[0].url,'index.html');
-assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.1\.29/);
+assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.2\.1/);
 assert.doesNotMatch(JSON.stringify(config),/fwyanjiusuo\.com\/index\.html/);
 assert.match(config.app.security.csp,/supabase\.co/);
 assert.doesNotMatch(config.app.security.csp,/open-meteo/,'Windows 不应再直连旧天气服务');
@@ -63,6 +63,9 @@ assert.match(html,/src="\/hero-office\.webp"/,'首页必须使用独立人物场
 assert.match(html,/放下个人素质，享受缺德人生/,'首页主文案必须与参考截图一致');
 assert.match(html,/开始吐槽!/,'首页必须保留可用的发帖入口');
 assert.match(html,/data-weather-open[\s\S]*?data-offwork-open[\s\S]*?data-feedback-open/,'首页三个卡片必须按天气、下班倒计时、反馈意见排列');
+assert.doesNotMatch(html,/<small>(?:LOCAL WEATHER|OFF DUTY COUNTDOWN|FEEDBACK)<\/small>/,'首页三个工具卡片必须移除英文标题');
+assert.match(theme,/\.home-tool-card\{[\s\S]*?display:flex!important;[\s\S]*?align-items:center!important;[\s\S]*?justify-content:center!important;[\s\S]*?text-align:center!important;/,'首页三个工具卡片内容必须整体居中');
+assert.match(theme,/\.home-tool-card em\{[\s\S]*?position:relative!important;[\s\S]*?margin-top:7px!important;/,'首页工具卡片底部说明必须参与居中布局');
 assert.doesNotMatch(html,/class="feature-card"[^>]*data-nav="(?:square|echo|buddy)"/,'首页旧的精神广场、回声和搭子卡片必须移除');
 assert.match(html,/data-weather-form/,'天气卡片必须提供城市设置表单');
 assert.match(html,/data-offwork-form/,'下班倒计时必须提供时间设置表单');
@@ -75,7 +78,7 @@ assert.doesNotMatch(html,/>观鸟台</,'桌面端不能继续显示旧的观鸟�
 assert.match(theme,/\.status-options/,'旧发帖状态选择必须在桌面端被隐藏');
 assert.match(theme,/\.square-post \.post-meta>span:first-child/,'精神广场卡片不得再显示旧状态标签');
 assert.match(theme,/\.detail-post \.post-meta>span:first-child/,'帖子详情不得再显示旧状态标签');
-assert.match(cargo,/version = "1\.1\.29"/);
+assert.match(cargo,/version = "1\.2\.1"/);
 assert.match(cargo,/tauri-plugin-updater = "2\.10\.1"/);
 assert.match(cargo,/rusqlite = \{ version = "0\.32", features = \["bundled"\] \}/,'持久缓存必须使用内置 SQLite，不能依赖用户额外安装数据库');
 assert.match(rust,/mod persistent_cache;/,'Rust 主程序必须注册持久缓存模块');
@@ -217,7 +220,7 @@ assert.match(composeUi,/data-compose-compact-media/,'发布页必须提供独立
 assert.match(composeUi,/\.media-tools\{display:none!important\}/,'旧的大号添加图片\/视频工具行必须收起');
 assert.match(composeUi,/pickerOpen/,'我的表情面板必须按需展开而不是常驻');
 assert.match(composeUi,/\[data-compose-image\]/,'加号必须继续复用现有图片\/视频上传能力');
-assert.match(squareScroll,/Windows 1\.1\.29 本地前端 · 县区天气版/,'右下角版本标识必须更新');
+assert.match(squareScroll,/Windows 1\.2\.1 本地前端 · 首页工具居中版/,'右下角版本标识必须更新');
 assert.match(squareScroll,/square-scroll-locked/,'精神广场必须锁住整页滚动');
 assert.match(squareScroll,/buddy-scroll-locked/,'搭子页必须锁住整页滚动');
 assert.match(squareScroll,/\.chat-messages\{min-height:0;overflow-y:auto/,'搭子聊天记录必须独立滚动');
@@ -334,4 +337,4 @@ assert.doesNotMatch(alignment,/data-admin-panel|admin_list_profiles|站长处理
 assert.match(app,/contentRequests:0/);
 assert.match(app,/fixedProfileCode\|\|Boolean\(next\.busy\)/);
 assert.doesNotMatch(app,/location\.href|window\.location\.replace|fwyanjiusuo\.com/);
-console.log('Windows 1.1.29 county weather and cache checks passed');
+console.log('Windows 1.2.1 centered home tools and county weather checks passed');

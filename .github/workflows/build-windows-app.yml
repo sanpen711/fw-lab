@@ -76,24 +76,24 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.1\.29') { throw "Unexpected installer name: $($installer.Name)" }
+          if ($installer.Name -notmatch '1\.2\.1') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
 
           Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
           Copy-Item $signatureFile.FullName 'download/fw-lab-windows-latest.exe.sig' -Force
-          Copy-Item $installer.FullName 'download/fw-lab-windows-1.1.29-setup.exe' -Force
-          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.1.29-setup.exe.sig' -Force
+          Copy-Item $installer.FullName 'download/fw-lab-windows-1.2.1-setup.exe' -Force
+          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.2.1-setup.exe.sig' -Force
 
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.1.29：天气改用和风天气服务，支持中国县、区和县级市搜索并显示完整省市归属；天气每小时最多更新一次，继续优先显示本机缓存。网页、PWA 与手机端不变。'
+          $notes = 'Windows 1.2.1：首页天气、下班倒计时和反馈意见卡片移除英文标题，内容整体居中；县区天气、缓存和功能逻辑保持不变。网页、PWA 与手机端不变。'
 
           $metadata = @{
             available = $true
-            version = '1.1.29'
+            version = '1.2.1'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
@@ -105,7 +105,7 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.1.29'
+            version = '1.2.1'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
@@ -120,10 +120,10 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.1.29
+          name: fw-lab-windows-1.2.1
           path: |
-            download/fw-lab-windows-1.1.29-setup.exe
-            download/fw-lab-windows-1.1.29-setup.exe.sig
+            download/fw-lab-windows-1.2.1-setup.exe
+            download/fw-lab-windows-1.2.1-setup.exe.sig
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
             download/windows-updater.json
@@ -135,14 +135,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag='windows-v1.1.29'
-          asset='download/fw-lab-windows-1.1.29-setup.exe'
-          signature='download/fw-lab-windows-1.1.29-setup.exe.sig'
+          tag='windows-v1.2.1'
+          asset='download/fw-lab-windows-1.2.1-setup.exe'
+          signature='download/fw-lab-windows-1.2.1-setup.exe.sig'
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" "$signature" --clobber
           else
-            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.29' --notes '天气改用和风天气服务，新增县、区和县级市候选选择；每小时最多更新一次并保留本机缓存。网页、PWA 和手机端保持不变。'
+            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.2.1' --notes '首页天气、下班倒计时和反馈意见卡片移除英文标题并整体居中；县区天气、缓存和功能逻辑保持不变。网页、PWA 和手机端保持不变。'
           fi
 
       - name: Publish installer to website
@@ -177,6 +177,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.1.29"
+            git commit -m "Release Windows 1.2.1"
             git push origin HEAD:main
           fi
