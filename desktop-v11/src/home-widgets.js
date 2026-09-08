@@ -1,16 +1,19 @@
 import {authStore} from './auth-store.js';
+import {SUPABASE_URL} from './config.js';
 
 const WEATHER_LOCATION_KEY='fw:desktop:v11:weather-location';
 const WEATHER_CACHE_KEY='fw:desktop:v11:weather-cache';
 const OFFWORK_TIME_KEY='fw:desktop:v11:offwork-time';
-const WEATHER_FRESH_MS=30*60*1000;
-const WEATHER_REFRESH_MS=30*60*1000;
+const WEATHER_FRESH_MS=60*60*1000;
+const WEATHER_REFRESH_MS=60*60*1000;
+const WEATHER_ENDPOINT=`${SUPABASE_URL}/functions/v1/fw-weather`;
 
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>Array.from(root.querySelectorAll(selector));
 let notify=()=>{};
 let openAccount=()=>{};
 let weatherBusy=false;
+let weatherSearchResults=[];
 let started=false;
 
 function readLocal(key){
@@ -21,60 +24,58 @@ function writeLocal(key,value){
   try{localStorage.setItem(key,JSON.stringify(value));}catch{}
 }
 
-function weatherText(code){
+function weatherIcon(code){
   const value=Number(code);
-  if(value===0)return['晴','☀'];
-  if([1,2].includes(value))return['多云','⛅'];
-  if(value===3)return['阴','☁'];
-  if([45,48].includes(value))return['有雾','🌫'];
-  if(value>=51&&value<=57)return['毛毛雨','🌦'];
-  if((value>=61&&value<=67)||(value>=80&&value<=82))return['有雨','🌧'];
-  if((value>=71&&value<=77)||(value>=85&&value<=86))return['有雪','🌨'];
-  if(value>=95)return['雷雨','⛈'];
-  return['天气变化中','☁'];
+  if([100,150].includes(value))return'☀';
+  if([101,102,103,151,152,153].includes(value))return'⛅';
+  if([104,154].includes(value))return'☁';
+  if(value>=300&&value<400)return value>=302&&value<=304?'⛈':'🌧';
+  if(value>=400&&value<500)return'🌨';
+  if(value>=500&&value<600)return'🌫';
+  if(value===900)return'🌡';
+  if(value===901)return'❄';
+  return'☁';
 }
 
 function round(value){const number=Number(value);return Number.isFinite(number)?Math.round(number):'--';}
 
 function renderWeather(extraMeta=''){
-  const main=$('[data-weather-main]');const detail=$('[data-weather-detail]');const meta=$('[data-weather-meta]');
+  const main=$('[data-weather-main]');const detail=$('[data-weather-detail]');const meta=$('[data-weather-meta]');const credit=$('[data-weather-credit]');
   if(!main||!detail||!meta)return;
   const location=readLocal(WEATHER_LOCATION_KEY);const cached=readLocal(WEATHER_CACHE_KEY);
-  if(!location){main.textContent='设置天气';detail.textContent='点击选择你所在的城市';meta.textContent='无需定位权限';return;}
-  if(!cached?.current){main.textContent='正在读取天气';detail.textContent=location.label;meta.textContent=extraMeta||'请稍候…';return;}
-  const [label,icon]=weatherText(cached.current.weather_code);
-  main.textContent=`${icon} ${round(cached.current.temperature_2m)}°`;
-  detail.textContent=`${location.label} · ${label}`;
-  const low=round(cached.daily?.temperature_2m_min?.[0]);const high=round(cached.daily?.temperature_2m_max?.[0]);
-  meta.textContent=extraMeta||`${low}° / ${high}° · 体感 ${round(cached.current.apparent_temperature)}°`;
+  const validCache=cached?.provider==='qweather'&&cached?.current;
+  if(credit)credit.hidden=!validCache;
+  if(!location){main.textContent='设置天气';detail.textContent='点击选择你所在的县区';meta.textContent='无需定位权限';return;}
+  if(!validCache){main.textContent='正在读取天气';detail.textContent=location.label;meta.textContent=extraMeta||'请稍候…';return;}
+  const current=cached.current;const humidity=Number(current.humidity);
+  main.textContent=`${weatherIcon(current.conditionCode)} ${round(current.temperature)}°`;
+  detail.textContent=`${location.label} · ${current.conditionText||'天气变化中'}`;
+  const humidityText=Number.isFinite(humidity)?` · 湿度 ${Math.round(humidity*100)}%`:'';
+  meta.textContent=extraMeta||`体感 ${round(current.apparentTemperature)}°${humidityText}`;
 }
 
 async function fetchJson(url){
   const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),9000);
   try{
     const response=await fetch(url,{signal:controller.signal,headers:{Accept:'application/json'}});
-    if(!response.ok)throw new Error(`天气服务返回 ${response.status}`);
-    return await response.json();
+    const data=await response.json().catch(()=>null);
+    if(!response.ok)throw new Error(data?.error||`天气服务返回 ${response.status}`);
+    return data;
   }finally{clearTimeout(timer);}
 }
 
 async function fetchWeather(location){
-  const query=new URLSearchParams({
-    latitude:String(location.latitude),longitude:String(location.longitude),
-    current:'temperature_2m,apparent_temperature,weather_code,wind_speed_10m',
-    daily:'temperature_2m_max,temperature_2m_min,precipitation_probability_max',
-    timezone:'auto',forecast_days:'1'
-  });
-  const data=await fetchJson(`https://api.open-meteo.com/v1/forecast?${query}`);
+  const query=new URLSearchParams({action:'current',lat:String(location.latitude),lon:String(location.longitude)});
+  const data=await fetchJson(`${WEATHER_ENDPOINT}?${query}`);
   if(!data?.current)throw new Error('暂时没有取到这个城市的天气。');
-  const cached={savedAt:Date.now(),location,current:data.current,daily:data.daily||{}};
+  const cached={provider:'qweather',savedAt:Date.now(),location,current:data.current,attribution:data.attribution||''};
   writeLocal(WEATHER_CACHE_KEY,cached);renderWeather();return cached;
 }
 
 async function loadWeather(force=false){
   const location=readLocal(WEATHER_LOCATION_KEY);if(!location)return;
   const cached=readLocal(WEATHER_CACHE_KEY);renderWeather();
-  if(!force&&cached?.savedAt&&Date.now()-Number(cached.savedAt)<WEATHER_FRESH_MS)return;
+  if(!force&&cached?.provider==='qweather'&&cached?.savedAt&&Date.now()-Number(cached.savedAt)<WEATHER_FRESH_MS)return;
   if(weatherBusy)return;weatherBusy=true;renderWeather('正在更新…');
   try{await fetchWeather(location);}catch(error){renderWeather(cached?.current?'更新失败，点击可重试':'天气暂时取不到，点击重试');if(!cached?.current)throw error;}finally{weatherBusy=false;}
 }
@@ -97,29 +98,50 @@ function openTool(view){
   const modal=$('[data-home-tool-modal]');if(!modal)return;
   $$('[data-home-tool-view]',modal).forEach(panel=>{panel.hidden=panel.dataset.homeToolView!==view;});
   setStatus('');modal.hidden=false;document.body.classList.add('modal-open');
-  if(view==='weather')$('[data-weather-form] input[name="city"]',modal).value=readLocal(WEATHER_LOCATION_KEY)?.query||'';
+  if(view==='weather'){
+    $('[data-weather-form] input[name="city"]',modal).value=readLocal(WEATHER_LOCATION_KEY)?.query||'';
+    renderWeatherResults([]);
+  }
   if(view==='offwork')$('[data-offwork-form] input[name="time"]',modal).value=readLocal(OFFWORK_TIME_KEY)||'18:00';
   requestAnimationFrame(()=>$('[data-home-tool-view]:not([hidden]) input, [data-home-tool-view]:not([hidden]) textarea',modal)?.focus());
 }
 
 function closeTool(){const modal=$('[data-home-tool-modal]');if(!modal)return;modal.hidden=true;document.body.classList.remove('modal-open');setStatus('');}
 
-async function saveCity(form){
-  const input=form.elements.city;const city=String(input.value||'').trim();if(city.length<2)throw new Error('请至少输入 2 个字的城市名称。');
-  const query=new URLSearchParams({name:city,count:'1',language:'zh',format:'json'});
-  const data=await fetchJson(`https://geocoding-api.open-meteo.com/v1/search?${query}`);const result=data?.results?.[0];
-  if(!result)throw new Error('没有找到这个城市，请换个名称试试。');
-  const area=[result.name,result.admin1].filter((item,index,list)=>item&&list.indexOf(item)===index).join(' · ');
-  const location={query:city,label:area||city,latitude:result.latitude,longitude:result.longitude,timezone:result.timezone||'auto'};
-  writeLocal(WEATHER_LOCATION_KEY,location);writeLocal(WEATHER_CACHE_KEY,null);renderWeather();await fetchWeather(location);return location;
+function renderWeatherResults(locations){
+  const host=$('[data-weather-results]');if(!host)return;host.replaceChildren();weatherSearchResults=locations;
+  host.hidden=!locations.length;
+  locations.forEach((location,index)=>{
+    const button=document.createElement('button');button.type='button';button.className='weather-result';button.dataset.weatherLocation=String(index);
+    const name=document.createElement('strong');name.textContent=location.name;
+    const parent=document.createElement('span');parent.textContent=[location.adm2,location.adm1].filter((value,position,list)=>value&&list.indexOf(value)===position).join(' · ');
+    button.append(name,parent);host.append(button);
+  });
+}
+
+async function searchCities(form){
+  const input=form.elements.city;const city=String(input.value||'').trim();if(city.length<2)throw new Error('请至少输入 2 个字的县区或城市名称。');
+  const query=new URLSearchParams({action:'search',q:city});const data=await fetchJson(`${WEATHER_ENDPOINT}?${query}`);
+  const locations=Array.isArray(data?.locations)?data.locations:[];if(!locations.length)throw new Error('没有找到这个地区，请加上省或市名称再试。');
+  renderWeatherResults(locations);return locations;
+}
+
+async function selectWeatherLocation(location){
+  const selected={provider:'qweather',query:location.name,label:location.label||location.name,locationId:location.id,latitude:location.latitude,longitude:location.longitude,timezone:location.timezone||'Asia/Shanghai'};
+  writeLocal(WEATHER_LOCATION_KEY,selected);writeLocal(WEATHER_CACHE_KEY,null);renderWeather();await fetchWeather(selected);return selected;
 }
 
 function setBusy(form,busy){Array.from(form.elements).forEach(node=>{node.disabled=busy;});}
 
 function bindForms(){
   $('[data-weather-form]')?.addEventListener('submit',async event=>{
-    event.preventDefault();const form=event.currentTarget;setBusy(form,true);setStatus('正在查找城市和天气…');
-    try{const location=await saveCity(form);closeTool();notify(`已切换到 ${location.label}。`);}catch(error){setStatus(error.name==='AbortError'?'天气服务连接超时，请稍后再试。':error.message||'天气读取失败。',true);}finally{setBusy(form,false);}
+    event.preventDefault();const form=event.currentTarget;setBusy(form,true);renderWeatherResults([]);setStatus('正在查找县区…');
+    try{const locations=await searchCities(form);setStatus(`找到 ${locations.length} 个结果，请选择正确的地区。`);}catch(error){setStatus(error.name==='AbortError'?'天气服务连接超时，请稍后再试。':error.message||'地区查找失败。',true);}finally{setBusy(form,false);}
+  });
+  $('[data-weather-results]')?.addEventListener('click',async event=>{
+    const button=event.target.closest?.('[data-weather-location]');if(!button)return;const location=weatherSearchResults[Number(button.dataset.weatherLocation)];if(!location)return;
+    const form=$('[data-weather-form]');setBusy(form,true);setStatus(`正在读取 ${location.label||location.name} 的天气…`);
+    try{const selected=await selectWeatherLocation(location);closeTool();notify(`已切换到 ${selected.label}。`);}catch(error){setStatus(error.name==='AbortError'?'天气服务连接超时，请稍后再试。':error.message||'天气读取失败。',true);}finally{setBusy(form,false);}
   });
   $('[data-offwork-form]')?.addEventListener('submit',event=>{
     event.preventDefault();const time=String(new FormData(event.currentTarget).get('time')||'');if(!/^\d{2}:\d{2}$/.test(time)){setStatus('请选择正确的下班时间。',true);return;}

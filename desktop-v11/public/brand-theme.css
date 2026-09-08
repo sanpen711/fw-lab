@@ -1,4 +1,4 @@
-/* F.w 研究所 Windows 1.1.28 — Figma-aligned desktop visual system. */
+/* F.w 研究所 Windows 1.1.29 — Figma-aligned desktop visual system. */
 
 :root{
   --bg:#f7f7f6!important;
@@ -131,8 +131,17 @@ html body .weather-card{background:linear-gradient(135deg,#fffaf2,#f3f8f5)!impor
 html body .offwork-card{background:linear-gradient(135deg,#fffaf2,#fff2f3)!important;}
 html body .offwork-card strong{font-variant-numeric:tabular-nums!important;letter-spacing:.02em!important;}
 html body .feedback-card{background:linear-gradient(135deg,#fffaf2,#fff8ee)!important;}
+html body .weather-credit{display:block!important;width:max-content!important;margin:8px 2px 0 auto!important;color:#9a9288!important;font-size:10px!important;text-decoration:none!important;}
+html body .weather-credit:hover{color:#4f5e59!important;text-decoration:underline!important;}
+html body .weather-credit[hidden]{display:none!important;}
 html body .home-tool-panel{width:min(440px,calc(100vw - 50px))!important;}
 html body .home-tool-panel [data-home-tool-view][hidden]{display:none!important;}
+html body .weather-results{display:grid!important;gap:7px!important;margin-top:2px!important;max-height:238px!important;overflow:auto!important;}
+html body .weather-results[hidden]{display:none!important;}
+html body .weather-result{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:14px!important;width:100%!important;padding:11px 13px!important;border:1px solid #e4ddd3!important;border-radius:11px!important;background:#fffaf4!important;color:#152b25!important;text-align:left!important;}
+html body .weather-result:hover{border-color:#efb4ba!important;background:#fff5f5!important;}
+html body .weather-result strong{font-size:14px!important;}
+html body .weather-result span{color:#7b827f!important;font-size:11px!important;text-align:right!important;}
 html body .home-tool-form select,
 html body .home-tool-form textarea{width:100%!important;padding:11px 13px!important;border:1px solid #ddd6cd!important;border-radius:11px!important;background:#fff!important;color:#152b25!important;font:inherit!important;resize:vertical!important;}
 html body .home-tool-form select{min-height:43px!important;}

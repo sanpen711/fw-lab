@@ -53,6 +53,19 @@ jobs:
       - name: Verify Windows 1.1 local frontend
         run: npm --prefix desktop-v11 run test:static
 
+      - name: Verify live county weather service
+        shell: pwsh
+        run: |
+          $baseUrl = 'https://ekbovsmxbiplhyrzxoyw.supabase.co/functions/v1/fw-weather'
+          $search = Invoke-RestMethod -Method Get -Uri "$baseUrl?action=search&q=%E6%9B%B9%E5%8E%BF" -TimeoutSec 20
+          $location = @($search.locations | Where-Object { $_.name -eq '曹县' }) | Select-Object -First 1
+          if (-not $location) { throw 'County search did not return Cao County.' }
+
+          $current = Invoke-RestMethod -Method Get -Uri "$baseUrl?action=current&lat=$($location.latitude)&lon=$($location.longitude)" -TimeoutSec 20
+          if ($null -eq $current.current.temperature) { throw 'Current weather did not return a temperature.' }
+          if ([string]::IsNullOrWhiteSpace([string]$current.current.conditionText)) { throw 'Current weather did not return a condition.' }
+          Write-Host "County weather verified: $($location.label), $($current.current.temperature) C, $($current.current.conditionText)"
+
       - name: Build Windows 1.1 NSIS installer
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -63,24 +76,24 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.1\.28') { throw "Unexpected installer name: $($installer.Name)" }
+          if ($installer.Name -notmatch '1\.1\.29') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
 
           Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
           Copy-Item $signatureFile.FullName 'download/fw-lab-windows-latest.exe.sig' -Force
-          Copy-Item $installer.FullName 'download/fw-lab-windows-1.1.28-setup.exe' -Force
-          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.1.28-setup.exe.sig' -Force
+          Copy-Item $installer.FullName 'download/fw-lab-windows-1.1.29-setup.exe' -Force
+          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.1.29-setup.exe.sig' -Force
 
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.1.28：首页轻工具版。首页下方改为天气、下班倒计时与反馈意见；天气支持城市设置和半小时缓存更新，下班时间保存在本机，登录用户可提交最近 5 条反馈。网页、PWA 与手机端不变。'
+          $notes = 'Windows 1.1.29：天气改用和风天气服务，支持中国县、区和县级市搜索并显示完整省市归属；天气每小时最多更新一次，继续优先显示本机缓存。网页、PWA 与手机端不变。'
 
           $metadata = @{
             available = $true
-            version = '1.1.28'
+            version = '1.1.29'
             platform = 'Windows 10/11 64 位'
             downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
             publishedAt = $publishedAt
@@ -92,7 +105,7 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.1.28'
+            version = '1.1.29'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
@@ -107,10 +120,10 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.1.28
+          name: fw-lab-windows-1.1.29
           path: |
-            download/fw-lab-windows-1.1.28-setup.exe
-            download/fw-lab-windows-1.1.28-setup.exe.sig
+            download/fw-lab-windows-1.1.29-setup.exe
+            download/fw-lab-windows-1.1.29-setup.exe.sig
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
             download/windows-updater.json
@@ -122,14 +135,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag='windows-v1.1.28'
-          asset='download/fw-lab-windows-1.1.28-setup.exe'
-          signature='download/fw-lab-windows-1.1.28-setup.exe.sig'
+          tag='windows-v1.1.29'
+          asset='download/fw-lab-windows-1.1.29-setup.exe'
+          signature='download/fw-lab-windows-1.1.29-setup.exe.sig'
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" "$signature" --clobber
           else
-            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.28' --notes '首页下方新增天气、下班倒计时和反馈意见三个轻工具。天气与时间使用本机缓存，反馈保存到登录账号；网页、PWA 和手机端保持不变。'
+            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.1.29' --notes '天气改用和风天气服务，新增县、区和县级市候选选择；每小时最多更新一次并保留本机缓存。网页、PWA 和手机端保持不变。'
           fi
 
       - name: Publish installer to website
@@ -164,6 +177,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.1.28"
+            git commit -m "Release Windows 1.1.29"
             git push origin HEAD:main
           fi

@@ -1,0 +1,4 @@
+project_id = "fw-lab"
+
+[functions.fw-weather]
+verify_jwt = false
