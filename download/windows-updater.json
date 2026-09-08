@@ -1,11 +1,11 @@
 {
-  "version": "1.1.28",
+  "version": "1.1.29",
   "platforms": {
     "windows-x86_64": {
       "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmRJQ3dnMDNTQUNBQjFrTVdPRWdmWWlTUFZHb0RpTlpJSksrdEM4YlFZOGVmNHVZdUlFTEwveUxjQ2xmdmRqVU5MejRKWHM3ZWpVMUJ3OHhqM3BJY2c0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NzkwMDExCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjhfeDY0LXNldHVwLmV4ZQpnaGtML3ZpWldRZ3J1cGxjZzFYWFhodk5VRWRONTJTdndwU0N6aGlPeDVrdWw1bXFCZ3N2QXM5am9XSzNlS0YrSkhZcHZOYWYwc2dJc29venRTSkRCZz09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmJoeURaUkw0MEZYSmhHZjJnOFh1SFZJQmE0cmtpRXZUK21OenVrdHlBZ0N3TDY0WTVXVU9aVDcxQkVNTmg5Z0hiRVZOQ2xzMGl2VEM2NjVLM2FTdVE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4ODMwMDQxCWZpbGU6Ri53IOeglOeptuaJgF8xLjEuMjlfeDY0LXNldHVwLmV4ZQpJb3hQaXdkQ0lGTEI2RmZrVVhXVUhleHFPVDlZbzJEZUVEV2lPeGs2dGFhUml2UGJmV1UwS0c4c2tCbkh2a1lUanhlRmNPVmVnd1dpK0s2Z2txYTRCUT09Cg=="
     }
   },
-  "notes": "Windows 1.1.28：首页轻工具版。首页下方改为天气、下班倒计时与反馈意见；天气支持城市设置和半小时缓存更新，下班时间保存在本机，登录用户可提交最近 5 条反馈。网页、PWA 与手机端不变。",
-  "pub_date": "2026-09-07T14:06:51.9890551Z"
+  "notes": "Windows 1.1.29：天气改用和风天气服务，支持中国县、区和县级市搜索并显示完整省市归属；天气每小时最多更新一次，继续优先显示本机缓存。网页、PWA 与手机端不变。",
+  "pub_date": "2026-09-08T01:14:01.9215669Z"
 }

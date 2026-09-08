@@ -1,11 +1,11 @@
 {
-  "sha256": "12432605b47a27a398da4d378cc2294ceae67403f2bd731d6b23b91929b66c6b",
-  "platform": "Windows 10/11 64 位",
-  "notes": "Windows 1.1.28：首页轻工具版。首页下方改为天气、下班倒计时与反馈意见；天气支持城市设置和半小时缓存更新，下班时间保存在本机，登录用户可提交最近 5 条反馈。网页、PWA 与手机端不变。",
-  "publishedAt": "2026-09-07T14:06:51.9890551Z",
-  "available": true,
-  "version": "1.1.28",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "publishedAt": "2026-09-08T01:14:01.9215669Z",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
   "rollbackVersion": "1.0.5",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
+  "version": "1.1.29",
+  "sha256": "c5418bcf31cbde1f083bafe49f14cfab9a963c7c55fbe4a31688197849098bb0",
+  "available": true,
+  "notes": "Windows 1.1.29：天气改用和风天气服务，支持中国县、区和县级市搜索并显示完整省市归属；天气每小时最多更新一次，继续优先显示本机缓存。网页、PWA 与手机端不变。",
+  "platform": "Windows 10/11 64 位"
 }
