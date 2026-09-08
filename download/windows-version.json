@@ -1,11 +1,11 @@
 {
-  "version": "1.2.2",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "sha256": "61ebb888e9753375806c4a2f5384e3d4df777efa8f50f037eaf49a6ebb2a0511",
-  "platform": "Windows 10/11 64 位",
+  "notes": "Windows 1.2.3：统一发帖、评论和私聊的表情与媒体入口，加入本地小表情、表情管理和图片放大；优化新闻图片完整显示、头像裁剪压缩，并统一天气与小游戏功能图标。左侧导航图标保持不变。网页、PWA 与手机端不变。",
+  "version": "1.2.3",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
   "available": true,
-  "notes": "Windows 1.2.2：电脑端新增小游戏大厅，内置 2048、扫雷、贪吃蛇、数独、反应测试和接住掉落物；游戏在软件内部本地运行，支持本机成绩或进度，不接联网排名。网页、PWA 与手机端不变。",
-  "publishedAt": "2026-09-08T06:08:19.9841080Z",
+  "publishedAt": "2026-09-08T08:34:55.5699247Z",
+  "sha256": "0c63648bba18b7d5048093fadf791b456631a350a87d4f0679ae09ad50fb3c58",
+  "platform": "Windows 10/11 64 位",
   "rollbackVersion": "1.0.5"
 }

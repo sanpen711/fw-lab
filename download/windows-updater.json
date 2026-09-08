@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.2.2：电脑端新增小游戏大厅，内置 2048、扫雷、贪吃蛇、数独、反应测试和接住掉落物；游戏在软件内部本地运行，支持本机成绩或进度，不接联网排名。网页、PWA 与手机端不变。",
-  "version": "1.2.2",
+  "pub_date": "2026-09-08T08:34:55.5699247Z",
+  "version": "1.2.3",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlFFRnovbDAyQXM3UVkwbldlcVpyZ2xjcDNJeWVYVWFHM3M0U1BDMVowbTNsNW51d0xkSlR1aGpOL3o2aVFrZ01NenlwcEdzcjdwUGQrdlZBa1JCSGd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4ODQ3Njk5CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMl94NjQtc2V0dXAuZXhlCjg5U0ZqR0FFYzFZNmJBdmhtWG0vdjVXQTRRRWg1RHVScWxHdFZWRE16b3B5QThCeVN6cXBpdHlOU1FubTRGKytJYmRrNGx4aDd3TGJXWEhOaUNwd0RnPT0K",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlJZdmlmZit0YW5EcUtjV1Q3ZWJYc1FoR3NTNVhaYkpmMXphb1lscENtcTdiTlZzOFcwKy80MUpvNFJvMU9yYXh3WWZWWGhBelVsWHNob1V4TDZJTVE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4ODU2NDk1CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuM194NjQtc2V0dXAuZXhlClNSTWRMRktzdHU5R3hzbFZhUTd3YUM0UFV1d1N2ek9SWkdKUGlDbURUV2tqZExvWHMzVkd5dzhpZGp2aVhPaGdMenljQXg5b0ZtamlhZzBlWUZmbEF3PT0K"
     }
   },
-  "pub_date": "2026-09-08T06:08:19.9841080Z"
+  "notes": "Windows 1.2.3：统一发帖、评论和私聊的表情与媒体入口，加入本地小表情、表情管理和图片放大；优化新闻图片完整显示、头像裁剪压缩，并统一天气与小游戏功能图标。左侧导航图标保持不变。网页、PWA 与手机端不变。"
 }
