@@ -1,11 +1,11 @@
 {
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "version": "1.2.2",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-  "notes": "Windows 1.2.1：首页天气、下班倒计时和反馈意见卡片移除英文标题，内容整体居中；县区天气、缓存和功能逻辑保持不变。网页、PWA 与手机端不变。",
-  "version": "1.2.1",
+  "sha256": "61ebb888e9753375806c4a2f5384e3d4df777efa8f50f037eaf49a6ebb2a0511",
   "platform": "Windows 10/11 64 位",
-  "rollbackVersion": "1.0.5",
-  "sha256": "99416ce20395a7f8ade91061ac5f70c88b46411033faa5f7b1b9b7a783b2d3f7",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
   "available": true,
-  "publishedAt": "2026-09-08T01:44:30.3892271Z"
+  "notes": "Windows 1.2.2：电脑端新增小游戏大厅，内置 2048、扫雷、贪吃蛇、数独、反应测试和接住掉落物；游戏在软件内部本地运行，支持本机成绩或进度，不接联网排名。网页、PWA 与手机端不变。",
+  "publishedAt": "2026-09-08T06:08:19.9841080Z",
+  "rollbackVersion": "1.0.5"
 }

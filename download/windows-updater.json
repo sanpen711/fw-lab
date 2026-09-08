@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-09-08T01:44:30.3892271Z",
-  "version": "1.2.1",
+  "notes": "Windows 1.2.2：电脑端新增小游戏大厅，内置 2048、扫雷、贪吃蛇、数独、反应测试和接住掉落物；游戏在软件内部本地运行，支持本机成绩或进度，不接联网排名。网页、PWA 与手机端不变。",
+  "version": "1.2.2",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmY5TDBEd0hJYVZzWk5XcXB1Q092NGpGOEJmMzBtZStxblpaNlhCWjJjRXViMEF2anlQZG1GQ2dZaGxLbEloZGxiNEZnOFNheWwwbTJMeEVvSDFSN3dJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4ODMxODY5CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMV94NjQtc2V0dXAuZXhlCmY4S2M3em5JK0t0SkYvZk9qYU1LVWNnUEJpNGhXK1BEem1haXJZVlQyZi8vUjNOeEJRWmdxamRpdVBaL3p5bVlTVG1FZnpIK2FrRUlPME8ySzkvMEFBPT0K",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlFFRnovbDAyQXM3UVkwbldlcVpyZ2xjcDNJeWVYVWFHM3M0U1BDMVowbTNsNW51d0xkSlR1aGpOL3o2aVFrZ01NenlwcEdzcjdwUGQrdlZBa1JCSGd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4ODQ3Njk5CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMl94NjQtc2V0dXAuZXhlCjg5U0ZqR0FFYzFZNmJBdmhtWG0vdjVXQTRRRWg1RHVScWxHdFZWRE16b3B5QThCeVN6cXBpdHlOU1FubTRGKytJYmRrNGx4aDd3TGJXWEhOaUNwd0RnPT0K",
       "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
     }
   },
-  "notes": "Windows 1.2.1：首页天气、下班倒计时和反馈意见卡片移除英文标题，内容整体居中；县区天气、缓存和功能逻辑保持不变。网页、PWA 与手机端不变。"
+  "pub_date": "2026-09-08T06:08:19.9841080Z"
 }
