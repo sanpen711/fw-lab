@@ -26,7 +26,7 @@ function unique(values){return Array.from(new Set((values||[]).filter(Boolean).m
 function encodeMarker(kind,url){return `[[${kind}:${btoa(String(url||''))}]]`;}
 function composeContent(text,{imageUrl='',mediaUrl='',mediaKind='',stickerUrls=[]}={}){
   const parts=[];const clean=String(text||'').trim();if(clean)parts.push(clean);
-  (stickerUrls||[]).slice(0,6).forEach(url=>{if(url)parts.push(encodeMarker('FW_USER_STICKER',url));});
+  (stickerUrls||[]).slice(0,1).forEach(url=>{if(url)parts.push(encodeMarker('FW_USER_STICKER',url));});
   const url=mediaUrl||imageUrl;if(url)parts.push(encodeMarker(mediaKind==='video'?'FW_MEDIA_VIDEO':'FW_MEDIA_IMAGE',url));
   return parts.join('\n').trim();
 }

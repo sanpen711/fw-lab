@@ -60,6 +60,8 @@ test('搭子和私聊使用本地左右分栏且没有定时轮询',async({page}
   await expect(page.locator('[data-buddy-tab="new"]')).toBeVisible();
   await expect(page.locator('[data-chat-messages]')).toContainText('还没有选择聊天对象');
   await expect(page.locator('[data-chat-compose] input[name="message"]')).toBeDisabled();
+  await expect(page.locator('[data-emoji-toggle] use')).toHaveAttribute('href','/ui-icons.svg#face');
+  await expect(page.locator('[data-media-lightbox]')).toBeHidden();
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.pollingTimers)).toBe(0);
 });
 
@@ -129,6 +131,7 @@ test('小游戏在电脑端内部打开且离开后卸载',async({page})=>{
   await page.locator('[data-nav="games"].nav-item').click();
   await expect(page.locator('[data-view-panel="games"]')).toHaveClass(/active/);
   await expect(page.locator('[data-game-open]')).toHaveCount(6);
+  await expect(page.locator('.game-card-symbol')).toHaveCount(6);
   await page.locator('[data-game-open="reaction"]').click();
   await expect(page.locator('[data-game-stage]')).toBeVisible();
   await expect(page.frameLocator('[data-game-frame]').getByText('测试一下今天还醒着吗')).toBeVisible();

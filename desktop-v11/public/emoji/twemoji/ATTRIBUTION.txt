@@ -1,0 +1,8 @@
+Twemoji graphics
+Copyright 2020 Twitter, Inc. and other contributors
+Project: https://github.com/jdecked/twemoji
+Graphics license: Creative Commons Attribution 4.0 International (CC BY 4.0)
+Bundled revision: b6b55fef1e8636b540a6d016a4729ca8cdf2e60b
+
+Only the emoji SVG files used by the F.w desktop client are bundled here.
+See LICENSE-GRAPHICS in this directory for the complete license text.

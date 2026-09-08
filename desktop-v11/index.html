@@ -130,16 +130,16 @@
           </div>
           <div class="game-hall" data-game-hall>
             <div class="game-grid">
-              <button class="game-card game-card-2048" type="button" data-game-open="2048"><i>2048</i><b>2048</b><span>合并相同数字，看看今天能摸到多高。</span><em>方向键操作</em></button>
-              <button class="game-card game-card-mines" type="button" data-game-open="minesweeper"><i>✦</i><b>扫雷</b><span>排除安全区域，别让第一杯咖啡先炸了。</span><em>鼠标操作</em></button>
-              <button class="game-card game-card-snake" type="button" data-game-open="snake"><i>⌁</i><b>贪吃蛇</b><span>方向键控制，越吃越长，也越来越忙。</span><em>方向键操作</em></button>
-              <button class="game-card game-card-sudoku" type="button" data-game-open="sudoku"><i>9</i><b>数独</b><span>从简单到困难，安静消耗一点上班时间。</span><em>鼠标和键盘</em></button>
-              <button class="game-card game-card-reaction" type="button" data-game-open="reaction"><i>⚡</i><b>反应测试</b><span>等画面变绿再点击，测测今天还醒着没有。</span><em>单局约 5 秒</em></button>
-              <button class="game-card game-card-catch" type="button" data-game-open="catch"><i>⌄</i><b>接住掉落物</b><span>移动托盘接住文件，别让工作掉到地上。</span><em>单局 45 秒</em></button>
+              <button class="game-card game-card-2048" type="button" data-game-open="2048"><i><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-2048"></use></svg></i><b>2048</b><span>合并相同数字，看看今天能摸到多高。</span><em>方向键操作</em></button>
+              <button class="game-card game-card-mines" type="button" data-game-open="minesweeper"><i><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-mines"></use></svg></i><b>扫雷</b><span>排除安全区域，别让第一杯咖啡先炸了。</span><em>鼠标操作</em></button>
+              <button class="game-card game-card-snake" type="button" data-game-open="snake"><i><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-snake"></use></svg></i><b>贪吃蛇</b><span>方向键控制，越吃越长，也越来越忙。</span><em>方向键操作</em></button>
+              <button class="game-card game-card-sudoku" type="button" data-game-open="sudoku"><i><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-sudoku"></use></svg></i><b>数独</b><span>从简单到困难，安静消耗一点上班时间。</span><em>鼠标和键盘</em></button>
+              <button class="game-card game-card-reaction" type="button" data-game-open="reaction"><i><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-reaction"></use></svg></i><b>反应测试</b><span>等画面变绿再点击，测测今天还醒着没有。</span><em>单局约 5 秒</em></button>
+              <button class="game-card game-card-catch" type="button" data-game-open="catch"><i><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-catch"></use></svg></i><b>接住掉落物</b><span>移动托盘接住文件，别让工作掉到地上。</span><em>单局 45 秒</em></button>
             </div>
             <details class="game-licenses">
               <summary>开源许可</summary>
-              <p>2048、扫雷、贪吃蛇和数独基于 MIT 许可的开源项目；完整许可证随安装包保存在各游戏目录。反应测试和接住掉落物由 F.w 研究所制作。</p>
+              <p>2048、扫雷、贪吃蛇和数独基于 MIT 许可的开源项目；小表情图形使用 Twemoji（CC BY 4.0）；完整许可证均随安装包保留。反应测试和接住掉落物由 F.w 研究所制作。</p>
             </details>
           </div>
           <div class="game-stage" data-game-stage hidden>
@@ -191,12 +191,12 @@
             </header>
             <div class="chat-messages" data-chat-messages><div class="state-card">还没有选择聊天对象。</div></div>
             <form class="chat-compose" data-chat-compose>
-              <button class="emoji-trigger" type="button" data-emoji-toggle aria-label="打开表情">😊</button>
+              <button class="emoji-trigger" type="button" data-emoji-toggle aria-label="打开表情"><svg class="ui-symbol" aria-hidden="true"><use href="/ui-icons.svg#face"></use></svg></button>
               <input name="message" maxlength="300" autocomplete="off" placeholder="先从左侧选择一个搭子" disabled>
               <button class="primary" type="submit" disabled>发送</button>
             </form>
             <div class="emoji-panel" data-emoji-panel hidden>
-              <div class="emoji-tabs"><button class="active" type="button" data-emoji-tab="emoji">小表情</button><button type="button" data-emoji-tab="stickers">♥ 我的表情</button></div>
+              <div class="emoji-tabs"><button class="active" type="button" data-emoji-tab="emoji">小表情</button><button type="button" data-emoji-tab="stickers">我的表情</button></div>
               <div class="emoji-body" data-emoji-body></div>
               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-sticker-file hidden>
             </div>
@@ -256,7 +256,7 @@
         <div class="profile-summary"><span class="avatar" data-profile-avatar>FW</span><div><strong data-profile-name>研究员</strong><span data-profile-email></span></div></div>
         <label>实验品编号<input name="labCode" maxlength="7" disabled></label>
         <label>昵称<input name="nickname" maxlength="12" required></label>
-        <label>头像<input name="avatar" type="file" accept="image/*"></label>
+        <label>头像<input name="avatar" type="file" accept="image/jpeg,image/png,image/webp"><small class="avatar-upload-hint">支持 JPG、PNG、WebP；预览按中心裁成正方形，保存时自动压缩。</small></label>
         <button class="primary full" type="submit">保存资料</button>
         <button class="secondary full" type="button" data-sign-out>退出登录</button>
       </form>
@@ -309,6 +309,7 @@
     </section>
   </div>
 
+  <div class="media-lightbox" data-media-lightbox hidden role="dialog" aria-modal="true" aria-label="查看原图"><button type="button" data-media-lightbox-close aria-label="关闭原图">×</button><img data-media-lightbox-image alt="原图"></div>
   <div class="toast" data-toast role="status" aria-live="polite"></div>
   <script type="module" src="/src/app.js"></script>
   <script type="module" src="/src/alignment-nav-fix.js"></script>

@@ -176,14 +176,33 @@ async function sendPasswordReset(email){
   });
 }
 
+async function loadAvatarImage(file){
+  if(typeof createImageBitmap==='function')return createImageBitmap(file,{imageOrientation:'from-image'});
+  return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file);const image=new Image();image.onload=()=>{URL.revokeObjectURL(url);resolve(image);};image.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('头像图片无法读取，请换一张图片。'));};image.src=url;});
+}
+
+async function canvasBlob(canvas,quality){
+  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('头像压缩失败，请换一张图片。')),'image/webp',quality));
+}
+
+async function prepareAvatar(file){
+  if(!['image/jpeg','image/png','image/webp'].includes(file?.type))throw new Error('头像仅支持 JPG、PNG 或 WebP。');
+  if(file.size>10*1024*1024)throw new Error('头像原图不能超过 10MB。');
+  const source=await loadAvatarImage(file);const width=Number(source.width);const height=Number(source.height);
+  if(!width||!height){source.close?.();throw new Error('头像图片尺寸无效。');}
+  const side=Math.min(width,height);const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;const context=canvas.getContext('2d',{alpha:false});if(!context){source.close?.();throw new Error('当前设备无法处理头像图片。');}
+  context.fillStyle='#fff';context.fillRect(0,0,512,512);context.drawImage(source,(width-side)/2,(height-side)/2,side,side,0,0,512,512);source.close?.();
+  let blob=await canvasBlob(canvas,.86);if(blob.size>320*1024)blob=await canvasBlob(canvas,.72);if(blob.size>320*1024)blob=await canvasBlob(canvas,.58);
+  return new File([blob],`avatar_${Date.now()}.webp`,{type:'image/webp',lastModified:Date.now()});
+}
+
 async function updateProfile({nickname,avatarFile}){
   return withBusy(async()=>{
     if(!state.session?.user) throw new Error('请先登录。');
     let avatarUrl='';
     if(avatarFile?.size){
-      const safeName=avatarFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-      const path=`${state.session.user.id}/${Date.now()}_${safeName}`;
-      const upload=await client.storage.from('avatars').upload(path,avatarFile,{upsert:true,cacheControl:'3600'});
+      const prepared=await prepareAvatar(avatarFile);const path=`${state.session.user.id}/${prepared.name}`;
+      const upload=await client.storage.from('avatars').upload(path,prepared,{upsert:true,cacheControl:'3600',contentType:prepared.type});
       if(upload.error) throw new Error(`头像上传失败：${upload.error.message}`);
       avatarUrl=client.storage.from('avatars').getPublicUrl(path).data.publicUrl;
     }

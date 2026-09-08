@@ -26,15 +26,15 @@ function writeLocal(key,value){
 
 function weatherIcon(code){
   const value=Number(code);
-  if([100,150].includes(value))return'☀';
-  if([101,102,103,151,152,153].includes(value))return'⛅';
-  if([104,154].includes(value))return'☁';
-  if(value>=300&&value<400)return value>=302&&value<=304?'⛈':'🌧';
-  if(value>=400&&value<500)return'🌨';
-  if(value>=500&&value<600)return'🌫';
-  if(value===900)return'🌡';
-  if(value===901)return'❄';
-  return'☁';
+  if([100,150].includes(value))return'sun';
+  if([101,102,103,151,152,153].includes(value))return'partly-cloudy';
+  if([104,154].includes(value))return'cloud';
+  if(value>=300&&value<400)return value>=302&&value<=304?'storm':'rain';
+  if(value>=400&&value<500)return'snow';
+  if(value>=500&&value<600)return'fog';
+  if(value===900)return'temperature';
+  if(value===901)return'snow';
+  return'cloud';
 }
 
 function round(value){const number=Number(value);return Number.isFinite(number)?Math.round(number):'--';}
@@ -48,7 +48,7 @@ function renderWeather(extraMeta=''){
   if(!location){main.textContent='设置天气';detail.textContent='点击选择你所在的县区';meta.textContent='无需定位权限';return;}
   if(!validCache){main.textContent='正在读取天气';detail.textContent=location.label;meta.textContent=extraMeta||'请稍候…';return;}
   const current=cached.current;const humidity=Number(current.humidity);
-  main.textContent=`${weatherIcon(current.conditionCode)} ${round(current.temperature)}°`;
+  main.innerHTML=`<svg class="ui-symbol weather-symbol" aria-hidden="true"><use href="/ui-icons.svg#${weatherIcon(current.conditionCode)}"></use></svg>${round(current.temperature)}°`;
   detail.textContent=`${location.label} · ${current.conditionText||'天气变化中'}`;
   const humidityText=Number.isFinite(humidity)?` · 湿度 ${Math.round(humidity*100)}%`:'';
   meta.textContent=extraMeta||`体感 ${round(current.apparentTemperature)}°${humidityText}`;
