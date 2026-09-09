@@ -102,6 +102,12 @@ assert.doesNotMatch(html,/>观鸟台</,'桌面端不能继续显示旧的观鸟�
 assert.match(theme,/\.status-options/,'旧发帖状态选择必须在桌面端被隐藏');
 assert.match(theme,/\.square-post \.post-meta>span:first-child/,'精神广场卡片不得再显示旧状态标签');
 assert.match(theme,/\.detail-post \.post-meta>span:first-child/,'帖子详情不得再显示旧状态标签');
+assert.match(app,/class="comments-heading"><h3>评论<\/h3><span>/,'精神广场帖子详情必须统一使用评论标题和数量');
+assert.match(app,/placeholder="发表评论，最多 180 字"/,'精神广场评论输入栏必须使用简洁评论提示');
+assert.match(app,/>\$\{feedState\.busy\?'发送中\.\.\.':'发表评论'\}<\/button>/,'精神广场评论按钮必须显示发表评论');
+assert.doesNotMatch(app,/<h3>回声|留一句回声|发送回声|回声已发送/,'精神广场评论区不能继续显示回声文案');
+assert.match(styles,/\.post-detail-column \.detail-scroll\{display:grid;grid-template-rows:auto auto minmax\(0,1fr\)/,'帖子详情必须让评论列表独立占用剩余空间');
+assert.match(styles,/\.post-detail-column \.comment-compose-card\{[\s\S]*border-top:1px solid var\(--line\)/,'评论输入区必须固定在评论列表底部并减少卡片嵌套');
 assert.match(cargo,/version = "1\.2\.5"/);
 assert.match(cargo,/tauri-plugin-updater = "2\.10\.1"/);
 assert.match(cargo,/rusqlite = \{ version = "0\.32", features = \["bundled"\] \}/,'持久缓存必须使用内置 SQLite，不能依赖用户额外安装数据库');
