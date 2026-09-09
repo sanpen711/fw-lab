@@ -119,7 +119,7 @@ function deactivate(){active=false;refreshQueued=false;clearTimeout(refreshTimer
 
 function openPost(postId){state.openPostId=String(postId||'');state.reply=null;emit();}
 function closePost(){state.openPostId='';state.reply=null;emit();}
-function setReply(comment){state.reply=comment?{postId:String(comment.post_id),targetCommentId:String(comment.id),rootCommentId:String(comment.parent_comment_id||comment.id),targetUserId:String(comment.user_id),name:state.profiles[String(comment.user_id)]?.nickname||'匿名回声'}:null;emit();}
+function setReply(comment){state.reply=comment?{postId:String(comment.post_id),targetCommentId:String(comment.id),rootCommentId:String(comment.parent_comment_id||comment.id),targetUserId:String(comment.user_id),name:state.profiles[String(comment.user_id)]?.nickname||'匿名用户'}:null;emit();}
 function clearReply(){state.reply=null;emit();}
 
 function mediaKind(file){const type=String(file?.type||'').toLowerCase();const name=String(file?.name||'').toLowerCase();if(type.startsWith('image/')||/\.(jpe?g|png|webp|gif)$/i.test(name))return'image';if(type.startsWith('video/')||/\.(mp4|mov|webm|m4v)$/i.test(name))return'video';return'';}
