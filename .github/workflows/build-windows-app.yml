@@ -103,7 +103,7 @@ jobs:
             available = $true
             version = '1.2.5'
             platform = 'Windows 10/11 64 位'
-            downloadUrl = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
+            downloadUrl = 'https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.5-setup.exe'
             publishedAt = $publishedAt
             sha256 = $hash
             notes = $notes
@@ -119,7 +119,7 @@ jobs:
             platforms = @{
               'windows-x86_64' = @{
                 signature = $signature
-                url = 'https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe'
+                url = 'https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.5-setup.exe'
               }
             }
           }
@@ -152,6 +152,18 @@ jobs:
           else
             gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.2.5' --notes '内置常用小表情由 36 个扩充到 89 个，补充常见笑脸、情绪、手势、爱心、庆祝和日常图标；发帖、评论和私聊共用同一套表情。网页、PWA 和手机端保持不变。'
           fi
+
+      - name: Mirror installer to Supabase Storage
+        shell: bash
+        env:
+          SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_I1sZnPGEoozkjWcKTXjauQ_qSBsx5Bh'
+        run: |
+          response="$(curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors --max-time 180 \
+            --request POST 'https://ekbovsmxbiplhyrzxoyw.supabase.co/functions/v1/sync-windows-release' \
+            --header "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
+            --header 'Content-Type: application/json' \
+            --data '{"version":"1.2.5"}')"
+          node -e "const result=JSON.parse(process.argv[1]); if(!result.publicUrl) throw new Error(result.error || 'Supabase release sync returned no URL'); console.log('Supabase installer ready:', result.publicUrl);" "$response"
 
       - name: Publish installer to website
         shell: bash
