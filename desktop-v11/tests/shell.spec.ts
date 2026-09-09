@@ -18,6 +18,23 @@ test('本地首页保留桌面视觉和完整导航框架',async({page})=>{
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
 });
 
+test('复制的图片可以直接粘贴到发布输入框',async({page})=>{
+  await page.goto('/');
+  const result=await page.evaluate(()=>{
+    const form=document.createElement('form');form.dataset.composeForm='';
+    const textarea=document.createElement('textarea');
+    const input=document.createElement('input');input.type='file';input.dataset.composeImage='';
+    form.append(textarea,input);document.body.appendChild(form);
+    let fileName='';let fileType='';input.addEventListener('change',()=>{fileName=input.files?.[0]?.name||'';fileType=input.files?.[0]?.type||'';});
+    const imageData=new DataTransfer();imageData.items.add(new File([new Uint8Array([137,80,78,71])],'clipboard.png',{type:'image/png'}));
+    const imagePaste=new ClipboardEvent('paste',{clipboardData:imageData,bubbles:true,cancelable:true});textarea.dispatchEvent(imagePaste);
+    const textData=new DataTransfer();textData.setData('text/plain','普通文字');
+    const textPaste=new ClipboardEvent('paste',{clipboardData:textData,bubbles:true,cancelable:true});textarea.dispatchEvent(textPaste);
+    return{fileName,fileType,imagePrevented:imagePaste.defaultPrevented,textPrevented:textPaste.defaultPrevented};
+  });
+  expect(result).toEqual({fileName:'clipboard.png',fileType:'image/png',imagePrevented:true,textPrevented:false});
+});
+
 test('首页轻工具按天气、下班倒计时和反馈意见排列',async({page})=>{
   await page.goto('/');
   const cards=page.locator('.home-grid .home-tool-card');

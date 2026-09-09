@@ -35,6 +35,15 @@ function extension(file,fallback='bin'){
   const match=String(file?.name||'').match(/\.([a-z0-9]+)$/i);if(match)return match[1].toLowerCase()==='jpeg'?'jpg':match[1].toLowerCase();
   const type=String(file?.type||'').toLowerCase();if(type.includes('jpeg'))return'jpg';if(type.includes('png'))return'png';if(type.includes('webp'))return'webp';if(type.includes('gif'))return'gif';if(type.includes('mp4'))return'mp4';if(type.includes('quicktime'))return'mov';if(type.includes('webm'))return'webm';return fallback;
 }
+function clipboardImages(event){
+  const clipboard=event.clipboardData;if(!clipboard)return[];
+  const itemFiles=Array.from(clipboard.items||[]).filter(item=>item.kind==='file'&&String(item.type||'').toLowerCase().startsWith('image/')).map(item=>item.getAsFile()).filter(Boolean);
+  const files=itemFiles.length?itemFiles:Array.from(clipboard.files||[]).filter(file=>String(file.type||'').toLowerCase().startsWith('image/'));
+  const stamp=Date.now().toString(36);return files.map((file,index)=>{if(/\.[a-z0-9]+$/i.test(String(file.name||'')))return file;const ext=({'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif','image/bmp':'bmp'})[String(file.type||'').toLowerCase()]||'png';return new File([file],`clipboard_${stamp}_${index+1}.${ext}`,{type:file.type||`image/${ext}`,lastModified:Date.now()});});
+}
+function handoffClipboardFiles(input,files){
+  if(!input||!files.length)return false;const transfer=new DataTransfer();files.forEach(file=>transfer.items.add(file));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true;
+}
 async function videoDuration(file){
   const url=URL.createObjectURL(file);
   try{return await new Promise((resolve,reject)=>{const video=document.createElement('video');const timer=setTimeout(()=>reject(new Error('视频读取超时，请换一个视频。')),10000);video.preload='metadata';video.onloadedmetadata=()=>{clearTimeout(timer);resolve(Number(video.duration||0));};video.onerror=()=>{clearTimeout(timer);reject(new Error('视频读取失败，请换一个视频。'));};video.src=url;});}
@@ -79,8 +88,8 @@ function injectStyles(){
 
 function setFirstText(label,text){if(!label)return;const node=Array.from(label.childNodes).find(item=>item.nodeType===Node.TEXT_NODE);if(node)node.nodeValue=text;}
 function enhancePostMediaInputs(){
-  const compose=$('[data-compose-image]');if(compose){compose.accept='image/*,video/*';setFirstText(compose.closest('label'),'添加图片 / 视频');const hint=compose.closest('.media-tools')?.querySelector('span');if(hint)hint.textContent='图片会自动压缩；GIF 最大 3MB；视频最大 20MB、30 秒；每次最多 1 个“我的表情”。';}
-  $$('[data-comment-image]').forEach(input=>{input.accept='image/*,video/*';setFirstText(input.closest('label'),'图片 / 视频');const hint=input.closest('.media-tools')?.querySelector('span');if(hint)hint.textContent='也可以只发送图片、视频或表情';});
+  const compose=$('[data-compose-image]');if(compose){compose.accept='image/*,video/*';setFirstText(compose.closest('label'),'添加图片 / 视频');const hint=compose.closest('.media-tools')?.querySelector('span');if(hint)hint.textContent='可直接 Ctrl+V 粘贴图片；图片自动压缩；GIF 最大 3MB；视频最大 20MB、30 秒。';}
+  $$('[data-comment-image]').forEach(input=>{input.accept='image/*,video/*';setFirstText(input.closest('label'),'图片 / 视频');const hint=input.closest('.media-tools')?.querySelector('span');if(hint)hint.textContent='可直接 Ctrl+V 粘贴图片，也可以只发送图片、视频或表情';});
   if(videoDrafts.compose){const image=$('[data-compose-form] .image-preview img');if(image)replacePreviewWithVideo(image);}
   videoDrafts.comments.forEach(postId=>{const image=$(`[data-comment-form="${CSS.escape(String(postId))}"] .image-preview img`);if(image)replacePreviewWithVideo(image);});
 }
@@ -159,6 +168,13 @@ function enhanceAll(){injectStyles();injectExtraViews();enhancePostMediaInputs()
 function scheduleEnhance(){clearTimeout(enhanceTimer);enhanceTimer=setTimeout(enhanceAll,35);}
 function closeMenus(except=null){$$('.align-more-wrap.open').forEach(node=>{if(node!==except)node.classList.remove('open');});}
 function bind(){
+  document.addEventListener('paste',event=>{
+    const target=event.target;const images=clipboardImages(event);if(!images.length||!target?.closest)return;
+    const compose=target.closest('[data-compose-form]');if(compose&&target.matches('textarea')){event.preventDefault();if(handoffClipboardFiles($('[data-compose-image]',compose),images.slice(0,1)))toast('已粘贴图片，可预览后发布。');return;}
+    const comment=target.closest('[data-comment-form]');if(comment&&target.matches('textarea')){event.preventDefault();if(handoffClipboardFiles($('[data-comment-image]',comment),images.slice(0,1)))toast('已粘贴图片，可预览后发送。');return;}
+    const bird=target.closest('[data-bird-compose-form]');if(bird&&target.matches('textarea')){event.preventDefault();const available=Math.max(0,20-$$('[data-bird-remove-file]',bird).length);const accepted=images.slice(0,available);if(!accepted.length){toast('最多上传 20 张图片。');return;}if(handoffClipboardFiles($('[data-bird-files]',bird),accepted))toast(images.length>accepted.length?`已粘贴 ${accepted.length} 张，最多保留 20 张图片。`:accepted.length>1?`已粘贴 ${accepted.length} 张图片。`:'已粘贴图片。');return;}
+    const chat=target.closest('[data-chat-compose]');if(chat&&target.matches('input[name="message"]')){event.preventDefault();sendChatMedia(images[0]).catch(error=>toast(error.message||'发送失败。'));}
+  });
   document.addEventListener('change',event=>{
     if(event.target.matches('[data-compose-image]')){const file=event.target.files?.[0];videoDrafts.compose=fileKind(file)==='video';}
     if(event.target.matches('[data-comment-image]')){const file=event.target.files?.[0];const id=String(event.target.dataset.commentImage||'');if(fileKind(file)==='video')videoDrafts.comments.add(id);else videoDrafts.comments.delete(id);}
