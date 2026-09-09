@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.2.8：精神广场的评论重新紧跟帖子正文并与正文连续滚动，只有发表评论编辑器固定在右侧底部；小表情与我的表情面板保持相同大小，选择任意一个表情后自动关闭面板。保留图片、视频、Ctrl+V 粘贴、回复和举报功能。网页、PWA 与手机端不变。",
-  "pub_date": "2026-09-09T14:03:46.9446609Z",
+  "version": "1.2.9",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWldyVkpGbXNKdU1Hc1N0WmFUbHkwTlZKY1RiejBvUU5saHJXU3FINUJRdU9iaFRJYXY5c0RZNUppTTRqbWRuZk81a0E2YUMrTVFZMjI2M0FvcGpyYXdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4OTYyNjI2CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuOF94NjQtc2V0dXAuZXhlCjI4KzlHRXQ3bnBmdjd5ZTJmdTZaTVRoa3NrSk83amVBRitiTGtscjVpZ1M3cGFVVUpSWVZJVVpuaVM4dEUxVFJZRVpRRms3eWFuSGxkdXl2OFE3akFRPT0K",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.8-setup.exe"
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.9-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlhtRHAvTTg3c1pqZmpuM3JENmxrM1VXbThWL2VHUXdpRWhOaGI3VGZGSmY3K0xkYm5YOUUrODdUSHM0cExNQWpqUWlvaERoU05wVElCeHBYbVgycUFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4OTY0OTg0CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuOV94NjQtc2V0dXAuZXhlCm9PbkdzdzFkM2YrMGtLQWpvYjRma1I5MWQ4ZW9kSXhPbmt4YlI5QUp0cmh6QUFUVWZ6dXlFMXQ2eEpXUFp4SUVIc3A1UUhWc2tobWttckZ1MWJjQkNnPT0K"
     }
   },
-  "version": "1.2.8"
+  "notes": "Windows 1.2.9：修复精神广场点击回复时评论位置跳回顶部的问题；彻底移除帖子详情中的今日无效等旧状态标签；我的表情改为与小表情相同的十列、42px 网格，未添加的位置自然留空。保留固定评论输入栏、表情选择后自动关闭及全部既有功能。网页、PWA 与手机端不变。",
+  "pub_date": "2026-09-09T14:43:04.7291010Z"
 }
