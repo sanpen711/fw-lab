@@ -255,7 +255,8 @@ assert.match(styles,/\.chat-column\{[^}]*min-height:0;height:100%;overflow:hidde
 assert.match(squareScroll,/\.square-feed\{min-height:0;overflow-y:auto/,'左侧帖子列表必须独立滚动');
 assert.match(squareScroll,/\.detail-scroll\{height:100%;min-height:0;overflow-y:auto/,'右侧详情必须独立滚动');
 assert.match(squareScroll,/attributeFilter:\['data-view'\]/,'滚动锁监听必须只观察 data-view，不能监听整棵 DOM');
-assert.match(windowsWorkflow,/url = 'https:\/\/fwyanjiusuo\.com\/download\/fw-lab-windows-latest\.exe'/,'自动更新必须使用已验证可下载的网站线路');
+assert.match(windowsWorkflow,/url = 'https:\/\/ekbovsmxbiplhyrzxoyw\.supabase\.co\/storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.2\.5-setup\.exe'/,'自动更新必须使用 Supabase Storage 的版本化安装包');
+assert.match(windowsWorkflow,/functions\/v1\/sync-windows-release/,'Windows 发布必须先同步 Supabase 安装包');
 assert.match(windowsWorkflow,/gh release create/,'Windows 构建必须发布独立版本安装包');
 assert.doesNotMatch(windowsWorkflow,/cdn\.jsdelivr\.net|windows-cdn-build/,'自动更新不能再发布到会拒绝安装包的 CDN 线路');
 assert.match(auth,/createClient\(SUPABASE_URL, SUPABASE_ANON_KEY/);
