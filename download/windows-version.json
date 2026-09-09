@@ -1,11 +1,11 @@
 {
+  "version": "1.2.5",
+  "platform": "Windows 10/11 64 位",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "publishedAt": "2026-09-09T07:11:35.3613904Z",
+  "notes": "Windows 1.2.5：内置常用小表情由 36 个扩充到 89 个，补充常见笑脸、情绪、手势、爱心、庆祝和日常图标；发帖、评论和私聊共用同一套表情。网页、PWA 与手机端不变。",
   "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.5-setup.exe",
   "rollbackVersion": "1.0.5",
-  "sha256": "d18a333ba2756416c077f8eb794f9fc1a5bb6cecc154d3312eba0273d9bf8374",
-  "notes": "Windows 1.2.5：内置常用小表情由 36 个扩充到 89 个，补充常见笑脸、情绪、手势、爱心、庆祝和日常图标；发帖、评论和私聊共用同一套表情。网页、PWA 与手机端不变。",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "publishedAt": "2026-09-09T06:34:48.4951837Z",
-  "platform": "Windows 10/11 64 位",
-  "available": true,
-  "version": "1.2.5"
+  "sha256": "a5e14f2be1349216fca8eea24fd8eec235b230007e7f31a91784fa93aa136310",
+  "available": true
 }
