@@ -1,11 +1,11 @@
 {
+  "version": "1.2.5",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmVYdThMUjRHVWpKREhEY0tsN0ZqQmRtVFFETGEzTWN1NEdTWEpmak9xVFcwR0xMcXFGdjN4Yk1OTEoxSEJQK0x6T0N5N3ZsWk5VVy92M3h0dHBMblFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4OTIzODY3CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuNV94NjQtc2V0dXAuZXhlCk1KcGlBM09YY1ZNYkJZYU5RdUxnbG52NXIzai9hVzg0OGpQWFFWNDVTRTNqb3pYUFFMdm1nZGlqR1VxT3F5K2dPL0YreHlBVXhIZ1QwU0NoMFhCTkJnPT0K"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmJxbDdJZU11QWRpUnFWUnpCT0svc2JmV0RRRkEvNXB5bHB1WHE5WUY1SEhtajVDOVhVZjM1NVZtNmt4SnlvSVdoSms4QnVXNWFiMlZMRjMvTENSTWdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4OTM1Njg4CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuNV94NjQtc2V0dXAuZXhlClJFTTJzbXhwTnlxMzgyZWw5THNVOTl0cDdRZVVTdE4xNm1CUXQzSHhJSkZISHdyMFhhNkNLWERUdWNnK2kwbVZZZFNZRUpuUGFoOUExOUo3cFRDV0JBPT0K",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.5-setup.exe"
     }
   },
-  "pub_date": "2026-09-09T03:17:48.2350700Z",
-  "notes": "Windows 1.2.5：内置常用小表情由 36 个扩充到 89 个，补充常见笑脸、情绪、手势、爱心、庆祝和日常图标；发帖、评论和私聊共用同一套表情。网页、PWA 与手机端不变。",
-  "version": "1.2.5"
+  "pub_date": "2026-09-09T06:34:48.4951837Z",
+  "notes": "Windows 1.2.5：内置常用小表情由 36 个扩充到 89 个，补充常见笑脸、情绪、手势、爱心、庆祝和日常图标；发帖、评论和私聊共用同一套表情。网页、PWA 与手机端不变。"
 }
