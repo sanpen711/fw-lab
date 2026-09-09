@@ -242,14 +242,14 @@ assert.match(workflow, /npm --prefix desktop-v11 run test:static/, '正式构建
 assert.match(workflow, /npx tauri build --config src-tauri\/tauri\.v11\.conf\.json --bundles nsis/, '正式构建必须使用 Windows 1.1 本地前端配置');
 assert.match(workflow, /fw-lab-windows-latest\.exe/);
 assert.match(workflow, /TAURI_SIGNING_PRIVATE_KEY/);
-assert.match(workflow, /fw-lab-windows-1\.2\.7/);
-assert.match(workflow, /version = '1\.2\.7'/);
+assert.match(workflow, /fw-lab-windows-1\.2\.8/);
+assert.match(workflow, /version = '1\.2\.8'/);
 assert.match(workflow, /fw-lab-windows-1\.0\.5-setup\.exe/, '正式发布必须保留 Windows 1.0.5 回退安装包');
 assert.match(workflow, /rollbackVersion = '1\.0\.5'/);
 assert.match(workflow, /fw-lab-windows-latest\.exe\.sig/);
 assert.doesNotMatch(workflow, /\.nsis\.zip/);
 assert.match(workflow, /windows-updater\.json/);
-assert.match(workflow, /storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.2\.7-setup\.exe/, '正式更新地址应使用 Supabase Storage 的版本化安装包');
+assert.match(workflow, /storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.2\.8-setup\.exe/, '正式更新地址应使用 Supabase Storage 的版本化安装包');
 assert.match(workflow, /functions\/v1\/sync-windows-release/, '正式发布应先把安装包同步到 Supabase Storage');
 
 const releaseSync = read('supabase/functions/sync-windows-release/index.ts');
