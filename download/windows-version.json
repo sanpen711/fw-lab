@@ -1,11 +1,11 @@
 {
   "rollbackVersion": "1.0.5",
-  "sha256": "9936deaabf1109fc3970badad6a75f7ed765418cdbbb089010c7a8c1ace26935",
-  "platform": "Windows 10/11 64 位",
-  "version": "1.2.6",
-  "publishedAt": "2026-09-09T13:21:25.9250160Z",
-  "notes": "Windows 1.2.6：优化精神广场帖子详情和评论区版式，统一评论文案；评论列表独立滚动，输入区更紧凑并固定在底部；保留表情、图片、视频、粘贴上传、回复和举报功能。网页、PWA 与手机端不变。",
-  "available": true,
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.6-setup.exe"
+  "available": true,
+  "sha256": "4537ffff195cec46be4c1d7badf52ec8642787d18053ec23d8780d892a9db807",
+  "publishedAt": "2026-09-09T13:43:13.3372306Z",
+  "platform": "Windows 10/11 64 位",
+  "notes": "Windows 1.2.7：精神广场评论输入区改为类似桌面微信的底部停靠编辑器，不再随评论数量或窗口高度移动；表情面板改为向上浮层展开，并优化工具栏、快捷发送和发送按钮位置。保留图片、视频、Ctrl+V 粘贴、回复和举报功能。网页、PWA 与手机端不变。",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.7-setup.exe",
+  "version": "1.2.7"
 }
