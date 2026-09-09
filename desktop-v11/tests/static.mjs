@@ -259,7 +259,8 @@ assert.match(squareScroll,/\.chat-messages\{min-height:0;overflow-y:auto/,'搭�
 assert.match(styles,/\.buddy-page\{[^}]*min-height:0;overflow:hidden/,'搭子双栏不能被长聊天撑高');
 assert.match(styles,/\.chat-column\{[^}]*min-height:0;height:100%;overflow:hidden/,'聊天外层必须固定在窗口内');
 assert.match(squareScroll,/\.square-feed\{min-height:0;overflow-y:auto/,'左侧帖子列表必须独立滚动');
-assert.match(squareScroll,/\.detail-scroll\{height:100%;min-height:0;overflow-y:auto/,'右侧详情必须独立滚动');
+assert.match(squareScroll,/\.detail-scroll\{height:100%;min-height:0;overflow:hidden/,'右侧详情外层必须固定在窗口内');
+assert.match(squareScroll,/\.comment-list\{min-height:0;overflow-y:auto/,'右侧评论列表必须独立滚动');
 assert.match(squareScroll,/attributeFilter:\['data-view'\]/,'滚动锁监听必须只观察 data-view，不能监听整棵 DOM');
 assert.match(windowsWorkflow,/url = 'https:\/\/ekbovsmxbiplhyrzxoyw\.supabase\.co\/storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.2\.6-setup\.exe'/,'自动更新必须使用 Supabase Storage 的版本化安装包');
 assert.match(windowsWorkflow,/functions\/v1\/sync-windows-release/,'Windows 发布必须先同步 Supabase 安装包');

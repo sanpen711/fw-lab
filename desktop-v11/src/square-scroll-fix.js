@@ -23,7 +23,8 @@ if(app){
     body.square-scroll-locked .square-feed-column{height:100%;min-height:0;overflow:hidden}
     body.square-scroll-locked .square-feed{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
     body.square-scroll-locked .post-detail-column{height:100%;min-height:0;overflow:hidden}
-    body.square-scroll-locked .detail-scroll{height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+    body.square-scroll-locked .detail-scroll{height:100%;min-height:0;overflow:hidden}
+    body.square-scroll-locked .comment-list{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
     body.buddy-scroll-locked{height:100vh;overflow:hidden!important}
     body.buddy-scroll-locked #app{height:100vh;min-height:0;overflow:hidden}
     body.buddy-scroll-locked .main-content{height:100vh;min-height:0;overflow:hidden}
