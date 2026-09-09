@@ -232,7 +232,7 @@ test.describe('Windows 客户端专用外壳', () => {
     const download = updater.locator('[data-fw-legacy-download]');
     await expect(download).toHaveAttribute(
       'href',
-      'microsoft-edge:https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.6-setup.exe'
+      /^microsoft-edge:https:\/\/ekbovsmxbiplhyrzxoyw\.supabase\.co\/storage\/v1\/object\/public\/app-releases\/fw-lab-windows-\d+\.\d+\.\d+-setup\.exe$/
     );
     await expect(download).not.toHaveAttribute('download', /.*/);
     await expect(updater.locator('[data-fw-legacy-update-status]')).toContainText('Microsoft Edge');

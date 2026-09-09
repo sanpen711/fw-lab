@@ -53,6 +53,7 @@ document.addEventListener('click',event=>{
 },true);
 
 document.addEventListener('submit',event=>{if(event.target.matches?.('[data-compose-form],[data-comment-form]'))openPickerKey='';},true);
+document.addEventListener('keydown',event=>{if(!event.ctrlKey||event.key!=='Enter')return;const form=event.target.closest?.('[data-comment-form]');if(!form||event.target.tagName!=='TEXTAREA')return;event.preventDefault();form.requestSubmit();});
 
 const observer=new MutationObserver(scheduleEnhance);
 observer.observe(document.body,{childList:true,subtree:true});
