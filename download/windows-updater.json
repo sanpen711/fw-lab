@@ -1,11 +1,11 @@
 {
+  "notes": "Windows 1.2.8：精神广场的评论重新紧跟帖子正文并与正文连续滚动，只有发表评论编辑器固定在右侧底部；小表情与我的表情面板保持相同大小，选择任意一个表情后自动关闭面板。保留图片、视频、Ctrl+V 粘贴、回复和举报功能。网页、PWA 与手机端不变。",
+  "pub_date": "2026-09-09T14:03:46.9446609Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlErUTBYQ2dxUUlKNUpST2RtT1NBN00vRDlsSUtuS2lUWHZXaTN5QVJqOE0yUjBjM25aN0xoNU5qOXdxRnVsaTI3d0RYb3JnRWIzTXlqQWYraDA5NGdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4OTYxMzkyCWZpbGU6Ri53IOeglOeptuaJgF8xLjIuN194NjQtc2V0dXAuZXhlCkkvVmc0QkJPWFYwanpVRWtiWGR5WG5GNXUraW44UFlCdU1hOUpBS0kvTGV2QUhpUjM3Qyt2QkRvK0xsOGNiZlpBVE83K2VjOVdkekJHSXFVM2tDQkRnPT0K",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.7-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWldyVkpGbXNKdU1Hc1N0WmFUbHkwTlZKY1RiejBvUU5saHJXU3FINUJRdU9iaFRJYXY5c0RZNUppTTRqbWRuZk81a0E2YUMrTVFZMjI2M0FvcGpyYXdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4OTYyNjI2CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuOF94NjQtc2V0dXAuZXhlCjI4KzlHRXQ3bnBmdjd5ZTJmdTZaTVRoa3NrSk83amVBRitiTGtscjVpZ1M3cGFVVUpSWVZJVVpuaVM4dEUxVFJZRVpRRms3eWFuSGxkdXl2OFE3akFRPT0K",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.8-setup.exe"
     }
   },
-  "pub_date": "2026-09-09T13:43:13.3372306Z",
-  "notes": "Windows 1.2.7：精神广场评论输入区改为类似桌面微信的底部停靠编辑器，不再随评论数量或窗口高度移动；表情面板改为向上浮层展开，并优化工具栏、快捷发送和发送按钮位置。保留图片、视频、Ctrl+V 粘贴、回复和举报功能。网页、PWA 与手机端不变。",
-  "version": "1.2.7"
+  "version": "1.2.8"
 }
