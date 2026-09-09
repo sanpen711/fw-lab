@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {existsSync,readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
 const read=path=>readFileSync(resolve(root,path),'utf8');
 const config=JSON.parse(read('src-tauri/tauri.v11.conf.json'));
-assert.equal(config.version,'1.2.4');
+assert.equal(config.version,'1.2.5');
 assert.equal(config.build.frontendDist,'../desktop-v11/dist');
 assert.equal(config.build.devUrl,'http://127.0.0.1:1421');
 assert.equal(config.app.windows[0].url,'index.html');
-assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.2\.4/);
+assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.2\.5/);
 assert.doesNotMatch(JSON.stringify(config),/fwyanjiusuo\.com\/index\.html/);
 assert.match(config.app.security.csp,/supabase\.co/);
 assert.doesNotMatch(config.app.security.csp,/open-meteo/,'Windows 不应再直连旧天气服务');
@@ -102,7 +102,7 @@ assert.doesNotMatch(html,/>观鸟台</,'桌面端不能继续显示旧的观鸟�
 assert.match(theme,/\.status-options/,'旧发帖状态选择必须在桌面端被隐藏');
 assert.match(theme,/\.square-post \.post-meta>span:first-child/,'精神广场卡片不得再显示旧状态标签');
 assert.match(theme,/\.detail-post \.post-meta>span:first-child/,'帖子详情不得再显示旧状态标签');
-assert.match(cargo,/version = "1\.2\.4"/);
+assert.match(cargo,/version = "1\.2\.5"/);
 assert.match(cargo,/tauri-plugin-updater = "2\.10\.1"/);
 assert.match(cargo,/rusqlite = \{ version = "0\.32", features = \["bundled"\] \}/,'持久缓存必须使用内置 SQLite，不能依赖用户额外安装数据库');
 assert.match(rust,/mod persistent_cache;/,'Rust 主程序必须注册持久缓存模块');
@@ -246,7 +246,7 @@ assert.match(composeUi,/data-comment-compact-media/,'评论区必须提供同款
 assert.match(composeUi,/\.media-tools,\[data-comment-form\] \.media-tools\{display:none!important\}/,'旧的大号添加图片\/视频工具行必须收起');
 assert.match(composeUi,/openPickerKey/,'表情面板必须按需展开而不是常驻');
 assert.match(composeUi,/\[data-compose-image\]/,'加号必须继续复用现有图片\/视频上传能力');
-assert.match(squareScroll,/Windows 1\.2\.4 本地前端 · 支持剪贴板图片/,'右下角版本标识必须更新');
+assert.match(squareScroll,/Windows 1\.2\.5 本地前端 · 89 个常用小表情/,'右下角版本标识必须更新');
 assert.match(squareScroll,/square-scroll-locked/,'精神广场必须锁住整页滚动');
 assert.match(squareScroll,/buddy-scroll-locked/,'搭子页必须锁住整页滚动');
 assert.match(squareScroll,/\.chat-messages\{min-height:0;overflow-y:auto/,'搭子聊天记录必须独立滚动');
@@ -304,6 +304,10 @@ assert.doesNotMatch(app,/rows\.slice\(0,30\)/,'表情面板不能只显示前 30
 assert.match(app,/data-compose-picker-tab/,'发帖必须提供小表情与我的表情双标签');
 assert.match(app,/data-comment-picker-tab/,'评论必须提供小表情与我的表情双标签');
 assert.match(app,/RECENT_STICKERS_KEY/,'我的表情必须支持最近使用排序');
+const emojiDeclaration=app.match(/const EMOJIS=\[([\s\S]*?)\];/);assert.ok(emojiDeclaration,'必须声明本地小表情列表');
+const emojiCodes=[...emojiDeclaration[1].matchAll(/\['[^']+','([0-9a-f]+)'\]/g)].map(match=>match[1]);assert.equal(emojiCodes.length,89,'常用小表情应扩充到 89 个');assert.equal(new Set(emojiCodes).size,89,'小表情不能重复');
+emojiCodes.forEach(code=>assert.ok(existsSync(resolve(root,`desktop-v11/public/emoji/twemoji/${code}.svg`)),`缺少 Twemoji 文件：${code}.svg`));
+assert.match(styles,/\.inline-emoji-grid\{[^}]*max-height:216px[^}]*overflow-y:auto/,'发帖和评论表情增多后必须在固定高度内滚动');
 assert.match(app,/data-lightbox-src/,'帖子和新闻图片必须支持查看原图');
 assert.match(html,/data-media-lightbox/,'桌面端必须提供统一图片查看器');
 assert.match(feed,/uploadMedia/,'帖子和评论必须共用图片\/视频上传逻辑');
@@ -381,4 +385,4 @@ assert.doesNotMatch(alignment,/data-admin-panel|admin_list_profiles|站长处理
 assert.match(app,/contentRequests:0/);
 assert.match(app,/fixedProfileCode\|\|Boolean\(next\.busy\)/);
 assert.doesNotMatch(app,/location\.href|window\.location\.replace|fwyanjiusuo\.com/);
-console.log('Windows 1.2.4 clipboard image paste checks passed');
+console.log('Windows 1.2.5 common emoji expansion checks passed');
