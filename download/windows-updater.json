@@ -1,11 +1,11 @@
 {
-  "version": "1.2.4",
-  "pub_date": "2026-09-09T01:21:38.1760644Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlRVWnJZYXdGZ1pOK1JabkNyd3BVMGNZcjdCRFA2dHB0RlpGd0NpQXRVaUJDb3FHaFJ3d0VBY3VwZTBmQjRIeGh1c2pLcC91ckh4clNrczhzMlRMbHdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4OTE2ODk3CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuNF94NjQtc2V0dXAuZXhlCkE0YThUSjV4ODBLL2I0WVFNNDJuUStYNThtMjBEQ3NrcEk2Tno4eWEwUU9keE5UeXI1U240MnVCdC80a2lMUVV4L281MEw2ellYTi91UlV5MFVLeUJRPT0K",
-      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe"
+      "url": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmVYdThMUjRHVWpKREhEY0tsN0ZqQmRtVFFETGEzTWN1NEdTWEpmak9xVFcwR0xMcXFGdjN4Yk1OTEoxSEJQK0x6T0N5N3ZsWk5VVy92M3h0dHBMblFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4OTIzODY3CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuNV94NjQtc2V0dXAuZXhlCk1KcGlBM09YY1ZNYkJZYU5RdUxnbG52NXIzai9hVzg0OGpQWFFWNDVTRTNqb3pYUFFMdm1nZGlqR1VxT3F5K2dPL0YreHlBVXhIZ1QwU0NoMFhCTkJnPT0K"
     }
   },
-  "notes": "Windows 1.2.4：发牢骚、精神广场评论和新闻专区支持 Ctrl+V 直接粘贴剪贴板图片；搭子私聊支持粘贴后直接发送图片。原有选择图片上传方式继续保留。网页、PWA 与手机端不变。"
+  "pub_date": "2026-09-09T03:17:48.2350700Z",
+  "notes": "Windows 1.2.5：内置常用小表情由 36 个扩充到 89 个，补充常见笑脸、情绪、手势、爱心、庆祝和日常图标；发帖、评论和私聊共用同一套表情。网页、PWA 与手机端不变。",
+  "version": "1.2.5"
 }

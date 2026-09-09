@@ -1,11 +1,11 @@
 {
-  "publishedAt": "2026-09-09T01:21:38.1760644Z",
+  "rollbackVersion": "1.0.5",
   "platform": "Windows 10/11 64 位",
-  "sha256": "46e1d8808a44889c66593f4b4258be5e43116516416191197f0f0a81a9c676a1",
+  "publishedAt": "2026-09-09T03:17:48.2350700Z",
   "available": true,
+  "version": "1.2.5",
   "downloadUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-latest.exe",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "version": "1.2.4",
-  "rollbackVersion": "1.0.5",
-  "notes": "Windows 1.2.4：发牢骚、精神广场评论和新闻专区支持 Ctrl+V 直接粘贴剪贴板图片；搭子私聊支持粘贴后直接发送图片。原有选择图片上传方式继续保留。网页、PWA 与手机端不变。"
+  "sha256": "d9edcafe79c3000d0eec93bc1dd7734ba78860e80fdf8e81fcbe418afba50d79",
+  "notes": "Windows 1.2.5：内置常用小表情由 36 个扩充到 89 个，补充常见笑脸、情绪、手势、爱心、庆祝和日常图标；发帖、评论和私聊共用同一套表情。网页、PWA 与手机端不变。"
 }
