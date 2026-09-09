@@ -249,6 +249,14 @@ assert.match(workflow, /rollbackVersion = '1\.0\.5'/);
 assert.match(workflow, /fw-lab-windows-latest\.exe\.sig/);
 assert.doesNotMatch(workflow, /\.nsis\.zip/);
 assert.match(workflow, /windows-updater\.json/);
+assert.match(workflow, /storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.2\.5-setup\.exe/, '正式更新地址应使用 Supabase Storage 的版本化安装包');
+assert.match(workflow, /functions\/v1\/sync-windows-release/, '正式发布应先把安装包同步到 Supabase Storage');
+
+const releaseSync = read('supabase/functions/sync-windows-release/index.ts');
+assert.match(releaseSync, /PROJECT_REPOSITORY = 'sanpen711\/fw-lab'/, '同步函数只能读取官方 GitHub 仓库');
+assert.match(releaseSync, /\^\\d\+\\\.\\d\+\\\.\\d\+\$/, '同步函数必须限制版本号格式');
+assert.match(releaseSync, /MAX_INSTALLER_BYTES = 50 \* 1024 \* 1024/, '同步函数必须限制安装包大小');
+assert.match(releaseSync, /bytes\[0\] !== 0x4d \|\| bytes\[1\] !== 0x5a/, '同步函数必须检查 Windows 可执行文件头');
 
 const pagesWorkflow = read('.github/workflows/pages.yml');
 assert.match(pagesWorkflow, /workflow_run:/);
