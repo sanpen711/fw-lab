@@ -1,11 +1,11 @@
 {
-  "version": "1.2.5",
-  "platform": "Windows 10/11 64 位",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.6-setup.exe",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "publishedAt": "2026-09-09T07:11:35.3613904Z",
-  "notes": "Windows 1.2.5：内置常用小表情由 36 个扩充到 89 个，补充常见笑脸、情绪、手势、爱心、庆祝和日常图标；发帖、评论和私聊共用同一套表情。网页、PWA 与手机端不变。",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.5-setup.exe",
+  "publishedAt": "2026-09-09T07:24:02.9324425Z",
+  "platform": "Windows 10/11 64 位",
+  "version": "1.2.6",
+  "sha256": "7bc4d4383d259fa74144924c2f1170de9dc4d61a8aac26d9cacb16cd4ccf20d2",
   "rollbackVersion": "1.0.5",
-  "sha256": "a5e14f2be1349216fca8eea24fd8eec235b230007e7f31a91784fa93aa136310",
-  "available": true
+  "available": true,
+  "notes": "Windows 1.2.6：优化精神广场帖子详情和评论区版式，统一评论文案；评论列表独立滚动，输入区更紧凑并固定在底部；保留表情、图片、视频、粘贴上传、回复和举报功能。网页、PWA 与手机端不变。"
 }

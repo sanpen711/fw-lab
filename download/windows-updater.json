@@ -1,11 +1,11 @@
 {
-  "version": "1.2.5",
-  "notes": "Windows 1.2.5：内置常用小表情由 36 个扩充到 89 个，补充常见笑脸、情绪、手势、爱心、庆祝和日常图标；发帖、评论和私聊共用同一套表情。网页、PWA 与手机端不变。",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.5-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmVNc2hUYjFLajJHd3o3Q1c2SU5CWndyeXJDSGRDV2dLQ21kQW5KYWtzSDBDc2xENHMwUUYvNVV5eno1ZmpCQi9NUE5DOEs4U29MNW1GaW5rYnNBdWdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4OTM3ODk0CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuNV94NjQtc2V0dXAuZXhlCjQ0MUZDR2NhcDA5eGIzTUwrQzlFbXVLV3l0ZHQwcG5TL3B0TXgzZ3BzTWpaa0ppOVBKc2d4b0txd1A2dENuRXRYOG54dmpMakY2eHNYMHRiMEJjbUNRPT0K"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlNEMm9JODZPRFp1S3ZHNzlRNUdFenRkREVJczBENGVRWXFZK0hPZk43c0hzTFcxMDFKa1NBMk1TbTVkS0M1eEhlNXY4QThnR2FiVUp1SXViY2RUTHdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4OTM4NjQyCWZpbGU6Ri53IOeglOeptuaJgF8xLjIuNl94NjQtc2V0dXAuZXhlCm53VEdIUEh2bHQwOVJQREdtUGQvTkVlVWFkNHNtOEZXU3FoTTJUeUNSRG9kd2M0TmFacy9pSlM1cW5UWFJrZXlVYndCWko2RDM0RGUvMlpFdzI5VERnPT0K",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.6-setup.exe"
     }
   },
-  "pub_date": "2026-09-09T07:11:35.3613904Z"
+  "pub_date": "2026-09-09T07:24:02.9324425Z",
+  "notes": "Windows 1.2.6：优化精神广场帖子详情和评论区版式，统一评论文案；评论列表独立滚动，输入区更紧凑并固定在底部；保留表情、图片、视频、粘贴上传、回复和举报功能。网页、PWA 与手机端不变。",
+  "version": "1.2.6"
 }
