@@ -1,11 +1,11 @@
 {
-  "version": "1.2.15",
-  "publishedAt": "2026-09-10T15:10:40.2128795Z",
-  "platform": "Windows 10/11 64 位",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.15-setup.exe",
-  "notes": "Windows 1.2.15：所有用户头像改为左键打开统一资料卡，支持头像放大、搭子关系操作、私聊、公开内容、举报与拉黑；匿名发布继续隐藏真实身份，资料卡不展示加入时间。",
+  "available": true,
+  "notes": "Windows 1.2.16：资料卡改为在头像旁紧凑弹出，点击空白处关闭；移除公开内容入口和冗余说明，保留头像放大、搭子操作、私聊、举报与拉黑。",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.16-setup.exe",
   "rollbackVersion": "1.0.5",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "sha256": "88058ea0af1751b9f1b96bdab0a48a7b01be774bfcf958413ce704e61596cfef",
-  "available": true
+  "platform": "Windows 10/11 64 位",
+  "version": "1.2.16",
+  "sha256": "141b3a50a3575b33cfd8ea1abe52eeb0dcea6f58d721fdc0f81e50264cd4e421",
+  "publishedAt": "2026-09-10T15:38:21.0225386Z",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
 }

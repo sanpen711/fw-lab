@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-09-10T15:10:40.2128795Z",
-  "version": "1.2.15",
+  "version": "1.2.16",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.15-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmNNQVVtSXBaZld3MFlLWjBDL3QwNGJSM2NUak5OK0Foa3B6RjJ4M3JhRXJOYzFZbTBnb2UwS0phMTJPZEdSSTFyT3MrSDNaU2k1azI2Z2d0SFZIR2dZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDUzMDM5CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTVfeDY0LXNldHVwLmV4ZQpidFdiQ3NjUHBzbldycW16YVkxTDVuY251LzJnMDdZNlZJZGhtQjlKU0wxTzN2ckZPdEh1TE9ab21vMXBzZzRzVTEwVTI3OTNUaTg3TEhXL0pQUTFBZz09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlpQWisrSU00SkFaWDdHZENKSDdDaE5kV2RhZTNXcCtkcWZLQlIxL0tmb0JUa3ZLdFU3d3Z6ejljMDIwL00xeXBmeFJkT2p0WEc5TitrY0ZFbHBVc0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDU0NzAwCWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTZfeDY0LXNldHVwLmV4ZQo4L1o1R1FYMDVWRUN1M0w2T0VNSS9jdGhMUHV1WVAyTjg4YnFuc09sSlVjNEI1M2ZTa25WYU9wQmJSUkRXb283VkYrU1R5UTN0RDYrd0pvTUh4cjZBQT09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.16-setup.exe"
     }
   },
-  "notes": "Windows 1.2.15：所有用户头像改为左键打开统一资料卡，支持头像放大、搭子关系操作、私聊、公开内容、举报与拉黑；匿名发布继续隐藏真实身份，资料卡不展示加入时间。"
+  "pub_date": "2026-09-10T15:38:21.0225386Z",
+  "notes": "Windows 1.2.16：资料卡改为在头像旁紧凑弹出，点击空白处关闭；移除公开内容入口和冗余说明，保留头像放大、搭子操作、私聊、举报与拉黑。"
 }
