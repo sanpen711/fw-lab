@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.2.11：新增“下班开黑”组队平台，支持创建房间、申请加入、队长审核、确认队友后私密交换游戏 ID，并提供房间群聊；左侧主要栏目整体上移，“下班开黑”放在小游戏上方；档案、入馆须知和处理公告统一收进“更多”。",
-  "version": "1.2.11",
+  "notes": "Windows 1.2.12：优化“下班开黑”创建流程。创建表单移到右侧；除游戏名称外其余资料均可选填；“开黑风格”改为可自由填写的“游戏模式”；新增“进队需要申请”开关，关闭后队友可直接加入；“今晚可加入”简化为“可加入”。",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.11-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlhFa3VsVXJUYjNmWUN4ZXlaNXkyc2xjNmtDU0xXcUlUN3YxaHB3ckZhaFdzNWtIZDhvU2ZsMVd2OUtDVyttSmwvZGxXTytiWkZzWjl6RThLc3d2K2dnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDI0NTQ2CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTFfeDY0LXNldHVwLmV4ZQpZMWFVUzh0SEtURnZMSXpTL2NqSXg2Tkt6Zk9jd2NyTm1pOHNkazE1L1ZmNU9JenBmS2hybTd0N09Id1NhWC9LVVEyUEE3dU1HOEN3NnVXZEdLL0lEZz09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.12-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlppYjhzL0pjK0MxbElKN1o3aDdrTXNCQmVsMmJjU2cvNE0xR0RDSDNzNnpGSE13VHJqblB1ZTMxZGc2R1hkdGZqd3l4KzlHSGZCeC9KWXpYcnE3RWdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDMwOTkxCWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTJfeDY0LXNldHVwLmV4ZQpnT3p1YVVUMTcxT1NvYWtxRnNtdXBkUkZ3cU1oTlZkeExUcHpPZ29qRHdMZ2FUcTBUTVFFSkFXR0g1WWoxNmxCZCtRSDEyUWFZVkFQcTVHLytJYVJDZz09Cg=="
     }
   },
-  "pub_date": "2026-09-10T07:15:46.8035721Z"
+  "pub_date": "2026-09-10T09:03:11.9351565Z",
+  "version": "1.2.12"
 }
