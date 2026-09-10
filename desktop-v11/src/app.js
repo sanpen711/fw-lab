@@ -40,9 +40,8 @@ let pollCreateOpen=false;
 let birdComposeOpen=false;
 let avatarPreviewUrl='';
 const birdDraft={title:'',content:'',displayMode:'profile',penName:'',files:[],previews:[]};
-const composeDraft={text:'',status:'今日无效',imageFile:null,imagePreview:'',stickers:new Set(),pickerTab:'emoji'};
+const composeDraft={text:'',imageFile:null,imagePreview:'',stickers:new Set(),pickerTab:'emoji'};
 const commentDrafts=new Map();
-const STATUS_OPTIONS=['今日无效','已疲惫','摸鱼现场','精神离岗','今日崩溃'];
 
 window.__FW_DESKTOP_V11__={version:APP_VERSION,architecture:'local-frontend',contentRequests:0,socialContentRequests:0,realtimeChat:true,pollingTimers:0};
 
@@ -142,6 +141,11 @@ function reactionInfo(post){
 }
 function draftFor(postId){const key=String(postId);if(!commentDrafts.has(key))commentDrafts.set(key,{text:'',imageFile:null,imagePreview:'',stickers:new Set(),pickerTab:'emoji'});return commentDrafts.get(key);}
 function releasePreview(draft){if(draft?.imagePreview){try{URL.revokeObjectURL(draft.imagePreview);}catch{}}if(draft){draft.imageFile=null;draft.imagePreview='';}}
+function selectedStickerPreview(draft,context,postId=''){
+  const url=Array.from(draft.stickers||[])[0];if(!url)return'';
+  const remove=context==='compose'?'data-compose-sticker-remove':`data-comment-sticker-remove="${esc(postId)}"`;
+  return `<div class="selected-sticker-preview"><img src="${esc(url)}" alt="已选择的表情"><span>已选择 1 个表情</span><button type="button" ${remove}>移除</button></div>`;
+}
 function sharedPicker(draft,context,postId=''){
   const tab=draft.pickerTab||'emoji';const suffix=postId?` data-post-id="${esc(postId)}"`:'';
   const tabs=`<div class="inline-picker-tabs" role="tablist"><button class="${tab==='emoji'?'active':''}" type="button" data-${context}-picker-tab="emoji"${suffix}>小表情</button><button class="${tab==='stickers'?'active':''}" type="button" data-${context}-picker-tab="stickers"${suffix}>我的表情</button></div>`;
@@ -149,24 +153,24 @@ function sharedPicker(draft,context,postId=''){
   if(socialState.stickers.loading&&!socialState.stickers.loaded)return `${tabs}<div class="state-card small">正在读取我的表情...</div>`;
   const rows=sortedStickers();const attribute=`data-${context}-sticker`;
   const toolbar=`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>${uiIcon('media')}添加表情</button><span>${rows.length}/80 · 最大 1MB · 发送时仅选 1 个</span></div>`;
-  if(!rows.length)return `${tabs}${toolbar}<div class="state-card small">还没有我的表情，可直接在这里添加 JPG、PNG、WebP 或 GIF。</div>`;
+  if(!rows.length)return `${tabs}${toolbar}<div class="inline-sticker-grid is-empty" aria-label="我的表情为空"></div>`;
   return `${tabs}${toolbar}<div class="inline-sticker-grid">${rows.map(row=>{const on=draft.stickers.has(row.image_url);return `<div class="inline-sticker-item"><button class="${on?'selected':''}" type="button" ${attribute}="${esc(row.image_url)}"${suffix} aria-pressed="${on}"><img src="${esc(row.image_url)}" alt="我的表情"></button><button class="inline-sticker-delete" type="button" data-delete-sticker="${esc(row.id)}" aria-label="删除这个表情">×</button></div>`;}).join('')}</div>`;
 }
 function renderCompose(){
   const host=$('[data-compose-content]');if(!host)return;
   if(!accountState.user){host.innerHTML='<div class="state-card"><b>登录后发牢骚</b><span>发布内容会与网页、PWA、APK 共用同一账号和数据库。</span><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';return;}
   host.innerHTML=`<form class="compose-card" data-compose-form>
-    <label>今天属于哪种状态？</label><div class="status-options">${STATUS_OPTIONS.map(status=>`<button class="${composeDraft.status===status?'active':''}" type="button" data-compose-status="${esc(status)}">${esc(status)}</button>`).join('')}</div>
     <label for="composeText">把想说的先放在这里</label><textarea id="composeText" name="content" maxlength="500" placeholder="不要求有结论，也不要求立刻振作。">${esc(composeDraft.text)}</textarea><div class="compose-count">${composeDraft.text.length}/500</div>
     <div class="media-tools"><label class="secondary compact file-button">添加图片<input type="file" accept="image/*" data-compose-image hidden></label><span>静态图过大时会压缩；GIF 最大 3MB；每次最多发送 1 个“我的表情”。</span></div>
     ${composeDraft.imagePreview?`<div class="image-preview"><img src="${esc(composeDraft.imagePreview)}" alt="待发布图片"><button class="secondary compact danger" type="button" data-compose-image-remove>移除图片</button></div>`:''}
+    ${selectedStickerPreview(composeDraft,'compose')}
     <div class="picker-block" hidden>${sharedPicker(composeDraft,'compose')}</div>
     <div class="compose-actions"><button class="secondary" type="button" data-nav="square">取消</button><button class="primary" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发布中...':'投递到精神广场'}</button></div>
   </form>`;
 }
 function postCard(post){
   const profile=currentProfile(post.user_id);const reactions=reactionInfo(post);const open=String(feedState.openPostId)===String(post.id);
-  return `<article class="square-post ${open?'active':''}" data-open-post="${esc(post.id)}"><div class="post-meta"><span>${esc(post.status_tag||'今日无效')}</span><time>${esc(timeText(post.created_at))}</time></div><div class="post-author">${avatarHtml(profile,'social-avatar mini')}<b>${esc(profile.nickname||'匿名研究员')}</b></div>${richContent(post.content)}<div class="post-stats"><button class="post-like-button ${reactions.active.like?'active':''}" type="button" data-react="like" data-post-id="${esc(post.id)}" aria-pressed="${reactions.active.like}">点赞 ${reactions.values.like}</button><button class="post-comment-button" type="button" data-open-post="${esc(post.id)}">评论 ${(post.comments||[]).length}</button></div></article>`;
+  return `<article class="square-post ${open?'active':''}" data-open-post="${esc(post.id)}"><div class="post-meta time-only"><time>${esc(timeText(post.created_at))}</time></div><div class="post-author">${avatarHtml(profile,'social-avatar mini')}<b>${esc(profile.nickname||'匿名研究员')}</b></div>${richContent(post.content)}<div class="post-stats"><button class="post-like-button ${reactions.active.like?'active':''}" type="button" data-react="like" data-post-id="${esc(post.id)}" aria-pressed="${reactions.active.like}">点赞 ${reactions.values.like}</button><button class="post-comment-button" type="button" data-open-post="${esc(post.id)}">评论 ${(post.comments||[]).length}</button></div></article>`;
 }
 function renderSquareFeed(){
   const host=$('[data-square-feed]');if(!host)return;
@@ -188,12 +192,12 @@ function renderPostDetail(){
   if(!post){delete host.dataset.renderedPostId;host.innerHTML='<div class="post-detail-empty"><b>选择一条帖子</b><span>在这里查看完整评论、回复和互动。</span></div>';return;}
   const profile=currentProfile(post.user_id);const reaction=reactionInfo(post);const mine=String(post.user_id)===String(accountState.user?.id);const tree=commentTree(post.comments);const draft=draftFor(post.id);const reply=feedState.reply&&String(feedState.reply.postId)===String(post.id)?feedState.reply:null;
   const comments=tree.roots.length?tree.roots.map(root=>`<div class="comment-thread">${commentHtml(root)}${(tree.replies.get(String(root.id))||[]).map(item=>commentHtml(item,{reply:true})).join('')}</div>`).join(''):'<div class="comment-empty">还没有评论，来说两句吧。</div>';
-  const composer=accountState.user?`<form class="comment-compose-card" data-comment-form="${esc(post.id)}">${reply?`<div class="replying">正在回复 ${esc(reply.name)}<button type="button" data-clear-reply>取消</button></div>`:''}<div class="comment-compose-toolbar"><div class="media-tools"><label class="secondary compact file-button">图片<input type="file" accept="image/*" data-comment-image="${esc(post.id)}" hidden></label><span>也可以只发送图片或表情</span></div></div><textarea name="content" maxlength="180" placeholder="发表评论，最多 180 字">${esc(draft.text)}</textarea>${draft.imagePreview?`<div class="image-preview small"><img src="${esc(draft.imagePreview)}" alt="待发送图片"><button class="secondary compact danger" type="button" data-comment-image-remove="${esc(post.id)}">移除</button></div>`:''}<div class="picker-block compact-picker" hidden>${sharedPicker(draft,'comment',post.id)}</div><div class="comment-compose-footer"><span>Ctrl + Enter 发送</span><button class="primary compact" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发送中...':'发表评论'}</button></div></form>`:'';
+  const composer=accountState.user?`<form class="comment-compose-card" data-comment-form="${esc(post.id)}">${reply?`<div class="replying">正在回复 ${esc(reply.name)}<button type="button" data-clear-reply>取消</button></div>`:''}<div class="comment-compose-toolbar"><div class="media-tools"><label class="secondary compact file-button">图片<input type="file" accept="image/*" data-comment-image="${esc(post.id)}" hidden></label><span>也可以只发送图片或表情</span></div>${selectedStickerPreview(draft,'comment',post.id)}</div><textarea name="content" maxlength="180" placeholder="发表评论，最多 180 字">${esc(draft.text)}</textarea>${draft.imagePreview?`<div class="image-preview small"><img src="${esc(draft.imagePreview)}" alt="待发送图片"><button class="secondary compact danger" type="button" data-comment-image-remove="${esc(post.id)}">移除</button></div>`:''}<div class="picker-block compact-picker" hidden>${sharedPicker(draft,'comment',post.id)}</div><div class="comment-compose-footer"><span>Ctrl + Enter 发送</span><button class="primary compact" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发送中...':'发表评论'}</button></div></form>`:'';
   const signIn=accountState.user?'':'<div class="state-card small"><b>登录后参与评论</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';
   host.innerHTML=`<div class="detail-scroll ${accountState.user?'has-comment-composer':''}"><header class="detail-head"><b>帖子详情</b><div class="row-actions">${mine?`<button class="detail-quiet-action danger" type="button" data-delete-post="${esc(post.id)}">删除帖子</button>`:`<button class="detail-quiet-action" type="button" data-report-post="${esc(post.id)}">举报</button>`}<button class="secondary compact" type="button" data-close-post>关闭</button></div></header><div class="detail-content-scroll"><article class="detail-post"><div class="detail-author-row"><div class="post-author">${avatarHtml(profile)}<b>${esc(profile.nickname||'匿名研究员')}</b></div><time>${esc(new Date(post.created_at).toLocaleString('zh-CN'))}</time></div>${richContent(post.content)}<div class="detail-post-actions"><div class="reaction-row"><button class="${reaction.active.like?'active':''}" type="button" data-react="like" data-post-id="${esc(post.id)}" aria-pressed="${reaction.active.like}">点赞 ${reaction.values.like}</button></div></div></article><section class="comments-section"><div class="comments-heading"><h3>评论</h3><span>${(post.comments||[]).length} 条</span></div><div class="comment-list">${comments}</div>${signIn}</section></div>${composer}</div>`;
   host.dataset.renderedPostId=String(post.id);if(previousPostId===String(post.id))host.querySelector('.detail-content-scroll').scrollTop=previousScrollTop;
 }
-function renderFeed(next=feedState){feedState=next;renderCompose();renderSquareFeed();renderPostDetail();}
+function renderFeed(next=feedState,scope='all'){feedState=next;if(scope==='all'||scope==='compose')renderCompose();if(scope==='all'||scope==='content')renderSquareFeed();if(scope!=='compose')renderPostDetail();}
 
 function pollEnded(poll){return Boolean(poll.closed_at)||new Date(poll.ends_at).getTime()<=Date.now();}
 function remainingTime(value){const ms=new Date(value).getTime()-Date.now();if(!Number.isFinite(ms)||ms<=0)return'已结束';const minutes=Math.ceil(ms/60000);const days=Math.floor(minutes/1440);const hours=Math.floor((minutes%1440)/60);return days?`${days}天${hours?` ${hours}小时`:''}`:hours?`${hours}小时${minutes%60?` ${minutes%60}分钟`:''}`:`${minutes}分钟`;}
@@ -324,14 +328,15 @@ function bindNavigation(){
     const pollDelete=event.target.closest('[data-poll-delete-option]');if(pollDelete){if(!window.confirm('确定删除这个补充选项吗？已有投票的选项不能删除。'))return;try{await pollStore.deleteOption(pollDelete.dataset.pollDeleteOption);toast('补充选项已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
     const promote=event.target.closest('[data-poll-promote]');if(promote){if(!window.confirm('确定将这个课题设为官方课题并置顶吗？'))return;try{await pollStore.promote(promote.dataset.pollPromote);pollFilter='official';toast('已设为官方课题并置顶。');}catch(error){toast(error.message||'设置失败。');}return;}
     if(event.target.closest('[data-square-refresh]')){feedStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
-    const status=event.target.closest('[data-compose-status]');if(status){composeDraft.status=status.dataset.composeStatus;renderCompose();return;}
     const composePickerTab=event.target.closest('[data-compose-picker-tab]');if(composePickerTab){composeDraft.pickerTab=composePickerTab.dataset.composePickerTab;if(composeDraft.pickerTab==='stickers')socialStore.loadStickers().catch(error=>toast(error.message));renderCompose();return;}
     const composeEmoji=event.target.closest('[data-compose-emoji]');if(composeEmoji){if(composeDraft.text.length+composeEmoji.dataset.composeEmoji.length<=500)composeDraft.text+=composeEmoji.dataset.composeEmoji;renderCompose();requestAnimationFrame(()=>$('[data-compose-form] textarea')?.focus());return;}
     const composeSticker=event.target.closest('[data-compose-sticker]');if(composeSticker){const url=composeSticker.dataset.composeSticker;if(composeDraft.stickers.has(url))composeDraft.stickers.clear();else{composeDraft.stickers.clear();composeDraft.stickers.add(url);rememberSticker(url);}renderCompose();return;}
+    if(event.target.closest('[data-compose-sticker-remove]')){composeDraft.stickers.clear();renderCompose();return;}
     if(event.target.closest('[data-compose-image-remove]')){releasePreview(composeDraft);renderCompose();return;}
     const commentPickerTab=event.target.closest('[data-comment-picker-tab]');if(commentPickerTab){const draft=draftFor(commentPickerTab.dataset.postId);draft.pickerTab=commentPickerTab.dataset.commentPickerTab;if(draft.pickerTab==='stickers')socialStore.loadStickers().catch(error=>toast(error.message));renderPostDetail();return;}
     const commentEmoji=event.target.closest('[data-comment-emoji]');if(commentEmoji){const draft=draftFor(commentEmoji.dataset.postId);if(draft.text.length+commentEmoji.dataset.commentEmoji.length<=180)draft.text+=commentEmoji.dataset.commentEmoji;renderPostDetail();requestAnimationFrame(()=>$('[data-comment-form] textarea')?.focus());return;}
     const commentSticker=event.target.closest('[data-comment-sticker]');if(commentSticker){const draft=draftFor(commentSticker.dataset.postId);const url=commentSticker.dataset.commentSticker;if(draft.stickers.has(url))draft.stickers.clear();else{draft.stickers.clear();draft.stickers.add(url);rememberSticker(url);}renderPostDetail();return;}
+    const removeCommentSticker=event.target.closest('[data-comment-sticker-remove]');if(removeCommentSticker){draftFor(removeCommentSticker.dataset.commentStickerRemove).stickers.clear();renderPostDetail();return;}
     const removeCommentImage=event.target.closest('[data-comment-image-remove]');if(removeCommentImage){releasePreview(draftFor(removeCommentImage.dataset.commentImageRemove));renderPostDetail();return;}
     const react=event.target.closest('[data-react]');if(react){try{const added=await feedStore.toggleReaction(react.dataset.postId,react.dataset.react);toast(added?'已收到。':'已撤回。');}catch(error){toast(error.message||'互动失败。');}return;}
     const reply=event.target.closest('[data-reply-comment]');if(reply){const post=feedState.posts.find(row=>String(row.id)===String(feedState.openPostId));const comment=post?.comments.find(row=>String(row.id)===String(reply.dataset.replyComment));if(comment){feedStore.setReply(comment);requestAnimationFrame(()=>$('[data-comment-form] textarea')?.focus());}return;}
@@ -342,7 +347,7 @@ function bindNavigation(){
     if(event.target.closest('[data-close-post]')){feedStore.closePost();return;}
     const openPost=event.target.closest('[data-open-post]');if(openPost){feedStore.openPost(openPost.dataset.openPost);socialStore.loadStickers().catch(()=>{});return;}
     if(event.target.closest('[data-echo-refresh]')){socialStore.loadEcho(true);return;}
-    if(event.target.closest('[data-echo-mark-all]')){await socialStore.markEchoRead(socialState.echo.rows.filter(row=>!row.is_read).map(row=>row.id));return;}
+    if(event.target.closest('[data-echo-mark-all]')){try{await socialStore.markAllEchoRead();}catch(error){toast(error.message||'全部已读失败。');}return;}
     const echoItem=event.target.closest('[data-echo-item]');if(echoItem)await socialStore.markEchoRead([echoItem.dataset.echoItem]);
     const echoPost=event.target.closest('[data-echo-post]');if(echoPost){sessionStorage.setItem('fw:desktop:v11:pending-post',JSON.stringify({id:echoPost.dataset.echoPost,comments:echoPost.dataset.openComments==='1'}));navigate('square');return;}
     const tab=event.target.closest('[data-buddy-tab]');if(tab){socialStore.setBuddyTab(tab.dataset.buddyTab);return;}
@@ -392,7 +397,7 @@ function bindForms(){
     const birdComment=event.target.closest?.('[data-bird-comment-form]');if(birdComment){event.preventDefault();try{await birdStore.createComment(birdComment.dataset.birdCommentForm,new FormData(birdComment).get('content'));toast('评论已发送。');}catch(error){toast(error.message||'评论失败。');}return;}
     const createPoll=event.target.closest?.('[data-poll-create-form]');if(createPoll){event.preventDefault();const fd=new FormData(createPoll);try{await pollStore.createPoll({title:fd.get('title'),options:[1,2,3,4].map(index=>fd.get(`option${index}`)),isOfficial:fd.get('official')==='on'});pollCreateOpen=false;pollFilter=accountState.user?.role==='admin'&&fd.get('official')==='on'?'official':'user';toast('投票课题已发布。');renderPolls();}catch(error){toast(error.message||'发布失败。');}return;}
     const addOption=event.target.closest?.('[data-poll-add-option]');if(addOption){event.preventDefault();try{await pollStore.addOption(addOption.dataset.pollAddOption,new FormData(addOption).get('label'));toast('新选项已加入并投票。');}catch(error){toast(error.message||'新增选项失败。');}return;}
-    const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();try{await feedStore.createPost({text:composeDraft.text,status:composeDraft.status,imageFile:composeDraft.imageFile,stickerUrls:Array.from(composeDraft.stickers)});releasePreview(composeDraft);composeDraft.text='';composeDraft.status='今日无效';composeDraft.stickers.clear();toast('已投递到精神广场。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
+    const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();try{await feedStore.createPost({text:composeDraft.text,imageFile:composeDraft.imageFile,stickerUrls:Array.from(composeDraft.stickers)});releasePreview(composeDraft);composeDraft.text='';composeDraft.stickers.clear();toast('已投递到精神广场。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }

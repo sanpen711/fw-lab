@@ -224,8 +224,6 @@ async function loadEcho(force=false){
     rows=rows.concat(fallback).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,100);
     const profiles=await fetchProfiles(rows.map(row=>row.actor_id),state.echo.profiles,true);if(state.userId!==user.id)return state.echo.rows;const changed=previousSignature!==contentSignature(rows,profiles);
     state.echo={loaded:true,loading:false,rows,profiles};await persistEchoCache(user.id);if(changed||showInitial)emit();
-    const unread=rows.filter(row=>!row.is_read).map(row=>row.id);
-    if(unread.length) await markEchoRead(unread);
     return state.echo.rows;
   }catch(error){state.echo={...state.echo,loaded:true,loading:false};state.error=error.message||'回声读取失败';if(showInitial)emit();return state.echo.rows;}
 }
@@ -234,12 +232,24 @@ async function markEchoRead(ids){
   const user=currentUser();if(!user?.id) return;
   const wanted=unique(ids);if(!wanted.length) return;
   const wantedSet=new Set(wanted);
+  const databaseReadCount=state.echo.rows.filter(row=>!row.is_read&&wantedSet.has(String(row.id))&&/^\d+$/.test(String(row.id))).length;
   state.echo={...state.echo,rows:state.echo.rows.map(row=>wantedSet.has(String(row.id))?{...row,is_read:true}:row)};
-  state.badges={...state.badges,echo:0};emit();persistEchoCache(user.id).catch(()=>{});persistBadgesCache(user.id).catch(()=>{});
+  state.badges={...state.badges,echo:Math.max(0,Number(state.badges.echo||0)-databaseReadCount)};emit();persistEchoCache(user.id).catch(()=>{});persistBadgesCache(user.id).catch(()=>{});
   const fallback=wanted.filter(id=>id.startsWith('reply-')).map(id=>id.slice(6));
   if(fallback.length){const read=replyReadSet(user.id);fallback.forEach(id=>read.add(String(id)));saveReplyRead(user.id,read);}
   const database=wanted.filter(id=>/^\d+$/.test(id)).map(Number);
   if(database.length) await client.from('notifications').update({is_read:true}).eq('user_id',user.id).in('id',database);
+  await refreshBadges(true);
+}
+
+async function markAllEchoRead(){
+  const user=currentUser();if(!user?.id)return;
+  const fallback=state.echo.rows.filter(row=>!row.is_read&&String(row.id).startsWith('reply-')).map(row=>String(row.id).slice(6));
+  if(fallback.length){const read=replyReadSet(user.id);fallback.forEach(id=>read.add(id));saveReplyRead(user.id,read);}
+  state.echo={...state.echo,rows:state.echo.rows.map(row=>({...row,is_read:true}))};state.badges={...state.badges,echo:0};emit();
+  persistEchoCache(user.id).catch(()=>{});persistBadgesCache(user.id).catch(()=>{});
+  const result=await client.from('notifications').update({is_read:true}).eq('user_id',user.id).eq('is_read',false).in('type',ECHO_TYPES);
+  if(result.error){await Promise.allSettled([loadEcho(true),refreshBadges(true)]);throw new Error(`全部已读失败：${result.error.message}`);}
   await refreshBadges(true);
 }
 
@@ -442,6 +452,6 @@ authStore.subscribe(auth=>{
 });
 
 export const socialStore={
-  state,ECHO_TYPES,refreshBadges,loadEcho,markEchoRead,loadBuddy,setBuddyTab,searchProfiles,sendFriendRequest,respondFriendship,removeFriendship,openChat,closeChat,sendMessage,markPrivateRead,loadStickers,uploadSticker,deleteSticker,
+  state,ECHO_TYPES,refreshBadges,loadEcho,markEchoRead,markAllEchoRead,loadBuddy,setBuddyTab,searchProfiles,sendFriendRequest,respondFriendship,removeFriendship,openChat,closeChat,sendMessage,markPrivateRead,loadStickers,uploadSticker,deleteSticker,
   subscribe(listener){listeners.add(listener);listener({...state,badges:{...state.badges}});return()=>listeners.delete(listener);}
 };
