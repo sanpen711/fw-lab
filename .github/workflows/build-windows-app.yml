@@ -50,7 +50,7 @@ jobs:
           npm ci
           npm --prefix desktop-v11 ci
 
-      - name: Verify Windows 1.2.14 local frontend
+      - name: Verify Windows 1.2.15 local frontend
         run: npm --prefix desktop-v11 run test:static
 
       - name: Install Playwright Chromium
@@ -74,7 +74,7 @@ jobs:
           if ([string]::IsNullOrWhiteSpace([string]$current.current.conditionText)) { throw 'Current weather did not return a condition.' }
           Write-Host "County weather verified: $($location.label), $($current.current.temperature) C, $($current.current.conditionText)"
 
-      - name: Build Windows 1.2.14 NSIS installer
+      - name: Build Windows 1.2.15 NSIS installer
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: npx tauri build --config src-tauri/tauri.v11.conf.json --bundles nsis
@@ -83,27 +83,27 @@ jobs:
         shell: pwsh
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
-          if (-not $installer) { throw 'Windows 1.2.14 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.2\.14') { throw "Unexpected installer name: $($installer.Name)" }
+          if (-not $installer) { throw 'Windows 1.2.15 NSIS installer was not generated.' }
+          if ($installer.Name -notmatch '1\.2\.15') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
 
           Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
           Copy-Item $signatureFile.FullName 'download/fw-lab-windows-latest.exe.sig' -Force
-          Copy-Item $installer.FullName 'download/fw-lab-windows-1.2.14-setup.exe' -Force
-          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.2.14-setup.exe.sig' -Force
+          Copy-Item $installer.FullName 'download/fw-lab-windows-1.2.15-setup.exe' -Force
+          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.2.15-setup.exe.sig' -Force
 
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.2.14：下班开黑支持每人最多 5 个组队、自由填写开玩时间和分级消息红点；精神广场将回声整合进页面，可从评论或点赞通知直接查看帖子。'
+          $notes = 'Windows 1.2.15：所有用户头像改为左键打开统一资料卡，支持头像放大、搭子关系操作、私聊、公开内容、举报与拉黑；匿名发布继续隐藏真实身份，资料卡不展示加入时间。'
 
           $metadata = @{
             available = $true
-            version = '1.2.14'
+            version = '1.2.15'
             platform = 'Windows 10/11 64 位'
-            downloadUrl = 'https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.14-setup.exe'
+            downloadUrl = 'https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.15-setup.exe'
             publishedAt = $publishedAt
             sha256 = $hash
             notes = $notes
@@ -113,13 +113,13 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.2.14'
+            version = '1.2.15'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
               'windows-x86_64' = @{
                 signature = $signature
-                url = 'https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.14-setup.exe'
+                url = 'https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.15-setup.exe'
               }
             }
           }
@@ -128,10 +128,10 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.2.14
+          name: fw-lab-windows-1.2.15
           path: |
-            download/fw-lab-windows-1.2.14-setup.exe
-            download/fw-lab-windows-1.2.14-setup.exe.sig
+            download/fw-lab-windows-1.2.15-setup.exe
+            download/fw-lab-windows-1.2.15-setup.exe.sig
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
             download/windows-updater.json
@@ -143,14 +143,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag='windows-v1.2.14'
-          asset='download/fw-lab-windows-1.2.14-setup.exe'
-          signature='download/fw-lab-windows-1.2.14-setup.exe.sig'
+          tag='windows-v1.2.15'
+          asset='download/fw-lab-windows-1.2.15-setup.exe'
+          signature='download/fw-lab-windows-1.2.15-setup.exe.sig'
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" "$signature" --clobber
           else
-            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.2.14' --notes '新增分级消息提醒：下班开黑的申请和处理结果可逐层定位到具体房间；精神广场回声整合进页面并可直接查看相关帖子。组队创建上限调整为 5 个，开玩时间改为自由填写。'
+            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.2.15' --notes '所有用户头像统一改为左键打开资料卡；新增头像放大、搭子申请状态、私聊、公开内容、举报、拉黑和解除拉黑。匿名或临时笔名内容继续隐藏真实身份，资料卡不展示加入时间。'
           fi
 
       - name: Mirror installer to Supabase Storage
@@ -162,7 +162,7 @@ jobs:
             --request POST 'https://ekbovsmxbiplhyrzxoyw.supabase.co/functions/v1/sync-windows-release' \
             --header "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
             --header 'Content-Type: application/json' \
-            --data '{"version":"1.2.14"}')"
+            --data '{"version":"1.2.15"}')"
           node -e "const result=JSON.parse(process.argv[1]); if(!result.publicUrl) throw new Error(result.error || 'Supabase release sync returned no URL'); console.log('Supabase installer ready:', result.publicUrl);" "$response"
 
       - name: Publish installer to website
@@ -197,6 +197,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.2.14"
+            git commit -m "Release Windows 1.2.15"
             git push origin HEAD:main
           fi

@@ -133,6 +133,38 @@ test('账号入口打开本地登录注册界面',async({page})=>{
   await expect(page.locator('[data-account-modal]')).toBeHidden();
 });
 
+test('所有头像左键打开统一资料卡且不显示加入时间',async({page})=>{
+  await page.route('https://**.supabase.co/rest/v1/profiles**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({id:'11111111-1111-4111-8111-111111111111',nickname:'测试研究员',avatar_url:'https://example.com/avatar.png',lab_code:'FW-TEST'})}));
+  await page.goto('/');
+  await page.evaluate(()=>{
+    (window as any).__profileParentClicked=false;
+    const parent=document.createElement('button');parent.type='button';parent.addEventListener('click',()=>{(window as any).__profileParentClicked=true;});
+    parent.innerHTML='<span data-profile-user="11111111-1111-4111-8111-111111111111" role="button">测</span>';document.body.appendChild(parent);
+  });
+  await page.locator('[data-profile-user="11111111-1111-4111-8111-111111111111"]').click();
+  await expect(page.locator('[data-align-profile-modal]')).toBeVisible();
+  await expect(page.locator('[data-align-profile-body]')).toContainText('测试研究员');
+  await expect(page.locator('[data-align-profile-body]')).toContainText('实验品编号：FW-TEST');
+  await expect(page.locator('[data-align-profile-body]')).not.toContainText('加入研究所');
+  await expect(page.locator('[data-profile-avatar-full]')).toBeVisible();
+  expect(await page.evaluate(()=>(window as any).__profileParentClicked)).toBe(false);
+  await page.locator('[data-profile-avatar-full]').click();
+  await expect(page.locator('[data-align-avatar-lightbox]')).toBeVisible();
+  await page.locator('[data-align-avatar-close]').click();
+  await page.locator('[data-align-profile-close]').click();
+  await expect(page.locator('[data-align-profile-modal]')).toBeHidden();
+});
+
+test('匿名头像只显示隐私说明且不会暴露实名入口',async({page})=>{
+  await page.goto('/');
+  await page.evaluate(()=>{const avatar=document.createElement('span');avatar.dataset.profileAnonymous='临时笔名';avatar.textContent='临';document.body.appendChild(avatar);});
+  await page.locator('[data-profile-anonymous="临时笔名"]').click();
+  await expect(page.locator('[data-align-profile-modal]')).toBeVisible();
+  await expect(page.locator('[data-align-profile-body]')).toContainText('身份已隐藏');
+  await expect(page.locator('[data-align-profile-body]')).toContainText('真实账号不会公开');
+  await expect(page.locator('[data-profile-add]')).toHaveCount(0);
+});
+
 test('发牢骚和精神广场均为本地页面且内容按需读取',async({page})=>{
   await page.goto('/');
   const original=page.url();
