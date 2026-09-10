@@ -39,9 +39,14 @@ test('下班开黑是本地双栏页面并说明游戏 ID 的可见边界',async
   await page.locator('[data-nav="play"]').click();
   await expect(page.locator('[data-view-panel="play"]')).toHaveClass(/active/);
   await expect(page.getByRole('heading',{name:'下班开黑'})).toBeVisible();
-  await expect(page.locator('[data-party-list]')).toContainText('今晚还没有可加入的房间');
+  await expect(page.locator('[data-party-filter="open"]')).toHaveText('可加入');
+  await expect(page.locator('[data-party-list]')).toContainText('还没有可加入的房间');
   await expect(page.locator('[data-party-detail]')).toContainText('游戏 ID 只向队长和已确认队友显示');
+  await expect(page.locator('.party-list-column [data-party-create-host]')).toHaveCount(0);
+  await expect(page.locator('.party-detail-column [data-party-create-host]')).toHaveCount(1);
   await page.locator('[data-party-create-toggle]').click();
+  await expect(page.locator('[data-party-detail]')).toBeHidden();
+  await expect(page.locator('[data-party-create-host]')).toBeVisible();
   await expect(page.locator('[data-party-create-host]')).toContainText('登录后创建组队');
 });
 

@@ -143,11 +143,13 @@
               <div><p>AFTER WORK SQUAD</p><h1>下班开黑</h1><span>先认识今晚的队友，确认加入后再交换游戏 ID。</span></div>
               <div class="section-actions"><button class="secondary compact" type="button" data-party-refresh>刷新</button><button class="primary compact" type="button" data-party-create-toggle>创建组队</button></div>
             </div>
-            <div class="party-create-host" data-party-create-host hidden></div>
-            <div class="party-filters" role="tablist"><button class="active" type="button" data-party-filter="open">今晚可加入</button><button type="button" data-party-filter="all">全部房间</button><button type="button" data-party-filter="mine">我的组队</button></div>
+            <div class="party-filters" role="tablist"><button class="active" type="button" data-party-filter="open">可加入</button><button type="button" data-party-filter="all">全部房间</button><button type="button" data-party-filter="mine">我的组队</button></div>
             <div class="party-list" data-party-list><div class="state-card">进入下班开黑后读取组队房间。</div></div>
           </section>
-          <aside class="party-detail-column" data-party-detail><div class="party-detail-empty"><b>选一个组队房间</b><span>公开信息可以直接看，游戏 ID 只向队长和已确认队友显示。</span></div></aside>
+          <aside class="party-detail-column">
+            <div class="party-create-host" data-party-create-host hidden></div>
+            <div class="party-detail-view" data-party-detail><div class="party-detail-empty"><b>选一个组队房间</b><span>公开信息可以直接看，游戏 ID 只向队长和已确认队友显示。</span></div></div>
+          </aside>
         </div>
       </section>
 

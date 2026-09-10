@@ -1,5 +1,5 @@
 .party-page{display:grid;grid-template-columns:minmax(350px,42%) minmax(430px,58%);height:100vh;min-height:0;background:#fff}
-.party-list-column{display:grid;grid-template-rows:auto auto auto minmax(0,1fr);min-width:0;min-height:0;border-right:1px solid var(--line);background:#f8f6f2}
+.party-list-column{display:grid;grid-template-rows:auto auto minmax(0,1fr);min-width:0;min-height:0;border-right:1px solid var(--line);background:#f8f6f2}
 .party-heading{padding:28px 24px 17px;background:#fffaf4}
 .party-heading h1{margin:4px 0 3px;font-size:25px}
 .party-heading>div:first-child>p{margin:0;color:#ff8791;font-size:10px;font-weight:900;letter-spacing:.14em}
@@ -22,14 +22,16 @@
 .party-card-tags span{padding:5px 8px;border-radius:8px;background:#fff4ef;color:#7a5b50;font-size:10px;font-weight:750}
 .party-card footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:10px;border-top:1px solid #f0e9df;color:var(--muted);font-size:10px}
 .party-card footer b{color:var(--ink);font-size:11px}
-.party-create-host{max-height:60vh;overflow-y:auto;border-top:1px solid var(--line);background:#fffaf4}
-.party-create-card{display:grid;gap:11px;padding:16px 18px 18px}
-.party-create-card header h2{margin:0 0 4px;font-size:17px}.party-create-card header p{margin:0;color:var(--muted);font-size:10px;line-height:1.5}
+.party-create-host{height:100%;min-height:0;overflow-y:auto;background:#fffaf4;scrollbar-gutter:stable}
+.party-create-host[hidden],.party-detail-view[hidden]{display:none}
+.party-create-card{display:grid;gap:18px;width:min(680px,100%);margin:0 auto;padding:30px 34px 36px}
+.party-create-card header{padding-bottom:15px;border-bottom:1px solid var(--line)}.party-create-card header h2{margin:0 0 6px;font-size:24px}.party-create-card header p{margin:0;color:var(--muted);font-size:11px;line-height:1.65}
 .party-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .party-create-card label,.party-join-card label{display:grid;gap:5px;color:#4f5e59;font-size:10px;font-weight:850}
 .party-create-card input,.party-create-card select,.party-create-card textarea,.party-join-card input,.party-join-card textarea,.party-chat-compose input{width:100%;min-height:38px;border:1px solid #ded7cd;border-radius:10px;background:#fff;padding:8px 10px;color:var(--ink);font:inherit;font-size:11px}
 .party-create-card textarea,.party-join-card textarea{min-height:62px;resize:vertical}.party-form-full{grid-column:1/-1}.party-form-actions{display:flex;justify-content:flex-end;gap:8px}
-.party-detail-column{min-width:0;min-height:0;background:#fff}
+.party-approval-option{display:flex!important;grid-column:1/-1;align-items:center;gap:9px!important;min-height:42px;padding:10px 12px;border:1px solid #e5ddd3;border-radius:11px;background:#fff}.party-approval-option input{flex:0 0 auto;width:17px!important;min-height:17px!important;margin:0;padding:0;accent-color:#ff8791}.party-approval-option span{display:grid;gap:2px}.party-approval-option b{color:var(--ink);font-size:11px}.party-approval-option small{color:var(--muted);font-size:9px;font-weight:650;line-height:1.45}
+.party-detail-column{min-width:0;min-height:0;background:#fff}.party-detail-view{height:100%;min-height:0}
 .party-detail-empty{display:grid;height:100%;place-content:center;gap:8px;padding:40px;text-align:center;color:var(--muted)}
 .party-detail-empty b{color:var(--ink);font-size:18px}.party-detail-empty span{max-width:360px;font-size:12px;line-height:1.65}
 .party-detail-shell{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr);height:100%;min-height:0}
