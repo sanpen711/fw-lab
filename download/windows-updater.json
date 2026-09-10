@@ -1,11 +1,11 @@
 {
+  "notes": "Windows 1.2.11：新增“下班开黑”组队平台，支持创建房间、申请加入、队长审核、确认队友后私密交换游戏 ID，并提供房间群聊；左侧主要栏目整体上移，“下班开黑”放在小游戏上方；档案、入馆须知和处理公告统一收进“更多”。",
+  "version": "1.2.11",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.10-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmR2TlcyT05PK2hxRkJJZlNkcStyRUNmZXFDWklOZWM2SHJwL1ZiTk92NHptakdjRVR1b0daZ2dTMTJqdWpKSkFkVFlOWFFvZ29qaDE5WitEdmwzendnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDA2MDYxCWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTBfeDY0LXNldHVwLmV4ZQpWaEE4R1dQRVZIelhHUWswbWF2NG0wV0pRWjFEMnRGU3VEUzNnRXhnL2xqWk91clhPblNxczR5S0JDNzFPMm9DeC9NRytMaGtRL2V0S1Y4ZSt3UklEdz09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.11-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlhFa3VsVXJUYjNmWUN4ZXlaNXkyc2xjNmtDU0xXcUlUN3YxaHB3ckZhaFdzNWtIZDhvU2ZsMVd2OUtDVyttSmwvZGxXTytiWkZzWjl6RThLc3d2K2dnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDI0NTQ2CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTFfeDY0LXNldHVwLmV4ZQpZMWFVUzh0SEtURnZMSXpTL2NqSXg2Tkt6Zk9jd2NyTm1pOHNkazE1L1ZmNU9JenBmS2hybTd0N09Id1NhWC9LVVEyUEE3dU1HOEN3NnVXZEdLL0lEZz09Cg=="
     }
   },
-  "pub_date": "2026-09-10T02:07:41.7798650Z",
-  "version": "1.2.10",
-  "notes": "Windows 1.2.10：精神广场逻辑全面收口。彻底移除旧状态；评论、点赞和实时变化改为局部更新；回复改由数据库生成正式通知；文字与媒体容量统一；我的表情增加选择预览并保留空白网格；回声改为逐条查看已读或手动全部已读。保留固定评论输入栏及全部既有功能。"
+  "pub_date": "2026-09-10T07:15:46.8035721Z"
 }
