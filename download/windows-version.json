@@ -1,11 +1,11 @@
 {
   "platform": "Windows 10/11 64 位",
+  "publishedAt": "2026-09-10T02:07:41.7798650Z",
+  "rollbackVersion": "1.0.5",
   "available": true,
-  "notes": "Windows 1.2.9：修复精神广场点击回复时评论位置跳回顶部的问题；彻底移除帖子详情中的今日无效等旧状态标签；我的表情改为与小表情相同的十列、42px 网格，未添加的位置自然留空。保留固定评论输入栏、表情选择后自动关闭及全部既有功能。网页、PWA 与手机端不变。",
-  "sha256": "0265897d56b688f745948ecdddb78ef9d1412865688126413cdc3bee0485cf19",
-  "publishedAt": "2026-09-09T14:43:04.7291010Z",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "version": "1.2.9",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.9-setup.exe",
-  "rollbackVersion": "1.0.5"
+  "version": "1.2.10",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.10-setup.exe",
+  "notes": "Windows 1.2.10：精神广场逻辑全面收口。彻底移除旧状态；评论、点赞和实时变化改为局部更新；回复改由数据库生成正式通知；文字与媒体容量统一；我的表情增加选择预览并保留空白网格；回声改为逐条查看已读或手动全部已读。保留固定评论输入栏及全部既有功能。",
+  "sha256": "64592d19d0781a33452a6303e639f4a4a4ce5eee770ffc2738a4adce220e5cc2",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
 }

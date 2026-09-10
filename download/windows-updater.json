@@ -1,11 +1,11 @@
 {
-  "version": "1.2.9",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.9-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlhtRHAvTTg3c1pqZmpuM3JENmxrM1VXbThWL2VHUXdpRWhOaGI3VGZGSmY3K0xkYm5YOUUrODdUSHM0cExNQWpqUWlvaERoU05wVElCeHBYbVgycUFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4OTY0OTg0CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuOV94NjQtc2V0dXAuZXhlCm9PbkdzdzFkM2YrMGtLQWpvYjRma1I5MWQ4ZW9kSXhPbmt4YlI5QUp0cmh6QUFUVWZ6dXlFMXQ2eEpXUFp4SUVIc3A1UUhWc2tobWttckZ1MWJjQkNnPT0K"
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.10-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmR2TlcyT05PK2hxRkJJZlNkcStyRUNmZXFDWklOZWM2SHJwL1ZiTk92NHptakdjRVR1b0daZ2dTMTJqdWpKSkFkVFlOWFFvZ29qaDE5WitEdmwzendnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDA2MDYxCWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTBfeDY0LXNldHVwLmV4ZQpWaEE4R1dQRVZIelhHUWswbWF2NG0wV0pRWjFEMnRGU3VEUzNnRXhnL2xqWk91clhPblNxczR5S0JDNzFPMm9DeC9NRytMaGtRL2V0S1Y4ZSt3UklEdz09Cg=="
     }
   },
-  "notes": "Windows 1.2.9：修复精神广场点击回复时评论位置跳回顶部的问题；彻底移除帖子详情中的今日无效等旧状态标签；我的表情改为与小表情相同的十列、42px 网格，未添加的位置自然留空。保留固定评论输入栏、表情选择后自动关闭及全部既有功能。网页、PWA 与手机端不变。",
-  "pub_date": "2026-09-09T14:43:04.7291010Z"
+  "pub_date": "2026-09-10T02:07:41.7798650Z",
+  "version": "1.2.10",
+  "notes": "Windows 1.2.10：精神广场逻辑全面收口。彻底移除旧状态；评论、点赞和实时变化改为局部更新；回复改由数据库生成正式通知；文字与媒体容量统一；我的表情增加选择预览并保留空白网格；回声改为逐条查看已读或手动全部已读。保留固定评论输入栏及全部既有功能。"
 }
