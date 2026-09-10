@@ -18,7 +18,7 @@ async function load(force=false){
   if(state.loading||(!force&&state.loaded))return state.parties;
   const showInitial=!state.loaded;state.loading=true;state.error='';if(showInitial)emit();
   try{
-    count();const parties=fail(await client.from('game_parties').select('id,captain_id,game_name,platform,server_name,mode,starts_at,capacity,member_count,note,requires_approval,status,created_at,updated_at').neq('status','cancelled').order('created_at',{ascending:false}).limit(100),'读取组队房间失败')||[];
+    count();const parties=fail(await client.from('game_parties').select('id,captain_id,game_name,platform,server_name,mode,starts_at,capacity,member_count,note,requires_approval,status,created_at,updated_at').in('status',['open','full']).order('created_at',{ascending:false}).limit(100),'读取组队房间失败')||[];
     const partyIds=parties.map(row=>row.id);let members=[];let contacts=[];let messages=[];
     if(currentUser()&&partyIds.length){
       count();members=fail(await client.from('game_party_members').select('party_id,user_id,role,state,request_message,created_at,updated_at').in('party_id',partyIds),'读取组队状态失败')||[];
@@ -41,7 +41,7 @@ async function createParty(data){return mutate(async()=>{const capacity=String(d
 async function applyToParty(partyId,{gameId,message}){return mutate(async()=>fail(await client.rpc('fw_apply_game_party',{p_party_id:Number(partyId),p_game_id:String(gameId||'').trim(),p_message:String(message||'').trim()}),'申请加入失败'));}
 async function decideApplication(partyId,userId,accept){return mutate(async()=>fail(await client.rpc('fw_decide_game_party',{p_party_id:Number(partyId),p_user_id:userId,p_accept:Boolean(accept)}),'处理申请失败'));}
 async function leaveParty(partyId){return mutate(async()=>fail(await client.rpc('fw_leave_game_party',{p_party_id:Number(partyId)}),'退出组队失败'));}
-async function closeParty(partyId){return mutate(async()=>fail(await client.rpc('fw_close_game_party',{p_party_id:Number(partyId)}),'关闭房间失败'));}
+async function closeParty(partyId){return mutate(async()=>fail(await client.rpc('fw_close_game_party',{p_party_id:Number(partyId)}),'删除房间失败'));}
 async function sendMessage(partyId,content){return mutate(async()=>fail(await client.rpc('fw_send_game_party_message',{p_party_id:Number(partyId),p_content:String(content||'').trim()}),'发送消息失败'));}
 
 authStore.subscribe(auth=>{if(!auth.ready)return;state.members=[];state.contacts=[];state.messages=[];state.loaded=false;emit();if(active)load(true).catch(()=>{});});

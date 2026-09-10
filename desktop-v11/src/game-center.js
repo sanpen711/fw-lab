@@ -10,7 +10,7 @@ const games={
 const $=selector=>document.querySelector(selector);
 let current='';
 
-function frameUrl(game){return new URL(`./games/${game.path}/index.html?v=1.2.12`,document.baseURI).href;}
+function frameUrl(game){return new URL(`./games/${game.path}/index.html?v=1.2.13`,document.baseURI).href;}
 
 function open(id){
   const game=games[id];if(!game)return;
