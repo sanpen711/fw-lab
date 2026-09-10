@@ -1,13 +1,14 @@
 import {authStore} from './auth-store.js';
 import {desktopCache} from './desktop-persistent-cache.js';
 
-const ECHO_TYPES=['like','comment','comment_reply','chat_agree','system'];
+const ECHO_TYPES=['like','comment','comment_reply'];
 const PRIVATE_TYPE='private_message';
+const PARTY_ALERT_TYPES=['game_party_apply','game_party_joined','game_party_accepted','game_party_rejected'];
 const REPLY_READ_PREFIX='fw:desktop:v11:reply-read:';
 const listeners=new Set();
 const client=authStore.client;
 const state={
-  ready:false,busy:false,error:'',userId:'',badges:{echo:0,buddy:0},
+  ready:false,busy:false,error:'',userId:'',badges:{echo:0,buddy:0,play:0},
   echo:{loaded:false,loading:false,rows:[],profiles:{}},
   buddy:{loaded:false,loading:false,tab:'messages',rows:[],profiles:{},conversations:[],latest:{},unread:{},search:[],searching:false},
   chat:{targetId:'',conversationId:null,profile:null,rows:[],loading:false,sending:false},
@@ -20,6 +21,7 @@ let badgePromise=null;
 let badgeTimer=null;
 let badgeRefreshQueued=false;
 let buddyTimer=null;
+let echoTimer=null;
 let buddyPromise=null;
 let buddyRefreshQueued=false;
 let echoProfilePromise=null;
@@ -50,7 +52,7 @@ async function hydrateBadgesCache(userId){
   if(!userId||hydratedBadgesUser===userId)return false;hydratedBadgesUser=userId;
   const cached=await desktopCache.read('badges',userId);const payload=cached?.payload;
   if(!payload?.badges)return false;
-  state.badges={echo:Number(payload.badges.echo||0),buddy:Number(payload.badges.buddy||0)};emit();return true;
+  state.badges={echo:Number(payload.badges.echo||0),buddy:Number(payload.badges.buddy||0),play:Number(payload.badges.play||0)};emit();return true;
 }
 function persistBadgesCache(userId=cacheUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('badges',userId,{badges:state.badges});}
 async function hydrateEchoCache(userId){
@@ -90,7 +92,7 @@ async function hydrateStickersCache(userId){
 function persistStickersCache(userId=cacheUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('stickers',userId,{rows:state.stickers.rows.slice(0,80)});}
 
 function clearSocialState(){
-  state.userId='';state.ready=true;state.error='';state.badges={echo:0,buddy:0};
+  state.userId='';state.ready=true;state.error='';state.badges={echo:0,buddy:0,play:0};
   state.echo={loaded:false,loading:false,rows:[],profiles:{}};
   state.buddy={loaded:false,loading:false,tab:'messages',rows:[],profiles:{},conversations:[],latest:{},unread:{},search:[],searching:false};
   state.chat={targetId:'',conversationId:null,profile:null,rows:[],loading:false,sending:false};
@@ -124,6 +126,7 @@ function refreshBuddyProfiles(){
 
 function scheduleBadges(){clearTimeout(badgeTimer);badgeTimer=setTimeout(()=>refreshBadges(true),180);}
 function scheduleBuddyReload(){clearTimeout(buddyTimer);buddyTimer=setTimeout(()=>loadBuddy(true),180);}
+function scheduleEchoReload(){clearTimeout(echoTimer);echoTimer=setTimeout(()=>loadEcho(true).catch(()=>{}),180);}
 
 async function refreshBadges(force=false){
   const user=currentUser();
@@ -131,20 +134,21 @@ async function refreshBadges(force=false){
   if(!force&&hydratedBadgesUser!==user.id)await hydrateBadgesCache(user.id);
   if(badgePromise){if(force)badgeRefreshQueued=true;return badgePromise;}
   badgePromise=(async()=>{
-    const [echoResult,privateResult,requestResult]=await Promise.all([
+    const [echoResult,privateResult,requestResult,partyResult]=await Promise.all([
       client.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',user.id).eq('is_read',false).in('type',ECHO_TYPES),
       client.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',user.id).eq('is_read',false).eq('type',PRIVATE_TYPE),
-      client.from('friendships').select('id',{count:'exact',head:true}).eq('receiver_id',user.id).eq('status','pending')
+      client.from('friendships').select('id',{count:'exact',head:true}).eq('receiver_id',user.id).eq('status','pending'),
+      client.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',user.id).eq('is_read',false).in('type',PARTY_ALERT_TYPES)
     ]);
     if(state.userId!==user.id) return state.badges;
-    const next={echo:Number(echoResult.count||0),buddy:Number(privateResult.count||0)+Number(requestResult.count||0)};const changed=contentSignature(state.badges)!==contentSignature(next);
+    const next={echo:Number(echoResult.count||0),buddy:Number(privateResult.count||0)+Number(requestResult.count||0),play:Number(partyResult.count||0)};const changed=contentSignature(state.badges)!==contentSignature(next);
     state.badges=next;await persistBadgesCache(user.id);if(changed)emit();return state.badges;
   })().catch(()=>state.badges).finally(()=>{badgePromise=null;if(badgeRefreshQueued){badgeRefreshQueued=false;queueMicrotask(()=>refreshBadges(false));}});
   return badgePromise;
 }
 
 function teardownChannels(){
-  clearTimeout(badgeTimer);clearTimeout(buddyTimer);badgeRefreshQueued=false;buddyRefreshQueued=false;chatOpenToken+=1;privateReadPromises.clear();privateReadQueued.clear();
+  clearTimeout(badgeTimer);clearTimeout(buddyTimer);clearTimeout(echoTimer);badgeRefreshQueued=false;buddyRefreshQueued=false;chatOpenToken+=1;privateReadPromises.clear();privateReadQueued.clear();
   if(badgeChannel){client.removeChannel(badgeChannel);badgeChannel=null;}
   if(chatChannel){client.removeChannel(chatChannel);chatChannel=null;}
 }
@@ -155,6 +159,7 @@ function startBadgeChannel(userId){
     .on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:`user_id=eq.${userId}`},payload=>{
       if(state.userId!==userId)return;
       const row=payload?.new||payload?.old||{};scheduleBadges();
+      if(ECHO_TYPES.includes(row.type)&&state.echo.loaded)scheduleEchoReload();
       if(payload?.eventType==='INSERT'&&row.type===PRIVATE_TYPE&&state.buddy.loaded){
         const actorId=String(row.actor_id||'');const active=actorId&&String(state.chat.targetId)===actorId;
         if(actorId){

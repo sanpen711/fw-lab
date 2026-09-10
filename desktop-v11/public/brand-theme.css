@@ -1,4 +1,4 @@
-/* F.w 研究所 Windows 1.2.13 — Figma-aligned desktop visual system. */
+/* F.w 研究所 Windows 1.2.14 — Figma-aligned desktop visual system. */
 
 :root{
   --bg:#f7f7f6!important;
@@ -46,6 +46,9 @@ html body .nav-item.active{background:#ffe5e8!important;color:#ff7f8b!important;
 html body .nav-item.active>span:not(.avatar){color:#ff7f8b!important;}
 html body .nav-item[data-nav="echo"]{margin-top:0!important;}
 html body .badge{right:5px!important;top:5px!important;background:#ff8791!important;color:#fff!important;}
+html body .notification-dot{background:#ef4e5b!important;}
+html body .square-echo-button.active{border-color:#152b25!important;background:#152b25!important;color:#fff!important;}
+html body .square-echo-panel{background:#f3f0ea!important;}
 html body .account-button{width:48px!important;min-height:48px!important;margin:12px 0 0 12px!important;padding:0!important;border:0!important;border-radius:50%!important;}
 html body .account-button:hover{background:#fff2f3!important;}
 html body .account-button b{display:none!important;}

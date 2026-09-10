@@ -13,7 +13,8 @@ test('本地首页保留桌面视觉和完整导航框架',async({page})=>{
   await expect(page.locator('.sidebar')).toBeVisible();
   await expect(page.getByRole('heading',{name:'F.w 研究所'})).toBeVisible();
   await expect(page.locator('[data-nav="home"].nav-item')).toHaveClass(/active/);
-  await expect(page.locator('[data-badge="echo"]')).toBeHidden();
+  await expect(page.locator('[data-dot="square"]')).toBeHidden();
+  await expect(page.locator('[data-dot="play"]')).toBeHidden();
   await expect(page.locator('[data-badge="buddy"]')).toBeHidden();
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
 });
@@ -88,16 +89,19 @@ test('首页轻工具按天气、下班倒计时和反馈意见排列',async({pa
   await expect(page.locator('[data-home-tool-modal]')).toBeHidden();
 });
 
-test('回声已经是本地页面且导航不会重载网页',async({page})=>{
+test('回声整合在精神广场左栏且不会重载网页',async({page})=>{
   await page.goto('/');
   const original=page.url();
-  await page.locator('[data-nav="echo"].nav-item').click();
-  await expect(page.locator('[data-view-panel="echo"]')).toHaveClass(/active/);
-  await expect(page.getByRole('heading',{name:'回声通知'})).toBeVisible();
+  await page.locator('[data-nav="square"].nav-item').click();
+  await expect(page.locator('[data-view-panel="square"]')).toHaveClass(/active/);
+  await expect(page.locator('[data-square-echo-toggle]')).toBeVisible();
+  await page.locator('[data-square-echo-toggle]').click();
+  await expect(page.locator('[data-square-echo-panel]')).toBeVisible();
+  await expect(page.locator('[data-square-feed]')).toBeHidden();
   await expect(page.getByText('登录后查看回声')).toBeVisible();
   expect(page.url()).toBe(original);
-  await page.locator('[data-nav="home"].nav-item').click();
-  await expect(page.locator('[data-view-panel="home"]')).toHaveClass(/active/);
+  await page.locator('[data-square-echo-toggle]').click();
+  await expect(page.locator('[data-square-feed]')).toBeVisible();
 });
 
 test('搭子和私聊使用本地左右分栏且没有定时轮询',async({page})=>{

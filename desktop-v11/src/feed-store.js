@@ -155,6 +155,14 @@ async function activate(){
 function deactivate(){active=false;refreshQueued=false;clearTimeout(refreshTimer);if(squareChannel){client.removeChannel(squareChannel);squareChannel=null;}}
 
 function openPost(postId){state.openPostId=String(postId||'');state.reply=null;emit('detail');}
+async function openPostById(postId){
+  const id=String(postId||'').trim();if(!id)throw new Error('帖子已经不存在。');
+  if(state.posts.some(row=>String(row.id)===id)){openPost(id);return state.posts.find(row=>String(row.id)===id);}
+  countContent();const result=await client.from('posts').select('id,user_id,content,created_at').eq('id',id).or('is_deleted.eq.false,is_deleted.is.null').limit(1);const rows=fail(result,'读取帖子失败')||[];const post=rows[0];if(!post)throw new Error('帖子已经删除或不可查看。');
+  const [comments,reactionResult]=await Promise.all([readComments([post.id]),(countContent(),client.from('reactions').select('id,post_id,user_id,type,created_at').eq('post_id',post.id).eq('type','like'))]);
+  const reactions=fail(reactionResult,'读取互动失败')||[];await fetchProfiles([post.user_id,...comments.flatMap(row=>[row.user_id,row.reply_to_user_id])],true);
+  const hydrated={...post,comments,reactions};state.posts=[hydrated,...state.posts.filter(row=>String(row.id)!==id)].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));state.openPostId=id;state.reply=null;await persistSquareCache();emit('all');return hydrated;
+}
 function closePost(){state.openPostId='';state.reply=null;emit('detail');}
 function setReply(comment){state.reply=comment?{postId:String(comment.post_id),targetCommentId:String(comment.id),rootCommentId:String(comment.parent_comment_id||comment.id),targetUserId:String(comment.user_id),name:state.profiles[String(comment.user_id)]?.nickname||'匿名用户'}:null;emit('detail');}
 function clearReply(){state.reply=null;emit('detail');}
@@ -232,4 +240,4 @@ authStore.subscribe(auth=>{
   if(!auth.user){profileGeneration+=1;deactivate();state.loaded=false;state.loading=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();}
 });
 
-export const feedStore={state,activate,deactivate,load,openPost,closePost,setReply,clearReply,createPost,createComment,toggleReaction,deletePost,deleteComment,report,uploadImage,uploadMedia,composeContent,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};
+export const feedStore={state,activate,deactivate,load,openPost,openPostById,closePost,setReply,clearReply,createPost,createComment,toggleReaction,deletePost,deleteComment,report,uploadImage,uploadMedia,composeContent,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};
