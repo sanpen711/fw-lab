@@ -139,29 +139,37 @@ test('所有头像左键打开统一资料卡且不显示加入时间',async({pa
   await page.evaluate(()=>{
     (window as any).__profileParentClicked=false;
     const parent=document.createElement('button');parent.type='button';parent.addEventListener('click',()=>{(window as any).__profileParentClicked=true;});
+    parent.style.cssText='position:fixed;left:160px;top:120px;width:36px;height:36px;z-index:20000';
     parent.innerHTML='<span data-profile-user="11111111-1111-4111-8111-111111111111" role="button">测</span>';document.body.appendChild(parent);
   });
-  await page.locator('[data-profile-user="11111111-1111-4111-8111-111111111111"]').dispatchEvent('click');
+  const trigger=page.locator('[data-profile-user="11111111-1111-4111-8111-111111111111"]');
+  await trigger.dispatchEvent('click');
   await expect(page.locator('[data-align-profile-modal]')).toBeVisible();
   await expect(page.locator('[data-align-profile-body]')).toContainText('测试研究员');
   await expect(page.locator('[data-align-profile-body]')).toContainText('实验品编号：FW-TEST');
   await expect(page.locator('[data-align-profile-body]')).not.toContainText('加入研究所');
+  await expect(page.locator('[data-align-profile-body]')).not.toContainText('公开资料只展示昵称');
+  await expect(page.locator('[data-profile-public]')).toHaveCount(0);
+  const triggerBox=await trigger.boundingBox();
+  const cardBox=await page.locator('.align-profile-card').boundingBox();
+  expect(cardBox?.width).toBeLessThanOrEqual(322);
+  expect(cardBox?.x||0).toBeGreaterThan((triggerBox?.x||0)+(triggerBox?.width||0));
   await expect(page.locator('[data-profile-avatar-full]')).toBeVisible();
   expect(await page.evaluate(()=>(window as any).__profileParentClicked)).toBe(false);
   await page.locator('[data-profile-avatar-full]').click();
   await expect(page.locator('[data-align-avatar-lightbox]')).toBeVisible();
   await page.locator('[data-align-avatar-close]').click();
-  await page.locator('[data-align-profile-close]').click();
+  await page.evaluate(()=>document.body.dispatchEvent(new MouseEvent('click',{bubbles:true})));
   await expect(page.locator('[data-align-profile-modal]')).toBeHidden();
 });
 
 test('匿名头像只显示隐私说明且不会暴露实名入口',async({page})=>{
   await page.goto('/');
-  await page.evaluate(()=>{const avatar=document.createElement('span');avatar.dataset.profileAnonymous='临时笔名';avatar.textContent='临';document.body.appendChild(avatar);});
+  await page.evaluate(()=>{const avatar=document.createElement('span');avatar.dataset.profileAnonymous='临时笔名';avatar.textContent='临';avatar.style.cssText='position:fixed;left:160px;top:220px;width:36px;height:36px;z-index:20000';document.body.appendChild(avatar);});
   await page.locator('[data-profile-anonymous="临时笔名"]').dispatchEvent('click');
   await expect(page.locator('[data-align-profile-modal]')).toBeVisible();
   await expect(page.locator('[data-align-profile-body]')).toContainText('身份已隐藏');
-  await expect(page.locator('[data-align-profile-body]')).toContainText('真实账号不会公开');
+  await expect(page.locator('[data-align-profile-body]')).toContainText('无法从这里添加搭子');
   await expect(page.locator('[data-profile-add]')).toHaveCount(0);
 });
 
