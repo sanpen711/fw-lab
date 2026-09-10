@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/brand-theme.css">
   <link rel="stylesheet" href="/game-center.css">
+  <link rel="stylesheet" href="/game-party.css">
 </head>
 <body>
   <div id="app" class="app-shell" data-view="home">
@@ -19,14 +20,26 @@
         <span aria-hidden="true">＋</span><b>发牢骚</b>
       </button>
       <nav class="nav-list">
-        <button class="nav-item active" type="button" data-nav="home"><span class="nav-icon nav-icon-home" aria-hidden="true"></span><b>首页</b></button>
-        <button class="nav-item" type="button" data-nav="square"><span class="nav-icon nav-icon-brain" aria-hidden="true"></span><b>精神广场</b></button>
-        <button class="nav-item" type="button" data-nav="rooms"><span class="nav-icon nav-icon-discussion" aria-hidden="true"></span><b>学术研讨</b></button>
-        <button class="nav-item" type="button" data-nav="bird"><span class="nav-icon nav-icon-news" aria-hidden="true"></span><b>新闻专区</b></button>
-        <button class="nav-item" type="button" data-nav="games"><span class="nav-icon nav-icon-game" aria-hidden="true"></span><b>小游戏</b></button>
-        <button class="nav-item" type="button" data-nav="echo"><span class="nav-icon nav-icon-echo" aria-hidden="true"></span><b>回声</b><i class="badge" data-badge="echo" hidden></i></button>
-        <button class="nav-item" type="button" data-nav="buddy"><span class="nav-icon nav-icon-buddy" aria-hidden="true"></span><b>搭子</b><i class="badge" data-badge="buddy" hidden></i></button>
-        <button class="nav-item" type="button" data-nav="archive"><span class="nav-icon nav-icon-archive" aria-hidden="true"></span><b>档案</b></button>
+        <div class="nav-primary-group">
+          <button class="nav-item active" type="button" data-nav="home"><span class="nav-icon nav-icon-home" aria-hidden="true"></span><b>首页</b></button>
+          <button class="nav-item" type="button" data-nav="square"><span class="nav-icon nav-icon-brain" aria-hidden="true"></span><b>精神广场</b></button>
+          <button class="nav-item" type="button" data-nav="rooms"><span class="nav-icon nav-icon-discussion" aria-hidden="true"></span><b>学术研讨</b></button>
+          <button class="nav-item" type="button" data-nav="bird"><span class="nav-icon nav-icon-news" aria-hidden="true"></span><b>新闻专区</b></button>
+          <button class="nav-item" type="button" data-nav="play"><span class="nav-icon nav-icon-buddy" aria-hidden="true"></span><b>下班开黑</b></button>
+          <button class="nav-item" type="button" data-nav="games"><span class="nav-icon nav-icon-game" aria-hidden="true"></span><b>小游戏</b></button>
+        </div>
+        <div class="nav-lower-group">
+          <button class="nav-item" type="button" data-nav="echo"><span class="nav-icon nav-icon-echo" aria-hidden="true"></span><b>回声</b><i class="badge" data-badge="echo" hidden></i></button>
+          <button class="nav-item" type="button" data-nav="buddy"><span class="nav-icon nav-icon-buddy" aria-hidden="true"></span><b>搭子</b><i class="badge" data-badge="buddy" hidden></i></button>
+          <div class="sidebar-more-wrap" data-sidebar-more-wrap>
+            <button class="nav-item sidebar-more-button" type="button" data-sidebar-more-toggle aria-haspopup="menu" aria-expanded="false"><span class="sidebar-more-icon" aria-hidden="true"><i></i><i></i><i></i></span><b>更多</b></button>
+            <div class="sidebar-more-menu" role="menu" aria-label="更多栏目">
+              <button type="button" role="menuitem" data-nav="archive"><span class="nav-icon nav-icon-archive" aria-hidden="true"></span><b>档案</b></button>
+              <button type="button" role="menuitem" data-align-nav="rules"><span class="nav-icon nav-icon-info" aria-hidden="true"></span><b>入馆须知</b></button>
+              <button type="button" role="menuitem" data-align-nav="moderation"><span class="nav-icon nav-icon-notice" aria-hidden="true"></span><b>处理公告</b></button>
+            </div>
+          </div>
+        </div>
       </nav>
       <button class="nav-item account-button" type="button" data-open-account>
         <span class="avatar avatar-small" data-account-avatar>FW</span><b data-account-label>注册 / 登录</b>
@@ -120,6 +133,21 @@
             <div class="bird-feed" data-bird-feed><div class="state-card">进入新闻专区后读取内容。</div></div>
           </section>
           <aside class="bird-detail-column" data-bird-detail><div class="post-detail-empty"><b>选择一条内容</b><span>查看完整正文、图片、评论和互动。</span></div></aside>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="play">
+        <div class="party-page">
+          <section class="party-list-column">
+            <div class="section-heading party-heading">
+              <div><p>AFTER WORK SQUAD</p><h1>下班开黑</h1><span>先认识今晚的队友，确认加入后再交换游戏 ID。</span></div>
+              <div class="section-actions"><button class="secondary compact" type="button" data-party-refresh>刷新</button><button class="primary compact" type="button" data-party-create-toggle>创建组队</button></div>
+            </div>
+            <div class="party-create-host" data-party-create-host hidden></div>
+            <div class="party-filters" role="tablist"><button class="active" type="button" data-party-filter="open">今晚可加入</button><button type="button" data-party-filter="all">全部房间</button><button type="button" data-party-filter="mine">我的组队</button></div>
+            <div class="party-list" data-party-list><div class="state-card">进入下班开黑后读取组队房间。</div></div>
+          </section>
+          <aside class="party-detail-column" data-party-detail><div class="party-detail-empty"><b>选一个组队房间</b><span>公开信息可以直接看，游戏 ID 只向队长和已确认队友显示。</span></div></aside>
         </div>
       </section>
 

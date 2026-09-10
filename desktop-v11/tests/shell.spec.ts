@@ -18,6 +18,33 @@ test('本地首页保留桌面视觉和完整导航框架',async({page})=>{
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
 });
 
+test('主导航上移、下班开黑位于小游戏上方，次要栏目收进更多',async({page})=>{
+  await page.goto('/');
+  const mainLabels=await page.locator('.nav-primary-group .nav-item b').allTextContents();
+  expect(mainLabels).toEqual(['首页','精神广场','学术研讨','新闻专区','下班开黑','小游戏']);
+  await expect(page.locator('.nav-primary-group [data-nav="play"] + [data-nav="games"]')).toBeVisible();
+  await expect(page.locator('.nav-list > [data-nav="archive"]')).toHaveCount(0);
+  await page.locator('[data-sidebar-more-toggle]').click();
+  await expect(page.locator('[data-sidebar-more-wrap]')).toHaveClass(/open/);
+  await expect(page.locator('.sidebar-more-menu [data-nav="archive"]')).toContainText('档案');
+  await expect(page.locator('.sidebar-more-menu [data-align-nav="rules"]')).toContainText('入馆须知');
+  await expect(page.locator('.sidebar-more-menu [data-align-nav="moderation"]')).toContainText('处理公告');
+  await page.locator('.sidebar-more-menu [data-nav="archive"]').click();
+  await expect(page.locator('[data-view-panel="archive"]')).toHaveClass(/active/);
+  await expect(page.locator('[data-sidebar-more-wrap]')).not.toHaveClass(/open/);
+});
+
+test('下班开黑是本地双栏页面并说明游戏 ID 的可见边界',async({page})=>{
+  await page.goto('/');
+  await page.locator('[data-nav="play"]').click();
+  await expect(page.locator('[data-view-panel="play"]')).toHaveClass(/active/);
+  await expect(page.getByRole('heading',{name:'下班开黑'})).toBeVisible();
+  await expect(page.locator('[data-party-list]')).toContainText('今晚还没有可加入的房间');
+  await expect(page.locator('[data-party-detail]')).toContainText('游戏 ID 只向队长和已确认队友显示');
+  await page.locator('[data-party-create-toggle]').click();
+  await expect(page.locator('[data-party-create-host]')).toContainText('登录后创建组队');
+});
+
 test('复制的图片可以直接粘贴到发布输入框',async({page})=>{
   await page.goto('/');
   const result=await page.evaluate(()=>{

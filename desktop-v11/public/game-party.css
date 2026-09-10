@@ -1,0 +1,54 @@
+.party-page{display:grid;grid-template-columns:minmax(350px,42%) minmax(430px,58%);height:100vh;min-height:0;background:#fff}
+.party-list-column{display:grid;grid-template-rows:auto auto auto minmax(0,1fr);min-width:0;min-height:0;border-right:1px solid var(--line);background:#f8f6f2}
+.party-heading{padding:28px 24px 17px;background:#fffaf4}
+.party-heading h1{margin:4px 0 3px;font-size:25px}
+.party-heading>div:first-child>p{margin:0;color:#ff8791;font-size:10px;font-weight:900;letter-spacing:.14em}
+.party-heading>div:first-child>span{color:var(--muted);font-size:11px}
+.party-heading .section-actions{align-self:end}
+.party-filters{display:flex;gap:7px;padding:12px 16px 9px;border-top:1px solid #eee7dd;background:#fff}
+.party-filters button{min-height:32px;padding:0 12px;border:1px solid transparent;border-radius:999px;background:transparent;color:var(--muted);font-size:11px;font-weight:850;cursor:pointer}
+.party-filters button:hover{background:#f5f0e9;color:var(--ink)}
+.party-filters button.active{border-color:var(--deep);background:var(--deep);color:#fff}
+.party-list{min-height:0;overflow-y:auto;padding:4px 13px 22px;scrollbar-gutter:stable}
+.party-card{display:grid;gap:11px;width:100%;margin:9px 0;padding:16px;border:1px solid #ece5dc;border-radius:17px;background:#fff;text-align:left;cursor:pointer;transition:border-color .15s,transform .15s,box-shadow .15s}
+.party-card:hover{transform:translateY(-1px);border-color:#d8cec2;box-shadow:0 9px 22px rgba(21,43,37,.05)}
+.party-card.active{border-color:#ff939c;box-shadow:0 0 0 1px rgba(255,147,156,.12)}
+.party-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.party-card-head h2{margin:0 0 5px;font-size:17px;line-height:1.25}
+.party-card-head p{margin:0;color:var(--muted);font-size:10px}
+.party-status{flex:0 0 auto;padding:5px 9px;border-radius:999px;background:#edf5f0;color:#376d56;font-size:10px;font-style:normal;font-weight:900}
+.party-status.full{background:#f5eee6;color:#8e6c56}.party-status.closed{background:#eee;color:#777}
+.party-card-tags{display:flex;flex-wrap:wrap;gap:6px}
+.party-card-tags span{padding:5px 8px;border-radius:8px;background:#fff4ef;color:#7a5b50;font-size:10px;font-weight:750}
+.party-card footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:10px;border-top:1px solid #f0e9df;color:var(--muted);font-size:10px}
+.party-card footer b{color:var(--ink);font-size:11px}
+.party-create-host{max-height:60vh;overflow-y:auto;border-top:1px solid var(--line);background:#fffaf4}
+.party-create-card{display:grid;gap:11px;padding:16px 18px 18px}
+.party-create-card header h2{margin:0 0 4px;font-size:17px}.party-create-card header p{margin:0;color:var(--muted);font-size:10px;line-height:1.5}
+.party-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.party-create-card label,.party-join-card label{display:grid;gap:5px;color:#4f5e59;font-size:10px;font-weight:850}
+.party-create-card input,.party-create-card select,.party-create-card textarea,.party-join-card input,.party-join-card textarea,.party-chat-compose input{width:100%;min-height:38px;border:1px solid #ded7cd;border-radius:10px;background:#fff;padding:8px 10px;color:var(--ink);font:inherit;font-size:11px}
+.party-create-card textarea,.party-join-card textarea{min-height:62px;resize:vertical}.party-form-full{grid-column:1/-1}.party-form-actions{display:flex;justify-content:flex-end;gap:8px}
+.party-detail-column{min-width:0;min-height:0;background:#fff}
+.party-detail-empty{display:grid;height:100%;place-content:center;gap:8px;padding:40px;text-align:center;color:var(--muted)}
+.party-detail-empty b{color:var(--ink);font-size:18px}.party-detail-empty span{max-width:360px;font-size:12px;line-height:1.65}
+.party-detail-shell{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr);height:100%;min-height:0}
+.party-detail-head{display:flex;align-items:center;justify-content:space-between;min-height:60px;padding:10px 20px;border-bottom:1px solid var(--line);background:#fffaf4}
+.party-detail-head>div{display:flex;align-items:center;gap:8px}.party-detail-head b{font-size:14px}
+.party-detail-scroll{min-height:0;overflow-y:auto;padding:22px;scrollbar-gutter:stable}.party-detail-scroll.has-party-composer{padding-bottom:96px}
+.party-summary{display:grid;gap:16px;padding-bottom:21px;border-bottom:1px solid var(--line)}
+.party-summary-title{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.party-summary-title h2{margin:0 0 6px;font-size:25px}.party-summary-title p{margin:0;color:var(--muted);font-size:11px}
+.party-meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.party-meta-grid div{padding:12px;border-radius:12px;background:#f8f5f0}.party-meta-grid small{display:block;margin-bottom:4px;color:var(--muted);font-size:9px}.party-meta-grid b{font-size:12px}
+.party-captain{display:flex;align-items:center;gap:10px}.party-captain>div{display:grid;gap:2px}.party-captain small{color:var(--muted);font-size:9px}.party-captain b{font-size:12px}
+.party-note{margin:0;padding:13px 14px;border-left:3px solid #ff969e;border-radius:0 11px 11px 0;background:#fff6f2;color:#3e4b47;font-size:12px;line-height:1.7}
+.party-detail-section{display:grid;gap:11px;padding:20px 0;border-bottom:1px solid var(--line)}.party-detail-section:last-child{border-bottom:0}.party-detail-section>header{display:flex;align-items:center;justify-content:space-between;gap:10px}.party-detail-section h3{margin:0;font-size:15px}.party-detail-section>header span{color:var(--muted);font-size:10px}
+.party-privacy-note{margin:0;color:var(--muted);font-size:10px;line-height:1.6}
+.party-access-card{display:grid;gap:9px;padding:13px;border:1px solid #e9e1d7;border-radius:13px;background:#fffdf9}.party-access-card b{font-size:12px}.party-access-card span{color:var(--muted);font-size:10px;line-height:1.55}
+.party-game-id{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:11px;background:#edf5f0}.party-game-id div{display:grid;gap:2px}.party-game-id small{color:#6b7d75;font-size:9px}.party-game-id b{font-size:13px;word-break:break-all}
+.party-member-list{display:grid;gap:7px}.party-member-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:9px;padding:10px;border:1px solid #ece5dc;border-radius:12px}.party-member-row>div{display:grid;gap:3px}.party-member-row b{font-size:11px}.party-member-row span{color:var(--muted);font-size:9px}.party-member-actions{display:flex;gap:5px}
+.party-join-card{display:grid;gap:10px;padding:14px;border:1px solid #e8dfd5;border-radius:14px;background:#fffaf4}.party-join-card h3{margin:0;font-size:14px}.party-join-card p{margin:0;color:var(--muted);font-size:10px;line-height:1.6}
+.party-chat{display:grid;gap:10px}.party-chat-messages{display:grid;align-content:start;gap:8px;max-height:280px;overflow-y:auto;padding:12px;border-radius:13px;background:#f7f5f1}
+.party-chat-message{display:grid;grid-template-columns:30px minmax(0,1fr);gap:8px}.party-chat-message>div{display:grid;gap:3px}.party-chat-message header{display:flex;align-items:center;gap:7px}.party-chat-message header b{font-size:10px}.party-chat-message time{color:var(--muted);font-size:8px}.party-chat-message p{width:max-content;max-width:min(420px,90%);margin:0;padding:8px 10px;border-radius:4px 11px 11px 11px;background:#fff;font-size:11px;line-height:1.55;word-break:break-word}
+.party-chat-compose{position:absolute;z-index:5;right:0;bottom:0;left:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;padding:13px 20px;border-top:1px solid var(--line);background:rgba(255,253,249,.98);box-shadow:0 -10px 24px rgba(31,51,45,.055);backdrop-filter:blur(12px)}.party-chat-compose input{height:42px;background:#fff}.party-chat-compose button{min-width:92px}
+@media(max-width:1050px){.party-page{grid-template-columns:360px minmax(430px,1fr)}.party-heading{padding-inline:18px}.party-heading .section-actions{gap:5px}.party-heading .section-actions button{padding-inline:10px}.party-meta-grid{grid-template-columns:1fr}}
+@media(max-height:680px){.party-detail-scroll.has-party-composer{padding-bottom:90px}.party-chat-messages{max-height:190px}}

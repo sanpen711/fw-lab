@@ -1,4 +1,4 @@
-/* F.w 研究所 Windows 1.2.10 — Figma-aligned desktop visual system. */
+/* F.w 研究所 Windows 1.2.11 — Figma-aligned desktop visual system. */
 
 :root{
   --bg:#f7f7f6!important;
@@ -26,7 +26,7 @@ html body .brand{padding:0 14px!important;color:#152b25!important;}
 html body .brand strong{color:#152b25!important;font:900 24px/1 Georgia,serif!important;letter-spacing:-.08em!important;}
 html body .brand span{display:none!important;}
 html body .compose-button{display:none!important;}
-html body .nav-list{gap:2px!important;margin-top:68px!important;}
+html body .nav-list{gap:2px!important;margin-top:18px!important;}
 html body .nav-item{min-height:43px!important;gap:8px!important;padding:0 12px!important;border-radius:12px!important;color:#263a34!important;}
 html body .nav-item>span:not(.avatar){width:17px!important;font-size:15px!important;color:#152b25!important;}
 html body .nav-item .nav-icon{display:block!important;width:17px!important;height:17px!important;flex:0 0 17px!important;background-color:currentColor!important;-webkit-mask-position:center!important;mask-position:center!important;-webkit-mask-repeat:no-repeat!important;mask-repeat:no-repeat!important;-webkit-mask-size:contain!important;mask-size:contain!important;}
@@ -44,7 +44,7 @@ html body .nav-item b{font-size:12px!important;white-space:nowrap!important;}
 html body .nav-item:hover{background:#fff2f3!important;color:#152b25!important;}
 html body .nav-item.active{background:#ffe5e8!important;color:#ff7f8b!important;box-shadow:none!important;}
 html body .nav-item.active>span:not(.avatar){color:#ff7f8b!important;}
-html body .nav-item[data-nav="echo"]{margin-top:auto!important;}
+html body .nav-item[data-nav="echo"]{margin-top:0!important;}
 html body .badge{right:5px!important;top:5px!important;background:#ff8791!important;color:#fff!important;}
 html body .account-button{width:48px!important;min-height:48px!important;margin:12px 0 0 12px!important;padding:0!important;border:0!important;border-radius:50%!important;}
 html body .account-button:hover{background:#fff2f3!important;}
@@ -265,7 +265,7 @@ html body .connection-state.offline::before{background:#ff969e!important;}
   html body .app-shell{padding-left:78px!important;}
   html body .sidebar{width:78px!important;padding-inline:9px!important;}
   html body .brand{justify-content:center!important;padding-inline:0!important;}
-  html body .nav-list{margin-top:54px!important;}
+  html body .nav-list{margin-top:16px!important;}
   html body .nav-item{justify-content:center!important;padding:0!important;}
   html body .nav-item b{display:none!important;}
   html body .nav-item>span:not(.avatar){width:auto!important;}
@@ -286,4 +286,28 @@ html body .connection-state.offline::before{background:#ff969e!important;}
   html body .hero-note{display:none!important;}
   html body .home-grid{grid-template-columns:1fr!important;}
   html body .feature-card{min-height:100px!important;}
+}
+
+/* 主栏目靠近品牌区；消息入口与更多菜单固定在侧栏下方。 */
+html body .nav-primary-group,
+html body .nav-lower-group{display:flex;flex-direction:column;gap:2px!important;}
+html body .nav-lower-group{margin-top:auto;}
+html body .sidebar-more-wrap{position:relative;width:100%;}
+html body .sidebar-more-button{width:100%;}
+html body .sidebar-more-icon{display:grid!important;width:17px!important;height:17px!important;align-content:center;gap:3px;flex:0 0 17px!important;}
+html body .sidebar-more-icon i{display:block;width:16px;height:1.5px;border-radius:99px;background:currentColor;}
+html body .sidebar-more-menu{position:absolute;z-index:220;left:calc(100% + 10px);bottom:0;display:none;width:156px;padding:7px;border:1px solid #e2dbd2;border-radius:12px;background:#fff;box-shadow:0 16px 46px rgba(21,43,37,.18);}
+html body .sidebar-more-wrap.open .sidebar-more-menu{display:grid;gap:2px;}
+html body .sidebar-more-wrap:has(.sidebar-more-menu .active)>.sidebar-more-button{background:#ffe5e8!important;color:#ff7f8b!important;}
+html body .sidebar-more-menu button{display:flex;align-items:center;gap:10px;width:100%;min-height:39px;padding:0 11px;border:0;border-radius:8px;background:transparent;color:#263a34;text-align:left;cursor:pointer;}
+html body .sidebar-more-menu button:hover,
+html body .sidebar-more-menu button.active{background:#fff2f3;color:#ff7f8b;}
+html body .sidebar-more-menu .nav-icon{display:block;width:17px;height:17px;flex:0 0 17px;background-color:currentColor;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain;}
+html body .sidebar-more-menu b{font-size:12px;}
+
+@media(max-width:930px){
+  html body .nav-primary-group,
+  html body .nav-lower-group{align-items:center;}
+  html body .sidebar-more-menu{left:calc(100% + 8px);}
+  html body .sidebar-more-menu b{display:block!important;}
 }

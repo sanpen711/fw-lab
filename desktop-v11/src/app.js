@@ -4,13 +4,14 @@ import {feedStore} from './feed-store.js';
 import {pollStore} from './poll-store.js';
 import {birdStore} from './bird-store.js';
 import {archiveStore} from './archive-store.js';
+import {gamePartyUi} from './game-party-ui.js';
 import {homeWidgets} from './home-widgets.js';
 import {APP_VERSION} from './config.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
 const routes={
-  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],bird:['新闻专区','看看研究所里此刻发生了什么'],games:['小游戏','不用跳出软件，点开直接玩'],echo:['回声','评论、回复和互动都在这里'],buddy:['搭子','左边选人，右边直接聊天'],archive:['档案','翻一翻被留下来的研究记录']
+  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],bird:['新闻专区','看看研究所里此刻发生了什么'],play:['下班开黑','找到今晚一起玩的队友'],games:['小游戏','不用跳出软件，点开直接玩'],echo:['回声','评论、回复和互动都在这里'],buddy:['搭子','左边选人，右边直接聊天'],archive:['档案','翻一翻被留下来的研究记录']
 };
 const EMOJIS=[
   ['😀','1f600'],['😁','1f601'],['😂','1f602'],['🤣','1f923'],['😄','1f604'],['😅','1f605'],['😆','1f606'],['😊','1f60a'],['😉','1f609'],['😌','1f60c'],
@@ -73,7 +74,7 @@ function setFormStatus(message,error=false){const node=$('[data-form-status]');n
 function timeText(value){
   if(!value)return'刚刚';const date=new Date(value);if(Number.isNaN(date.getTime()))return'刚刚';const minutes=Math.floor(Math.max(0,Date.now()-date.getTime())/60000);if(minutes<1)return'刚刚';if(minutes<60)return`${minutes}分钟前`;const hours=Math.floor(minutes/60);if(hours<24)return`${hours}小时前`;const days=Math.floor(hours/24);return days<7?`${days}天前`:date.toLocaleDateString('zh-CN');
 }
-function noticeText(type){return({like:'点赞了你的帖子',comment:'评论了你的帖子',comment_reply:'回复了你的评论',chat_agree:'赞同了你的房间消息',system:'发送了一条系统通知'})[type]||'给你发来一条回声';}
+function noticeText(type){return({like:'点赞了你的帖子',comment:'评论了你的帖子',comment_reply:'回复了你的评论',chat_agree:'赞同了你的房间消息',game_party_apply:'申请加入你的开黑房间',game_party_accepted:'同意了你的开黑申请',game_party_rejected:'处理了你的开黑申请',system:'发送了一条系统通知'})[type]||'给你发来一条回声';}
 function previewText(value){return String(value||'对你的低功耗发言产生了回应。').replace(/\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]/g,'动画表情').replace(/\[\[FW_MEDIA_IMAGE:[A-Za-z0-9+/=]+\]\]/g,'图片').replace(/\[\[FW_MEDIA_VIDEO:[A-Za-z0-9+/=]+\]\]/g,'视频').replace(/\s+/g,' ').trim()||'对你的低功耗发言产生了回应。';}
 function decodeSticker(value){const match=String(value||'').trim().match(/^\[\[FW_USER_STICKER:([A-Za-z0-9+/=]+)\]\]$/);if(!match)return'';try{return atob(match[1]);}catch{return'';}}
 function safeMediaUrl(encoded){try{const url=new URL(atob(encoded));return['http:','https:'].includes(url.protocol)?url.href:'';}catch{return'';}}
@@ -108,11 +109,14 @@ function showAuth(view){
 }
 function openAccount(){const modal=$('[data-account-modal]');modal.hidden=false;document.body.classList.add('modal-open');showAuth(accountState.user?'profile':'login');}
 function closeAccount(){$('[data-account-modal]').hidden=true;document.body.classList.remove('modal-open');setFormStatus('');}
+function closeSidebarMore(){const wrap=$('[data-sidebar-more-wrap]');wrap?.classList.remove('open');$('[data-sidebar-more-toggle]')?.setAttribute('aria-expanded','false');}
+function bindSidebarMore(){document.addEventListener('click',event=>{const toggle=event.target.closest('[data-sidebar-more-toggle]');if(toggle){const wrap=toggle.closest('[data-sidebar-more-wrap]');const open=!wrap.classList.contains('open');closeSidebarMore();wrap.classList.toggle('open',open);toggle.setAttribute('aria-expanded',String(open));return;}if(!event.target.closest('[data-sidebar-more-wrap]'))closeSidebarMore();},true);}
 
 function navigate(view){
+  closeSidebarMore();
   const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
-  const localViews=['home','compose','square','rooms','bird','games','echo','buddy','archive'];
+  const localViews=['home','compose','square','rooms','bird','play','games','echo','buddy','archive'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
   if(!localViews.includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
   $('[data-emoji-panel]').hidden=true;
@@ -120,6 +124,7 @@ function navigate(view){
   if(view!=='square')feedStore.deactivate();
   if(view!=='rooms')pollStore.deactivate();
   if(view!=='bird')birdStore.deactivate();
+  if(view!=='play')gamePartyUi.deactivate();
   if(view!=='games')window.__FW_GAMES__?.close();
   if(view==='echo')socialStore.loadEcho();
   if(view==='buddy')socialStore.loadBuddy();
@@ -127,6 +132,7 @@ function navigate(view){
   if(view==='square')feedStore.activate().then(()=>{const raw=sessionStorage.getItem('fw:desktop:v11:pending-post');if(!raw)return;sessionStorage.removeItem('fw:desktop:v11:pending-post');try{const pending=JSON.parse(raw);feedStore.openPost(pending.id);}catch{}}).catch(error=>toast(error.message||'精神广场读取失败。'));
   if(view==='rooms')pollStore.activate().catch(error=>toast(error.message||'课题读取失败。'));
   if(view==='bird')birdStore.activate().catch(error=>toast(error.message||'新闻专区读取失败。'));
+  if(view==='play')gamePartyUi.activate().catch(error=>toast(error.message||'组队房间读取失败。'));
   if(view==='games')window.__FW_GAMES__?.activate();
   if(view==='archive')archiveStore.load().catch(error=>toast(error.message||'废话档案读取失败。'));
 }
@@ -239,8 +245,8 @@ function renderEcho(){
   if(socialState.echo.loading&&!socialState.echo.loaded){list.innerHTML='<div class="state-card">正在读取回声...</div>';return;}
   if(!rows.length){list.innerHTML='<div class="state-card"><b>暂时没有新的回声</b><span>安静也是一种运行状态。</span></div>';return;}
   list.innerHTML=rows.map(row=>{
-    const profile=socialState.echo.profiles[row.actor_id]||{};const name=profile.nickname||'某位研究员';const postId=echoPostId(row);
-    return `<article class="echo-item ${row.is_read?'':'unread'}" data-echo-item="${esc(row.id)}">${avatarHtml(profile)}<div class="echo-main"><b>${esc(name)} ${esc(noticeText(row.type))}</b><span>${esc(previewText(row.content))}</span><time>${esc(timeText(row.created_at))}</time></div><div class="row-actions">${postId?`<button class="primary compact" type="button" data-echo-post="${esc(postId)}" data-open-comments="${row.type==='comment'||row.type==='comment_reply'?'1':'0'}">查看帖子</button>`:''}${row.type==='chat_agree'?'<button class="secondary compact" type="button" data-nav="rooms">去学术研讨</button>':''}</div></article>`;
+    const profile=socialState.echo.profiles[row.actor_id]||{};const name=profile.nickname||'某位研究员';const postId=echoPostId(row);const partyId=row.target_type==='game_party'?String(row.target_id||''):'';
+    return `<article class="echo-item ${row.is_read?'':'unread'}" data-echo-item="${esc(row.id)}">${avatarHtml(profile)}<div class="echo-main"><b>${esc(name)} ${esc(noticeText(row.type))}</b><span>${esc(previewText(row.content))}</span><time>${esc(timeText(row.created_at))}</time></div><div class="row-actions">${postId?`<button class="primary compact" type="button" data-echo-post="${esc(postId)}" data-open-comments="${row.type==='comment'||row.type==='comment_reply'?'1':'0'}">查看帖子</button>`:''}${partyId?`<button class="primary compact" type="button" data-echo-party="${esc(partyId)}">查看组队</button>`:''}${row.type==='chat_agree'?'<button class="secondary compact" type="button" data-nav="rooms">去学术研讨</button>':''}</div></article>`;
   }).join('');
 }
 
@@ -350,6 +356,7 @@ function bindNavigation(){
     if(event.target.closest('[data-echo-mark-all]')){try{await socialStore.markAllEchoRead();}catch(error){toast(error.message||'全部已读失败。');}return;}
     const echoItem=event.target.closest('[data-echo-item]');if(echoItem)await socialStore.markEchoRead([echoItem.dataset.echoItem]);
     const echoPost=event.target.closest('[data-echo-post]');if(echoPost){sessionStorage.setItem('fw:desktop:v11:pending-post',JSON.stringify({id:echoPost.dataset.echoPost,comments:echoPost.dataset.openComments==='1'}));navigate('square');return;}
+    const echoParty=event.target.closest('[data-echo-party]');if(echoParty){navigate('play');gamePartyUi.open(echoParty.dataset.echoParty).catch(error=>toast(error.message||'组队房间读取失败。'));return;}
     const tab=event.target.closest('[data-buddy-tab]');if(tab){socialStore.setBuddyTab(tab.dataset.buddyTab);return;}
     const chat=event.target.closest('[data-open-chat]');if(chat&&!event.target.closest('[data-remove-friend]')){try{await socialStore.openChat(chat.dataset.openChat);$('[data-chat-compose] input')?.focus();}catch(error){toast(error.message||'私聊打开失败。');}return;}
     const add=event.target.closest('[data-add-friend]');if(add){try{const result=await socialStore.sendFriendRequest(add.dataset.addFriend);toast(result==='already_accepted'?'你们已经是搭子了。':result==='already_pending'?'搭子申请已经发出，等待对方处理。':result==='blocked'?'当前不能发送搭子申请。':'搭子申请已发出。');}catch(error){toast(error.message||'发送申请失败。');}return;}
@@ -401,4 +408,4 @@ function bindForms(){
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
-bindNavigation();bindForms();homeWidgets.init({toast,openAccount});authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();
+bindSidebarMore();bindNavigation();bindForms();homeWidgets.init({toast,openAccount});gamePartyUi.init({toast});authStore.subscribe(renderAccount);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();
