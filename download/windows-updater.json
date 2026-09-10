@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.2.12：优化“下班开黑”创建流程。创建表单移到右侧；除游戏名称外其余资料均可选填；“开黑风格”改为可自由填写的“游戏模式”；新增“进队需要申请”开关，关闭后队友可直接加入；“今晚可加入”简化为“可加入”。",
+  "pub_date": "2026-09-10T11:53:18.1753881Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.12-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlppYjhzL0pjK0MxbElKN1o3aDdrTXNCQmVsMmJjU2cvNE0xR0RDSDNzNnpGSE13VHJqblB1ZTMxZGc2R1hkdGZqd3l4KzlHSGZCeC9KWXpYcnE3RWdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDMwOTkxCWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTJfeDY0LXNldHVwLmV4ZQpnT3p1YVVUMTcxT1NvYWtxRnNtdXBkUkZ3cU1oTlZkeExUcHpPZ29qRHdMZ2FUcTBUTVFFSkFXR0g1WWoxNmxCZCtRSDEyUWFZVkFQcTVHLytJYVJDZz09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.13-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlV2TE1KZDhtN0MyRmFmSFpxNmp1K2VsN1lGM0x2QnVqSXp5VkNIa2kwazhrV3laVmJ5UlczZnp6L2lZQVY4YVYrS1NERFpGbXl3bzRkN2FaT0VBaHdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDQxMTk3CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTNfeDY0LXNldHVwLmV4ZQpSNFFLUmwvMnZiUEUvSjY2U0k5RUpVTzFBZWpmWkJDZ1QzWDhUNHlSUHd6NjAvUmZqSzUvejAvUHdrb1YrSGlJQzYvWndaeFFjeHhMM3dLQnVXc01EZz09Cg=="
     }
   },
-  "pub_date": "2026-09-10T09:03:11.9351565Z",
-  "version": "1.2.12"
+  "notes": "Windows 1.2.13：继续优化“下班开黑”。结束房间后直接删除且不再显示；创建表单移除预设游戏、示例提示、“选填”和“不填写”字样，所有输入项默认保持空白。",
+  "version": "1.2.13"
 }

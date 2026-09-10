@@ -1,11 +1,11 @@
 {
-  "version": "1.2.12",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "publishedAt": "2026-09-10T09:03:11.9351565Z",
-  "platform": "Windows 10/11 64 位",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.12-setup.exe",
-  "sha256": "74cd242f26f28ac206b477cac9a907143e547c82ff55a2daa8a99e208ef579e1",
-  "available": true,
+  "notes": "Windows 1.2.13：继续优化“下班开黑”。结束房间后直接删除且不再显示；创建表单移除预设游戏、示例提示、“选填”和“不填写”字样，所有输入项默认保持空白。",
   "rollbackVersion": "1.0.5",
-  "notes": "Windows 1.2.12：优化“下班开黑”创建流程。创建表单移到右侧；除游戏名称外其余资料均可选填；“开黑风格”改为可自由填写的“游戏模式”；新增“进队需要申请”开关，关闭后队友可直接加入；“今晚可加入”简化为“可加入”。"
+  "platform": "Windows 10/11 64 位",
+  "available": true,
+  "version": "1.2.13",
+  "sha256": "ac85a67c95fcf53230707f398c96189d27e3abe28d52d88c4dc91f64535a2941",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.13-setup.exe",
+  "publishedAt": "2026-09-10T11:53:18.1753881Z",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
 }
