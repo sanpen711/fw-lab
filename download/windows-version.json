@@ -1,11 +1,11 @@
 {
+  "version": "1.2.15",
+  "publishedAt": "2026-09-10T15:10:40.2128795Z",
   "platform": "Windows 10/11 64 位",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.15-setup.exe",
+  "notes": "Windows 1.2.15：所有用户头像改为左键打开统一资料卡，支持头像放大、搭子关系操作、私聊、公开内容、举报与拉黑；匿名发布继续隐藏真实身份，资料卡不展示加入时间。",
+  "rollbackVersion": "1.0.5",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "publishedAt": "2026-09-10T13:57:05.4926056Z",
-  "sha256": "3c8cc1c6b953b7df8b7e34b64c2a7748054620f3529b37373ceff458fe0585f1",
-  "available": true,
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.14-setup.exe",
-  "version": "1.2.14",
-  "notes": "Windows 1.2.14：下班开黑支持每人最多 5 个组队、自由填写开玩时间和分级消息红点；精神广场将回声整合进页面，可从评论或点赞通知直接查看帖子。",
-  "rollbackVersion": "1.0.5"
+  "sha256": "88058ea0af1751b9f1b96bdab0a48a7b01be774bfcf958413ce704e61596cfef",
+  "available": true
 }

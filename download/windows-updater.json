@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.2.14：下班开黑支持每人最多 5 个组队、自由填写开玩时间和分级消息红点；精神广场将回声整合进页面，可从评论或点赞通知直接查看帖子。",
+  "pub_date": "2026-09-10T15:10:40.2128795Z",
+  "version": "1.2.15",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.14-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlNKU3FqcDBOUktVMDBmSkg1ZlBTOHpWVlZwckh4aURpK0h6USs2Tm5ybG5pUm1Cc2JFbjl6VnlOWlJwTlJvSFY0Y1lBc29PRkhnRTlFS2MxQVNLdFFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDQ4NjI0CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTRfeDY0LXNldHVwLmV4ZQpKNURzVzJObHFMRUR1MFpQa2UxalRGbGw3UlJ4YXhseWFwQ2M5eVJKM1hXN0dkQWtTcXlObmE3cUxkR2V6WTJQdDJCRUk5N3RmVk5MajllQ0xVbzBEZz09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.15-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmNNQVVtSXBaZld3MFlLWjBDL3QwNGJSM2NUak5OK0Foa3B6RjJ4M3JhRXJOYzFZbTBnb2UwS0phMTJPZEdSSTFyT3MrSDNaU2k1azI2Z2d0SFZIR2dZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDUzMDM5CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTVfeDY0LXNldHVwLmV4ZQpidFdiQ3NjUHBzbldycW16YVkxTDVuY251LzJnMDdZNlZJZGhtQjlKU0wxTzN2ckZPdEh1TE9ab21vMXBzZzRzVTEwVTI3OTNUaTg3TEhXL0pQUTFBZz09Cg=="
     }
   },
-  "version": "1.2.14",
-  "pub_date": "2026-09-10T13:57:05.4926056Z"
+  "notes": "Windows 1.2.15：所有用户头像改为左键打开统一资料卡，支持头像放大、搭子关系操作、私聊、公开内容、举报与拉黑；匿名发布继续隐藏真实身份，资料卡不展示加入时间。"
 }
