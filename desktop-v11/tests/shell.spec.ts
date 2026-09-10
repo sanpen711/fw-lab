@@ -192,7 +192,8 @@ test('废话档案为本地按需榜单页面',async({page})=>{
   await page.goto('/');
   const original=page.url();
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
-  await page.locator('[data-nav="archive"].nav-item').click();
+  await page.locator('[data-sidebar-more-toggle]').click();
+  await page.locator('.sidebar-more-menu [data-nav="archive"]').click();
   await expect(page.locator('[data-view-panel="archive"]')).toHaveClass(/active/);
   await expect(page.getByRole('heading',{name:'废话档案',exact:true})).toBeVisible();
   await expect(page.getByText('上周点赞荣誉榜')).toBeVisible();
