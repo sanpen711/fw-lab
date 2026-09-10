@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.2.13：继续优化“下班开黑”。结束房间后直接删除且不再显示；创建表单移除预设游戏、示例提示、“选填”和“不填写”字样，所有输入项默认保持空白。",
-  "rollbackVersion": "1.0.5",
   "platform": "Windows 10/11 64 位",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "publishedAt": "2026-09-10T13:57:05.4926056Z",
+  "sha256": "3c8cc1c6b953b7df8b7e34b64c2a7748054620f3529b37373ceff458fe0585f1",
   "available": true,
-  "version": "1.2.13",
-  "sha256": "ac85a67c95fcf53230707f398c96189d27e3abe28d52d88c4dc91f64535a2941",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.13-setup.exe",
-  "publishedAt": "2026-09-10T11:53:18.1753881Z",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.14-setup.exe",
+  "version": "1.2.14",
+  "notes": "Windows 1.2.14：下班开黑支持每人最多 5 个组队、自由填写开玩时间和分级消息红点；精神广场将回声整合进页面，可从评论或点赞通知直接查看帖子。",
+  "rollbackVersion": "1.0.5"
 }

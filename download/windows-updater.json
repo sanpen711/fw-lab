@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-09-10T11:53:18.1753881Z",
+  "notes": "Windows 1.2.14：下班开黑支持每人最多 5 个组队、自由填写开玩时间和分级消息红点；精神广场将回声整合进页面，可从评论或点赞通知直接查看帖子。",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.13-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlV2TE1KZDhtN0MyRmFmSFpxNmp1K2VsN1lGM0x2QnVqSXp5VkNIa2kwazhrV3laVmJ5UlczZnp6L2lZQVY4YVYrS1NERFpGbXl3bzRkN2FaT0VBaHdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDQxMTk3CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTNfeDY0LXNldHVwLmV4ZQpSNFFLUmwvMnZiUEUvSjY2U0k5RUpVTzFBZWpmWkJDZ1QzWDhUNHlSUHd6NjAvUmZqSzUvejAvUHdrb1YrSGlJQzYvWndaeFFjeHhMM3dLQnVXc01EZz09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.14-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlNKU3FqcDBOUktVMDBmSkg1ZlBTOHpWVlZwckh4aURpK0h6USs2Tm5ybG5pUm1Cc2JFbjl6VnlOWlJwTlJvSFY0Y1lBc29PRkhnRTlFS2MxQVNLdFFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDQ4NjI0CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTRfeDY0LXNldHVwLmV4ZQpKNURzVzJObHFMRUR1MFpQa2UxalRGbGw3UlJ4YXhseWFwQ2M5eVJKM1hXN0dkQWtTcXlObmE3cUxkR2V6WTJQdDJCRUk5N3RmVk5MajllQ0xVbzBEZz09Cg=="
     }
   },
-  "notes": "Windows 1.2.13：继续优化“下班开黑”。结束房间后直接删除且不再显示；创建表单移除预设游戏、示例提示、“选填”和“不填写”字样，所有输入项默认保持空白。",
-  "version": "1.2.13"
+  "version": "1.2.14",
+  "pub_date": "2026-09-10T13:57:05.4926056Z"
 }
