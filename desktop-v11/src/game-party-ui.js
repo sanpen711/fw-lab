@@ -1,5 +1,6 @@
 import {authStore} from './auth-store.js';
 import {gamePartyStore} from './game-party-store.js';
+import {membershipStore} from './membership-store.js';
 
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>Array.from(root.querySelectorAll(selector));
@@ -24,7 +25,7 @@ function hasApplicationAlert(partyId){return partyState.applicationAlerts.some(r
 function renderCreate(){
   const host=$('[data-party-create-host]');const detail=$('[data-party-detail]');if(!host)return;host.hidden=!createOpen;if(detail)detail.hidden=createOpen;if(!createOpen)return;
   if(!me()){host.innerHTML='<div class="state-card small"><b>登录后创建组队</b><span>房间资料和游戏 ID 会跟随你的账号保存。</span><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';return;}
-  host.innerHTML=`<form class="party-create-card" data-party-create-form><header><h2>创建组队</h2><p>只有游戏名称必须填写；每个人最多可以同时创建 5 个组队。</p></header><div class="party-form-grid"><label>游戏名称<input name="gameName" maxlength="30" required></label><label>游戏模式<input name="mode" maxlength="30"></label><label>大区 / 服务器<input name="serverName" maxlength="30"></label><label>开玩时间<input name="startsAt" maxlength="40" autocomplete="off"></label><label>总人数<input name="capacity" type="number" min="2" max="10"></label><label>你的游戏 ID<input name="gameId" maxlength="60" autocomplete="off"></label><label class="party-approval-option"><input name="requiresApproval" type="checkbox" checked><span><b>进队需要申请</b><small>取消勾选后，其他人提交加入信息即可直接进队。</small></span></label><label class="party-form-full">补充说明<textarea name="note" maxlength="200"></textarea></label></div><div class="party-form-actions"><button class="secondary" type="button" data-party-create-toggle>取消</button><button class="primary" type="submit" ${partyState.busy?'disabled':''}>${partyState.busy?'创建中...':'创建组队'}</button></div></form>`;
+  host.innerHTML=`<form class="party-create-card" data-party-create-form><header><h2>创建组队</h2><p>只有游戏名称必须填写；当前最多可以同时创建 ${membershipStore.partyLimit()} 个组队。</p></header><div class="party-form-grid"><label>游戏名称<input name="gameName" maxlength="30" required></label><label>游戏模式<input name="mode" maxlength="30"></label><label>大区 / 服务器<input name="serverName" maxlength="30"></label><label>开玩时间<input name="startsAt" maxlength="40" autocomplete="off"></label><label>总人数<input name="capacity" type="number" min="2" max="10"></label><label>你的游戏 ID<input name="gameId" maxlength="60" autocomplete="off"></label><label class="party-approval-option"><input name="requiresApproval" type="checkbox" checked><span><b>进队需要申请</b><small>取消勾选后，其他人提交加入信息即可直接进队。</small></span></label><label class="party-form-full">补充说明<textarea name="note" maxlength="200"></textarea></label></div><div class="party-form-actions"><button class="secondary" type="button" data-party-create-toggle>取消</button><button class="primary" type="submit" ${partyState.busy?'disabled':''}>${partyState.busy?'创建中...':'创建组队'}</button></div></form>`;
 }
 
 function matches(party){const member=myMember(party);if(filter==='mine')return isCaptain(party)||['pending','accepted'].includes(member?.state)||hasApplicationAlert(party.id);if(filter==='open')return party.status==='open'&&Number(party.member_count)<Number(party.capacity);return true;}
@@ -69,4 +70,4 @@ function bind(){
   });
 }
 
-export const gamePartyUi={init(options={}){notify=options.toast||notify;bind();gamePartyStore.subscribe(render);authStore.subscribe(()=>render());},activate(){return gamePartyStore.activate();},deactivate(){gamePartyStore.deactivate();},open(id){return gamePartyStore.openParty(id);}};
+export const gamePartyUi={init(options={}){notify=options.toast||notify;bind();gamePartyStore.subscribe(render);authStore.subscribe(()=>render());membershipStore.subscribe(()=>render());},activate(){return gamePartyStore.activate();},deactivate(){gamePartyStore.deactivate();},open(id){return gamePartyStore.openParty(id);}};
