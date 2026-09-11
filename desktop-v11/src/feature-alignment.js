@@ -143,7 +143,7 @@ function profileStatus(relation,userId){const me=currentUser()?.id;if(!me)return
 function profileActions(){
   const me=currentUser();const target=profileCard.userId;const relation=profileCard.relation;const busy=profileCard.busy?' disabled':'';
   if(!me)return'<button class="primary" type="button" data-profile-login>登录后添加搭子</button>';
-  if(String(me.id)===String(target))return'<button class="primary" type="button" data-profile-membership>会员中心</button><button type="button" data-profile-edit>编辑资料</button>';
+  if(String(me.id)===String(target))return'<button class="primary" type="button" data-profile-edit>编辑资料</button>';
   let primary='';
   if(!relation||relation.status==='rejected')primary=`<button class="primary" type="button" data-profile-add${busy}>加为搭子</button>`;
   else if(relation.status==='accepted')primary=`<button class="primary" type="button" data-profile-chat${busy}>发消息</button>`;
@@ -222,7 +222,6 @@ function bind(){
     const fullAvatar=event.target.closest?.('[data-profile-avatar-full]');if(fullAvatar){event.preventDefault();event.stopPropagation();const lightbox=$('[data-align-avatar-lightbox]');const image=$('[data-align-avatar-image]');if(lightbox&&image){image.src=fullAvatar.dataset.profileAvatarFull;lightbox.hidden=false;}return;}
     if(event.target.closest?.('[data-align-avatar-close]')||event.target.matches?.('[data-align-avatar-lightbox]')){event.preventDefault();const lightbox=$('[data-align-avatar-lightbox]');if(lightbox)lightbox.hidden=true;return;}
     if(event.target.closest?.('[data-align-profile-close]')){event.preventDefault();closeProfile();return;}
-    if(event.target.closest?.('[data-profile-membership]')){event.preventDefault();event.stopPropagation();closeProfile();$('[data-open-membership]')?.click();return;}
     if(event.target.closest?.('[data-profile-login],[data-profile-edit]')){event.preventDefault();event.stopPropagation();closeProfile();$('.account-button[data-open-account]')?.click();return;}
     if(event.target.closest?.('[data-profile-copy-code]')){event.preventDefault();event.stopPropagation();try{await navigator.clipboard.writeText(event.target.closest('[data-profile-copy-code]').dataset.profileCopyCode||'');toast('实验品编号已复制。');}catch{toast('复制失败，请手动选择编号。');}return;}
     if(event.target.closest?.('[data-profile-report-open]')){event.preventDefault();event.stopPropagation();profileCard.reportOpen=!profileCard.reportOpen;renderProfile();return;}

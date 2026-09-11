@@ -1,4 +1,4 @@
-/* F.w 研究所 Windows 1.2.17 — Figma-aligned desktop visual system. */
+/* F.w 研究所 Windows 1.2.18 — Figma-aligned desktop visual system. */
 
 :root{
   --bg:#f7f7f6!important;
@@ -37,6 +37,7 @@ html body .nav-icon-news{-webkit-mask-image:url('/nav-icons/news.svg')!important
 html body .nav-icon-game{-webkit-mask-image:url('/nav-icons/game.svg')!important;mask-image:url('/nav-icons/game.svg')!important;}
 html body .nav-icon-echo{-webkit-mask-image:url('/nav-icons/echo.svg')!important;mask-image:url('/nav-icons/echo.svg')!important;}
 html body .nav-icon-buddy{-webkit-mask-image:url('/nav-icons/buddy.svg')!important;mask-image:url('/nav-icons/buddy.svg')!important;}
+html body .nav-icon-membership{-webkit-mask-image:url('/nav-icons/membership.svg')!important;mask-image:url('/nav-icons/membership.svg')!important;}
 html body .nav-icon-archive{-webkit-mask-image:url('/nav-icons/archive.svg')!important;mask-image:url('/nav-icons/archive.svg')!important;}
 html body .nav-icon-info{-webkit-mask-image:url('/nav-icons/info.svg')!important;mask-image:url('/nav-icons/info.svg')!important;}
 html body .nav-icon-notice{-webkit-mask-image:url('/nav-icons/notice.svg')!important;mask-image:url('/nav-icons/notice.svg')!important;}

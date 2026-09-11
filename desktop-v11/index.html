@@ -30,6 +30,7 @@
         </div>
         <div class="nav-lower-group">
           <button class="nav-item" type="button" data-nav="buddy"><span class="nav-icon nav-icon-buddy" aria-hidden="true"></span><b>搭子</b><i class="badge" data-badge="buddy" hidden></i></button>
+          <button class="nav-item" type="button" data-nav="membership"><span class="nav-icon nav-icon-membership" aria-hidden="true"></span><b>会员中心</b></button>
           <div class="sidebar-more-wrap" data-sidebar-more-wrap>
             <button class="nav-item sidebar-more-button" type="button" data-sidebar-more-toggle aria-haspopup="menu" aria-expanded="false"><span class="sidebar-more-icon" aria-hidden="true"><i></i><i></i><i></i></span><b>更多</b></button>
             <div class="sidebar-more-menu" role="menu" aria-label="更多栏目">
@@ -227,6 +228,16 @@
         </div>
       </section>
 
+      <section class="view" data-view-panel="membership">
+        <div class="membership-page">
+          <header class="section-heading membership-page-heading">
+            <div><p>FW MEMBERSHIP</p><h1>会员中心</h1><span>固定期限会员，不会自动续费。</span></div>
+            <div class="section-actions"><span class="membership-account-pill" data-membership-page-state>普通研究员</span><button class="secondary compact" type="button" data-membership-refresh>刷新</button></div>
+          </header>
+          <div class="membership-page-content" data-membership-content><div class="state-card">正在读取会员信息...</div></div>
+        </div>
+      </section>
+
       <section class="view" data-view-panel="pending">
         <div class="pending-card">
           <span>LOCAL MIGRATION</span>
@@ -277,10 +288,6 @@
 
       <form class="account-form" data-auth-view="profile" hidden>
         <div class="profile-summary"><span class="avatar" data-profile-avatar>FW</span><div><strong data-profile-name>研究员</strong><span data-profile-email></span></div></div>
-        <div class="account-membership-card">
-          <div><strong data-account-membership-name>普通研究员</strong><span data-account-membership-detail>会员未开通</span></div>
-          <button class="secondary compact" type="button" data-open-membership>会员中心</button>
-        </div>
         <label>实验品编号<input name="labCode" maxlength="7" disabled></label>
         <label>昵称<input name="nickname" maxlength="12" required></label>
         <label>头像<input name="avatar" type="file" accept="image/jpeg,image/png,image/webp"><small class="avatar-upload-hint">支持 JPG、PNG、WebP；预览按中心裁成正方形，保存时自动压缩。</small></label>
@@ -288,18 +295,6 @@
         <button class="secondary full" type="button" data-sign-out>退出登录</button>
       </form>
       <p class="form-status" data-form-status aria-live="polite"></p>
-    </section>
-  </div>
-
-  <div class="modal membership-modal" data-membership-modal hidden>
-    <section class="membership-panel" role="dialog" aria-modal="true" aria-labelledby="membership-title">
-      <button class="close-button" type="button" data-close-membership aria-label="关闭会员中心">×</button>
-      <header class="membership-heading">
-        <p class="eyebrow">FW MEMBERSHIP</p>
-        <h2 id="membership-title">会员中心</h2>
-        <p>固定期限会员，不会自动续费。</p>
-      </header>
-      <div data-membership-content><div class="state-card">正在读取会员信息...</div></div>
     </section>
   </div>
 

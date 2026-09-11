@@ -12,7 +12,7 @@ import {APP_VERSION} from './config.js';
 const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
 const routes={
-  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],bird:['新闻专区','看看研究所里此刻发生了什么'],play:['下班开黑','找到今晚一起玩的队友'],games:['小游戏','不用跳出软件，点开直接玩'],buddy:['搭子','左边选人，右边直接聊天'],archive:['档案','翻一翻被留下来的研究记录']
+  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],bird:['新闻专区','看看研究所里此刻发生了什么'],play:['下班开黑','找到今晚一起玩的队友'],games:['小游戏','不用跳出软件，点开直接玩'],buddy:['搭子','左边选人，右边直接聊天'],membership:['会员中心','查看会员权益、套餐和订单'],archive:['档案','翻一翻被留下来的研究记录']
 };
 const EMOJIS=[
   ['😀','1f600'],['😁','1f601'],['😂','1f602'],['🤣','1f923'],['😄','1f604'],['😅','1f605'],['😆','1f606'],['😊','1f60a'],['😉','1f609'],['😌','1f60c'],
@@ -95,9 +95,8 @@ function money(cents){return `¥${(Number(cents||0)/100).toFixed(Number(cents||0
 function memberDate(value){if(!value)return'';const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});}
 function activeMembership(){return membershipStore.isActive(membershipState.membership)?membershipState.membership:null;}
 function renderMembershipEntry(){
-  const active=activeMembership();const name=$('[data-account-membership-name]');const detail=$('[data-account-membership-detail]');
-  if(name)name.textContent=active?'研究所会员':'普通研究员';
-  if(detail)detail.textContent=active?`${memberDate(active.expires_at)} 到期`:'会员未开通';
+  const active=activeMembership();const state=$('[data-membership-page-state]');
+  if(state)state.textContent=!accountState.user?'未登录':active?'会员有效':'普通研究员';
 }
 function membershipBenefits(){return [
   ['会员标识','昵称与个人资料展示会员身份'],
@@ -109,26 +108,20 @@ function membershipBenefits(){return [
 function orderStatus(value){return({pending:'待支付',paid:'已支付',closed:'已关闭',refunded:'已退款',failed:'支付失败'})[value]||'处理中';}
 function renderMembershipContent(){
   const host=$('[data-membership-content]');if(!host)return;renderMembershipEntry();
-  if(membershipState.loading&&!membershipState.loaded){host.innerHTML='<div class="state-card">正在读取会员信息...</div>';return;}
-  const active=activeMembership();const plan=membershipState.plans.find(item=>String(item.id)===String(active?.plan_id));const selected=membershipState.plans.find(item=>String(item.id)===String(membershipPlanId));
   const tabs=`<nav class="membership-tabs" aria-label="会员中心栏目"><button type="button" class="${membershipTab==='benefits'?'active':''}" data-membership-tab="benefits">会员权益</button><button type="button" class="${membershipTab==='orders'?'active':''}" data-membership-tab="orders">订单记录</button></nav>`;
+  if(membershipState.loading&&!membershipState.loaded){host.innerHTML=`${tabs}<div class="membership-page-scroll"><div class="state-card">正在读取会员信息...</div></div>`;return;}
+  const active=activeMembership();const plan=membershipState.plans.find(item=>String(item.id)===String(active?.plan_id));const selected=membershipState.plans.find(item=>String(item.id)===String(membershipPlanId));
   if(membershipTab==='orders'){
-    const rows=membershipState.orders.length?membershipState.orders.map(order=>{const item=membershipState.plans.find(planItem=>String(planItem.id)===String(order.plan_id));return `<article class="membership-order"><div><b>${esc(item?.name||'研究所会员')}</b><span>${esc(order.order_no||'订单号生成中')}</span></div><div><strong>${money(order.amount_cents)}</strong><span>${esc(orderStatus(order.status))} · ${esc(memberDate(order.created_at))}</span></div></article>`;}).join(''):'<div class="membership-empty"><b>暂无会员订单</b><span>接入微信、支付宝扫码支付后，订单会保存在这里。</span></div>';
-    host.innerHTML=`${tabs}<div class="membership-scroll"><div class="membership-order-head"><div><h3>订单记录</h3><p>只显示当前账号的会员订单。</p></div><button class="secondary compact" type="button" data-membership-refresh>刷新</button></div>${rows}${membershipState.error?`<p class="membership-sync-note">${esc(membershipState.error)}</p>`:''}</div>`;return;
+    const rows=membershipState.orders.length?membershipState.orders.map(order=>{const item=membershipState.plans.find(planItem=>String(planItem.id)===String(order.plan_id));return `<article class="membership-order"><div><b>${esc(item?.name||'研究所会员')}</b><span>${esc(order.order_no||'订单号生成中')}</span></div><div><strong>${money(order.amount_cents)}</strong><span>${esc(orderStatus(order.status))} · ${esc(memberDate(order.created_at))}</span></div></article>`;}).join(''):`<div class="membership-empty"><b>${accountState.user?'暂无会员订单':'登录后查看订单'}</b><span>${accountState.user?'接入微信、支付宝扫码支付后，订单会保存在这里。':'登录账号后，可在这里查看会员状态和订单记录。'}</span>${accountState.user?'':'<button class="primary compact" type="button" data-open-account>登录账号</button>'}</div>`;
+    host.innerHTML=`${tabs}<div class="membership-page-scroll"><section class="membership-orders-panel"><div class="membership-order-head"><div><h3>订单记录</h3><p>只显示当前账号的会员订单。</p></div></div><div class="membership-order-list">${rows}</div>${membershipState.error?`<p class="membership-sync-note">${esc(membershipState.error)}</p>`:''}</section></div>`;return;
   }
-  const status=`<section class="membership-status ${active?'active':''}"><div><small>${active?'MEMBER ACTIVE':'CURRENT STATUS'}</small><h3>${active?'研究所会员':'普通研究员'}</h3><p>${active?`${esc(plan?.name||'会员')} · ${esc(memberDate(active.expires_at))} 到期`:'当前可以正常使用全部基础功能。'}</p></div><span>${active?'已开通':'未开通'}</span></section>`;
+  const status=`<section class="membership-status ${active?'active':''}"><div><small>当前状态</small><h3>${!accountState.user?'尚未登录':active?'研究所会员':'普通研究员'}</h3><p>${!accountState.user?'登录后查看会员状态和订单记录。':active?`${esc(plan?.name||'会员')} · ${esc(memberDate(active.expires_at))} 到期`:'当前可以正常使用全部基础功能。'}</p></div>${accountState.user?`<span>${active?'已开通':'未开通'}</span>`:'<button class="membership-login" type="button" data-open-account>登录账号</button>'}</section>`;
   const benefits=`<section class="membership-section"><header><h3>会员权益</h3><span>基础功能不会因未开通会员而受限</span></header><div class="membership-benefits">${membershipBenefits().map(([title,copy],index)=>`<article><i>${String(index+1).padStart(2,'0')}</i><div><b>${esc(title)}</b><span>${esc(copy)}</span></div></article>`).join('')}</div></section>`;
   const plans=`<section class="membership-section"><header><h3>${active?'续费会员':'选择会员时长'}</h3><span>一次购买固定时长，不会自动扣费</span></header><div class="membership-plans">${membershipState.plans.map(item=>`<article class="membership-plan ${item.is_recommended?'recommended':''} ${String(item.id)===String(membershipPlanId)?'selected':''}">${String(item.id)==='monthly'?'<em>限时</em>':item.is_recommended?'<em>推荐</em>':''}<small>${Number(item.duration_months)} 个月</small><h4>${esc(item.name)}</h4><div><strong>${money(item.price_cents)}</strong>${item.compare_at_price_cents?`<del>${money(item.compare_at_price_cents)}</del>`:''}</div><button class="${String(item.id)===String(membershipPlanId)?'primary':'secondary'} compact" type="button" data-membership-plan="${esc(item.id)}">${String(item.id)===String(membershipPlanId)?'已选择':'选择套餐'}</button></article>`).join('')}</div></section>`;
   const checkout=selected?`<section class="membership-checkout"><header><div><small>已选择</small><h3>${esc(selected.name)} · ${money(selected.price_cents)}</h3></div><button type="button" data-membership-cancel-checkout>重新选择</button></header><div class="membership-payment-methods"><button type="button" class="${membershipPaymentMethod==='wechat'?'active':''}" data-membership-payment="wechat">微信支付</button><button type="button" class="${membershipPaymentMethod==='alipay'?'active':''}" data-membership-payment="alipay">支付宝</button></div><div class="membership-qr-placeholder"><span>${membershipPaymentMethod==='wechat'?'微信':'支付宝'}</span><div><b>支付接口待接入</b><p>正式接入后，这里会显示扫码付款二维码。</p></div></div><p class="membership-payment-note">当前页面不会创建订单，也不会产生扣款。</p></section>`:'';
-  host.innerHTML=`${tabs}<div class="membership-scroll">${status}${benefits}${plans}${checkout}${membershipState.error?`<p class="membership-sync-note">${esc(membershipState.error)}</p>`:''}</div>`;
+  host.innerHTML=`${tabs}<div class="membership-page-scroll"><div class="membership-page-grid"><main class="membership-main-stack">${status}${plans}${checkout}${membershipState.error?`<p class="membership-sync-note">${esc(membershipState.error)}</p>`:''}</main><aside class="membership-benefit-aside">${benefits}</aside></div></div>`;
 }
 function renderMembership(next=membershipState){membershipState=next;renderMembershipContent();}
-function openMembership(){
-  if(!accountState.user){openAccount();return;}
-  closeAccount();membershipTab='benefits';membershipPlanId='';membershipPaymentMethod='wechat';const modal=$('[data-membership-modal]');modal.hidden=false;document.body.classList.add('modal-open');renderMembershipContent();membershipStore.load(true).catch(()=>{});
-}
-function closeMembership(){const modal=$('[data-membership-modal]');if(modal)modal.hidden=true;document.body.classList.remove('modal-open');membershipPlanId='';}
-
 function renderAccount(next){
   const previousUserId=String(accountState.user?.id||'');accountState=next;const user=next.user;
   $('[data-account-label]').textContent=user?user.nickname:(next.ready?'注册 / 登录':'正在连接…');
@@ -164,7 +157,7 @@ function navigate(view){
   else if(view==='square')squareMode='feed';
   const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
-  const localViews=['home','compose','square','rooms','bird','play','games','buddy','archive'];
+  const localViews=['home','compose','square','rooms','bird','play','games','buddy','membership','archive'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
   if(!localViews.includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
   $('[data-emoji-panel]').hidden=true;
@@ -188,6 +181,7 @@ function navigate(view){
   if(view==='bird')birdStore.activate().catch(error=>toast(error.message||'新闻专区读取失败。'));
   if(view==='play')gamePartyUi.activate().catch(error=>toast(error.message||'组队房间读取失败。'));
   if(view==='games')window.__FW_GAMES__?.activate();
+  if(view==='membership'){renderMembershipContent();membershipStore.load(true).catch(error=>toast(error.message||'会员信息读取失败。'));}
   if(view==='archive')archiveStore.load().catch(error=>toast(error.message||'废话档案读取失败。'));
 }
 
@@ -377,9 +371,8 @@ function bindNavigation(){
     if(event.target.closest('[data-media-lightbox-close]')||event.target.matches('[data-media-lightbox]')){closeLightbox();return;}
     const nav=event.target.closest('[data-nav]');if(nav){navigate(nav.dataset.nav);return;}
     if(event.target.closest('[data-open-account]')){openAccount();return;}if(event.target.closest('[data-close-account]')){closeAccount();return;}
-    if(event.target.closest('[data-open-membership]')){openMembership();return;}if(event.target.closest('[data-close-membership]')){closeMembership();return;}
     const membershipTabButton=event.target.closest('[data-membership-tab]');if(membershipTabButton){membershipTab=membershipTabButton.dataset.membershipTab;membershipPlanId='';renderMembershipContent();return;}
-    const membershipPlanButton=event.target.closest('[data-membership-plan]');if(membershipPlanButton){membershipPlanId=membershipPlanButton.dataset.membershipPlan;renderMembershipContent();requestAnimationFrame(()=>$('[data-membership-modal] .membership-checkout')?.scrollIntoView({behavior:'smooth',block:'nearest'}));return;}
+    const membershipPlanButton=event.target.closest('[data-membership-plan]');if(membershipPlanButton){if(!accountState.user){openAccount();return;}membershipPlanId=membershipPlanButton.dataset.membershipPlan;renderMembershipContent();requestAnimationFrame(()=>$('[data-view-panel="membership"] .membership-checkout')?.scrollIntoView({behavior:'smooth',block:'nearest'}));return;}
     const membershipPaymentButton=event.target.closest('[data-membership-payment]');if(membershipPaymentButton){membershipPaymentMethod=membershipPaymentButton.dataset.membershipPayment;renderMembershipContent();return;}
     if(event.target.closest('[data-membership-cancel-checkout]')){membershipPlanId='';renderMembershipContent();return;}
     if(event.target.closest('[data-membership-refresh]')){membershipStore.load(true).catch(()=>{});return;}
@@ -437,8 +430,7 @@ function bindNavigation(){
     const deleteSticker=event.target.closest('[data-delete-sticker]');if(deleteSticker){event.stopPropagation();try{await socialStore.deleteSticker(deleteSticker.dataset.deleteSticker);toast('表情已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
   });
   $('[data-account-modal]').addEventListener('click',event=>{if(event.target.matches('[data-account-modal]'))closeAccount();});
-  $('[data-membership-modal]').addEventListener('click',event=>{if(event.target.matches('[data-membership-modal]'))closeMembership();});
-  window.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if(!$('[data-media-lightbox]')?.hidden){closeLightbox();return;}if(!$('[data-membership-modal]').hidden){closeMembership();return;}if(!$('[data-account-modal]').hidden)closeAccount();});
+  window.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if(!$('[data-media-lightbox]')?.hidden){closeLightbox();return;}if(!$('[data-account-modal]').hidden)closeAccount();});
 }
 
 async function runForm(form,action,success){setFormStatus('正在处理…');try{const value=await action(new FormData(form));setFormStatus('');await success?.(value);}catch(error){setFormStatus(error.message||'操作失败，请稍后重试。',true);}}
