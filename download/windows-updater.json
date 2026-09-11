@@ -1,11 +1,11 @@
 {
-  "version": "1.2.16",
+  "pub_date": "2026-09-11T02:27:59.8425725Z",
+  "version": "1.2.17",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlpQWisrSU00SkFaWDdHZENKSDdDaE5kV2RhZTNXcCtkcWZLQlIxL0tmb0JUa3ZLdFU3d3Z6ejljMDIwL00xeXBmeFJkT2p0WEc5TitrY0ZFbHBVc0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDU0NzAwCWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTZfeDY0LXNldHVwLmV4ZQo4L1o1R1FYMDVWRUN1M0w2T0VNSS9jdGhMUHV1WVAyTjg4YnFuc09sSlVjNEI1M2ZTa25WYU9wQmJSUkRXb283VkYrU1R5UTN0RDYrd0pvTUh4cjZBQT09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.16-setup.exe"
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.17-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlJXeXpFdE1mZ0ZNYmdmSUFhYWh6TVA0UmoxTk1uc25qT055T2JUNnVqSnNvbVZvN0t4UUF6U1hpdDJ2NDNlUkVhR29ONmN6OXNBQjEwQzA0VDBZbUFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDkzNjc5CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTdfeDY0LXNldHVwLmV4ZQpHVlhQd1JueHRYSHliblpXdFlka3p2eDlGL0c4b3FJNHhjZXN1dFg1cSt0NXh6ajFxS2REeVVWZ1BIb2kxZWxrTlQ5RXdBdHNuRG1oZUpKMWR3bVVBUT09Cg=="
     }
   },
-  "pub_date": "2026-09-10T15:38:21.0225386Z",
-  "notes": "Windows 1.2.16：资料卡改为在头像旁紧凑弹出，点击空白处关闭；移除公开内容入口和冗余说明，保留头像放大、搭子操作、私聊、举报与拉黑。"
+  "notes": "Windows 1.2.17：头像资料卡改为紧凑弹出；新增会员中心、会员权益与订单记录，预留微信和支付宝扫码支付；月度会员限时 2 元，季度 25 元，年度 88 元。"
 }
