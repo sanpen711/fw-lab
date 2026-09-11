@@ -1,11 +1,11 @@
 {
-  "version": "1.2.20",
+  "pub_date": "2026-09-11T14:59:28.1105239Z",
+  "version": "1.2.21",
+  "notes": "Windows 1.2.21：恢复 VIP 头像框与身份标识的连续动画；修复精神广场切换帖子后左侧红色选中描边停留在旧帖子的问题。",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlh3L1lGa1FreXplR1U2NklRejl2OFJ4dFlZSkU4dzV1dHY5Q2NIV1pSRnk1bUdTRDVHTCs0UkRwOExMYWZOWHBoWGhHK2tNVUlEd2licFpVVjBsVUFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MTM1NzA3CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMjBfeDY0LXNldHVwLmV4ZQo1VUZzM29xeEJxTi9vQ0NuckVSRko3V1hKVERET1M2OXBnZnFhWHplSHVoUjNSY1gxNjhPaW8zRGpna245dTNFWW1Fd2pKaDRjTFpMblI1MXNIQWZDZz09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.20-setup.exe"
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.21-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlpSRlFaL3RnQTJVWnMrdEs0RC9LMkd2SWRFcXIycjR2aGJvTDJ5YndESmM2OExPZkpoUlFCV3cyWjd6ZzB1V2pRU3NVWlpDb0g1aW5yaHMzN05ubWdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MTM4NzY3CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMjFfeDY0LXNldHVwLmV4ZQpvZHdiNDlOTGZkWC9jcGdFMHVReURJMVdPSDN1NHQ3VUZiUlVKRm9aYXBFWVNYNE8wRy93UjhzdENzUVBYT3AxZ2Fvb1Q3UVhRZ0JacGF6TjNEQ2REZz09Cg=="
     }
-  },
-  "pub_date": "2026-09-11T14:08:28.2155143Z",
-  "notes": "Windows 1.2.20：优化 VIP 动态头像框和高光动画，统一滚动节奏并减少卡顿；移除侧栏会员中心后的 VIP 标识，收紧评论昵称与 VIP 的间距。"
+  }
 }
