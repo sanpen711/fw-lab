@@ -1,11 +1,11 @@
 {
-  "version": "1.2.19",
-  "notes": "Windows 1.2.19：新增全站 VIP 身份装扮、动态头像光环、昵称标识和高级会员资料卡；会员中心支持经典玫瑰金、黑金、粉色星光三套同步装扮，现有按钮样式保持不变。",
-  "pub_date": "2026-09-11T08:01:59.2951094Z",
+  "version": "1.2.20",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmZGdXZpakR1a3AyT3M5cFYyZ1NucFZocC9ER0VRT0tZdVEzMy9tRVoxbEF2Q091MjF5bDBObldVeDJZNWhFSXY4QkE5cUYwYStEcitZemVKWXcvMlFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MTEzNzE4CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTlfeDY0LXNldHVwLmV4ZQpzMWxHRW93V1BTT3ovOXlvbXI0UjhZeXVxQ0dYSzVJc1F2UTV5Zm1VYnJVZVBTdjVhTlYvaFB2Qi9MbzV1b09PdkJBVUtCVmtjNlJ2MkJ3b3VVTHVDZz09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.19-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlh3L1lGa1FreXplR1U2NklRejl2OFJ4dFlZSkU4dzV1dHY5Q2NIV1pSRnk1bUdTRDVHTCs0UkRwOExMYWZOWHBoWGhHK2tNVUlEd2licFpVVjBsVUFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MTM1NzA3CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMjBfeDY0LXNldHVwLmV4ZQo1VUZzM29xeEJxTi9vQ0NuckVSRko3V1hKVERET1M2OXBnZnFhWHplSHVoUjNSY1gxNjhPaW8zRGpna245dTNFWW1Fd2pKaDRjTFpMblI1MXNIQWZDZz09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.20-setup.exe"
     }
-  }
+  },
+  "pub_date": "2026-09-11T14:08:28.2155143Z",
+  "notes": "Windows 1.2.20：优化 VIP 动态头像框和高光动画，统一滚动节奏并减少卡顿；移除侧栏会员中心后的 VIP 标识，收紧评论昵称与 VIP 的间距。"
 }

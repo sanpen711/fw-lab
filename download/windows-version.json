@@ -1,11 +1,11 @@
 {
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.20-setup.exe",
+  "available": true,
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "version": "1.2.20",
+  "notes": "Windows 1.2.20：优化 VIP 动态头像框和高光动画，统一滚动节奏并减少卡顿；移除侧栏会员中心后的 VIP 标识，收紧评论昵称与 VIP 的间距。",
+  "sha256": "af0fe3c62d03897302ef2d8815cec8e3afac2cd15b5147476e5053bfd86a39a8",
   "platform": "Windows 10/11 64 位",
   "rollbackVersion": "1.0.5",
-  "available": true,
-  "version": "1.2.19",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "publishedAt": "2026-09-11T08:01:59.2951094Z",
-  "notes": "Windows 1.2.19：新增全站 VIP 身份装扮、动态头像光环、昵称标识和高级会员资料卡；会员中心支持经典玫瑰金、黑金、粉色星光三套同步装扮，现有按钮样式保持不变。",
-  "sha256": "ff83f8b37e9d2e9104e9081c1353cb020c9a92ba1fc0a1d04434bcac9a810b40",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.19-setup.exe"
+  "publishedAt": "2026-09-11T14:08:28.2155143Z"
 }
