@@ -260,6 +260,13 @@ function renderSquareFeed(){
   if(feedState.error&&!feedState.posts.length){host.innerHTML=`<div class="state-card"><b>精神广场暂时读取失败</b><span>${esc(feedState.error)}</span><button class="secondary compact" type="button" data-square-refresh>重试</button></div>`;return;}
   host.innerHTML=feedState.posts.length?feedState.posts.map(postCard).join(''):'<div class="state-card"><b>广场还很安静</b><span>可以留下第一条低功耗记录。</span><button class="primary compact" type="button" data-nav="compose">发牢骚</button></div>';
 }
+function syncSquarePostSelection(){
+  $$('[data-square-feed] .square-post[data-open-post]').forEach(card=>{
+    const selected=String(card.dataset.openPost)===String(feedState.openPostId);
+    card.classList.toggle('active',selected);
+    card.setAttribute('aria-current',selected?'true':'false');
+  });
+}
 function commentTree(comments){
   const byId=new Map((comments||[]).map(row=>[String(row.id),row]));const roots=[];const replies=new Map();
   (comments||[]).forEach(row=>{let rootId=String(row.parent_comment_id||row.id);let cursor=byId.get(rootId);let guard=0;while(cursor?.parent_comment_id&&byId.has(String(cursor.parent_comment_id))&&guard++<20){cursor=byId.get(String(cursor.parent_comment_id));rootId=String(cursor.id);}if(!row.parent_comment_id||rootId===String(row.id))roots.push(row);else{if(!replies.has(rootId))replies.set(rootId,[]);replies.get(rootId).push(row);}});
@@ -279,7 +286,7 @@ function renderPostDetail(){
   host.innerHTML=`<div class="detail-scroll ${accountState.user?'has-comment-composer':''}"><header class="detail-head"><b>帖子详情</b><div class="row-actions">${mine?`<button class="detail-quiet-action danger" type="button" data-delete-post="${esc(post.id)}">删除帖子</button>`:`<button class="detail-quiet-action" type="button" data-report-post="${esc(post.id)}">举报</button>`}<button class="secondary compact" type="button" data-close-post>关闭</button></div></header><div class="detail-content-scroll"><article class="detail-post"><div class="detail-author-row"><div class="post-author">${avatarHtml(profile,'social-avatar',{userId:post.user_id})}<b>${esc(profile.nickname||'匿名研究员')}</b>${vipBadgeHtml(post.user_id)}</div><time>${esc(new Date(post.created_at).toLocaleString('zh-CN'))}</time></div>${richContent(post.content)}<div class="detail-post-actions"><div class="reaction-row"><button class="${reaction.active.like?'active':''}" type="button" data-react="like" data-post-id="${esc(post.id)}" aria-pressed="${reaction.active.like}">点赞 ${reaction.values.like}</button></div></div></article><section class="comments-section"><div class="comments-heading"><h3>评论</h3><span>${(post.comments||[]).length} 条</span></div><div class="comment-list">${comments}</div>${signIn}</section></div>${composer}</div>`;
   host.dataset.renderedPostId=String(post.id);if(previousPostId===String(post.id))host.querySelector('.detail-content-scroll').scrollTop=previousScrollTop;
 }
-function renderFeed(next=feedState,scope='all'){feedState=next;if(scope==='all'||scope==='compose')renderCompose();if(scope==='all'||scope==='content')renderSquareFeed();if(scope!=='compose')renderPostDetail();}
+function renderFeed(next=feedState,scope='all'){feedState=next;if(scope==='all'||scope==='compose')renderCompose();if(scope==='all'||scope==='content')renderSquareFeed();if(scope!=='compose'){syncSquarePostSelection();renderPostDetail();}}
 
 function pollEnded(poll){return Boolean(poll.closed_at)||new Date(poll.ends_at).getTime()<=Date.now();}
 function remainingTime(value){const ms=new Date(value).getTime()-Date.now();if(!Number.isFinite(ms)||ms<=0)return'已结束';const minutes=Math.ceil(ms/60000);const days=Math.floor(minutes/1440);const hours=Math.floor((minutes%1440)/60);return days?`${days}天${hours?` ${hours}小时`:''}`:hours?`${hours}小时${minutes%60?` ${minutes%60}分钟`:''}`:`${minutes}分钟`;}
