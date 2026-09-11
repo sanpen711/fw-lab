@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-09-11T02:27:59.8425725Z",
-  "version": "1.2.17",
+  "pub_date": "2026-09-11T06:05:15.4544796Z",
+  "notes": "Windows 1.2.18：会员中心移至左侧导航栏，位于搭子下方、更多上方；改为独立页面并重新编排会员状态、套餐、权益和订单区域，原有配色与会员价格保持不变。",
+  "version": "1.2.18",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.17-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlJXeXpFdE1mZ0ZNYmdmSUFhYWh6TVA0UmoxTk1uc25qT055T2JUNnVqSnNvbVZvN0t4UUF6U1hpdDJ2NDNlUkVhR29ONmN6OXNBQjEwQzA0VDBZbUFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MDkzNjc5CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTdfeDY0LXNldHVwLmV4ZQpHVlhQd1JueHRYSHliblpXdFlka3p2eDlGL0c4b3FJNHhjZXN1dFg1cSt0NXh6ajFxS2REeVVWZ1BIb2kxZWxrTlQ5RXdBdHNuRG1oZUpKMWR3bVVBUT09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlN6VlZ6MnlvZW8yeVhtcnp3dlJ0MEtFa0dqdWRTUWoxbGJDMEE3NWE2Q2lQVEJvTUxZZm1PdmlHVGVTb0l6dGdoRnU1WGhnSUJrYW95T2s4akQvbHc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MTA2NzE0CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMThfeDY0LXNldHVwLmV4ZQozT0tYVHZHSG5JaisvL0U5SmV4M3BxbndCS0lkUHpFVnVmaU5BNE9VWWJtSkRaaldqTGlvaUU0cy9rRTgxckJsL3ovbW5PallzK1pITEgvRmZ3OW9EZz09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.18-setup.exe"
     }
-  },
-  "notes": "Windows 1.2.17：头像资料卡改为紧凑弹出；新增会员中心、会员权益与订单记录，预留微信和支付宝扫码支付；月度会员限时 2 元，季度 25 元，年度 88 元。"
+  }
 }

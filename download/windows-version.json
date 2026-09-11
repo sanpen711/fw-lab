@@ -1,11 +1,11 @@
 {
+  "publishedAt": "2026-09-11T06:05:15.4544796Z",
+  "version": "1.2.18",
   "rollbackVersion": "1.0.5",
-  "publishedAt": "2026-09-11T02:27:59.8425725Z",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.17-setup.exe",
-  "sha256": "fb94d418317d7252936d135cf76e74f3bf76f4c9c03a82a4346d4a94fb6a19c0",
-  "notes": "Windows 1.2.17：头像资料卡改为紧凑弹出；新增会员中心、会员权益与订单记录，预留微信和支付宝扫码支付；月度会员限时 2 元，季度 25 元，年度 88 元。",
-  "version": "1.2.17",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.18-setup.exe",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "platform": "Windows 10/11 64 位",
-  "available": true
+  "notes": "Windows 1.2.18：会员中心移至左侧导航栏，位于搭子下方、更多上方；改为独立页面并重新编排会员状态、套餐、权益和订单区域，原有配色与会员价格保持不变。",
+  "available": true,
+  "sha256": "dee38371288530569a9c405064357cb81dbd03d14416dcc0796d7696bb9bc9f1",
+  "platform": "Windows 10/11 64 位"
 }
