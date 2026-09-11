@@ -372,6 +372,7 @@ assert.match(squareScroll,/\.detail-scroll\{height:100%;min-height:0;overflow:hi
 assert.match(squareScroll,/\.detail-content-scroll\{min-height:0;overflow-y:auto/,'右侧正文与评论必须连续滚动');
 assert.match(squareScroll,/attributeFilter:\['data-view'\]/,'滚动锁监听必须只观察 data-view，不能监听整棵 DOM');
 assert.match(windowsWorkflow,/url = 'https:\/\/ekbovsmxbiplhyrzxoyw\.supabase\.co\/storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.2\.20-setup\.exe'/,'自动更新必须使用 Supabase Storage 的版本化安装包');
+assert.match(windowsWorkflow,/installer\.Name -notmatch '1\\\.2\\\.20'/,'安装包名称校验必须跟随当前 Windows 版本');
 assert.match(windowsWorkflow,/functions\/v1\/sync-windows-release/,'Windows 发布必须先同步 Supabase 安装包');
 assert.match(windowsWorkflow,/gh release create/,'Windows 构建必须发布独立版本安装包');
 assert.doesNotMatch(windowsWorkflow,/cdn\.jsdelivr\.net|windows-cdn-build/,'自动更新不能再发布到会拒绝安装包的 CDN 线路');

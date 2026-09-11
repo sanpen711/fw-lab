@@ -84,7 +84,7 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Windows 1.2.20 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.2\.19') { throw "Unexpected installer name: $($installer.Name)" }
+          if ($installer.Name -notmatch '1\.2\.20') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
