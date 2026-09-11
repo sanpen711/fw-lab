@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-09-11T06:05:15.4544796Z",
-  "notes": "Windows 1.2.18：会员中心移至左侧导航栏，位于搭子下方、更多上方；改为独立页面并重新编排会员状态、套餐、权益和订单区域，原有配色与会员价格保持不变。",
-  "version": "1.2.18",
+  "version": "1.2.19",
+  "notes": "Windows 1.2.19：新增全站 VIP 身份装扮、动态头像光环、昵称标识和高级会员资料卡；会员中心支持经典玫瑰金、黑金、粉色星光三套同步装扮，现有按钮样式保持不变。",
+  "pub_date": "2026-09-11T08:01:59.2951094Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlN6VlZ6MnlvZW8yeVhtcnp3dlJ0MEtFa0dqdWRTUWoxbGJDMEE3NWE2Q2lQVEJvTUxZZm1PdmlHVGVTb0l6dGdoRnU1WGhnSUJrYW95T2s4akQvbHc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MTA2NzE0CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMThfeDY0LXNldHVwLmV4ZQozT0tYVHZHSG5JaisvL0U5SmV4M3BxbndCS0lkUHpFVnVmaU5BNE9VWWJtSkRaaldqTGlvaUU0cy9rRTgxckJsL3ovbW5PallzK1pITEgvRmZ3OW9EZz09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.18-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmZGdXZpakR1a3AyT3M5cFYyZ1NucFZocC9ER0VRT0tZdVEzMy9tRVoxbEF2Q091MjF5bDBObldVeDJZNWhFSXY4QkE5cUYwYStEcitZemVKWXcvMlFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MTEzNzE4CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMTlfeDY0LXNldHVwLmV4ZQpzMWxHRW93V1BTT3ovOXlvbXI0UjhZeXVxQ0dYSzVJc1F2UTV5Zm1VYnJVZVBTdjVhTlYvaFB2Qi9MbzV1b09PdkJBVUtCVmtjNlJ2MkJ3b3VVTHVDZz09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.19-setup.exe"
     }
   }
 }

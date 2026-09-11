@@ -1,11 +1,11 @@
 {
-  "publishedAt": "2026-09-11T06:05:15.4544796Z",
-  "version": "1.2.18",
+  "platform": "Windows 10/11 64 位",
   "rollbackVersion": "1.0.5",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.18-setup.exe",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "notes": "Windows 1.2.18：会员中心移至左侧导航栏，位于搭子下方、更多上方；改为独立页面并重新编排会员状态、套餐、权益和订单区域，原有配色与会员价格保持不变。",
   "available": true,
-  "sha256": "dee38371288530569a9c405064357cb81dbd03d14416dcc0796d7696bb9bc9f1",
-  "platform": "Windows 10/11 64 位"
+  "version": "1.2.19",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "publishedAt": "2026-09-11T08:01:59.2951094Z",
+  "notes": "Windows 1.2.19：新增全站 VIP 身份装扮、动态头像光环、昵称标识和高级会员资料卡；会员中心支持经典玫瑰金、黑金、粉色星光三套同步装扮，现有按钮样式保持不变。",
+  "sha256": "ff83f8b37e9d2e9104e9081c1353cb020c9a92ba1fc0a1d04434bcac9a810b40",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.19-setup.exe"
 }
