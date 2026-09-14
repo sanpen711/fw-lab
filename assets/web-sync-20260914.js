@@ -1,5 +1,6 @@
 (function(){
   'use strict';
+  window.__FW_PC_WEB_SYNC__=true;
   const PC_BREAKPOINT=821;
   const WEATHER_ENDPOINT='https://ekbovsmxbiplhyrzxoyw.supabase.co/functions/v1/fw-weather';
   const WEATHER_LOCATION_KEY='fw:web:weather-location';
@@ -13,6 +14,10 @@
 
   function isPc(){return window.innerWidth>=PC_BREAKPOINT && !/Android|iPhone|iPod|Mobile|Windows Phone/i.test(navigator.userAgent||'')}
   function active(target){return file()===target?'active':''}
+  function removeLegacyHeaderSocial(){
+    if(!isPc())return;
+    $$('.header .fw-social-actions').forEach(node=>node.remove());
+  }
   function installNav(){
     if(!isPc())return;
     const nav=$('.header .nav');
@@ -84,7 +89,14 @@
   }
 
   function hideLegacySquareActions(){if(file()!=='square.html')return;const style=document.createElement('style');style.textContent='[data-action="same"],[data-action="tissue"]{display:none!important}';document.head.appendChild(style)}
-  function boot(){installNav();initHome();hideLegacySquareActions()}
+  function watchLegacyHeaderSocial(){
+    if(!isPc())return;
+    removeLegacyHeaderSocial();
+    const header=$('.header');if(!header)return;
+    const observer=new MutationObserver(()=>removeLegacyHeaderSocial());
+    observer.observe(header,{childList:true,subtree:true});
+  }
+  function boot(){installNav();removeLegacyHeaderSocial();watchLegacyHeaderSocial();initHome();hideLegacySquareActions()}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
-  window.addEventListener('resize',()=>{if(isPc())installNav()});
+  window.addEventListener('resize',()=>{if(isPc()){installNav();removeLegacyHeaderSocial()}});
 })();
