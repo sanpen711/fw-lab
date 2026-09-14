@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>小游戏｜F.w 研究所</title>
+  <link rel="stylesheet" href="assets/styles.css?v=desktop-priority-20260716-1">
+  <link rel="stylesheet" href="assets/auth.css">
+  <link rel="stylesheet" href="assets/web-sync-20260914.css?v=1">
+  <style>
+    .game-stage[hidden]{display:none}.game-stage{position:fixed;inset:0;z-index:25000;background:rgba(15,20,18,.56);backdrop-filter:blur(6px);padding:28px;display:grid;place-items:center}.game-stage-card{position:relative;width:min(1100px,100%);height:min(780px,92vh);overflow:hidden;border-radius:20px;background:#fff;box-shadow:0 35px 100px rgba(0,0,0,.35)}.game-stage iframe{width:100%;height:100%;border:0;background:#fff}.game-stage-close{position:absolute;z-index:2;right:14px;top:14px;width:40px;height:40px;border:0;border-radius:50%;background:rgba(21,43,37,.9);color:#fff;font-size:24px;cursor:pointer}.game-stage-title{position:absolute;z-index:2;left:16px;top:14px;padding:9px 13px;border-radius:999px;background:rgba(255,255,255,.92);color:#152b25;font-size:12px;font-weight:900;box-shadow:0 5px 18px rgba(0,0,0,.08)}
+  </style>
+</head>
+<body>
+<main class="page">
+  <header class="header dark">
+    <a class="logo" href="index.html">F.w 研究所</a>
+    <nav class="nav"><a href="index.html">首页</a><a href="square.html">精神广场</a><a href="rooms.html">学术研讨</a><a href="bird.html">新闻专区</a><a class="active" href="games.html">小游戏</a></nav>
+    <button class="menu-btn" aria-label="菜单">☰</button>
+  </header>
+  <nav class="mobile-nav"><a href="index.html">首页</a><a href="square.html">精神广场</a><a href="rooms.html">学术研讨</a><a href="bird.html">新闻专区</a><a href="games.html">小游戏</a></nav>
+
+  <section class="web-games">
+    <div class="web-page-heading"><h1>小游戏</h1><p>不用登录，点开就玩；成绩和进度只保存在当前浏览器。</p></div>
+    <div class="web-game-grid">
+      <a class="web-game-card" href="desktop-v11/public/games/2048/index.html" data-game="2048" data-title="2048"><b>2048</b><span>合并相同数字，看看今天能摸到多高。</span><em>方向键操作</em></a>
+      <a class="web-game-card" href="desktop-v11/public/games/minesweeper/index.html" data-game="minesweeper" data-title="扫雷"><b>扫雷</b><span>排除安全区域，别让第一杯咖啡先炸了。</span><em>鼠标操作</em></a>
+      <a class="web-game-card" href="desktop-v11/public/games/snake/index.html" data-game="snake" data-title="贪吃蛇"><b>贪吃蛇</b><span>方向键控制，越吃越长，也越来越忙。</span><em>方向键操作</em></a>
+      <a class="web-game-card" href="desktop-v11/public/games/sudoku/index.html" data-game="sudoku" data-title="数独"><b>数独</b><span>安静摸鱼型脑力小游戏，适合假装在思考。</span><em>鼠标 / 键盘</em></a>
+      <a class="web-game-card" href="desktop-v11/public/games/reaction/index.html" data-game="reaction" data-title="反应测试"><b>反应测试</b><span>看看今天是手快，还是下班的心更快。</span><em>鼠标操作</em></a>
+      <a class="web-game-card" href="desktop-v11/public/games/catch/index.html" data-game="catch" data-title="接住它"><b>接住它</b><span>简单直接的休息小游戏，点开就能开始。</span><em>键盘 / 鼠标</em></a>
+    </div>
+  </section>
+
+  <footer class="footer"><span>F.w 研究所</span><span>小游戏 / Game Center · 进度仅保存在本机</span></footer>
+</main>
+<div class="game-stage" data-game-stage hidden>
+  <div class="game-stage-card"><span class="game-stage-title" data-game-stage-title>小游戏</span><button class="game-stage-close" type="button" data-game-close>×</button><iframe title="小游戏" data-game-frame></iframe></div>
+</div>
+<script src="assets/app.js?v=web-sync-20260914-1"></script>
+<script src="assets/web-sync-20260914.js?v=1"></script>
+<script>
+(function(){
+  var stage=document.querySelector('[data-game-stage]'),frame=document.querySelector('[data-game-frame]'),title=document.querySelector('[data-game-stage-title]');
+  document.addEventListener('click',function(e){var link=e.target.closest('[data-game]');if(!link)return;e.preventDefault();title.textContent=link.dataset.title||'小游戏';frame.src=link.getAttribute('href');stage.hidden=false;document.body.style.overflow='hidden';});
+  function close(){stage.hidden=true;frame.src='about:blank';document.body.style.overflow='';}
+  document.querySelector('[data-game-close]').addEventListener('click',close);stage.addEventListener('click',function(e){if(e.target===stage)close();});window.addEventListener('keydown',function(e){if(e.key==='Escape'&&!stage.hidden)close();});
+})();
+</script>
+</body>
+</html>
