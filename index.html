@@ -7,92 +7,90 @@
     (function(){
       if(!/FWYanjiusuoDesktop\//i.test(navigator.userAgent || '')) return;
       document.documentElement.classList.add('fw-desktop-preparing');
-      window.setTimeout(function(){
-        document.documentElement.classList.remove('fw-desktop-preparing');
-      }, 6000);
+      window.setTimeout(function(){document.documentElement.classList.remove('fw-desktop-preparing');},6000);
     })();
   </script>
   <link rel="stylesheet" href="assets/fw-desktop-client.css?v=ui-consistency-20260811-1" />
   <script>
     (function(){
-      var params = new URLSearchParams(window.location.search || '');
-      if(params.get('desktop') === '1' || params.get('app') === '0') return;
-      var ua = navigator.userAgent || '';
-      var isMobileUa = /Android|iPhone|iPod|Mobile|Windows Phone/i.test(ua);
-      var isSmallTouch = false;
-      try{
-        isSmallTouch = window.matchMedia('(max-width: 820px)').matches && navigator.maxTouchPoints > 0;
-      }catch(e){}
-      if(!isMobileUa && !isSmallTouch) return;
-      var path = window.location.pathname || '/';
-      var base = path.replace(/(?:index\.html)?$/, '');
-      var target = base + 'app/index.html';
-      if(path !== target){
-        window.location.replace(target + window.location.search + window.location.hash);
-      }
+      var params=new URLSearchParams(window.location.search||'');
+      if(params.get('desktop')==='1'||params.get('app')==='0') return;
+      var ua=navigator.userAgent||'';
+      var isMobileUa=/Android|iPhone|iPod|Mobile|Windows Phone/i.test(ua);
+      var isSmallTouch=false;
+      try{isSmallTouch=window.matchMedia('(max-width: 820px)').matches&&navigator.maxTouchPoints>0;}catch(e){}
+      if(!isMobileUa&&!isSmallTouch) return;
+      var path=window.location.pathname||'/';
+      var base=path.replace(/(?:index\.html)?$/,'');
+      var target=base+'app/index.html';
+      if(path!==target) window.location.replace(target+window.location.search+window.location.hash);
     })();
   </script>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="F.w 研究所">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png?v=fw-lab-icon-20260529-1">
   <link rel="icon" href="assets/icons/icon-192.png?v=fw-lab-icon-20260529-1" sizes="192x192" type="image/png">
   <title>F.w 研究所｜上班族精神休息室</title>
   <meta name="description" content="F.w 研究所：一个允许你低功耗运行的精神休息室。" />
   <link rel="stylesheet" href="assets/styles.css?v=desktop-priority-20260716-1" />
-  <link rel="stylesheet" href="assets/square-compact.css?v=separate-compose-20260811-1" />
   <link rel="stylesheet" href="assets/auth.css" />
+  <link rel="stylesheet" href="assets/web-sync-20260914.css?v=1" />
 </head>
 <body>
-
-<main class="page">
-  <section class="hero bg-night home-hero">
-
-<header class="header dark">
-  <a class="logo" href="index.html">F.w 研究所</a>
-  <nav class="nav">
-    <a class="active" href="index.html">首页</a>
-    <a class="" href="square.html">精神广场</a>
-    <a class="" href="rooms.html">学术研讨</a>
-    <a class="" href="bird.html">观鸟台</a>
-    <a class="" href="archive.html">废话档案</a>
-    <a class="" href="rules.html">入馆须知</a>
+<main class="page web-home" data-web-home>
+  <header class="header dark">
+    <a class="logo" href="index.html">F.w 研究所</a>
+    <nav class="nav">
+      <a class="active" href="index.html">首页</a>
+      <a href="square.html">精神广场</a>
+      <a href="rooms.html">学术研讨</a>
+      <a href="bird.html">新闻专区</a>
+      <a href="archive.html">档案</a>
+      <a href="rules.html">入馆须知</a>
+    </nav>
+    <button class="menu-btn" aria-label="菜单">☰</button>
+  </header>
+  <nav class="mobile-nav">
+    <a href="index.html">首页</a><a href="square.html">精神广场</a><a href="rooms.html">学术研讨</a><a href="bird.html">新闻专区</a><a href="archive.html">档案</a><a href="rules.html">入馆须知</a><a href="admin.html">处理公告</a>
   </nav>
-  <button class="menu-btn" aria-label="菜单">☰</button>
-</header>
-<nav class="mobile-nav">
-  <a href="index.html">首页</a>
-  <a href="square.html">精神广场</a>
-  <a href="rooms.html">学术研讨</a>
-  <a href="bird.html">观鸟台</a>
-  <a href="archive.html">废话档案</a>
-  <a href="rules.html">入馆须知</a>
-  <a href="admin.html">处理公告</a>
-</nav>
 
-    <div class="hero-inner home-hero-clean">
-      <div>
-        <p class="kicker">FW LAB / LOW POWER MODE</p>
-        <h1 class="hero-title">F.w 研究所</h1>
-        <p class="hero-copy">一个临时放下情绪的地方。可以发牢骚、参与投票、围观离谱样本，也可以什么都不做，只是休息一下。</p>
-        <div class="hero-actions">
-          <button class="btn primary" data-login-cta type="button">加入研究所 →</button>
-          <a class="btn light" href="compose.html">去发一句牢骚 →</a>
-          <a class="btn light" href="rooms.html">去学术研讨投票 →</a>
-          <a class="btn light" href="bird.html">去观鸟台散心解忧 →</a>
-        </div>
+  <section class="web-home-shell">
+    <article class="web-home-hero">
+      <div class="web-home-copy">
+        <p class="web-home-eyebrow">FW LAB / LOW POWER MODE</p>
+        <h1 class="web-home-title">F.w 研究所</h1>
+        <h2 class="web-home-subtitle">放下个人素质，享受缺德人生</h2>
+        <p class="web-home-desc">随时吐槽、随时发泄、随时释放自己、不要攻击他人，<br>可参与投票、围观离谱事件。</p>
+        <a class="web-primary" href="compose.html">开始吐槽!</a>
       </div>
-    </div>
-  </section>
+      <div class="web-home-visual" aria-hidden="true">
+        <img src="desktop-v11/public/hero-office.webp" alt="">
+        <span class="web-note web-note-a">今天又是<br>不想当人类的一天</span>
+        <span class="web-note web-note-b">这世界挺癫，<br>我先躺了</span>
+        <span class="web-note web-note-c">遇到奇葩同事，<br>你会？</span>
+      </div>
+    </article>
 
-  <section class="section bg-night" id="live">
-    <div class="live-head">
-      <h2 class="section-title" style="color:var(--white)">刚刚有人说</h2>
-      <small>实时牢骚流 / 最新发布</small>
+    <div class="web-tool-grid">
+      <button class="web-tool weather" type="button" data-weather-open>
+        <strong data-weather-main>设置天气</strong>
+        <p data-weather-detail>点击选择你所在的县区</p>
+        <em data-weather-meta>无需定位权限</em>
+      </button>
+      <button class="web-tool offwork" type="button" data-offwork-open>
+        <strong data-offwork-value>设置时间</strong>
+        <p data-offwork-detail>今天几点下班？</p>
+        <em data-offwork-meta>点击设置下班时间</em>
+      </button>
+      <button class="web-tool feedback" type="button" data-feedback-open>
+        <strong>反馈意见</strong>
+        <p>遇到问题，或者有个小建议</p>
+        <em>登录后可直接提交</em>
+      </button>
     </div>
-    <div class="feed-grid" data-feed data-limit="6"></div>
   </section>
 
   <footer class="footer">
@@ -100,10 +98,9 @@
     <span>来这里，不一定要变好，只要先放一下。 · <a href="privacy.html">隐私政策</a></span>
   </footer>
 </main>
-
-<script src="assets/app.js?v=desktop-badge-zero-20260811-1"></script>
+<script src="assets/app.js?v=web-sync-20260914-1"></script>
 <script src="assets/auth.js?v=echo-clean-20260702-1"></script>
-<script src="assets/fw-home-feed-preview.js?v=desktop-priority-20260716-1"></script>
-  <script src="assets/pwa.js?v=pwa-download-client-20260810-1"></script>
+<script src="assets/web-sync-20260914.js?v=1"></script>
+<script src="assets/pwa.js?v=pwa-download-client-20260810-1"></script>
 </body>
 </html>
