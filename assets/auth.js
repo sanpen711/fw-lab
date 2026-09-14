@@ -17,7 +17,7 @@
   if(!document.querySelector('link[data-fw-web-sync]')){
     var link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'assets/web-sync-20260914.css?v=1';
+    link.href = 'assets/web-sync-20260914.css?v=2';
     link.dataset.fwWebSync = '1';
     document.head.appendChild(link);
   }
@@ -32,7 +32,7 @@
 
   if(!document.querySelector('script[data-fw-web-sync]')){
     var script = document.createElement('script');
-    script.src = 'assets/web-sync-20260914.js?v=1';
+    script.src = 'assets/web-sync-20260914.js?v=2';
     script.defer = true;
     script.dataset.fwWebSync = '1';
     document.head.appendChild(script);
