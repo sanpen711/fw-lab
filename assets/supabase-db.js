@@ -435,6 +435,83 @@
     });
   }
 
+  async function loadPostById(postId){
+    let meId = null;
+    try{
+      meId = (await client.auth.getSession())?.data?.session?.user?.id || null;
+    }catch(e){}
+
+    const rows = fail(
+      await client
+        .from('posts')
+        .select('id,user_id,content,status_tag,created_at,profiles(nickname,avatar_url)')
+        .eq('id', postId)
+        .or('is_deleted.eq.false,is_deleted.is.null')
+        .limit(1),
+      '读取帖子失败'
+    ) || [];
+    const post = rows[0];
+    if(!post) return null;
+
+    const comments = fail(
+      await client
+        .from('comments')
+        .select('id,post_id,user_id,parent_comment_id,content,created_at,profiles!comments_user_id_fkey(nickname,avatar_url)')
+        .eq('post_id', post.id)
+        .or('is_deleted.eq.false,is_deleted.is.null')
+        .order('created_at', {ascending:true}),
+      '读取评论失败'
+    ) || [];
+    const reactions = fail(
+      await client
+        .from('reactions')
+        .select('post_id,user_id,type')
+        .eq('post_id', post.id),
+      '读取互动失败'
+    ) || [];
+
+    const counts = {resonance:0, same:0, tissue:0};
+    const mine = {resonance:false, same:false, tissue:false};
+    reactions.forEach(r => {
+      const type = r.type === 'like' ? 'resonance' : r.type;
+      if(type === 'resonance') counts.resonance++;
+      if(type === 'same') counts.same++;
+      if(type === 'tissue') counts.tissue++;
+      if(meId && r.user_id === meId && Object.prototype.hasOwnProperty.call(mine, type)) mine[type] = true;
+    });
+
+    const prof = profileOf(post);
+    return {
+      id:post.id,
+      userId:post.user_id,
+      authorId:post.user_id,
+      authorName:prof.nickname || '匿名研究员',
+      authorAvatar:prof.avatar_url || '',
+      status:post.status_tag || '今日无效',
+      content:post.content,
+      time:timeText(post.created_at),
+      createdAt:post.created_at,
+      resonance:counts.resonance,
+      same:counts.same,
+      tissue:counts.tissue,
+      comments:comments.map(c => {
+        const profile = profileOf(c);
+        return {
+          id:c.id,
+          userId:c.user_id,
+          parentCommentId:c.parent_comment_id || null,
+          authorName:profile.nickname || '匿名回声',
+          authorAvatar:profile.avatar_url || '',
+          content:c.content,
+          time:timeText(c.created_at),
+          canDelete:!!meId && c.user_id === meId
+        };
+      }),
+      canDelete:!!meId && post.user_id === meId,
+      myReactions:mine
+    };
+  }
+
   async function createPost({content, status}){
     const u = await getCurrentUser();
 
@@ -618,6 +695,7 @@
     signOut,
     updateProfile,
     loadPosts,
+    loadPostById,
     createPost,
     createComment,
     deleteOwnPost,

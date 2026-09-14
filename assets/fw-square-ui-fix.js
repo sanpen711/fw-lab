@@ -387,6 +387,26 @@
     }
     return true;
   };
+  window.__FW_SQUARE_OPEN_POST_BY_ID__ = async function(id){
+    id = String(id || '').trim();
+    if(!id) return false;
+    var post = findPost(id);
+    if(!post && ready() && typeof window.fwDb.loadPostById === 'function'){
+      post = await window.fwDb.loadPostById(id);
+      if(post){
+        var list = posts().filter(function(item){ return String(item.id) !== id; });
+        list.push(post);
+        list.sort(function(a,b){ return new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0); });
+        put(list);
+      }
+    }
+    if(!post) return false;
+    open[id] = true;
+    var index = posts().findIndex(function(item){ return String(item.id) === id; });
+    if(index >= visibleCount) visibleCount = Math.ceil((index + 1) / PAGE_SIZE) * PAGE_SIZE;
+    render();
+    return true;
+  };
 
   async function sync(force){
     if(!ready() || !window.fwDb.loadPosts) return false;

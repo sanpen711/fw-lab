@@ -43,7 +43,7 @@ for(const page of ['index.html','compose.html','square.html','rooms.html','bird.
   const html = read(page);
   assert.match(html, /fw-desktop-preparing/, `${page} 应在首屏绘制前隐藏网页原始版式`);
   assert.match(html, /fw-desktop-client\.css\?v=ui-consistency-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
-  assert.match(html, /assets\/app\.js\?v=square-echo-sync-20260914-1/, `${page} 应刷新广场与回声同步入口脚本`);
+  assert.match(html, /assets\/app\.js\?v=web-square-inline-20260914-1/, `${page} 应刷新网页导航与内嵌回声入口脚本`);
 }
 
 const home = read('index.html');
@@ -63,7 +63,8 @@ assert.match(square, /data-web-square-list/, '精神广场 PC 网页应提供左
 assert.match(square, /class="web-square-detail"/, '精神广场 PC 网页应提供右侧帖子详情区');
 assert.match(square, /class="feed-list" data-feed/, '精神广场详情区仍应复用真实帖子数据源');
 assert.match(square, /href="compose\.html">发牢骚/, '精神广场发帖应跳转独立发帖页');
-assert.match(square, /href="echo\.html">回声/, '精神广场应保留回声入口');
+assert.match(square, /data-web-square-echo-toggle/, '精神广场应提供左栏回声切换入口');
+assert.match(square, /data-web-square-echo-panel/, '精神广场应内嵌回声列表，不再跳转独立页面');
 assert.match(read('assets/web-square-split-20260914.js'), /MutationObserver/, '左右双栏控制器应跟随现有帖子渲染更新');
 assert.match(desktopClient, /function removeSquareComposer\(\)/);
 assert.match(desktopClient, /form\.closest\('\.square-hero-compose-slot'\)/);
@@ -84,6 +85,8 @@ assert.match(webTheme, /--web-pink:#ff969e/, 'PC 网页视觉层应使用 Window
 assert.match(webSync, /play\.html/, 'PC 网页导航应包含下班开黑');
 assert.match(webSync, /games\.html/, 'PC 网页导航应包含小游戏');
 assert.match(webSync, /membership\.html/, 'PC 网页导航应包含会员中心');
+assert.match(webSync, /web-nav-primary[\s\S]*web-nav-utility/, 'PC 网页导航应拆分居中的主栏目和右侧功能区');
+assert.match(webTheme, /header \.fw-userbar\{order:4;margin-left:8px!important/, '网页账号头像与昵称应固定在最右侧');
 assert.match(read('play.html'), /fw_create_game_party/, '下班开黑网页应接入真实创建组队 RPC');
 assert.match(read('membership.html'), /fw_get_active_membership_styles/, '会员中心网页应读取真实会员装扮');
 assert.match(read('games.html'), /desktop-v11\/public\/games\/2048\/index\.html/, '小游戏网页应复用当前 Windows 游戏资源');

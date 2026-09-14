@@ -7,7 +7,7 @@
   <title>小游戏｜F.w 研究所</title>
   <link rel="stylesheet" href="assets/styles.css?v=desktop-priority-20260716-1">
   <link rel="stylesheet" href="assets/auth.css">
-  <link rel="stylesheet" href="assets/web-sync-20260914.css?v=1">
+  <link rel="stylesheet" href="assets/web-sync-20260914.css?v=3">
   <style>
     .game-stage[hidden]{display:none}.game-stage{position:fixed;inset:0;z-index:25000;background:rgba(15,20,18,.56);backdrop-filter:blur(6px);padding:28px;display:grid;place-items:center}.game-stage-card{position:relative;width:min(1100px,100%);height:min(780px,92vh);overflow:hidden;border-radius:20px;background:#fff;box-shadow:0 35px 100px rgba(0,0,0,.35)}.game-stage iframe{width:100%;height:100%;border:0;background:#fff}.game-stage-close{position:absolute;z-index:2;right:14px;top:14px;width:40px;height:40px;border:0;border-radius:50%;background:rgba(21,43,37,.9);color:#fff;font-size:24px;cursor:pointer}.game-stage-title{position:absolute;z-index:2;left:16px;top:14px;padding:9px 13px;border-radius:999px;background:rgba(255,255,255,.92);color:#152b25;font-size:12px;font-weight:900;box-shadow:0 5px 18px rgba(0,0,0,.08)}
   </style>
@@ -38,8 +38,8 @@
 <div class="game-stage" data-game-stage hidden>
   <div class="game-stage-card"><span class="game-stage-title" data-game-stage-title>小游戏</span><button class="game-stage-close" type="button" data-game-close>×</button><iframe title="小游戏" data-game-frame></iframe></div>
 </div>
-<script src="assets/app.js?v=square-echo-sync-20260914-1"></script>
-<script src="assets/web-sync-20260914.js?v=1"></script>
+<script src="assets/app.js?v=web-square-inline-20260914-1"></script>
+<script src="assets/web-sync-20260914.js?v=3"></script>
 <script>
 (function(){
   var stage=document.querySelector('[data-game-stage]'),frame=document.querySelector('[data-game-frame]'),title=document.querySelector('[data-game-stage-title]');

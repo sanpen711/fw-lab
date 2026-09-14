@@ -30,10 +30,12 @@ body{min-width:0}
 }
 .logo{color:var(--web-ink);font:900 24px/1 Georgia,"Microsoft YaHei UI",sans-serif;letter-spacing:-.06em}
 .nav{gap:6px;font-size:13px;font-weight:850;flex-wrap:wrap;justify-content:flex-end}
-.nav>a,.nav>button,.web-more-toggle{
+.nav a,.nav>button,.web-more-toggle{
   min-height:38px;padding:0 12px;border:0;border-radius:11px;background:transparent;color:#31433d;opacity:1;font:inherit;font-weight:850;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
 }
-.nav>a:hover,.nav>button:hover,.nav>a.active,.web-more-toggle.active{background:var(--web-pink-soft);color:#ff7f8b}
+.nav a:hover,.nav>button:hover,.nav a.active,.web-more-toggle.active{background:var(--web-pink-soft);color:#ff7f8b}
+.web-nav-primary,.web-nav-utility{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.web-nav-utility{margin-left:auto}
 .web-more{position:relative;display:inline-flex;align-items:center}
 .web-more-menu{position:absolute;right:0;top:46px;width:150px;padding:8px;border:1px solid var(--web-line);border-radius:14px;background:#fff;box-shadow:0 20px 50px rgba(21,43,37,.14)}
 .web-more-menu[hidden]{display:none}
@@ -45,11 +47,14 @@ body{min-width:0}
 
 /* PC 顶部导航分组：主栏目居中，搭子 / 会员中心 / 更多贴近头像左侧。 */
 @media(min-width:821px){
-  html:not(.fw-desktop-app) .header .nav{flex:1!important;justify-content:flex-start!important;flex-wrap:nowrap!important;gap:4px!important;margin-left:26px!important;min-width:0}
-  html:not(.fw-desktop-app) .header .nav>a:first-child{margin-left:auto}
-  html:not(.fw-desktop-app) .header .nav>a:nth-child(7){margin-left:auto}
-  html:not(.fw-desktop-app) .header .nav>a,html:not(.fw-desktop-app) .header .web-more-toggle{flex:none}
-  html:not(.fw-desktop-app) .header .fw-userbar{margin-left:8px!important}
+  html:not(.fw-desktop-app) .header{justify-content:flex-start!important}
+  html:not(.fw-desktop-app) .header .logo{order:1;flex:0 0 auto}
+  html:not(.fw-desktop-app) .header .nav{order:2;position:static!important;left:auto!important;top:auto!important;transform:none!important;display:flex;flex:1!important;align-items:center!important;justify-content:flex-start!important;flex-wrap:nowrap!important;gap:4px!important;margin-left:26px!important;min-width:0}
+  html:not(.fw-desktop-app) .header .web-nav-primary{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+  html:not(.fw-desktop-app) .header .web-nav-utility{margin-left:auto}
+  html:not(.fw-desktop-app) .header .nav a,html:not(.fw-desktop-app) .header .web-more-toggle{flex:none}
+  html:not(.fw-desktop-app) .header .menu-btn{order:3}
+  html:not(.fw-desktop-app) .header .fw-userbar{order:4;margin-left:8px!important;flex:0 0 auto}
 }
 
 /* 清理旧深色背景体系 */
@@ -101,7 +106,7 @@ body{min-width:0}
 .web-games{width:min(1120px,calc(100% - 72px));margin:0 auto;padding:48px 0 72px}.web-page-heading h1{margin:0;font-size:46px;letter-spacing:-.06em}.web-page-heading p{margin:10px 0 0;color:var(--web-muted);font-weight:700}.web-game-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:28px}.web-game-card{display:flex;min-height:170px;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:22px;border:1px solid var(--web-line);border-radius:18px;background:#fff;color:var(--web-ink);transition:.18s}.web-game-card:hover{transform:translateY(-2px);box-shadow:var(--web-shadow);border-color:#f3c5c8}.web-game-card b{font-size:21px}.web-game-card span{margin-top:8px;color:var(--web-muted);font-size:12px;line-height:1.6}.web-game-card em{margin-top:12px;color:#ff7f8b;font-size:10px;font-style:normal;font-weight:900}
 
 @media(max-width:1050px){
-  .nav{gap:2px}.nav>a,.nav>button,.web-more-toggle{padding:0 8px;font-size:12px}
+  .nav{gap:2px}.nav a,.nav>button,.web-more-toggle{padding:0 8px;font-size:12px}
   .web-home-copy{width:64%;padding-left:38px}.web-home-visual{width:48%}
 }
 @media(max-width:820px){

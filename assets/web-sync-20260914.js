@@ -26,20 +26,24 @@
     const current=file();
     const moreActive=['archive.html','rules.html','admin.html'].includes(current)?'active':'';
     nav.innerHTML=`
-      <a class="${active('index.html')}" href="index.html">首页</a>
-      <a class="${active('square.html')}" href="square.html">精神广场</a>
-      <a class="${active('rooms.html')}" href="rooms.html">学术研讨</a>
-      <a class="${active('bird.html')}" href="bird.html">新闻专区</a>
-      <a class="${active('play.html')}" href="play.html">下班开黑</a>
-      <a class="${active('games.html')}" href="games.html">小游戏</a>
-      <a class="${active('buddy.html')}" href="buddy.html">搭子</a>
-      <a class="${active('membership.html')}" href="membership.html">会员中心</a>
-      <span class="web-more">
-        <button class="web-more-toggle ${moreActive}" type="button" aria-expanded="false">更多</button>
-        <span class="web-more-menu" hidden>
-          <a class="${active('archive.html')}" href="archive.html">档案</a>
-          <a class="${active('rules.html')}" href="rules.html">入馆须知</a>
-          <a class="${active('admin.html')}" href="admin.html">处理公告</a>
+      <span class="web-nav-primary">
+        <a class="${active('index.html')}" href="index.html">首页</a>
+        <a class="${active('square.html')}" href="square.html">精神广场</a>
+        <a class="${active('rooms.html')}" href="rooms.html">学术研讨</a>
+        <a class="${active('bird.html')}" href="bird.html">新闻专区</a>
+        <a class="${active('play.html')}" href="play.html">下班开黑</a>
+        <a class="${active('games.html')}" href="games.html">小游戏</a>
+      </span>
+      <span class="web-nav-utility">
+        <a class="${active('buddy.html')}" href="buddy.html">搭子</a>
+        <a class="${active('membership.html')}" href="membership.html">会员中心</a>
+        <span class="web-more">
+          <button class="web-more-toggle ${moreActive}" type="button" aria-expanded="false">更多</button>
+          <span class="web-more-menu" hidden>
+            <a class="${active('archive.html')}" href="archive.html">档案</a>
+            <a class="${active('rules.html')}" href="rules.html">入馆须知</a>
+            <a class="${active('admin.html')}" href="admin.html">处理公告</a>
+          </span>
         </span>
       </span>`;
     const button=$('.web-more-toggle',nav),menu=$('.web-more-menu',nav);

@@ -11,6 +11,8 @@ const social = read('assets/fw-social.js');
 const stable = read('assets/fw-stable-core.js');
 const jump = read('assets/fw-notification-jump.js');
 const html = read('square.html');
+const inlineEcho = read('assets/web-square-echo-20260914.js');
+const database = read('assets/supabase-db.js');
 
 assert.match(split, /window\.__FW_WEB_SQUARE_SELECT__\s*=\s*function/, '网页版广场应暴露统一选帖入口');
 assert.match(split, /if\(!rows\.length\)\{[\s\S]*return false;/, '帖子尚未加载时不应丢失 URL 中的目标帖子');
@@ -27,6 +29,13 @@ assert.match(stable, /FWCommentReplyEcho\) echoRows = await window\.FWCommentRep
 assert.match(stable, /\.in\('type', ECHO_TYPES\)/, '电脑端回声列表只应查询回声类型');
 assert.match(jump, /__FW_SQUARE_SHOW_POST__/, '回声跳转应能展示分页之外的帖子');
 assert.match(jump, /__FW_WEB_SQUARE_SELECT__/, '回声跳转应同步右侧详情与左侧选中框');
-assert.match(html, /web-square-split-20260914\.js\?v=4/, '精神广场应刷新选中同步脚本缓存版本');
+assert.match(html, /web-square-split-20260914\.js\?v=5/, '精神广场应刷新选中同步脚本缓存版本');
+assert.match(html, /data-web-square-echo-toggle/, '网页版精神广场应在左栏提供回声切换按钮');
+assert.match(html, /data-web-square-echo-panel/, '网页版精神广场应内嵌回声列表');
+assert.doesNotMatch(html, /href="echo\.html">回声/, '网页版精神广场不应再跳转到独立回声页');
+assert.match(inlineEcho, /feedPanel\.hidden=showingEcho;echoPanel\.hidden=!showingEcho/, '回声按钮应在帖子与回声列表之间原位切换');
+assert.match(inlineEcho, /__FW_SQUARE_OPEN_POST_BY_ID__/, '点击回声应能读取不在首批列表中的旧帖子');
+assert.match(inlineEcho, /data-web-square-echo-open/, '回声列表应提供直接查看右侧帖子的入口');
+assert.match(database, /async function loadPostById\(postId\)/, '数据层应支持按回声目标读取单条帖子');
 
 console.log('web square and echo sync checks passed');

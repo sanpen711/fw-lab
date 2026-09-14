@@ -383,7 +383,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "assets/supabase-live.js?v=ui-consistency-20260811-1",
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
-    "assets/supabase-db.js?v=critical-relations-20260710-1"
+    "assets/supabase-db.js?v=web-square-inline-20260914-1"
   ];
 
   function fail(src){
@@ -463,7 +463,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadJs("assets/fw-comment-reply-echo.js?v=comment-reply-echo-20260808-1");
   if(!isWindowsDesktopApp || !isEchoPage) loadJs("assets/fw-echo-stable-route.js?v=square-echo-sync-20260914-1");
-  if(!isDedicatedWindowsSocialPage) loadJs("assets/fw-social.js?v=square-echo-sync-20260914-1");
+  if(!isDedicatedWindowsSocialPage) loadJs("assets/fw-social.js?v=web-square-inline-20260914-1");
   loadJs("assets/fw-logout-home-fix.js?v=logout-home-fix-20260513-1");
   loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
   if(isHome && !isWindowsDesktopApp) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");

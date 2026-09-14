@@ -261,6 +261,7 @@
       setBadge('[data-fw-buddy-count]', (msg.count || 0) + Math.max((f.count || 0), friendNoticeCount));
     }catch(e){}
   }
+  window.fwRefreshWebSocialBadges = refreshBadges;
 
   function formatNoticeType(type){
     return ({
