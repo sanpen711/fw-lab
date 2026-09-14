@@ -7,89 +7,52 @@
     (function(){
       if(!/FWYanjiusuoDesktop\//i.test(navigator.userAgent || '')) return;
       document.documentElement.classList.add('fw-desktop-preparing');
-      window.setTimeout(function(){
-        document.documentElement.classList.remove('fw-desktop-preparing');
-      }, 6000);
+      window.setTimeout(function(){document.documentElement.classList.remove('fw-desktop-preparing');},6000);
     })();
   </script>
   <link rel="stylesheet" href="assets/fw-desktop-client.css?v=ui-consistency-20260811-1" />
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="F.w 研究所">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
   <title>精神广场｜F.w 研究所</title>
   <meta name="description" content="F.w 研究所：上班族匿名精神休息室。" />
   <link rel="stylesheet" href="assets/styles.css?v=desktop-priority-20260716-1" />
   <link rel="stylesheet" href="assets/square-compact.css?v=restore-compose-20260824-1" />
   <link rel="stylesheet" href="assets/auth.css" />
+  <link rel="stylesheet" href="assets/web-sync-20260914.css?v=1" />
+  <style>
+    .web-square-page{width:min(1240px,calc(100% - 72px));margin:0 auto;padding:38px 0 70px}.web-square-head{display:flex;align-items:end;justify-content:space-between;gap:20px}.web-square-head h1{margin:0;font-size:46px;letter-spacing:-.06em}.web-square-head p{margin:9px 0 0;color:#737b78;font-size:13px;font-weight:700}.web-square-actions{display:flex;gap:8px}.web-square-actions a,.web-square-actions button{display:inline-flex;min-height:40px;align-items:center;justify-content:center;padding:0 14px;border:1px solid #e4ddd3;border-radius:11px;background:#fff;color:#152b25;font-size:12px;font-weight:900;cursor:pointer}.web-square-actions .primary{border-color:#152b25;background:#152b25;color:#fff}.web-square-grid{display:grid;grid-template-columns:minmax(300px,.78fr) minmax(0,1.22fr);gap:18px;margin-top:18px;align-items:start}.web-square-list-wrap,.web-square-detail{height:calc(100vh - 190px);min-height:600px;border:1px solid #e4ddd3;border-radius:18px;background:#fff;overflow:hidden}.web-square-list-wrap{display:flex;flex-direction:column}.web-square-list-title{padding:16px 16px 10px;border-bottom:1px solid #eee9e3}.web-square-list-title b{font-size:13px}.web-square-list-title span{display:block;margin-top:4px;color:#8a928f;font-size:10px}.web-square-list{overflow:auto;padding:8px}.web-square-list-item{display:grid;gap:8px;width:100%;padding:13px;border:0;border-radius:12px;background:#fff;color:#152b25;text-align:left;cursor:pointer}.web-square-list-item:hover,.web-square-list-item.active{background:#fff4f5}.web-square-list-item.active{box-shadow:inset 0 0 0 1px #ffb7bd}.web-square-list-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.web-square-list-top b{color:#ff7f8b;font-size:10px}.web-square-list-top small{color:#999f9c;font-size:9px}.web-square-list-item>strong{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:12px;line-height:1.55;font-weight:800}.web-square-list-meta{color:#8b928f;font-size:9px}.web-square-list-empty{padding:24px;color:#8b928f;font-size:11px;text-align:center}.web-square-detail{position:sticky;top:12px;overflow:auto;padding:16px}.web-square-detail .feed-list{display:block!important}.web-square-detail .post-card{margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important}.web-square-detail .post-card[hidden]{display:none!important}.web-square-detail .post-content{font-size:16px!important;line-height:1.8!important}.web-square-detail .comment-box.show{margin-top:16px!important}.web-square-empty{display:grid;height:100%;place-items:center;color:#929a97;font-size:12px;font-weight:800}[data-sq="same"],[data-sq="tissue"],[data-action="same"],[data-action="tissue"]{display:none!important}@media(max-width:900px){.web-square-page{width:min(100% - 32px,680px);padding-top:26px}.web-square-head{display:block}.web-square-actions{margin-top:14px;flex-wrap:wrap}.web-square-grid{grid-template-columns:1fr}.web-square-list-wrap,.web-square-detail{height:auto;min-height:0}.web-square-list-wrap{max-height:420px}.web-square-detail{position:static}.web-square-head h1{font-size:40px}}
+  </style>
 </head>
 <body>
+<main class="page">
+  <header class="header dark">
+    <a class="logo" href="index.html">F.w 研究所</a>
+    <nav class="nav"><a href="index.html">首页</a><a class="active" href="square.html">精神广场</a><a href="rooms.html">学术研讨</a><a href="bird.html">新闻专区</a><a href="archive.html">档案</a><a href="rules.html">入馆须知</a></nav>
+    <button class="menu-btn" aria-label="菜单">☰</button>
+  </header>
+  <nav class="mobile-nav"><a href="index.html">首页</a><a href="square.html">精神广场</a><a href="rooms.html">学术研讨</a><a href="bird.html">新闻专区</a><a href="archive.html">档案</a><a href="rules.html">入馆须知</a><a href="admin.html">处理公告</a></nav>
 
-<main class="page bg-gradient-clean">
-  <section class="page-hero bg-night square-hero">
-    
-<header class="header dark">
-  <a class="logo" href="index.html">F.w 研究所</a>
-  <nav class="nav">
-    <a class="" href="index.html">首页</a>
-    <a class="active" href="square.html">精神广场</a>
-    <a class="" href="rooms.html">学术研讨</a>
-    <a class="" href="bird.html">观鸟台</a>
-    <a class="" href="archive.html">废话档案</a>
-    <a class="" href="rules.html">入馆须知</a>
-  </nav>
-  <button class="menu-btn" aria-label="菜单">☰</button>
-</header>
-<nav class="mobile-nav">
-  <a href="index.html">首页</a>
-  <a href="square.html">精神广场</a>
-  <a href="rooms.html">学术研讨</a>
-  <a href="bird.html">观鸟台</a>
-  <a href="archive.html">废话档案</a>
-  <a href="rules.html">入馆须知</a>
-  <a href="admin.html">处理公告</a>
-</nav>
-
-    <div class="hero-inner square-hero-inner">
-      <div class="square-hero-copy">
-        <h1 class="hero-title">精神广场</h1>
-        <p class="hero-copy">这里不是严肃论坛，只是大家把今天放下来的地方。登录后可以发牢骚、点赞、评论、俺也一样、递纸巾。</p>
-      </div>
-
-      <div class="square-hero-compose-slot">
-        <form class="quick-form square-hero-compose" data-post-form>
-          <h2 class="form-title">先发一句牢骚</h2>
-          <label class="form-label">今天想说点什么？</label>
-          <textarea placeholder="例如：今天开了三个会，最后决定下次再讨论。"></textarea>
-          <button class="btn dark full" type="submit" style="margin-top:14px">发布 →</button>
-          <p class="form-tip" data-notice>登录后才能发布；未登录只能浏览，不能点赞、评论、俺也一样或递纸巾。</p>
-        </form>
-      </div>
+  <section class="web-square-page">
+    <div class="web-square-head">
+      <div><h1>精神广场</h1><p>左边看帖子，右边查看完整评论、回复和互动。</p></div>
+      <div class="web-square-actions"><button type="button" data-square-refresh onclick="window.__FW_SQUARE_RENDER__&&window.__FW_SQUARE_RENDER__()">刷新</button><a href="echo.html">回声</a><a class="primary" href="compose.html">发牢骚</a></div>
+    </div>
+    <div class="web-square-grid">
+      <section class="web-square-list-wrap"><div class="web-square-list-title"><b>最新帖子</b><span>选择帖子后在右侧查看详情</span></div><div class="web-square-list" data-web-square-list><div class="web-square-list-empty">正在读取帖子…</div></div></section>
+      <aside class="web-square-detail"><div class="web-square-empty" data-web-square-empty>正在准备帖子详情…</div><div class="feed-list" data-feed data-limit="100"></div></aside>
     </div>
   </section>
-
-  <section class="layout-two square-layout">
-    <div class="square-main">
-      <div class="feed-list" data-feed data-limit="12"></div>
-    </div>
-
-    <aside class="square-side">
-      <div class="side-card light">
-        <h3>互动规则</h3>
-        <p>每个登录账号对同一条内容只能点赞一次、“俺也一样”一次、“递纸巾”一次。评论不限量，但站长可以删除不合适评论。</p>
-      </div>
-    </aside>
-  </section>
-
-  <footer class="footer"><span>F.w 研究所</span><span>精神广场 / Public Wall · <a href="privacy.html">隐私政策</a></span></footer>
+  <footer class="footer"><span>F.w 研究所</span><span>精神广场 · <a href="privacy.html">隐私政策</a></span></footer>
 </main>
-
-<script src="assets/app.js?v=desktop-badge-zero-20260811-1"></script>
+<script src="assets/app.js?v=web-sync-20260914-1"></script>
 <script src="assets/auth.js?v=echo-clean-20260702-1"></script>
 <script src="assets/fw-load-posts-safe.js?v=desktop-cache-20260811-1"></script>
 <script src="assets/fw-square-ui-fix.js?v=desktop-cache-20260811-1"></script>
-  <script src="assets/pwa.js?v=pwa-20260522-1"></script>
+<script src="assets/web-sync-20260914.js?v=1"></script>
+<script src="assets/web-square-split-20260914.js?v=1"></script>
+<script src="assets/pwa.js?v=pwa-20260522-1"></script>
 </body>
 </html>
