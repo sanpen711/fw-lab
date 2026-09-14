@@ -1,0 +1,100 @@
+/* F.w 研究所 PC 网页端视觉同步层 2026-09-14
+   目标：与 Windows 1.2.21 保持同一视觉语言，同时保留网页顶部导航。 */
+:root{
+  --web-bg:#f7f7f6;
+  --web-paper:#ffffff;
+  --web-ink:#152b25;
+  --web-muted:#737b78;
+  --web-line:#e4ddd3;
+  --web-pink:#ff969e;
+  --web-pink-soft:#ffe5e8;
+  --web-deep:#152b25;
+  --web-radius:18px;
+  --web-shadow:0 16px 42px rgba(21,43,37,.07);
+}
+html,body{background:var(--web-bg);color:var(--web-ink)}
+body{min-width:0}
+.page{background:var(--web-bg)}
+
+/* 顶部导航：位置沿用网页版，视觉同步电脑端 */
+.header,
+.header.dark{
+  position:relative;
+  z-index:1000;
+  min-height:74px;
+  padding:0 clamp(24px,4vw,58px);
+  border-bottom:1px solid #ece7e1;
+  background:rgba(255,255,255,.96);
+  color:var(--web-ink);
+  backdrop-filter:blur(14px);
+}
+.logo{color:var(--web-ink);font:900 24px/1 Georgia,"Microsoft YaHei UI",sans-serif;letter-spacing:-.06em}
+.nav{gap:6px;font-size:13px;font-weight:850;flex-wrap:wrap;justify-content:flex-end}
+.nav>a,.nav>button,.web-more-toggle{
+  min-height:38px;padding:0 12px;border:0;border-radius:11px;background:transparent;color:#31433d;opacity:1;font:inherit;font-weight:850;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.nav>a:hover,.nav>button:hover,.nav>a.active,.web-more-toggle.active{background:var(--web-pink-soft);color:#ff7f8b}
+.web-more{position:relative;display:inline-flex;align-items:center}
+.web-more-menu{position:absolute;right:0;top:46px;width:150px;padding:8px;border:1px solid var(--web-line);border-radius:14px;background:#fff;box-shadow:0 20px 50px rgba(21,43,37,.14)}
+.web-more-menu[hidden]{display:none}
+.web-more-menu a{display:flex;min-height:38px;align-items:center;padding:0 11px;border-radius:9px;color:#31433d;font-size:12px;font-weight:850}
+.web-more-menu a:hover,.web-more-menu a.active{background:#fff2f3;color:#ff7f8b}
+.mobile-nav{background:#fff;color:var(--web-ink);border-bottom:1px solid var(--web-line)}
+.mobile-nav a{border-color:#eee9e3}
+.menu-btn{color:var(--web-ink)}
+
+/* 清理旧深色背景体系 */
+.bg-night,.bg-gradient-clean{background:var(--web-bg)!important;color:var(--web-ink)!important}
+.bg-night::before,.bg-night::after{display:none!important}
+.hero,.page-hero{color:var(--web-ink)}
+.footer{background:var(--web-paper)!important;color:var(--web-muted)!important;border-top:1px solid var(--web-line)!important}
+
+/* 首页 */
+.web-home{min-height:100vh;background:#fff}
+.web-home-shell{width:min(1180px,calc(100% - 72px));margin:0 auto;padding:46px 0 32px}
+.web-home-hero{position:relative;overflow:hidden;min-height:462px;border-radius:22px;background:linear-gradient(120deg,#faf7f4 0%,#f7f4f0 55%,#f0ece7 100%)}
+.web-home-copy{position:relative;z-index:4;width:58%;padding:48px 0 42px 58px}
+.web-home-eyebrow{margin:0;color:#ff8994;font-size:10px;font-weight:950;letter-spacing:.06em}
+.web-home-title{margin:38px 0 18px;color:#050706;font:900 clamp(54px,6vw,82px)/.92 "Microsoft YaHei UI","PingFang SC",sans-serif;letter-spacing:-.085em}
+.web-home-subtitle{margin:0;color:#0a0d0c;font-size:27px;line-height:1.35;font-weight:900}
+.web-home-desc{margin:22px 0 0;color:#303633;font-size:14px;line-height:1.75;font-weight:650}
+.web-primary{display:inline-flex;align-items:center;justify-content:center;min-width:154px;min-height:46px;margin-top:28px;padding:0 20px;border:0;border-radius:12px;background:var(--web-deep);color:#fff;font-weight:900;cursor:pointer}
+.web-primary:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(21,43,37,.18)}
+.web-home-visual{position:absolute;z-index:2;right:0;top:0;width:50%;height:100%;overflow:hidden}
+.web-home-visual::before{content:"";position:absolute;z-index:2;left:0;top:0;bottom:0;width:38%;background:linear-gradient(90deg,#f7f4f0,rgba(247,244,240,.75),transparent)}
+.web-home-visual img{width:100%;height:100%;object-fit:cover;object-position:center}
+.web-note{position:absolute;z-index:4;max-width:170px;padding:9px 12px;border:1px solid rgba(21,43,37,.08);border-radius:12px;background:rgba(255,255,255,.92);box-shadow:0 12px 26px rgba(21,43,37,.08);color:#29332f;font-size:11px;font-weight:800;line-height:1.45;backdrop-filter:blur(8px)}
+.web-note-a{right:28px;top:45px}.web-note-b{right:36px;bottom:42px}.web-note-c{left:58px;top:112px}
+.web-tool-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:18px}
+.web-tool{display:flex;min-height:142px;flex-direction:column;align-items:center;justify-content:center;padding:20px;border:1px solid var(--web-line);border-radius:18px;background:#fff;box-shadow:none;color:var(--web-ink);text-align:center;cursor:pointer;transition:.18s ease}
+.web-tool:hover{transform:translateY(-2px);box-shadow:var(--web-shadow)}
+.web-tool.weather{background:linear-gradient(135deg,#fffaf2,#f3f8f5)}
+.web-tool.offwork{background:linear-gradient(135deg,#fffaf2,#fff2f3)}
+.web-tool.feedback{background:linear-gradient(135deg,#fffaf2,#fff8ee)}
+.web-tool strong{font-size:23px;line-height:1.15}.web-tool p{margin:8px 0 0;color:#4f5e59;font-size:12px;font-weight:750}.web-tool em{margin-top:7px;color:#9a9288;font-size:10px;font-style:normal;font-weight:700}
+
+/* 通用内容页面 */
+.page-hero{min-height:0!important;padding-bottom:0!important}
+.page-hero .hero-inner,.square-hero-inner{display:block!important;padding:52px clamp(24px,5vw,64px) 28px!important}
+.page-hero .hero-title{color:#0a0d0c!important;font-size:clamp(44px,5vw,68px)!important;line-height:1!important;letter-spacing:-.07em!important}
+.page-hero .hero-copy{max-width:760px!important;margin-top:16px!important;color:var(--web-muted)!important;font-size:15px!important;line-height:1.75!important;font-weight:700!important}
+.quick-form,.side-card,.poll-card,.poll-side-card,.archive-card,.bird-card{border-color:var(--web-line)!important;border-radius:16px!important;background:#fff!important;box-shadow:none!important}
+.layout-two,.square-layout{background:var(--web-bg)!important;padding-top:28px!important}
+.feed-card,.post-card{border-color:var(--web-line)!important;border-radius:16px!important;background:#fff!important;box-shadow:none!important}
+
+/* 弹窗 */
+.web-modal[hidden]{display:none}.web-modal{position:fixed;inset:0;z-index:20000;display:grid;place-items:center;padding:24px;background:rgba(15,20,18,.35);backdrop-filter:blur(5px)}
+.web-modal-card{position:relative;width:min(520px,100%);max-height:86vh;overflow:auto;padding:26px;border:1px solid var(--web-line);border-radius:20px;background:#fff;box-shadow:0 28px 90px rgba(0,0,0,.22)}
+.web-modal-card h2{margin:0 0 8px;font-size:24px}.web-modal-card p{color:var(--web-muted);line-height:1.7}.web-modal-card label{display:block;margin:16px 0 7px;font-size:12px;font-weight:900}.web-modal-card input,.web-modal-card textarea,.web-modal-card select{width:100%;border:1px solid var(--web-line);border-radius:11px;background:#fff;padding:0 12px;color:var(--web-ink)}
+.web-modal-card input,.web-modal-card select{height:44px}.web-modal-card textarea{min-height:120px;padding:12px;resize:vertical}.web-modal-close{position:absolute;right:14px;top:13px;width:34px;height:34px;border:0;border-radius:50%;background:#f2efeb;color:#44514d;font-size:20px;cursor:pointer}.web-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}.web-secondary{min-height:42px;padding:0 15px;border:1px solid var(--web-line);border-radius:11px;background:#fff;color:var(--web-ink);font-weight:850;cursor:pointer}.web-result-list{display:grid;gap:8px;margin-top:12px}.web-result-list button{padding:11px;border:1px solid var(--web-line);border-radius:10px;background:#fff;text-align:left;cursor:pointer}.web-result-list button:hover{border-color:#ffb1b7;background:#fff7f8}.web-status{min-height:18px;margin-top:10px;color:#8a6d67;font-size:11px;font-weight:800}.web-status.error{color:#c84f5b}
+
+/* 小游戏 */
+.web-games{width:min(1120px,calc(100% - 72px));margin:0 auto;padding:48px 0 72px}.web-page-heading h1{margin:0;font-size:46px;letter-spacing:-.06em}.web-page-heading p{margin:10px 0 0;color:var(--web-muted);font-weight:700}.web-game-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:28px}.web-game-card{display:flex;min-height:170px;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:22px;border:1px solid var(--web-line);border-radius:18px;background:#fff;color:var(--web-ink);transition:.18s}.web-game-card:hover{transform:translateY(-2px);box-shadow:var(--web-shadow);border-color:#f3c5c8}.web-game-card b{font-size:21px}.web-game-card span{margin-top:8px;color:var(--web-muted);font-size:12px;line-height:1.6}.web-game-card em{margin-top:12px;color:#ff7f8b;font-size:10px;font-style:normal;font-weight:900}
+
+@media(max-width:1050px){
+  .nav{gap:2px}.nav>a,.nav>button,.web-more-toggle{padding:0 8px;font-size:12px}
+  .web-home-copy{width:64%;padding-left:38px}.web-home-visual{width:48%}
+}
+@media(max-width:820px){
+  .header{min-height:64px;padding:0 20px}.nav{display:none}.menu-btn{display:block}.web-home-shell,.web-games{width:min(100% - 32px,680px);padding-top:24px}.web-home-hero{min-height:auto}.web-home-copy{width:100%;padding:34px 28px 320px}.web-home-title{font-size:52px}.web-home-subtitle{font-size:22px}.web-home-visual{top:auto;bottom:0;width:100%;height:300px}.web-home-visual::before{left:0;right:0;top:0;width:auto;height:30%;background:linear-gradient(180deg,#f7f4f0,transparent)}.web-note-c{left:18px;top:60px}.web-tool-grid,.web-game-grid{grid-template-columns:1fr}.web-tool{min-height:120px}
+}
