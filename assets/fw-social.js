@@ -218,46 +218,174 @@
 
   function setBadge(el, count){
     if(!el) return;
-    const n = Math.max(0, Number(count || 0));
+    const n = Number(count || 0);
     el.textContent = n > 99 ? '99+' : String(n);
     el.classList.toggle('show', n > 0);
   }
 
+  function setHeaderBadges(echoCount, buddyCount){
+    $$('[data-fw-echo-count]').forEach(el => setBadge(el, echoCount));
+    $$('[data-fw-buddy-count]').forEach(el => setBadge(el, buddyCount));
+  }
+
   async function refreshBadges(){
-    if(!window.fwDb?.enabled || !window.fwDb?.client) return;
+    if(!window.fwDb?.client){
+      setHeaderBadges(0, 0);
+      return;
+    }
     if(!me) await refreshMe();
     if(!me?.id){
-      setBadge($('[data-fw-echo-count]'), 0);
-      setBadge($('[data-fw-buddy-count]'), 0);
+      setHeaderBadges(0, 0);
       return;
     }
     try{
-      const [echo,buddy,requests] = await Promise.all([
+      const [echoRes, buddyRes, friendRes] = await Promise.all([
         window.fwDb.client.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',me.id).eq('is_read',false).neq('type','private_message'),
         window.fwDb.client.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',me.id).eq('is_read',false).eq('type','private_message'),
         window.fwDb.client.from('friendships').select('id',{count:'exact',head:true}).eq('receiver_id',me.id).eq('status','pending')
       ]);
-      setBadge($('[data-fw-echo-count]'), echo.count || 0);
-      setBadge($('[data-fw-buddy-count]'), (buddy.count || 0) + (requests.count || 0));
+      setHeaderBadges(echoRes.count || 0, (buddyRes.count || 0) + (friendRes.count || 0));
     }catch(e){}
   }
 
-  function closeAll(){
-    $$('[data-fw-social-modal],[data-fw-private-modal]').forEach(m => m.classList.remove('show'));
+  function openModal(modal){
+    if(!modal) return;
+    modal.classList.add('show');
+    document.body.classList.add('fw-social-open');
+  }
+
+  function closeModal(modal){
+    if(!modal) return;
+    modal.classList.remove('show');
     document.body.classList.remove('fw-social-open');
   }
 
-  function boot(){
+  function closeAll(){
+    $$('[data-fw-social-modal],[data-fw-private-modal]').forEach(closeModal);
+  }
+
+  async function renderEcho(){
+    if(!needLogin()) return;
+    const body = $('[data-fw-social-body]');
+    const title = $('[data-fw-social-title]');
+    const kicker = $('[data-fw-social-kicker]');
+    if(title) title.textContent = '回声';
+    if(kicker) kicker.textContent = 'ECHO CENTER';
+    if(body) body.innerHTML = '<div class="fw-social-loading">正在读取回声...</div>';
+    openModal($('[data-fw-social-modal]'));
+    try{
+      const {data,error} = await window.fwDb.client.from('notifications').select('*').eq('user_id',me.id).order('created_at',{ascending:false}).limit(80);
+      if(error) throw error;
+      const rows = (data || []).filter(row => ECHO_TYPES.includes(row.type));
+      const profileMap = await fetchProfiles(rows.map(r => r.actor_id));
+      if(!body) return;
+      body.innerHTML = `<div class="fw-echo-toolbar"><div><b>回声</b><small>${rows.length ? '新的回应和通知都在这里' : '暂时没有新的回声'}</small></div><div class="fw-echo-actions"><button class="fw-echo-refresh" type="button" data-fw-echo-refresh>刷新</button><button class="fw-echo-mark-all" type="button" data-fw-echo-mark-all>全部已读</button></div></div>` + rows.map(row => {
+        const actor = profileMap[row.actor_id] || {};
+        const name = actor.nickname || '研究员';
+        const unread = row.is_read ? '' : ' unread';
+        return `<button class="fw-social-item fw-echo-item${unread}" type="button" data-fw-echo-item="${esc(row.id)}"><span>${avatar(name,actor.avatar_url)}</span><span class="fw-social-item-main"><b>${esc(name)}</b><p>${esc(row.content || '给你留下了一条回声')}</p><small>${new Date(row.created_at).toLocaleString('zh-CN')}</small></span></button>`;
+      }).join('') || '<div class="fw-social-empty">暂时没有新的回声。</div>';
+    }catch(e){
+      if(body) body.innerHTML = '<div class="fw-social-empty">回声读取失败，请稍后重试。</div>';
+    }
+  }
+
+  async function renderBuddy(){
+    if(!needLogin()) return;
+    const body = $('[data-fw-social-body]');
+    const title = $('[data-fw-social-title]');
+    const kicker = $('[data-fw-social-kicker]');
+    if(title) title.textContent = '搭子';
+    if(kicker) kicker.textContent = 'BUDDY CENTER';
+    if(body) body.innerHTML = '<div class="fw-social-loading">正在读取搭子...</div>';
+    openModal($('[data-fw-social-modal]'));
+    try{
+      const {data,error} = await window.fwDb.client.from('friendships').select('*').or(`sender_id.eq.${me.id},receiver_id.eq.${me.id}`).order('created_at',{ascending:false});
+      if(error) throw error;
+      const ids = [];
+      (data || []).forEach(row => ids.push(row.sender_id === me.id ? row.receiver_id : row.sender_id));
+      const profiles = await fetchProfiles(ids);
+      if(body) body.innerHTML = (data || []).map(row => {
+        const otherId = row.sender_id === me.id ? row.receiver_id : row.sender_id;
+        const p = profiles[otherId] || {};
+        return `<button class="fw-social-item" type="button" data-fw-start-chat="${esc(otherId)}"><span>${avatar(p.nickname || '研究员',p.avatar_url)}</span><span class="fw-social-item-main"><b>${esc(p.nickname || '研究员')}</b><p>${row.status === 'accepted' ? '已是搭子，点击私聊' : '搭子申请处理中'}</p></span></button>`;
+      }).join('') || '<div class="fw-social-empty">暂时还没有搭子。</div>';
+    }catch(e){
+      if(body) body.innerHTML = '<div class="fw-social-empty">搭子读取失败，请稍后重试。</div>';
+    }
+  }
+
+  async function openChat(userId){
+    if(!needLogin() || !userId) return;
+    currentChat = String(userId);
+    const modal = $('[data-fw-private-modal]');
+    const messages = $('[data-fw-private-messages]');
+    const title = $('[data-fw-chat-title]');
+    const profiles = await fetchProfiles([currentChat]);
+    if(title) title.textContent = profiles[currentChat]?.nickname || '搭子私聊';
+    if(messages) messages.innerHTML = '<div class="fw-social-loading">正在读取聊天...</div>';
+    openModal(modal);
+    await loadChat();
+  }
+
+  async function loadChat(){
+    if(!currentChat || !me?.id || !window.fwDb?.client) return;
+    const messages = $('[data-fw-private-messages]');
+    try{
+      const {data,error} = await window.fwDb.client.from('private_messages').select('*').or(`and(sender_id.eq.${me.id},receiver_id.eq.${currentChat}),and(sender_id.eq.${currentChat},receiver_id.eq.${me.id})`).order('created_at',{ascending:true}).limit(200);
+      if(error) throw error;
+      if(messages){
+        messages.innerHTML = (data || []).map(row => `<div class="fw-private-message ${row.sender_id === me.id ? 'mine' : ''}"><p>${esc(row.content || '')}</p><small>${new Date(row.created_at).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}</small></div>`).join('') || '<div class="fw-social-empty">还没有聊天记录。</div>';
+        messages.scrollTop = messages.scrollHeight;
+      }
+    }catch(e){ if(messages) messages.innerHTML = '<div class="fw-social-empty">聊天记录读取失败。</div>'; }
+  }
+
+  function bind(){
+    document.addEventListener('click', async e => {
+      if(e.target.closest('[data-fw-open-echo]')){ e.preventDefault(); await refreshMe(); renderEcho(); return; }
+      if(e.target.closest('[data-fw-open-buddy]')){ e.preventDefault(); await refreshMe(); renderBuddy(); return; }
+      if(e.target.closest('[data-fw-social-close],[data-fw-chat-close]')){ closeAll(); return; }
+      const chat = e.target.closest('[data-fw-start-chat]');
+      if(chat){ e.preventDefault(); openChat(chat.dataset.fwStartChat); return; }
+      if(e.target.closest('[data-fw-echo-refresh]')){ renderEcho(); return; }
+      if(e.target.closest('[data-fw-echo-mark-all]') && me?.id){
+        await window.fwDb.client.from('notifications').update({is_read:true}).eq('user_id',me.id).eq('is_read',false);
+        renderEcho();refreshBadges();return;
+      }
+    });
+    const form = $('[data-fw-private-form]');
+    if(form){
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        if(!currentChat || !me?.id) return;
+        const input = form.elements.message;
+        const content = String(input?.value || '').trim();
+        if(!content || hasLink(content)){ if(hasLink(content)) toast('私聊暂不支持发送链接。'); return; }
+        input.disabled = true;
+        try{
+          const {error} = await window.fwDb.client.from('private_messages').insert({sender_id:me.id,receiver_id:currentChat,content});
+          if(error) throw error;
+          input.value = '';
+          await loadChat();
+        }catch(err){ toast('消息发送失败，请稍后再试。'); }
+        finally{ input.disabled = false; input.focus(); }
+      });
+    }
+  }
+
+  async function boot(){
     ensureShell();
     installHeaderButtons();
-    waitForDb().then(async ok => {
-      if(!ok) return;
+    bind();
+    const ok = await waitForDb();
+    if(ok){
       await refreshMe();
-      await refreshBadges();
+      refreshBadges();
       subscribeBadgeChanges();
       clearInterval(badgeTimer);
       badgeTimer = setInterval(() => { if(!document.hidden) refreshBadges(); }, 20000);
-    });
+    }
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
@@ -265,9 +393,5 @@
 
   document.addEventListener('visibilitychange', () => {
     if(!document.hidden) scheduleBadgeRefresh(100);
-  });
-
-  document.addEventListener('click', e => {
-    if(e.target.closest('[data-fw-social-close],[data-fw-chat-close]')){ closeAll(); return; }
   });
 })();
