@@ -372,7 +372,7 @@
       b.className = 'fw-userbar fw-userbar-supabase';
 
       b.innerHTML = `
-        <button type="button" class="fw-login-pill" data-fw-open>
+        <button type="button" class="fw-login-pill" data-fw-open data-login-cta>
           <span data-fw-avatar-slot></span>
           <span data-fw-current>注册 / 登录</span>
         </button>
