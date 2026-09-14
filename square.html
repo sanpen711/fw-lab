@@ -25,9 +25,9 @@
   <link rel="stylesheet" href="assets/fw-web-membership.css?v=fw-web-square-20260914-3" />
   <style>
     html:not(.fw-desktop-app) .web-square-page{width:min(1360px,calc(100% - 56px));margin:0 auto;padding:26px 0 42px}
-    html:not(.fw-desktop-app) .web-square-grid{display:grid;grid-template-columns:minmax(390px,.78fr) minmax(0,1fr);gap:0;height:calc(100vh - 126px);min-height:680px;border:1px solid #e4ddd3;border-radius:18px;overflow:hidden;background:#fff}
-    html:not(.fw-desktop-app) .web-square-left{display:flex;min-width:0;flex-direction:column;background:#f4f1eb;border-right:1px solid #e4ddd3}
-    html:not(.fw-desktop-app) .web-square-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;min-height:122px;padding:22px 20px 16px;background:#fffaf4;border-bottom:1px solid #e4ddd3}
+    html:not(.fw-desktop-app) .web-square-grid{display:grid;grid-template-columns:minmax(390px,.78fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:0;height:calc(100vh - 126px);height:calc(100dvh - 126px);min-height:680px;border:1px solid #e4ddd3;border-radius:18px;overflow:hidden;background:#fff}
+    html:not(.fw-desktop-app) .web-square-left{display:flex;width:100%;height:100%;min-width:0;min-height:0;flex-direction:column;overflow:hidden;background:#f4f1eb;border-right:1px solid #e4ddd3}
+    html:not(.fw-desktop-app) .web-square-head{display:flex;flex:0 0 auto;align-items:flex-start;justify-content:space-between;gap:18px;min-height:122px;padding:22px 20px 16px;background:#fffaf4;border-bottom:1px solid #e4ddd3}
     html:not(.fw-desktop-app) .web-square-kicker{margin:0 0 6px;color:#ff8a94;font-size:10px;font-weight:950;letter-spacing:.14em}
     html:not(.fw-desktop-app) .web-square-head h1{margin:0;color:#102923;font-size:30px;line-height:1.05;letter-spacing:-.05em}
     html:not(.fw-desktop-app) .web-square-head p{max-width:280px;margin:8px 0 0;color:#6f7774;font-size:11px;line-height:1.55;font-weight:720}
@@ -37,7 +37,7 @@
     html:not(.fw-desktop-app) .web-square-actions [data-web-square-echo-toggle]{position:relative}
     html:not(.fw-desktop-app) .web-square-actions [data-web-square-echo-toggle].active{border-color:#152b25;background:#152b25;color:#fff}
     html:not(.fw-desktop-app) .web-square-echo-badge{right:-6px;top:-7px}
-    html:not(.fw-desktop-app) .web-square-list{min-height:0;flex:1;overflow-x:hidden;overflow-y:scroll;padding:12px;scrollbar-gutter:stable;overscroll-behavior:contain}
+    html:not(.fw-desktop-app) .web-square-list{height:0;min-height:0;flex:1 1 0;overflow-x:hidden;overflow-y:scroll;padding:12px;scrollbar-gutter:stable;overscroll-behavior:contain}
     html:not(.fw-desktop-app) .web-square-list::-webkit-scrollbar,html:not(.fw-desktop-app) .web-square-detail-body::-webkit-scrollbar,html:not(.fw-desktop-app) .web-square-echo-list::-webkit-scrollbar{width:10px}
     html:not(.fw-desktop-app) .web-square-list::-webkit-scrollbar-track,html:not(.fw-desktop-app) .web-square-detail-body::-webkit-scrollbar-track,html:not(.fw-desktop-app) .web-square-echo-list::-webkit-scrollbar-track{background:#eee9e2}
     html:not(.fw-desktop-app) .web-square-list::-webkit-scrollbar-thumb,html:not(.fw-desktop-app) .web-square-detail-body::-webkit-scrollbar-thumb,html:not(.fw-desktop-app) .web-square-echo-list::-webkit-scrollbar-thumb{border:2px solid #eee9e2;border-radius:999px;background:#b9b1a7}
@@ -55,11 +55,11 @@
     html:not(.fw-desktop-app) .web-square-list .fw-square-img,html:not(.fw-desktop-app) .web-square-list .fw-square-video{max-height:220px!important;object-fit:cover}
     html:not(.fw-desktop-app) .web-square-list [data-sq="same"],html:not(.fw-desktop-app) .web-square-list [data-sq="tissue"],html:not(.fw-desktop-app) .web-square-list [data-action="same"],html:not(.fw-desktop-app) .web-square-list [data-action="tissue"]{display:none!important}
 
-    html:not(.fw-desktop-app) .web-square-detail{display:flex;min-width:0;flex-direction:column;background:#fff}
+    html:not(.fw-desktop-app) .web-square-detail{display:flex;width:100%;height:100%;min-width:0;min-height:0;flex-direction:column;overflow:hidden;background:#fff}
     html:not(.fw-desktop-app) .web-square-detail-head{display:flex;min-height:56px;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid #e4ddd3;background:#fffaf4;color:#243b34;font-size:14px;font-weight:950}
     html:not(.fw-desktop-app) .web-square-detail-report{min-height:32px;padding:0 12px;border:1px solid #dfd5cc;border-radius:999px;background:#fff;color:#9d4a4a;font-size:11px;font-weight:900;cursor:pointer}
     html:not(.fw-desktop-app) .web-square-detail-report:hover{border-color:#d48b91;background:#fff5f5;color:#84383e}
-    html:not(.fw-desktop-app) .web-square-detail-body{position:relative;min-height:0;flex:1;overflow-x:hidden;overflow-y:auto;background:#fff;scrollbar-gutter:stable;overscroll-behavior:contain}
+    html:not(.fw-desktop-app) .web-square-detail-body{position:relative;height:0;min-height:0;flex:1 1 0;overflow-x:hidden;overflow-y:auto;background:#fff;scrollbar-gutter:stable;overscroll-behavior:contain}
     html:not(.fw-desktop-app) .web-square-empty{display:grid;height:100%;place-items:center;color:#929a97;font-size:12px;font-weight:800}
     html:not(.fw-desktop-app) .web-square-empty[hidden]{display:none!important}
     html:not(.fw-desktop-app) .web-square-detail-card{display:block!important;width:100%!important;margin:0!important;padding:22px 24px 34px!important;border:0!important;border-radius:0!important;background:#fff!important;box-shadow:none!important}
@@ -102,12 +102,12 @@
     @media(max-width:900px){
       html:not(.fw-desktop-app) .web-square-page{width:min(100% - 28px,720px);padding-top:18px}
       html:not(.fw-desktop-app) .web-square-grid{display:block;height:auto;min-height:0;border:0;overflow:visible;background:transparent}
-      html:not(.fw-desktop-app) .web-square-left{border:1px solid #e4ddd3;border-radius:16px;overflow:hidden}
+      html:not(.fw-desktop-app) .web-square-left{width:100%;height:auto;border:1px solid #e4ddd3;border-radius:16px;overflow:hidden}
       html:not(.fw-desktop-app) .web-square-head{display:block}
       html:not(.fw-desktop-app) .web-square-actions{margin-top:14px;justify-content:flex-start}
-      html:not(.fw-desktop-app) .web-square-list{max-height:560px}
-      html:not(.fw-desktop-app) .web-square-detail{margin-top:14px;border:1px solid #e4ddd3;border-radius:16px;overflow:hidden}
-      html:not(.fw-desktop-app) .web-square-detail-body{max-height:none;overflow:visible}
+      html:not(.fw-desktop-app) .web-square-list{height:auto;max-height:560px;flex:0 1 auto}
+      html:not(.fw-desktop-app) .web-square-detail{width:100%;height:auto;margin-top:14px;border:1px solid #e4ddd3;border-radius:16px;overflow:hidden}
+      html:not(.fw-desktop-app) .web-square-detail-body{height:auto;max-height:none;flex:none;overflow:visible}
     }
   </style>
 </head>
