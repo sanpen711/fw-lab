@@ -4,6 +4,10 @@
   var list=document.querySelector('[data-web-square-list]');
   var empty=document.querySelector('[data-web-square-empty]');
   if(!feed||!list)return;
+  if(/FWYanjiusuoDesktop\//i.test(navigator.userAgent||'')){
+    var legacyMain=feed.closest('.web-square-detail');
+    if(legacyMain) legacyMain.classList.add('square-main');
+  }
   var selected='';var scheduled=0;var syncing=false;
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   function cardData(card){var id=String(card.dataset.id||'');var status=card.querySelector('.status')?.textContent?.trim()||'精神广场';var time=card.querySelector('.time')?.textContent?.trim()||'';var text=card.querySelector('.post-content')?.textContent?.trim()||'';var like=card.querySelector('[data-sq="resonance"], [data-action="resonance"]')?.textContent?.trim()||'';var comment=card.querySelector('[data-sq="comment-toggle"], [data-action="comment-toggle"]')?.textContent?.trim()||'';return{id:id,status:status,time:time,text:text,like:like,comment:comment}}
