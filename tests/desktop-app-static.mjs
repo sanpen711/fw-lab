@@ -49,7 +49,7 @@ for(const page of ['index.html','compose.html','square.html','rooms.html','bird.
 const home = read('index.html');
 assert.doesNotMatch(home, /class="fw-desktop-home"/);
 assert.match(home, /data-web-home/, 'PC 网页首页应使用新的同步首页壳');
-assert.match(home, /class="web-home-title">F\.w 研究所</, 'PC 网页首页应保留品牌主标题');
+assert.match(home, /class="web-home-title"[^>]*>F\.w 研究所</, 'PC 网页首页应保留品牌主标题');
 assert.match(home, /放下个人素质，享受缺德人生/, 'PC 网页首页应同步 Windows 当前主文案');
 assert.match(home, /href="compose\.html">开始吐槽!/, 'PC 网页首页应保留发帖入口');
 assert.match(home, /data-weather-open[\s\S]*data-offwork-open[\s\S]*data-feedback-open/, 'PC 网页首页应提供天气、下班倒计时和反馈三个工具');
