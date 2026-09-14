@@ -1,0 +1,16 @@
+(function(){
+  'use strict';
+  var feed=document.querySelector('[data-feed]');
+  var list=document.querySelector('[data-web-square-list]');
+  var empty=document.querySelector('[data-web-square-empty]');
+  if(!feed||!list)return;
+  var selected='';var scheduled=0;var syncing=false;
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function cardData(card){var id=String(card.dataset.id||'');var status=card.querySelector('.status')?.textContent?.trim()||'精神广场';var time=card.querySelector('.time')?.textContent?.trim()||'';var text=card.querySelector('.post-content')?.textContent?.trim()||'';var like=card.querySelector('[data-sq="resonance"], [data-action="resonance"]')?.textContent?.trim()||'';var comment=card.querySelector('[data-sq="comment-toggle"], [data-action="comment-toggle"]')?.textContent?.trim()||'';return{id:id,status:status,time:time,text:text,like:like,comment:comment}}
+  function select(id,scroll){var cards=Array.from(feed.querySelectorAll('.post-card'));if(!cards.length){selected='';if(empty)empty.hidden=false;return}if(!id||!cards.some(function(c){return String(c.dataset.id)===String(id)}))id=String(cards[0].dataset.id||'');selected=String(id);cards.forEach(function(card){var active=String(card.dataset.id)===selected;card.hidden=!active;card.classList.toggle('web-square-detail-active',active)});Array.from(list.querySelectorAll('[data-web-square-id]')).forEach(function(b){b.classList.toggle('active',String(b.dataset.webSquareId)===selected)});if(empty)empty.hidden=true;if(scroll){feed.scrollIntoView({behavior:'smooth',block:'start'})}}
+  function rebuild(){scheduled=0;if(syncing)return;syncing=true;try{var cards=Array.from(feed.querySelectorAll('.post-card'));if(!cards.length){list.innerHTML='<div class="web-square-list-empty">正在读取帖子…</div>';if(empty)empty.hidden=false;return}var old=selected;list.innerHTML='';cards.forEach(function(card){card.querySelectorAll('[data-sq="same"],[data-sq="tissue"],[data-action="same"],[data-action="tissue"]').forEach(function(n){n.style.display='none'});var p=cardData(card),button=document.createElement('button');button.type='button';button.className='web-square-list-item';button.dataset.webSquareId=p.id;button.innerHTML='<span class="web-square-list-top"><b>'+esc(p.status)+'</b><small>'+esc(p.time)+'</small></span><strong>'+esc(p.text||'（图片 / 表情内容）')+'</strong><span class="web-square-list-meta">'+esc([p.like,p.comment].filter(Boolean).join(' · '))+'</span>';button.addEventListener('click',function(){select(p.id,false)});list.appendChild(button)});select(old||cards[0].dataset.id,false)}finally{syncing=false}}
+  function schedule(){clearTimeout(scheduled);scheduled=setTimeout(rebuild,40)}
+  var observer=new MutationObserver(schedule);observer.observe(feed,{childList:true,subtree:true,characterData:true});
+  document.addEventListener('click',function(e){if(e.target.closest('[data-square-refresh]'))setTimeout(schedule,250)});
+  schedule();
+})();
