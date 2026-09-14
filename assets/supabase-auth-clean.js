@@ -495,7 +495,7 @@
       if(notice){
         notice.textContent = me
           ? '已登录，可以发布和互动。'
-          : '登录后才能发布；未登录只能浏览，不能点赞、评论、俺也一样或递纸巾。';
+          : '登录后才能发布；未登录只能浏览，不能点赞或评论。';
       }
 
       if(isWindowsDesktopApp){
@@ -558,16 +558,14 @@
           <div class="interactions">
             <button data-sb-action="resonance">点赞 ${p.resonance || 0}</button>
             <button data-sb-action="comment-toggle">评论 ${(p.comments || []).length}</button>
-            <button data-sb-action="same">俺也一样 ${p.same || 0}</button>
-            <button data-sb-action="tissue">递纸巾 ${p.tissue || 0}</button>
           </div>
 
           <div class="comment-box">
             <ul class="comment-list">
               ${comments || '<li><span>还没有回声，可以先留一句。</span></li>'}
             </ul>
-            <input placeholder="留一句回声，评论不限量" />
-            <button class="btn dark full" data-sb-action="comment-submit" style="margin-top:10px">发送回声</button>
+            <input placeholder="写下你的评论，评论不限量" />
+            <button class="btn dark full" data-sb-action="comment-submit" style="margin-top:10px">发表评论</button>
           </div>
         </article>
       `;

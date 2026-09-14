@@ -1,0 +1,35 @@
+/* 网页端会员身份：与电脑端共用三套主题，保持静态高光以减少卡顿。 */
+.fw-web-vip-identity{
+  --fw-vip-a:#171715;
+  --fw-vip-b:#c8a34f;
+  --fw-vip-c:#f3df9a;
+  position:relative;
+  border-color:var(--fw-vip-b)!important;
+  box-shadow:0 0 0 2px #fff,0 0 0 4px var(--fw-vip-b),0 7px 18px color-mix(in srgb,var(--fw-vip-a) 18%,transparent)!important;
+}
+.fw-web-vip-badge{
+  --fw-vip-a:#171715;
+  --fw-vip-b:#c8a34f;
+  --fw-vip-c:#f3df9a;
+  display:inline-flex;
+  min-height:17px;
+  align-items:center;
+  justify-content:center;
+  margin-left:6px;
+  padding:0 6px;
+  border:1px solid color-mix(in srgb,var(--fw-vip-b) 72%,transparent);
+  border-radius:999px;
+  background:linear-gradient(110deg,var(--fw-vip-a),var(--fw-vip-b),var(--fw-vip-c));
+  color:#fff8dc;
+  font-size:9px;
+  font-weight:950;
+  line-height:1;
+  letter-spacing:.06em;
+  vertical-align:middle;
+  white-space:nowrap;
+}
+.fw-vip-theme-rose_gold{--fw-vip-a:#3b2528;--fw-vip-b:#c88b8f;--fw-vip-c:#f0c6b6}
+.fw-vip-theme-black_gold{--fw-vip-a:#171715;--fw-vip-b:#c8a34f;--fw-vip-c:#f3df9a}
+.fw-vip-theme-pink_starlight{--fw-vip-a:#5d273c;--fw-vip-b:#ef86aa;--fw-vip-c:#ffd1e2}
+.fw-author>.fw-web-vip-badge,.fw-square-comment b+.fw-web-vip-badge{flex:0 0 auto}
+@media(max-width:820px){.fw-web-vip-badge{min-height:16px;margin-left:5px;padding:0 5px;font-size:8px}}

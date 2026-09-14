@@ -29,7 +29,7 @@
     var minutes=Math.floor(Math.max(0,Date.now()-date.getTime())/60000);if(minutes<1)return'刚刚';if(minutes<60)return minutes+'分钟前';
     var hours=Math.floor(minutes/60);if(hours<24)return hours+'小时前';var days=Math.floor(hours/24);return days<7?days+'天前':date.toLocaleDateString('zh-CN');
   }
-  function avatar(profile,name){return profile.avatar_url?'<span class="web-square-echo-avatar" data-fw-profile-user="'+esc(profile.id||'')+'"><img src="'+esc(profile.avatar_url)+'" alt="'+esc(name)+'"></span>':'<span class="web-square-echo-avatar" data-fw-profile-user="'+esc(profile.id||'')+'">'+esc(initials(name))+'</span>'}
+  function avatar(profile,name){return profile.avatar_url?'<span class="web-square-echo-avatar" data-fw-profile-user="'+esc(profile.id||'')+'" data-user-id="'+esc(profile.id||'')+'"><img src="'+esc(profile.avatar_url)+'" alt="'+esc(name)+'"></span>':'<span class="web-square-echo-avatar" data-fw-profile-user="'+esc(profile.id||'')+'" data-user-id="'+esc(profile.id||'')+'">'+esc(initials(name))+'</span>'}
   function postId(row){if(row.__post_id)return String(row.__post_id);if(row.target_type==='post'&&row.target_id)return String(row.target_id);if(['like','same','tissue','comment'].includes(row.type)&&row.target_id)return String(row.target_id);return''}
   function toast(message){var node=document.querySelector('.fw-toast');if(!node){node=document.createElement('div');node.className='fw-toast';document.body.appendChild(node)}node.textContent=message;node.classList.add('show');clearTimeout(window.__fwWebEchoToast);window.__fwWebEchoToast=setTimeout(function(){node.classList.remove('show')},2400)}
 
@@ -59,7 +59,7 @@
     if(!rows.length){echoList.innerHTML='<div class="web-square-echo-state"><b>暂时没有新的回声</b><span>安静也是一种运行状态。</span></div>';return}
     echoList.innerHTML=rows.map(function(row){
       var profile=profiles[String(row.actor_id)]||{};profile.id=row.actor_id||'';var name=profile.nickname||'某位研究员';var target=postId(row);
-      return '<article class="web-square-echo-item '+(row.is_read?'':'unread')+'" data-web-square-echo-item="'+esc(row.id)+'"'+(target?' data-web-square-echo-post="'+esc(target)+'"':'')+'>'+avatar(profile,name)+'<div class="web-square-echo-main"><b>'+esc(name)+' '+esc(notice(row.type))+'</b><span>'+esc(preview(row.content))+'</span><time>'+esc(time(row.created_at))+'</time></div><div class="web-square-echo-action">'+(target?'<button type="button" data-web-square-echo-open="'+esc(target)+'">查看帖子</button>':'<span>帖子已不可查看</span>')+'</div></article>';
+      return '<article class="web-square-echo-item '+(row.is_read?'':'unread')+'" data-web-square-echo-item="'+esc(row.id)+'"'+(target?' data-web-square-echo-post="'+esc(target)+'"':'')+'>'+avatar(profile,name)+'<div class="web-square-echo-main"><b><span data-user-id="'+esc(row.actor_id||'')+'">'+esc(name)+'</span> '+esc(notice(row.type))+'</b><span>'+esc(preview(row.content))+'</span><time>'+esc(time(row.created_at))+'</time></div><div class="web-square-echo-action">'+(target?'<button type="button" data-web-square-echo-open="'+esc(target)+'">查看帖子</button>':'<span>帖子已不可查看</span>')+'</div></article>';
     }).join('');
   }
   async function load(force){

@@ -312,7 +312,7 @@
       '<div class="post-top"><span class="status">' + esc(post.status || '今日无效') + '</span><span class="time">' + esc(time(post)) + '</span></div>' +
       '<p class="fw-author">' + avatar(post.authorName, post.authorAvatar, profileAttrs(authorId, post.authorName)) + '<span' + profileAttrs(authorId, post.authorName) + '>' + esc(post.authorName || '匿名研究员') + '</span></p>' +
       contentBody(post.content) +
-      '<div class="interactions"><button type="button" data-sq="resonance"' + reactionClass(post, 'resonance') + '>点赞 ' + (post.resonance || 0) + '</button><button type="button" data-sq="comment-toggle">评论 ' + grouped.count + '</button><button type="button" data-sq="same"' + reactionClass(post, 'same') + '>俺也一样 ' + (post.same || 0) + '</button><button type="button" data-sq="tissue"' + reactionClass(post, 'tissue') + '>递纸巾 ' + (post.tissue || 0) + '</button>' + remove + '</div>' +
+      '<div class="interactions"><button type="button" data-sq="resonance"' + reactionClass(post, 'resonance') + '>点赞 ' + (post.resonance || 0) + '</button><button type="button" data-sq="comment-toggle">评论 ' + grouped.count + '</button>' + remove + '</div>' +
       commentBox + '</article>';
   }
   function nodeFromHtml(html){
