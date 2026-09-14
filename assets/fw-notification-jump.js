@@ -154,10 +154,12 @@
   }
 
   function scrollToPost(postId, openComments){
+    if(typeof window.__FW_SQUARE_SHOW_POST__ === 'function') window.__FW_SQUARE_SHOW_POST__(postId);
     const card = findPostCard(postId);
     if(!card) return false;
+    if(typeof window.__FW_WEB_SQUARE_SELECT__ === 'function') window.__FW_WEB_SQUARE_SELECT__(postId, {scroll:true, persist:true});
+    else card.scrollIntoView({behavior:'smooth', block:'center'});
     card.classList.add('fw-target-post');
-    card.scrollIntoView({behavior:'smooth', block:'center'});
     if(openComments){
       const comment = card.querySelector('.comment-box');
       if(comment) comment.classList.add('show');

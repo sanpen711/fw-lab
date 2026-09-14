@@ -462,8 +462,8 @@ document.addEventListener("DOMContentLoaded", () => {
   loadCss("assets/fw-social.css?v=desktop-nav-safe-20260716-1");
 
   loadJs("assets/fw-comment-reply-echo.js?v=comment-reply-echo-20260808-1");
-  if(!isWindowsDesktopApp || !isEchoPage) loadJs("assets/fw-echo-stable-route.js?v=echo-auto-read-20260808-1");
-  if(!isDedicatedWindowsSocialPage) loadJs("assets/fw-social.js?v=echo-auto-read-20260808-1");
+  if(!isWindowsDesktopApp || !isEchoPage) loadJs("assets/fw-echo-stable-route.js?v=square-echo-sync-20260914-1");
+  if(!isDedicatedWindowsSocialPage) loadJs("assets/fw-social.js?v=square-echo-sync-20260914-1");
   loadJs("assets/fw-logout-home-fix.js?v=logout-home-fix-20260513-1");
   loadJs("assets/fw-signup-complete-fix.js?v=signup-complete-fix-20260513-2");
   if(isHome && !isWindowsDesktopApp) loadJs("assets/fw-home-intro.js?v=home-intro-20260513-1");
@@ -479,7 +479,7 @@ document.addEventListener("DOMContentLoaded", () => {
     旧电脑端手机壳脚本不再加载，避免和 /app/ 的底部导航、搭子、回声、我的入口重复抢控制权。
     桌面端社交、登录、头像、房间聊天等模块保留。
   */
-  if(!isSquareSurface) loadJs("assets/fw-stable-core.js?v=desktop-social-unread-20260811-1");
+  if(!isSquareSurface) loadJs("assets/fw-stable-core.js?v=square-echo-sync-20260914-1");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-wechat.js?v=desktop-social-unread-20260811-1");
   loadJs("assets/fw-desktop-echo-legacy-kill.js?v=desktop-fixes-lite-20260702-1");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
@@ -489,12 +489,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if(hasFeedSurface) loadJs("assets/fw-post-media-tools.js?v=desktop-performance-20260806-2");
 
   if(!isWindowsDesktopApp) loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
-  if(!isWindowsDesktopApp) loadJs("assets/fw-notification-jump.js?v=notification-jump-20260511-1");
+  if(!isWindowsDesktopApp) loadJs("assets/fw-notification-jump.js?v=square-echo-sync-20260914-1");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-actions-menu.js?v=buddy-actions-menu-20260511-2");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-admin-buddy-lock.js?v=admin-buddy-lock-20260513-1");
   loadJs("assets/fw-report-rpc.js?v=desktop-performance-20260806-2");
   if(isAdmin) loadJs("assets/fw-admin-polish.js?v=admin-polish-20260513-1");
-  if(!isWindowsDesktopApp) loadJs("assets/fw-echo-post-preview.js?v=echo-post-preview-20260512-1");
+  if(!isWindowsDesktopApp) loadJs("assets/fw-echo-post-preview.js?v=square-echo-sync-20260914-1");
   if(!isSquareSurface && !isWindowsDesktopApp) loadJs("assets/fw-notification-split-fix.js?v=notification-split-fix-20260513-1");
 
   if(document.querySelector("[data-weekly-grid]")){

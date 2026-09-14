@@ -16,7 +16,9 @@
   let badgeRefreshTimer = null;
   let realtimeChannel = null;
 
-  const ECHO_TYPES = ['like','same','tissue','comment','comment_reply','friend_request','friend_accept','private_message','chat_agree','system'];
+  const ECHO_TYPES = ['like','same','tissue','comment','comment_reply','chat_agree','system'];
+  const BUDDY_NOTICE_TYPES = ['private_message','friend_request','friend_accept'];
+  const SOCIAL_NOTICE_TYPES = ECHO_TYPES.concat(BUDDY_NOTICE_TYPES);
 
   function esc(v){
     return String(v ?? '').replace(/[&<>"']/g, c => ({
@@ -234,7 +236,7 @@
         .from('notifications')
         .select('id,type,target_id,is_read,created_at')
         .eq('user_id', me.id)
-        .in('type', ECHO_TYPES)
+        .in('type', SOCIAL_NOTICE_TYPES)
         .order('created_at', {ascending:false})
         .limit(300);
 
@@ -251,10 +253,12 @@
         .eq('is_read', false)
         .eq('type', 'private_message');
 
-      let echoRows = n.data || [];
+      const noticeRows = n.data || [];
+      let echoRows = noticeRows.filter(row => ECHO_TYPES.includes(String(row.type || '')));
       if(window.FWCommentReplyEcho) echoRows = await window.FWCommentReplyEcho.merge(window.fwDb.client, me.id, echoRows, {limit:300});
       setBadge('[data-fw-echo-count]', echoRows.filter(row => !row.is_read).length);
-      setBadge('[data-fw-buddy-count]', (f.count || 0) + (msg.count || 0));
+      const friendNoticeCount = noticeRows.filter(row => !row.is_read && (row.type === 'friend_request' || row.type === 'friend_accept')).length;
+      setBadge('[data-fw-buddy-count]', (msg.count || 0) + Math.max((f.count || 0), friendNoticeCount));
     }catch(e){}
   }
 

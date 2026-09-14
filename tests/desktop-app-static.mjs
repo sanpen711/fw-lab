@@ -43,7 +43,7 @@ for(const page of ['index.html','compose.html','square.html','rooms.html','bird.
   const html = read(page);
   assert.match(html, /fw-desktop-preparing/, `${page} 应在首屏绘制前隐藏网页原始版式`);
   assert.match(html, /fw-desktop-client\.css\?v=ui-consistency-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
-  assert.match(html, /assets\/app\.js\?v=desktop-badge-zero-20260811-1/, `${page} 应刷新桌面红点修复入口脚本`);
+  assert.match(html, /assets\/app\.js\?v=square-echo-sync-20260914-1/, `${page} 应刷新广场与回声同步入口脚本`);
 }
 
 const home = read('index.html');

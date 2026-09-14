@@ -377,6 +377,16 @@
     $$('[data-feed]').forEach(function(feed){ patchFeed(feed, list); });
   }
   window.__FW_SQUARE_RENDER__ = render;
+  window.__FW_SQUARE_SHOW_POST__ = function(id){
+    var list = posts();
+    var index = list.findIndex(function(post){ return String(post.id) === String(id); });
+    if(index < 0) return false;
+    if(index >= visibleCount){
+      visibleCount = Math.ceil((index + 1) / PAGE_SIZE) * PAGE_SIZE;
+      render();
+    }
+    return true;
+  };
 
   async function sync(force){
     if(!ready() || !window.fwDb.loadPosts) return false;
@@ -562,11 +572,15 @@
     if(!postCard) return;
     var action = button.dataset.sq;
     if(!/^(resonance|same|tissue|comment-toggle|comment-submit|delete-post|delete-comment|reply-toggle|reply-submit)$/.test(action || '')) return;
+    var postId = String(postCard.dataset.id);
+
+    if(typeof window.__FW_WEB_SQUARE_SELECT__ === 'function'){
+      window.__FW_WEB_SQUARE_SELECT__(postId, {scroll:false, persist:true});
+    }
 
     event.preventDefault();
     event.stopPropagation();
     if(event.stopImmediatePropagation) event.stopImmediatePropagation();
-    var postId = String(postCard.dataset.id);
 
     if(action === 'comment-toggle'){
       open[postId] = !open[postId];

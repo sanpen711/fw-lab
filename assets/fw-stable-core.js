@@ -18,6 +18,9 @@
   const desktopPage = (window.location.pathname.split('/').pop() || '').toLowerCase();
   const isDedicatedDesktopEcho = isWindowsDesktopApp && desktopPage === 'echo.html';
   const isDedicatedDesktopBuddy = isWindowsDesktopApp && desktopPage === 'buddy.html';
+  const ECHO_TYPES = ['like','same','tissue','comment','comment_reply','chat_agree','system'];
+  const BUDDY_NOTICE_TYPES = ['private_message','friend_request','friend_accept'];
+  const SOCIAL_NOTICE_TYPES = ECHO_TYPES.concat(BUDDY_NOTICE_TYPES);
   const state = { user:null, badgeTimer:0, buddyTimer:0, echoOpening:false, logoutBusy:false, buddyEnhancing:false, badgePromise:null, badgeSequence:0 };
 
   function esc(v){
@@ -154,15 +157,18 @@
       if(!uid){ setBadges('echo', 0); setBadges('buddy', 0); return; }
       try{
         const [notices, req] = await Promise.all([
-          window.fwDb.client.from('notifications').select('id,type,actor_id,created_at').eq('user_id', uid).eq('is_read', false).order('created_at', {ascending:false}).limit(300),
+          window.fwDb.client.from('notifications').select('id,type,actor_id,target_id,is_read,created_at').eq('user_id', uid).eq('is_read', false).in('type', SOCIAL_NOTICE_TYPES).order('created_at', {ascending:false}).limit(300),
           window.fwDb.client.from('friendships').select('id', {count:'exact', head:true}).eq('receiver_id', uid).eq('status', 'pending')
         ]);
         if(sequence !== state.badgeSequence) return;
         const rows = notices.data || [];
         const privateCount = rows.filter(row => row.type === 'private_message').length;
-        const echoCount = rows.filter(row => !['private_message','friend_request','friend_accept'].includes(row.type)).length;
+        const friendNoticeCount = rows.filter(row => row.type === 'friend_request' || row.type === 'friend_accept').length;
+        let echoRows = rows.filter(row => ECHO_TYPES.includes(String(row.type || '')));
+        if(window.FWCommentReplyEcho) echoRows = await window.FWCommentReplyEcho.merge(window.fwDb.client, uid, echoRows, {limit:300});
+        const echoCount = echoRows.filter(row => !row.is_read).length;
         setBadges('echo', echoCount);
-        setBadges('buddy', privateCount + Number(req.count || 0));
+        setBadges('buddy', privateCount + Math.max(friendNoticeCount, Number(req.count || 0)));
       }catch(e){}
     })();
     state.badgePromise = promise;
@@ -318,7 +324,7 @@
       }
 
       const cachedById = new Map(cachedRows.map(row => [String(row.id), row]));
-      const metaResult = await window.fwDb.client.from('notifications').select('id,is_read,created_at').eq('user_id', me.id).neq('type', 'private_message').order('created_at', {ascending:false}).limit(100);
+      const metaResult = await window.fwDb.client.from('notifications').select('id,is_read,created_at').eq('user_id', me.id).in('type', ECHO_TYPES).order('created_at', {ascending:false}).limit(100);
       if(metaResult.error) throw metaResult.error;
       const metaRows = metaResult.data || [];
       const missingIds = metaRows.map(row => row.id).filter(id => !cachedById.has(String(id)));
@@ -363,9 +369,16 @@
       window.location.href = `square.html?post=${encodeURIComponent(id)}${comments ? '&comments=1' : ''}`;
       return;
     }
+    if(typeof window.__FW_SQUARE_SHOW_POST__ === 'function') window.__FW_SQUARE_SHOW_POST__(id);
     const safeId = window.CSS && CSS.escape ? CSS.escape(String(id)) : String(id).replace(/"/g,'\\"');
     const card = document.querySelector(`.post-card[data-id="${safeId}"]`);
-    if(card){ card.scrollIntoView({behavior:'smooth', block:'center'}); card.classList.add('fw-dual-post-focus'); if(comments) card.querySelector('.comment-box')?.classList.add('show'); setTimeout(() => card.classList.remove('fw-dual-post-focus'), 2600); }
+    if(card){
+      if(typeof window.__FW_WEB_SQUARE_SELECT__ === 'function') window.__FW_WEB_SQUARE_SELECT__(id, {scroll:true, persist:true});
+      else card.scrollIntoView({behavior:'smooth', block:'center'});
+      card.classList.add('fw-dual-post-focus');
+      if(comments) card.querySelector('.comment-box')?.classList.add('show');
+      setTimeout(() => card.classList.remove('fw-dual-post-focus'), 2600);
+    }
     else toast('这条帖子可能还没加载出来，稍后再试。');
   }
 

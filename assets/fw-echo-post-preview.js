@@ -381,10 +381,12 @@
       window.location.href = `square.html?post=${encodeURIComponent(postId)}${comments ? '&comments=1' : ''}`;
       return;
     }
+    if(typeof window.__FW_SQUARE_SHOW_POST__ === 'function') window.__FW_SQUARE_SHOW_POST__(postId);
     const safeId = window.CSS && CSS.escape ? CSS.escape(String(postId)) : String(postId).replace(/"/g,'\\"');
     const card = document.querySelector(`.post-card[data-id="${safeId}"]`);
     if(card){
-      card.scrollIntoView({behavior:'smooth', block:'center'});
+      if(typeof window.__FW_WEB_SQUARE_SELECT__ === 'function') window.__FW_WEB_SQUARE_SELECT__(postId, {scroll:true, persist:true});
+      else card.scrollIntoView({behavior:'smooth', block:'center'});
       card.classList.add('fw-dual-post-focus');
       if(comments) card.querySelector('.comment-box')?.classList.add('show');
       setTimeout(() => card.classList.remove('fw-dual-post-focus'), 2600);
