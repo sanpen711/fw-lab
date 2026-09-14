@@ -1,0 +1,49 @@
+/* PC 网页栏目页统一视觉。仅由 assets/auth.js 在普通桌面浏览器加载。 */
+html,body{background:#f7f7f6!important;color:#152b25!important}
+.page{background:#f7f7f6!important}
+.page-hero,.compose-hero,.polls-hero,.bird-hero{background:#fff!important;color:#152b25!important}
+.page-hero:before,.page-hero:after,.polls-hero:before,.polls-hero:after,.bird-hero:before,.bird-hero:after{display:none!important}
+.page-hero .kicker,.polls-hero .kicker,.bird-hero .kicker{color:#ff8791!important}
+.page-hero .hero-title,.polls-hero .hero-title,.bird-hero .hero-title{color:#0a0d0c!important;font-size:clamp(42px,5vw,58px)!important;line-height:1!important;letter-spacing:-.06em!important}
+.page-hero .hero-copy,.polls-hero .hero-copy,.bird-hero .hero-copy{color:#737b78!important;font-size:14px!important;line-height:1.7!important;font-weight:700!important}
+
+/* 发牢骚 */
+.compose-hero{min-height:calc(100vh - 74px)!important;padding:0!important}
+.compose-hero-inner{width:min(1060px,calc(100% - 72px))!important;min-height:calc(100vh - 74px)!important;margin:0 auto!important;padding:48px 0!important;grid-template-columns:minmax(260px,.72fr) minmax(500px,1.28fr)!important;gap:48px!important;align-items:start!important}
+.compose-page-copy{padding-top:28px!important}
+.compose-page-form,.quick-form{border:1px solid #e4ddd3!important;border-radius:18px!important;background:#fff!important;color:#152b25!important;box-shadow:0 18px 45px rgba(21,43,37,.06)!important}
+.compose-page-form input,.compose-page-form textarea,.compose-page-form select,.quick-form input,.quick-form textarea,.quick-form select{border-color:#ddd7cf!important;background:#fff!important;color:#152b25!important}
+.compose-page-form button[type="submit"],.quick-form button[type="submit"]{border-color:#152b25!important;background:#152b25!important;color:#fff!important}
+
+/* 学术研讨 / 新闻专区 */
+.polls-hero,.bird-hero{min-height:0!important;border-bottom:1px solid #ece7e1!important}
+.polls-hero-inner,.bird-hero .hero-inner{width:min(1180px,calc(100% - 72px))!important;margin:0 auto!important;padding:38px 0 28px!important}
+.polls-hero .hero-title,.bird-hero .hero-title{margin:0 0 10px!important}
+.polls-hero-panel,.bird-hero-panel{border:1px solid #e4ddd3!important;border-radius:16px!important;background:#faf8f5!important;color:#152b25!important;box-shadow:none!important}
+.polls-hero-panel p,.bird-hero-panel p{color:#737b78!important}
+.polls-hero-stat,.bird-hero-stat{border-color:#e7e0d8!important;background:#fff!important;color:#152b25!important}
+.polls-section,.bird-section,.polls-layout,.bird-layout{background:#f7f7f6!important}
+.poll-card,.poll-side-card,.bird-card,.bird-side-card{border-color:#e4ddd3!important;border-radius:16px!important;background:#fff!important;color:#152b25!important;box-shadow:none!important}
+
+/* 档案 */
+.archive-page,.archive-shell{background:#f7f7f6!important}
+.archive-hero{width:min(1180px,calc(100% - 72px))!important;margin:32px auto 0!important;padding:30px!important;border:0!important;border-radius:20px!important;background:linear-gradient(135deg,#152b25,#28443c)!important;color:#fff!important;box-shadow:none!important}
+.archive-hero h1{margin:0 0 12px!important;color:#fff!important;font-size:48px!important;line-height:1!important;letter-spacing:-.05em!important}
+.archive-hero p{color:rgba(255,255,255,.72)!important}
+.archive-eyebrow,.archive-hero small{color:#ef8790!important}
+.archive-section{width:min(1180px,calc(100% - 72px))!important;margin-left:auto!important;margin-right:auto!important}
+.archive-card,.rank-card,.ranking-card{border-color:#e4ddd3!important;border-radius:16px!important;background:#fff!important;box-shadow:none!important}
+
+/* 通用内容 / 表单 / 按钮 */
+.section,.content-section,.main-section{background:#f7f7f6!important}
+.card,.side-card,.notice-card,.rule-card,.moderation-card{border-color:#e4ddd3!important;border-radius:16px!important;background:#fff!important;color:#152b25!important;box-shadow:none!important}
+input,textarea,select{border-color:#ddd7cf!important;background:#fff!important;color:#152b25!important}
+.btn.primary,.primary-btn,button.primary{background:#152b25!important;color:#fff!important;border-color:#152b25!important}
+.btn.light,.btn.secondary,.secondary-btn{background:#fff!important;color:#152b25!important;border-color:#e4ddd3!important}
+
+@media(max-width:900px){
+  .compose-hero-inner{width:min(100% - 32px,680px)!important;grid-template-columns:1fr!important;gap:20px!important;padding:28px 0!important}
+  .compose-page-copy{padding-top:0!important}
+  .polls-hero-inner,.bird-hero .hero-inner,.archive-section{width:min(100% - 32px,680px)!important}
+  .archive-hero{width:min(100% - 32px,680px)!important;margin-top:20px!important;padding:24px!important}
+}
