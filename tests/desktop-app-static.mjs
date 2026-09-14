@@ -43,7 +43,7 @@ for(const page of ['index.html','compose.html','square.html','rooms.html','bird.
   const html = read(page);
   assert.match(html, /fw-desktop-preparing/, `${page} 应在首屏绘制前隐藏网页原始版式`);
   assert.match(html, /fw-desktop-client\.css\?v=ui-consistency-20260811-1/, `${page} 应在 head 中预载桌面壳样式`);
-  assert.match(html, /assets\/app\.js\?v=web-square-inline-20260914-1/, `${page} 应刷新网页导航与内嵌回声入口脚本`);
+  assert.match(html, /assets\/app\.js\?v=web-ui-sync-20260914-2/, `${page} 应刷新网页导航、回声与表情同步脚本`);
 }
 
 const home = read('index.html');

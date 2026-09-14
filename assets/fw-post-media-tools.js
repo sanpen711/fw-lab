@@ -8,11 +8,17 @@
   if(window.__FW_POST_MEDIA_TOOLS__) return;
   window.__FW_POST_MEDIA_TOOLS__ = true;
 
+  // 与电脑软件版保持同一套常用小表情，避免两端数量和顺序不一致。
   var EMOJIS = [
-    '😂','😭','😅','😡','😴','😵',
-    '🐟','😓','🙃','🤔','👀','😶',
-    '👍','👎','🤝','🙏','👏','❤️',
-    '🧠','🔬','📉','🧻','☕','💤'
+    '😀','😁','😂','🤣','😄','😅','😆','😊','😉','😌',
+    '🥰','😍','🤩','😘','😋','😜','🤪','😎','🤓','🧐',
+    '🤔','😏','😒','🙄','🙃','😬','🤭','🫢','🫣','🤫',
+    '😐','😮','😲','😳','😔','😢','😭','🥺','😩','😫',
+    '🥱','😴','😷','😤','😡','🤯','😱','🫠','🫡','🤡',
+    '👍','👎','👌','✌️','🤞','🤟','🤘','🤙','👈','👉',
+    '👆','👇','👋','👏','🙌','🙏','💪','🤝','🫶',
+    '❤️','💕','💖','💔','💯','🔥','✨','⭐','🌟','💥',
+    '🎉','🎁','🏆','🚀','☕','🍓','🍉','🐶','🐱','🐟'
   ];
 
   var MAX_STICKERS = 30;
@@ -553,7 +559,7 @@
     preview.dataset.fwPostMediaPreview = '1';
     var tools = document.createElement('div');
     tools.className = 'fw-post-tools';
-    tools.innerHTML = '<button type="button" class="fw-post-tool-btn" data-fw-post-emoji title="表情">😊</button><button type="button" class="fw-post-tool-btn" data-fw-post-media title="图片/视频">+</button>';
+    tools.innerHTML = '<button type="button" class="fw-post-tool-btn" data-fw-post-emoji title="表情" aria-label="选择小表情或我的表情">😊</button><button type="button" class="fw-post-tool-btn" data-fw-post-media title="图片/视频" aria-label="添加图片或视频">+</button>';
     textarea.insertAdjacentElement('afterend', preview);
     preview.insertAdjacentElement('afterend', tools);
   }
@@ -569,7 +575,7 @@
     preview.dataset.fwPostMediaPreview = '1';
     var tools = document.createElement('div');
     tools.className = 'fw-comment-tools';
-    tools.innerHTML = '<button type="button" class="fw-post-tool-btn" data-fw-post-emoji title="表情">😊</button><button type="button" class="fw-post-tool-btn" data-fw-post-media title="图片/视频">+</button>';
+    tools.innerHTML = '<button type="button" class="fw-post-tool-btn" data-fw-post-emoji title="表情" aria-label="选择小表情或我的表情">😊</button><button type="button" class="fw-post-tool-btn" data-fw-post-media title="图片/视频" aria-label="添加图片或视频">+</button>';
     input.insertAdjacentElement('beforebegin', preview);
     input.insertAdjacentElement('beforebegin', tools);
   }
@@ -732,6 +738,7 @@
       if(emojiItem){
         e.preventDefault();
         insertAtCursor(activeTarget, emojiItem.dataset.fwPostEmojiInsert || '');
+        closeEmoji();
         return;
       }
       var manage = e.target.closest && e.target.closest('[data-fw-post-sticker-manage-toggle]');

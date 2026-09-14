@@ -306,7 +306,7 @@
     }).join('') : '';
     var remove = post.canDelete ? '<button type="button" class="fw-square-delete fw-square-post-delete" data-sq="delete-post">删除</button>' : '';
     var commentBox = isOpen
-      ? '<div class="comment-box show"><ul class="comment-list">' + (comments || '<li>还没有回声，可以先留一句。</li>') + '</ul><input placeholder="留一句回声，评论不限量"><button class="btn dark full" type="button" data-sq="comment-submit" style="margin-top:10px">发送回声</button></div>'
+      ? '<div class="comment-box show"><ul class="comment-list">' + (comments || '<li>还没有评论，可以先留一句。</li>') + '</ul><input placeholder="写下你的评论，评论不限量"><button class="btn dark full" type="button" data-sq="comment-submit" style="margin-top:10px">发表评论</button></div>'
       : '<div class="comment-box"></div>';
     return '<article class="post-card" data-id="' + esc(id) + '" data-fw-render-key="' + esc(key) + '">' +
       '<div class="post-top"><span class="status">' + esc(post.status || '今日无效') + '</span><span class="time">' + esc(time(post)) + '</span></div>' +

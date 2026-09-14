@@ -53,6 +53,8 @@
 
     html:not(.fw-desktop-app) .web-square-detail{display:flex;min-width:0;flex-direction:column;background:#fff}
     html:not(.fw-desktop-app) .web-square-detail-head{display:flex;min-height:56px;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid #e4ddd3;background:#fffaf4;color:#243b34;font-size:14px;font-weight:950}
+    html:not(.fw-desktop-app) .web-square-detail-report{min-height:32px;padding:0 12px;border:1px solid #dfd5cc;border-radius:999px;background:#fff;color:#9d4a4a;font-size:11px;font-weight:900;cursor:pointer}
+    html:not(.fw-desktop-app) .web-square-detail-report:hover{border-color:#d48b91;background:#fff5f5;color:#84383e}
     html:not(.fw-desktop-app) .web-square-detail-body{position:relative;min-height:0;flex:1;overflow:auto;background:#fff}
     html:not(.fw-desktop-app) .web-square-empty{display:grid;height:100%;place-items:center;color:#929a97;font-size:12px;font-weight:800}
     html:not(.fw-desktop-app) .web-square-empty[hidden]{display:none!important}
@@ -63,6 +65,7 @@
     html:not(.fw-desktop-app) .web-square-detail-card .post-content{font-size:16px!important;line-height:1.85!important}
     html:not(.fw-desktop-app) .web-square-detail-card .comment-box.show{display:block!important;margin-top:22px!important;padding-top:18px!important;border-top:1px solid #e7e0d8!important}
     html:not(.fw-desktop-app) .web-square-detail-card [data-sq="same"],html:not(.fw-desktop-app) .web-square-detail-card [data-sq="tissue"],html:not(.fw-desktop-app) .web-square-detail-card [data-action="same"],html:not(.fw-desktop-app) .web-square-detail-card [data-action="tissue"]{display:none!important}
+    html:not(.fw-desktop-app) .web-square-list [data-fw-report-post],html:not(.fw-desktop-app) .web-square-detail-card [data-fw-report-post]{display:none!important}
     html:not(.fw-desktop-app) .web-square-list-empty{padding:28px;color:#8b928f;font-size:12px;text-align:center}
     html:not(.fw-desktop-app) .web-square-echo-panel{display:grid;grid-template-rows:auto minmax(0,1fr);min-height:0;flex:1;overflow:hidden;background:#f4f1eb}
     html:not(.fw-desktop-app) .web-square-echo-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-bottom:1px solid #e4ddd3;background:#fff}
@@ -146,12 +149,12 @@
   </section>
   <footer class="footer"><span>F.w 研究所</span><span>精神广场 · <a href="privacy.html">隐私政策</a></span></footer>
 </main>
-<script src="assets/app.js?v=web-square-inline-20260914-1"></script>
+<script src="assets/app.js?v=web-ui-sync-20260914-2"></script>
 <script src="assets/auth.js?v=echo-clean-20260702-1"></script>
 <script src="assets/fw-load-posts-safe.js?v=desktop-cache-20260811-1"></script>
 <script src="assets/fw-square-ui-fix.js?v=square-echo-sync-20260914-1"></script>
 <script src="assets/web-sync-20260914.js?v=3"></script>
-<script src="assets/web-square-split-20260914.js?v=5"></script>
+<script src="assets/web-square-split-20260914.js?v=6"></script>
 <script src="assets/web-square-echo-20260914.js?v=1"></script>
 <script src="assets/pwa.js?v=pwa-20260522-1"></script>
 </body>

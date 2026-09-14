@@ -16,7 +16,7 @@ assert.match(app, /if\(!isSquareSurface\) loadJs\("assets\/fw-stable-core\.js/, 
 assert.match(route, /stableCoreSrc\s*=\s*'assets\/fw-stable-core\.js\?v=/, '回声入口应能按需加载稳定核心');
 assert.match(route, /loadStableEcho\(\)\.then/, '点击回声应等待稳定核心后再打开');
 assert.doesNotMatch(route, /setInterval\s*\(/, '回声按需加载不应引入常驻轮询');
-assert.match(square, /assets\/app\.js\?v=web-square-inline-20260914-1/, '精神广场应刷新 app.js 的网页内嵌回声缓存版本');
+assert.match(square, /assets\/app\.js\?v=web-ui-sync-20260914-2/, '精神广场应刷新 app.js 的网页交互同步缓存版本');
 
 execFileSync(process.execPath, ['--check', resolve(root, 'assets/fw-echo-stable-route.js')], {stdio:'pipe'});
 

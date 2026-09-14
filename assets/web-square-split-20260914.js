@@ -3,6 +3,7 @@
   var feed=document.querySelector('[data-feed]');
   var list=document.querySelector('[data-web-square-list]');
   var detail=document.querySelector('[data-web-square-detail-body]');
+  var detailHead=document.querySelector('.web-square-detail-head');
   var empty=document.querySelector('[data-web-square-empty]');
   if(!feed||!list||!detail)return;
 
@@ -38,6 +39,20 @@
   }
   function cleanLegacyActions(root){
     root.querySelectorAll('[data-sq="same"],[data-sq="tissue"],[data-action="same"],[data-action="tissue"]').forEach(function(node){node.style.display='none'});
+    root.querySelectorAll('[data-fw-report-post]').forEach(function(node){node.style.display='none'});
+  }
+  function syncDetailHeader(id){
+    if(!detailHead)return;
+    var old=detailHead.querySelector('[data-web-square-detail-report]');
+    if(old)old.remove();
+    if(!id)return;
+    var button=document.createElement('button');
+    button.type='button';
+    button.className='web-square-detail-report';
+    button.dataset.webSquareDetailReport='1';
+    button.dataset.fwReportPost=String(id);
+    button.textContent='举报';
+    detailHead.appendChild(button);
   }
   function ensureCommentOpen(card){
     var box=card&&card.querySelector('.comment-box');
@@ -53,6 +68,7 @@
   function renderDetail(){
     var row=cards().find(function(card){return String(card.dataset.id||'')===String(selected)});
     if(!row){
+      syncDetailHeader('');
       detail.innerHTML='';
       if(empty){empty.hidden=false;detail.appendChild(empty)}
       return;
@@ -68,6 +84,7 @@
     clone.querySelectorAll('[id]').forEach(function(node){node.removeAttribute('id')});
     cleanLegacyActions(clone);
     detail.appendChild(clone);
+    syncDetailHeader(selected);
     ensureCommentOpen(row);
   }
   function select(id,scroll,persist){

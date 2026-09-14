@@ -482,11 +482,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if(!isSquareSurface) loadJs("assets/fw-stable-core.js?v=square-echo-sync-20260914-1");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-buddy-wechat.js?v=desktop-social-unread-20260811-1");
   loadJs("assets/fw-desktop-echo-legacy-kill.js?v=desktop-fixes-lite-20260702-1");
-  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-emoji-panel.js?v=emoji-panel-20260521-buddy-mobile-1");
+  if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-emoji-panel.js?v=web-emoji-sync-20260914-1");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-sticker-direct-render.js?v=home-feed-scope-20260713-1");
   if(!isSquareSurface && (!isWindowsDesktopApp || isBuddyPage)) loadJs("assets/fw-chat-media-upload.js?v=home-feed-scope-20260713-1");
 
-  if(hasFeedSurface) loadJs("assets/fw-post-media-tools.js?v=desktop-performance-20260806-2");
+  if(hasFeedSurface) loadJs("assets/fw-post-media-tools.js?v=web-emoji-sync-20260914-1");
 
   if(!isWindowsDesktopApp) loadJs("assets/fw-floating-panels.js?v=floating-panels-20260511-2");
   if(!isWindowsDesktopApp) loadJs("assets/fw-notification-jump.js?v=square-echo-sync-20260914-1");
