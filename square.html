@@ -23,7 +23,65 @@
   <link rel="stylesheet" href="assets/auth.css" />
   <link rel="stylesheet" href="assets/web-sync-20260914.css?v=2" />
   <style>
-    .web-square-page{width:min(1240px,calc(100% - 72px));margin:0 auto;padding:38px 0 70px}.web-square-head{display:flex;align-items:end;justify-content:space-between;gap:20px}.web-square-head h1{margin:0;font-size:46px;letter-spacing:-.06em}.web-square-head p{margin:9px 0 0;color:#737b78;font-size:13px;font-weight:700}.web-square-actions{display:flex;gap:8px}.web-square-actions a,.web-square-actions button{display:inline-flex;min-height:40px;align-items:center;justify-content:center;padding:0 14px;border:1px solid #e4ddd3;border-radius:11px;background:#fff;color:#152b25;font-size:12px;font-weight:900;cursor:pointer}.web-square-actions .primary{border-color:#152b25;background:#152b25;color:#fff}.web-square-grid{display:grid;grid-template-columns:minmax(300px,.78fr) minmax(0,1.22fr);gap:18px;margin-top:18px;align-items:start}.web-square-list-wrap,.web-square-detail{height:calc(100vh - 190px);min-height:600px;border:1px solid #e4ddd3;border-radius:18px;background:#fff;overflow:hidden}.web-square-list-wrap{display:flex;flex-direction:column}.web-square-list-title{padding:16px 16px 10px;border-bottom:1px solid #eee9e3}.web-square-list-title b{font-size:13px}.web-square-list-title span{display:block;margin-top:4px;color:#8a928f;font-size:10px}.web-square-list{overflow:auto;padding:8px}.web-square-list-item{display:grid;gap:8px;width:100%;padding:13px;border:0;border-radius:12px;background:#fff;color:#152b25;text-align:left;cursor:pointer}.web-square-list-item:hover,.web-square-list-item.active{background:#fff4f5}.web-square-list-item.active{box-shadow:inset 0 0 0 1px #ffb7bd}.web-square-list-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.web-square-list-top b{color:#ff7f8b;font-size:10px}.web-square-list-top small{color:#999f9c;font-size:9px}.web-square-list-item>strong{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:12px;line-height:1.55;font-weight:800}.web-square-list-meta{color:#8b928f;font-size:9px}.web-square-list-empty{padding:24px;color:#8b928f;font-size:11px;text-align:center}.web-square-detail{position:sticky;top:12px;overflow:auto;padding:16px}.web-square-detail .feed-list{display:block!important}.web-square-detail .post-card{margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important}.web-square-detail .post-card[hidden]{display:none!important}.web-square-detail .post-content{font-size:16px!important;line-height:1.8!important}.web-square-detail .comment-box.show{margin-top:16px!important}.web-square-empty{display:grid;height:100%;place-items:center;color:#929a97;font-size:12px;font-weight:800}.web-square-empty[hidden]{display:none!important}[data-sq="same"],[data-sq="tissue"],[data-action="same"],[data-action="tissue"]{display:none!important}@media(max-width:900px){.web-square-page{width:min(100% - 32px,680px);padding-top:26px}.web-square-head{display:block}.web-square-actions{margin-top:14px;flex-wrap:wrap}.web-square-grid{grid-template-columns:1fr}.web-square-list-wrap,.web-square-detail{height:auto;min-height:0}.web-square-list-wrap{max-height:420px}.web-square-detail{position:static}.web-square-head h1{font-size:40px}}
+    html:not(.fw-desktop-app) .header .nav{flex:1!important;justify-content:flex-start!important;flex-wrap:nowrap!important;gap:4px!important;margin-left:26px!important;min-width:0}
+    html:not(.fw-desktop-app) .header .nav>a:first-child{margin-left:auto}
+    html:not(.fw-desktop-app) .header .nav>a:nth-child(7){margin-left:auto}
+    html:not(.fw-desktop-app) .header .nav>a,html:not(.fw-desktop-app) .header .web-more-toggle{flex:none}
+    html:not(.fw-desktop-app) .header .fw-userbar{margin-left:8px!important}
+
+    html:not(.fw-desktop-app) .web-square-page{width:min(1360px,calc(100% - 56px));margin:0 auto;padding:26px 0 42px}
+    html:not(.fw-desktop-app) .web-square-grid{display:grid;grid-template-columns:minmax(390px,.78fr) minmax(0,1fr);gap:0;height:calc(100vh - 126px);min-height:680px;border:1px solid #e4ddd3;border-radius:18px;overflow:hidden;background:#fff}
+    html:not(.fw-desktop-app) .web-square-left{display:flex;min-width:0;flex-direction:column;background:#f4f1eb;border-right:1px solid #e4ddd3}
+    html:not(.fw-desktop-app) .web-square-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;min-height:122px;padding:22px 20px 16px;background:#fffaf4;border-bottom:1px solid #e4ddd3}
+    html:not(.fw-desktop-app) .web-square-kicker{margin:0 0 6px;color:#ff8a94;font-size:10px;font-weight:950;letter-spacing:.14em}
+    html:not(.fw-desktop-app) .web-square-head h1{margin:0;color:#102923;font-size:30px;line-height:1.05;letter-spacing:-.05em}
+    html:not(.fw-desktop-app) .web-square-head p{max-width:280px;margin:8px 0 0;color:#6f7774;font-size:11px;line-height:1.55;font-weight:720}
+    html:not(.fw-desktop-app) .web-square-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    html:not(.fw-desktop-app) .web-square-actions a,html:not(.fw-desktop-app) .web-square-actions button{display:inline-flex;min-height:36px;align-items:center;justify-content:center;padding:0 13px;border:1px solid #ded7cf;border-radius:999px;background:#fff;color:#152b25;font-size:11px;font-weight:900;cursor:pointer}
+    html:not(.fw-desktop-app) .web-square-actions .primary{border-color:#ff919b;background:#ff919b;color:#fff}
+    html:not(.fw-desktop-app) .web-square-list{min-height:0;flex:1;overflow:auto;padding:12px}
+    html:not(.fw-desktop-app) .web-square-list>.feed-list{display:block!important;width:100%!important;margin:0!important;padding:0!important}
+    html:not(.fw-desktop-app) .web-square-list .post-card{display:block!important;width:100%!important;margin:0 0 10px!important;padding:16px!important;border:1px solid transparent!important;border-radius:17px!important;background:#fff!important;box-shadow:none!important;cursor:pointer;transition:border-color .16s ease,background .16s ease}
+    html:not(.fw-desktop-app) .web-square-list .post-card:hover{border-color:#f3c7ca!important}
+    html:not(.fw-desktop-app) .web-square-list .post-card.web-square-selected{border-color:#ff8e98!important;box-shadow:inset 0 0 0 1px rgba(255,142,152,.12)!important}
+    html:not(.fw-desktop-app) .web-square-list .post-card .status{display:none!important}
+    html:not(.fw-desktop-app) .web-square-list .post-top{justify-content:flex-end!important;margin-bottom:8px!important}
+    html:not(.fw-desktop-app) .web-square-list .fw-author{display:flex!important;align-items:center!important;gap:8px!important;margin:0 0 12px!important}
+    html:not(.fw-desktop-app) .web-square-list .post-content{margin:0!important;color:#14221e!important;font-size:14px!important;line-height:1.7!important}
+    html:not(.fw-desktop-app) .web-square-list .comment-box{display:none!important}
+    html:not(.fw-desktop-app) .web-square-list .fw-square-imgs{margin-top:10px!important}
+    html:not(.fw-desktop-app) .web-square-list .fw-square-img,html:not(.fw-desktop-app) .web-square-list .fw-square-video{max-height:220px!important;object-fit:cover}
+    html:not(.fw-desktop-app) .web-square-list [data-sq="same"],html:not(.fw-desktop-app) .web-square-list [data-sq="tissue"],html:not(.fw-desktop-app) .web-square-list [data-action="same"],html:not(.fw-desktop-app) .web-square-list [data-action="tissue"]{display:none!important}
+
+    html:not(.fw-desktop-app) .web-square-detail{display:flex;min-width:0;flex-direction:column;background:#fff}
+    html:not(.fw-desktop-app) .web-square-detail-head{display:flex;min-height:56px;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid #e4ddd3;background:#fffaf4;color:#243b34;font-size:14px;font-weight:950}
+    html:not(.fw-desktop-app) .web-square-detail-body{position:relative;min-height:0;flex:1;overflow:auto;background:#fff}
+    html:not(.fw-desktop-app) .web-square-empty{display:grid;height:100%;place-items:center;color:#929a97;font-size:12px;font-weight:800}
+    html:not(.fw-desktop-app) .web-square-empty[hidden]{display:none!important}
+    html:not(.fw-desktop-app) .web-square-detail-card{display:block!important;width:100%!important;margin:0!important;padding:22px 24px 34px!important;border:0!important;border-radius:0!important;background:#fff!important;box-shadow:none!important}
+    html:not(.fw-desktop-app) .web-square-detail-card .status{display:none!important}
+    html:not(.fw-desktop-app) .web-square-detail-card .post-top{justify-content:flex-end!important;margin-bottom:10px!important}
+    html:not(.fw-desktop-app) .web-square-detail-card .fw-author{display:flex!important;align-items:center!important;gap:9px!important;margin:0 0 20px!important}
+    html:not(.fw-desktop-app) .web-square-detail-card .post-content{font-size:16px!important;line-height:1.85!important}
+    html:not(.fw-desktop-app) .web-square-detail-card .comment-box.show{display:block!important;margin-top:22px!important;padding-top:18px!important;border-top:1px solid #e7e0d8!important}
+    html:not(.fw-desktop-app) .web-square-detail-card [data-sq="same"],html:not(.fw-desktop-app) .web-square-detail-card [data-sq="tissue"],html:not(.fw-desktop-app) .web-square-detail-card [data-action="same"],html:not(.fw-desktop-app) .web-square-detail-card [data-action="tissue"]{display:none!important}
+    html:not(.fw-desktop-app) .web-square-list-empty{padding:28px;color:#8b928f;font-size:12px;text-align:center}
+
+    @media(max-width:1180px){
+      html:not(.fw-desktop-app) .header .nav>a,html:not(.fw-desktop-app) .header .web-more-toggle{padding:0 7px!important;font-size:11px!important}
+      html:not(.fw-desktop-app) .header .nav{margin-left:14px!important;gap:1px!important}
+      html:not(.fw-desktop-app) .web-square-grid{grid-template-columns:minmax(350px,.82fr) minmax(0,1fr)}
+    }
+    @media(max-width:900px){
+      html:not(.fw-desktop-app) .web-square-page{width:min(100% - 28px,720px);padding-top:18px}
+      html:not(.fw-desktop-app) .web-square-grid{display:block;height:auto;min-height:0;border:0;overflow:visible;background:transparent}
+      html:not(.fw-desktop-app) .web-square-left{border:1px solid #e4ddd3;border-radius:16px;overflow:hidden}
+      html:not(.fw-desktop-app) .web-square-head{display:block}
+      html:not(.fw-desktop-app) .web-square-actions{margin-top:14px;justify-content:flex-start}
+      html:not(.fw-desktop-app) .web-square-list{max-height:560px}
+      html:not(.fw-desktop-app) .web-square-detail{margin-top:14px;border:1px solid #e4ddd3;border-radius:16px;overflow:hidden}
+      html:not(.fw-desktop-app) .web-square-detail-body{max-height:none;overflow:visible}
+    }
   </style>
 </head>
 <body>
@@ -36,13 +94,30 @@
   <nav class="mobile-nav"><a href="index.html">首页</a><a href="square.html">精神广场</a><a href="rooms.html">学术研讨</a><a href="bird.html">新闻专区</a><a href="archive.html">档案</a><a href="rules.html">入馆须知</a><a href="admin.html">处理公告</a></nav>
 
   <section class="web-square-page">
-    <div class="web-square-head">
-      <div><h1>精神广场</h1><p>左边看帖子，右边查看完整评论、回复和互动。</p></div>
-      <div class="web-square-actions"><button type="button" data-square-refresh onclick="window.__FW_SQUARE_RENDER__&&window.__FW_SQUARE_RENDER__()">刷新</button><a href="echo.html">回声</a><a class="primary" href="compose.html">发牢骚</a></div>
-    </div>
     <div class="web-square-grid">
-      <section class="web-square-list-wrap"><div class="web-square-list-title"><b>最新帖子</b><span>选择帖子后在右侧查看详情</span></div><div class="web-square-list" data-web-square-list><div class="web-square-list-empty">正在读取帖子…</div></div></section>
-      <aside class="web-square-detail"><div class="web-square-empty" data-web-square-empty>正在准备帖子详情…</div><div class="feed-list" data-feed data-limit="100"></div></aside>
+      <section class="web-square-left">
+        <div class="web-square-head">
+          <div>
+            <div class="web-square-kicker">MENTAL SQUARE</div>
+            <h1>精神广场</h1>
+            <p>最新帖子直接显示头像、昵称、正文、点赞和评论；点击后在右侧查看完整详情。</p>
+          </div>
+          <div class="web-square-actions">
+            <button type="button" data-square-refresh onclick="window.__FW_SQUARE_RENDER__&&window.__FW_SQUARE_RENDER__()">刷新</button>
+            <a href="echo.html">回声</a>
+            <a class="primary" href="compose.html">发牢骚</a>
+          </div>
+        </div>
+        <div class="web-square-list" data-web-square-list>
+          <div class="feed-list" data-feed data-limit="100"></div>
+        </div>
+      </section>
+      <aside class="web-square-detail">
+        <div class="web-square-detail-head"><b>帖子详情</b></div>
+        <div class="web-square-detail-body" data-web-square-detail-body>
+          <div class="web-square-empty" data-web-square-empty>正在准备帖子详情…</div>
+        </div>
+      </aside>
     </div>
   </section>
   <footer class="footer"><span>F.w 研究所</span><span>精神广场 · <a href="privacy.html">隐私政策</a></span></footer>
@@ -52,7 +127,7 @@
 <script src="assets/fw-load-posts-safe.js?v=desktop-cache-20260811-1"></script>
 <script src="assets/fw-square-ui-fix.js?v=desktop-cache-20260811-1"></script>
 <script src="assets/web-sync-20260914.js?v=2"></script>
-<script src="assets/web-square-split-20260914.js?v=2"></script>
+<script src="assets/web-square-split-20260914.js?v=3"></script>
 <script src="assets/pwa.js?v=pwa-20260522-1"></script>
 </body>
 </html>
