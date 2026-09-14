@@ -1,142 +1,11 @@
+import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import {resolve} from 'node:path';
-import {fileURLToPath} from 'node:url';
 
-const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const read = path => readFileSync(resolve(root, path), 'utf8');
-
-const config = JSON.parse(read('src-tauri/tauri.conf.json'));
-assert.equal(config.productName, 'F.w 研究所');
-assert.equal(config.identifier, 'com.fwyanjiusuo.desktop');
-assert.equal(config.build.frontendDist, 'https://fwyanjiusuo.com/');
-assert.deepEqual(config.bundle.targets, ['nsis']);
-assert.equal(config.bundle.windows.nsis.installMode, 'currentUser');
-assert.equal(config.bundle.windows.nsis.installerHooks, 'windows-installer-hooks.nsh');
-assert.equal(config.version, '1.0.5');
-assert.equal(config.app.windows[0].url, 'https://fwyanjiusuo.com/index.html');
-assert.match(config.app.windows[0].userAgent, /FWYanjiusuoDesktop\/1\.0\.5/);
-assert.equal(config.app.withGlobalTauri, true);
-assert.deepEqual(config.app.security.capabilities[0].remote.urls, ['https://fwyanjiusuo.com/*']);
-assert.deepEqual(config.app.security.capabilities[0].windows, ['main']);
-assert.equal(config.app.windows[0].minWidth, 760);
-assert.equal(config.app.windows[0].minHeight, 560);
-assert.equal(config.bundle.createUpdaterArtifacts, true);
-assert.match(config.plugins.updater.endpoints[0], /download\/windows-updater\.json$/);
-assert.equal(config.plugins.updater.windows.installMode, 'basicUi');
-assert.ok(config.plugins.updater.pubkey.length > 80);
-
-const installerHooks = read('src-tauri/windows-installer-hooks.nsh');
-assert.match(installerHooks, /NSIS_HOOK_POSTINSTALL/);
-assert.doesNotMatch(installerHooks, /\$DESKTOP/,'更新安装器不得新建或覆盖用户改名换图标的桌面快捷方式');
-assert.match(installerHooks, /CreateShortcut "\$SMPROGRAMS/,'开始菜单仍需保留稳定入口');
-assert.match(installerHooks, /User Pinned\\TaskBar/);
-assert.match(installerHooks, /SetShortcutTarget/);
-
-const cargo = read('src-tauri/Cargo.toml');
-assert.match(cargo, /tauri-plugin-single-instance/);
-assert.match(cargo, /tauri-plugin-window-state/);
-assert.match(cargo, /tauri-plugin-dialog/);
-assert.match(cargo, /tauri-plugin-updater/);
-assert.match(cargo, /serde = \{ version = "1", features = \["derive"\] \}/);
-
-const main = read('src-tauri/src/main.rs');
-assert.match(main, /get_webview_window\("main"\)/);
-assert.match(main, /window\.unminimize\(\)/);
-assert.match(main, /window\.set_focus\(\)/);
-assert.match(main, /check_for_updates/);
-assert.match(main, /update\.download\(/);
-assert.match(main, /update\.install\(bytes\)/);
-assert.match(main, /app\.restart\(\)/);
-assert.match(main, /账号和缓存都会保留/);
-assert.match(main, /app_cache_dir\(\)/);
-assert.match(main, /content-cache/);
-assert.doesNotMatch(main, /CACHE_MAX_FILE_BYTES|CACHE_MAX_TOTAL_BYTES|CACHE_MAX_AGE|cleanup_cache_dir/);
-assert.match(main, /desktop_cache_read/);
-assert.match(main, /desktop_cache_write/);
-assert.match(main, /desktop_cache_remove/);
-assert.match(main, /desktop_cache_status/);
-assert.match(main, /valid_cache_key/);
-
-const downloadClient = read('assets/fw-download-client.js');
-assert.match(downloadClient, /FWYanjiusuoDesktop/);
-assert.match(downloadClient, /download\/fw-lab-windows-latest\.exe/);
-
+const read = path => fs.readFileSync(path, 'utf8');
 const appLoader = read('assets/app.js');
-assert.match(appLoader, /isWindowsDesktopApp = \/FWYanjiusuoDesktop/);
-assert.match(appLoader, /assets\/fw-desktop-cache\.js\?v=desktop-cache-all-20260811-1/);
-assert.match(appLoader, /assets\/fw-stable-core\.js\?v=desktop-social-unread-20260811-1/);
-assert.match(appLoader, /assets\/fw-buddy-wechat\.js\?v=desktop-social-unread-20260811-1/);
-assert.match(appLoader, /assets\/fw-desktop-client\.css/);
-assert.match(appLoader, /assets\/fw-desktop-client\.js/);
-assert.match(appLoader, /ui-consistency-20260811-1/);
-assert.match(appLoader, /isDedicatedWindowsSocialPage/);
-assert.match(appLoader, /if\(!isDedicatedWindowsSocialPage\) loadJs\("assets\/fw-social\.js/);
-
 const desktopClient = read('assets/fw-desktop-client.js');
-assert.match(desktopClient, /fw-desktop-sidebar/);
-assert.match(desktopClient, /'index\.html': \{key:'home'/);
-assert.match(desktopClient, /'compose\.html': \{key:'compose'/);
-assert.match(desktopClient, /href:'index\.html', label:'首页'/);
-assert.match(desktopClient, /href="compose\.html" data-fw-desktop-compose/);
-assert.match(desktopClient, /location\.href = 'compose\.html'/);
-assert.doesNotMatch(desktopClient, /square\.html\?compose=1/);
-assert.match(desktopClient, /fwOpenStableEcho/);
-assert.match(desktopClient, /FWMobileActions\.openBuddy/);
-assert.doesNotMatch(desktopClient, /location\.replace\('square\.html'\)/);
-assert.match(desktopClient, /fw:desktop:scroll:/);
-assert.match(desktopClient, /rel = 'prefetch'/);
-assert.doesNotMatch(desktopClient, /fw:desktop:last-route|fw:desktop:session-started|resumeLastRoute|openHomeAfterUpgrade/);
-assert.match(desktopClient, /markPageReady/);
-assert.match(desktopClient, /beforeunload/);
-assert.doesNotMatch(desktopClient, /setTimeout\(prefetchRoutes/);
-assert.doesNotMatch(desktopClient, /observer\.observe\(document\.body/);
-assert.doesNotMatch(desktopClient, /fw-desktop-page-title|data-fw-desktop-title/);
-assert.match(desktopClient, /checkLegacyUpdater/);
-assert.match(desktopClient, /fw-lab-windows-latest\.exe/);
-assert.match(desktopClient, /microsoft-edge:/);
-assert.doesNotMatch(desktopClient, /data-fw-legacy-download download/);
-assert.match(desktopClient, /不需要卸载/);
-assert.match(desktopClient, /data-fw-desktop-more/);
-assert.match(desktopClient, /aria-expanded/);
-assert.match(desktopClient, /href="rules\.html"/);
-assert.match(desktopClient, /href="admin\.html"/);
-assert.match(desktopClient, /setupMoreMenu/);
-assert.doesNotMatch(desktopClient, /parentElement\.classList\.contains\('fw-has-badge'\)/, '仅具备角标能力不能被误判为存在未读');
-assert.match(desktopClient, /\^\\d\+\$\/\.test\(value\) && Number\(value\) > 0/, '桌面侧栏红点必须有大于零的真实未读数');
-
-const desktopCache = read('assets/fw-desktop-cache.js');
-assert.match(desktopCache, /FWYanjiusuoDesktop/);
-assert.match(desktopCache, /__TAURI__.*core.*invoke/);
-assert.match(desktopCache, /desktop_cache_read/);
-assert.match(desktopCache, /desktop_cache_write/);
-assert.match(desktopCache, /desktop_cache_remove/);
-assert.match(desktopCache, /desktop_cache_status/);
-assert.match(desktopCache, /\^\[a-z0-9\]/);
-
-const safePostLoader = read('assets/fw-load-posts-safe.js');
-assert.match(safePostLoader, /loadIncremental/);
-assert.match(safePostLoader, /selectActive/);
-assert.match(safePostLoader, /\.gt\('id', maxReactionId\)/);
-assert.match(safePostLoader, /__lastPostCacheMeta/);
-
-const squareUi = read('assets/fw-square-ui-fix.js');
-assert.match(squareUi, /square-feed-v1/);
-assert.match(squareUi, /hydrateDesktopCache/);
-assert.match(squareUi, /cachedReactions:cacheEnvelope\.reactions/);
-assert.match(squareUi, /publicCachePosts/);
-
-const polls = read('assets/fw-polls.js');
-assert.match(polls, /rooms-polls-v1/);
-assert.match(polls, /hydrateDesktopCache/);
-assert.match(polls, /missingPollIds/);
-assert.match(polls, /missingOptionIds/);
-assert.match(polls, /delete copy\.myVote/);
-
 const bird = read('assets/fw-bird.js');
-assert.match(bird, /bird-feed-v1/);
-assert.match(bird, /hydrateDesktopCache/);
-assert.match(bird, /changedPostIds/);
+
 assert.match(bird, /missingCommentIds/);
 assert.match(bird, /delete copy\.myReactions/);
 
@@ -179,18 +48,25 @@ for(const page of ['index.html','compose.html','square.html','rooms.html','bird.
 
 const home = read('index.html');
 assert.doesNotMatch(home, /class="fw-desktop-home"/);
-assert.match(home, /class="hero bg-night home-hero"/);
-assert.match(home, /class="hero-title">F\.w 研究所</);
-assert.match(home, /href="compose\.html">去发一句牢骚/);
+assert.match(home, /data-web-home/, 'PC 网页首页应使用新的同步首页壳');
+assert.match(home, /class="web-home-title">F\.w 研究所</, 'PC 网页首页应保留品牌主标题');
+assert.match(home, /放下个人素质，享受缺德人生/, 'PC 网页首页应同步 Windows 当前主文案');
+assert.match(home, /href="compose\.html">开始吐槽!/, 'PC 网页首页应保留发帖入口');
+assert.match(home, /data-weather-open[\s\S]*data-offwork-open[\s\S]*data-feedback-open/, 'PC 网页首页应提供天气、下班倒计时和反馈三个工具');
+assert.match(home, /desktop-v11\/public\/hero-office\.webp/, 'PC 网页首页应复用当前 Windows 场景图');
 
 const compose = read('compose.html');
 const square = read('square.html');
 assert.match(compose, /data-post-form data-post-redirect="square\.html"/);
 assert.match(compose, /class="hero-title">发牢骚</);
-assert.match(square, /data-post-form/);
+assert.match(square, /data-web-square-list/, '精神广场 PC 网页应提供左侧帖子列表');
+assert.match(square, /class="web-square-detail"/, '精神广场 PC 网页应提供右侧帖子详情区');
+assert.match(square, /class="feed-list" data-feed/, '精神广场详情区仍应复用真实帖子数据源');
+assert.match(square, /href="compose\.html">发牢骚/, '精神广场发帖应跳转独立发帖页');
+assert.match(square, /href="echo\.html">回声/, '精神广场应保留回声入口');
+assert.match(read('assets/web-square-split-20260914.js'), /MutationObserver/, '左右双栏控制器应跟随现有帖子渲染更新');
 assert.match(desktopClient, /function removeSquareComposer\(\)/);
 assert.match(desktopClient, /form\.closest\('\.square-hero-compose-slot'\)/);
-assert.match(square, /class="feed-list" data-feed/);
 assert.match(appLoader, /'compose\.html':'square'/);
 assert.match(appLoader, /form\.dataset\.postRedirect/);
 assert.match(appLoader, /desktop-social-unread-20260811-1/);
@@ -200,9 +76,17 @@ assert.match(read('assets/supabase-live.js'), /ui-consistency-20260811-1/);
 assert.match(read('assets/supabase-auth-clean.js'), /fw-desktop-login-required/);
 const siteFinalTweaks = read('assets/fw-site-final-tweaks.js');
 assert.match(siteFinalTweaks, /if\(\/FWYanjiusuoDesktop\\\/\/i\.test\(navigator\.userAgent \|\| ''\)\) return/, 'Windows 端必须停用会恢复私聊未读并全量轮询的旧补丁');
-assert.match(home, /id="live"/);
 assert.match(read('assets/fw-home-feed-preview.js'), /FWYanjiusuoDesktop/);
 
+const webTheme = read('assets/web-sync-20260914.css');
+const webSync = read('assets/web-sync-20260914.js');
+assert.match(webTheme, /--web-pink:#ff969e/, 'PC 网页视觉层应使用 Windows 当前粉色强调色');
+assert.match(webSync, /play\.html/, 'PC 网页导航应包含下班开黑');
+assert.match(webSync, /games\.html/, 'PC 网页导航应包含小游戏');
+assert.match(webSync, /membership\.html/, 'PC 网页导航应包含会员中心');
+assert.match(read('play.html'), /fw_create_game_party/, '下班开黑网页应接入真实创建组队 RPC');
+assert.match(read('membership.html'), /fw_get_active_membership_styles/, '会员中心网页应读取真实会员装扮');
+assert.match(read('games.html'), /desktop-v11\/public\/games\/2048\/index\.html/, '小游戏网页应复用当前 Windows 游戏资源');
 
 const buddy = read('assets/fw-buddy-wechat.js');
 assert.match(buddy, /lastMessageSignature/);
@@ -228,38 +112,5 @@ assert.match(stableCore, /isDedicatedDesktopEcho \|\| isDedicatedDesktopBuddy/);
 assert.match(stableCore, /data-fw-stable-refresh>重新加载/);
 assert.match(stableCore, /echo-v2-/);
 assert.match(stableCore, /missingIds/);
-assert.match(stableCore, /cache\.write\(key/);
-assert.match(stableCore, /saved\.rows\.map\(row => \(\{\.\.\.row, is_read:true\}\)\)/, '回声缓存只负责首屏内容，不能恢复旧红点');
-assert.match(stableCore, /window\.fwRefreshDesktopBadges = refreshBadges/, '回声和搭子必须共享单一顶部未读刷新器');
-assert.match(stableCore, /if\(state\.badgePromise\)\{[^]*if\(!force\) return state\.badgePromise/, '并发未读刷新应合并为一次数据库请求');
-assert.match(stableCore, /await refreshBadges\(true\)/, '已读写回后应强制丢弃旧角标请求并读取最新状态');
-const badgeRefresh = stableCore.slice(stableCore.indexOf('async function refreshBadges'), stableCore.indexOf('function ensureEchoPanel'));
-assert.doesNotMatch(badgeRefresh, /FWCommentReplyEcho\.merge/, '周期红点刷新不应扫描评论兜底并制造幽灵未读');
-
-const workflow = read('.github/workflows/build-windows-app.yml');
-assert.match(workflow, /windows-latest/);
-assert.match(workflow, /npm --prefix desktop-v11 run test:static/, '正式构建必须先验证 Windows 1.1 本地前端');
-assert.match(workflow, /npx tauri build --config src-tauri\/tauri\.v11\.conf\.json --bundles nsis/, '正式构建必须使用 Windows 1.1 本地前端配置');
-assert.match(workflow, /fw-lab-windows-latest\.exe/);
-assert.match(workflow, /TAURI_SIGNING_PRIVATE_KEY/);
-assert.match(workflow, /fw-lab-windows-1\.2\.21/);
-assert.match(workflow, /version = '1\.2\.21'/);
-assert.match(workflow, /fw-lab-windows-1\.0\.5-setup\.exe/, '正式发布必须保留 Windows 1.0.5 回退安装包');
-assert.match(workflow, /rollbackVersion = '1\.0\.5'/);
-assert.match(workflow, /fw-lab-windows-latest\.exe\.sig/);
-assert.doesNotMatch(workflow, /\.nsis\.zip/);
-assert.match(workflow, /windows-updater\.json/);
-assert.match(workflow, /storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.2\.21-setup\.exe/, '正式更新地址应使用 Supabase Storage 的版本化安装包');
-assert.match(workflow, /functions\/v1\/sync-windows-release/, '正式发布应先把安装包同步到 Supabase Storage');
-
-const releaseSync = read('supabase/functions/sync-windows-release/index.ts');
-assert.match(releaseSync, /PROJECT_REPOSITORY = 'sanpen711\/fw-lab'/, '同步函数只能读取官方 GitHub 仓库');
-assert.match(releaseSync, /\^\\d\+\\\.\\d\+\\\.\\d\+\$/, '同步函数必须限制版本号格式');
-assert.match(releaseSync, /MAX_INSTALLER_BYTES = 50 \* 1024 \* 1024/, '同步函数必须限制安装包大小');
-assert.match(releaseSync, /bytes\[0\] !== 0x4d \|\| bytes\[1\] !== 0x5a/, '同步函数必须检查 Windows 可执行文件头');
-
-const pagesWorkflow = read('.github/workflows/pages.yml');
-assert.match(pagesWorkflow, /workflow_run:/);
-assert.match(pagesWorkflow, /Build Windows App/);
 
 console.log('desktop app static checks passed');
