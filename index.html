@@ -58,13 +58,17 @@
   </nav>
 
   <section class="web-home-shell">
-    <article class="web-home-hero">
+    <article class="web-home-hero" data-web-home-hero>
       <div class="web-home-copy">
         <p class="web-home-eyebrow">FW LAB / LOW POWER MODE</p>
-        <h1 class="web-home-title">F.w 研究所</h1>
+        <h1 class="web-home-title" data-web-home-title>F.w 研究所</h1>
         <h2 class="web-home-subtitle">放下个人素质，享受缺德人生</h2>
-        <p class="web-home-desc">随时吐槽、随时发泄、随时释放自己、不要攻击他人，<br>可参与投票、围观离谱事件。</p>
-        <a class="web-primary" href="compose.html">开始吐槽!</a>
+        <p class="web-home-desc" data-web-home-copy>随时吐槽、随时发泄、随时释放自己、不要攻击他人，<br>可参与投票、围观离谱事件。</p>
+        <div class="web-home-actions" data-web-home-actions>
+          <a class="web-primary" href="compose.html">开始吐槽!</a>
+          <a href="rooms.html" hidden>去学术研讨投票 →</a>
+          <a href="bird.html" hidden>去新闻专区围观 →</a>
+        </div>
       </div>
       <div class="web-home-visual" aria-hidden="true">
         <img src="desktop-v11/public/hero-office.webp" alt="">
@@ -93,11 +97,25 @@
     </div>
   </section>
 
+  <section id="live" hidden aria-hidden="true"></section>
   <footer class="footer">
     <span>F.w 研究所</span>
     <span>来这里，不一定要变好，只要先放一下。 · <a href="privacy.html">隐私政策</a></span>
   </footer>
 </main>
+<script>
+  (function(){
+    if(!/FWYanjiusuoDesktop\//i.test(navigator.userAgent || '')) return;
+    var hero=document.querySelector('[data-web-home-hero]');
+    var title=document.querySelector('[data-web-home-title]');
+    var copy=document.querySelector('[data-web-home-copy]');
+    var actions=document.querySelector('[data-web-home-actions]');
+    if(hero) hero.classList.add('home-hero');
+    if(title) title.classList.add('hero-title');
+    if(copy) copy.classList.add('hero-copy');
+    if(actions) actions.classList.add('hero-actions');
+  })();
+</script>
 <script src="assets/app.js?v=desktop-badge-zero-20260811-1"></script>
 <script src="assets/auth.js?v=echo-clean-20260702-1"></script>
 <script src="assets/web-sync-20260914.js?v=1"></script>
