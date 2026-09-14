@@ -43,6 +43,15 @@ body{min-width:0}
 .mobile-nav a{border-color:#eee9e3}
 .menu-btn{color:var(--web-ink)}
 
+/* PC 顶部导航分组：主栏目居中，搭子 / 会员中心 / 更多贴近头像左侧。 */
+@media(min-width:821px){
+  html:not(.fw-desktop-app) .header .nav{flex:1!important;justify-content:flex-start!important;flex-wrap:nowrap!important;gap:4px!important;margin-left:26px!important;min-width:0}
+  html:not(.fw-desktop-app) .header .nav>a:first-child{margin-left:auto}
+  html:not(.fw-desktop-app) .header .nav>a:nth-child(7){margin-left:auto}
+  html:not(.fw-desktop-app) .header .nav>a,html:not(.fw-desktop-app) .header .web-more-toggle{flex:none}
+  html:not(.fw-desktop-app) .header .fw-userbar{margin-left:8px!important}
+}
+
 /* 清理旧深色背景体系 */
 .bg-night,.bg-gradient-clean{background:var(--web-bg)!important;color:var(--web-ink)!important}
 .bg-night::before,.bg-night::after{display:none!important}
