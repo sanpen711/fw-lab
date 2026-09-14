@@ -22,6 +22,14 @@
     document.head.appendChild(link);
   }
 
+  if(!document.querySelector('link[data-fw-web-page-alignment]')){
+    var alignment = document.createElement('link');
+    alignment.rel = 'stylesheet';
+    alignment.href = 'assets/web-page-alignment-20260914.css?v=1';
+    alignment.dataset.fwWebPageAlignment = '1';
+    document.head.appendChild(alignment);
+  }
+
   if(!document.querySelector('script[data-fw-web-sync]')){
     var script = document.createElement('script');
     script.src = 'assets/web-sync-20260914.js?v=1';
