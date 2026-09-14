@@ -2,19 +2,126 @@
   'use strict';
   var feed=document.querySelector('[data-feed]');
   var list=document.querySelector('[data-web-square-list]');
+  var detail=document.querySelector('[data-web-square-detail-body]');
   var empty=document.querySelector('[data-web-square-empty]');
-  if(!feed||!list)return;
+  if(!feed||!list||!detail)return;
+
   if(/FWYanjiusuoDesktop\//i.test(navigator.userAgent||'')){
-    var legacyMain=feed.closest('.web-square-detail');
+    detail.appendChild(feed);
+    var legacyMain=detail.closest('.web-square-detail');
     if(legacyMain) legacyMain.classList.add('square-main');
+    return;
   }
-  var selected='';var scheduled=0;var syncing=false;
-  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-  function cardData(card){var id=String(card.dataset.id||'');var status=card.querySelector('.status')?.textContent?.trim()||'精神广场';var time=card.querySelector('.time')?.textContent?.trim()||'';var text=card.querySelector('.post-content')?.textContent?.trim()||'';var like=card.querySelector('[data-sq="resonance"], [data-action="resonance"]')?.textContent?.trim()||'';var comment=card.querySelector('[data-sq="comment-toggle"], [data-action="comment-toggle"]')?.textContent?.trim()||'';return{id:id,status:status,time:time,text:text,like:like,comment:comment}}
-  function select(id,scroll){var cards=Array.from(feed.querySelectorAll('.post-card'));if(!cards.length){selected='';if(empty)empty.hidden=false;return}if(!id||!cards.some(function(c){return String(c.dataset.id)===String(id)}))id=String(cards[0].dataset.id||'');selected=String(id);cards.forEach(function(card){var active=String(card.dataset.id)===selected;card.hidden=!active;card.classList.toggle('web-square-detail-active',active)});Array.from(list.querySelectorAll('[data-web-square-id]')).forEach(function(b){b.classList.toggle('active',String(b.dataset.webSquareId)===selected)});if(empty)empty.hidden=true;if(scroll){feed.scrollIntoView({behavior:'smooth',block:'start'})}}
-  function rebuild(){scheduled=0;if(syncing)return;syncing=true;try{var cards=Array.from(feed.querySelectorAll('.post-card'));if(!cards.length){list.innerHTML='<div class="web-square-list-empty">正在读取帖子…</div>';if(empty)empty.hidden=false;return}var old=selected;list.innerHTML='';cards.forEach(function(card){card.querySelectorAll('[data-sq="same"],[data-sq="tissue"],[data-action="same"],[data-action="tissue"]').forEach(function(n){n.style.display='none'});var p=cardData(card),button=document.createElement('button');button.type='button';button.className='web-square-list-item';button.dataset.webSquareId=p.id;button.innerHTML='<span class="web-square-list-top"><b>'+esc(p.status)+'</b><small>'+esc(p.time)+'</small></span><strong>'+esc(p.text||'（图片 / 表情内容）')+'</strong><span class="web-square-list-meta">'+esc([p.like,p.comment].filter(Boolean).join(' · '))+'</span>';button.addEventListener('click',function(){select(p.id,false)});list.appendChild(button)});select(old||cards[0].dataset.id,false)}finally{syncing=false}}
-  function schedule(){clearTimeout(scheduled);scheduled=setTimeout(rebuild,40)}
-  var observer=new MutationObserver(schedule);observer.observe(feed,{childList:true,subtree:true,characterData:true});
-  document.addEventListener('click',function(e){if(e.target.closest('[data-square-refresh]'))setTimeout(schedule,250)});
+
+  var selected='';
+  var scheduled=0;
+  var syncing=false;
+  var openingComments=false;
+
+  try{selected=new URLSearchParams(location.search).get('post')||'';}catch(e){}
+
+  function cards(){return Array.from(feed.querySelectorAll('.post-card'))}
+  function cleanLegacyActions(root){
+    root.querySelectorAll('[data-sq="same"],[data-sq="tissue"],[data-action="same"],[data-action="tissue"]').forEach(function(node){node.style.display='none'});
+  }
+  function ensureCommentOpen(card){
+    var box=card&&card.querySelector('.comment-box');
+    if(!box||box.classList.contains('show')||openingComments)return;
+    var toggle=card.querySelector('[data-sq="comment-toggle"],[data-action="comment-toggle"]');
+    if(!toggle)return;
+    openingComments=true;
+    setTimeout(function(){
+      try{toggle.click();}catch(e){}
+      setTimeout(function(){openingComments=false;},80);
+    },0);
+  }
+  function renderDetail(){
+    var row=cards().find(function(card){return String(card.dataset.id||'')===String(selected)});
+    if(!row){
+      detail.innerHTML='';
+      if(empty){empty.hidden=false;detail.appendChild(empty)}
+      return;
+    }
+    if(empty)empty.hidden=true;
+    cleanLegacyActions(row);
+    detail.innerHTML='';
+    var clone=row.cloneNode(true);
+    clone.hidden=false;
+    clone.classList.remove('web-square-selected');
+    clone.classList.add('web-square-detail-card');
+    clone.removeAttribute('tabindex');
+    clone.querySelectorAll('[id]').forEach(function(node){node.removeAttribute('id')});
+    cleanLegacyActions(clone);
+    detail.appendChild(clone);
+    ensureCommentOpen(row);
+  }
+  function select(id,scroll){
+    var rows=cards();
+    if(!rows.length){
+      selected='';
+      if(empty)empty.hidden=false;
+      detail.innerHTML='';
+      if(empty)detail.appendChild(empty);
+      return;
+    }
+    if(!id||!rows.some(function(card){return String(card.dataset.id||'')===String(id)}))id=String(rows[0].dataset.id||'');
+    selected=String(id);
+    rows.forEach(function(card){
+      var active=String(card.dataset.id||'')===selected;
+      card.hidden=false;
+      card.classList.toggle('web-square-selected',active);
+      card.setAttribute('aria-current',active?'true':'false');
+    });
+    renderDetail();
+    if(scroll){
+      var active=rows.find(function(card){return String(card.dataset.id||'')===selected});
+      active&&active.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }
+  }
+  function rebuild(){
+    scheduled=0;
+    if(syncing)return;
+    syncing=true;
+    try{
+      var rows=cards();
+      if(!rows.length){
+        if(empty)empty.hidden=false;
+        detail.innerHTML='';
+        if(empty)detail.appendChild(empty);
+        return;
+      }
+      rows.forEach(function(card){
+        cleanLegacyActions(card);
+        card.hidden=false;
+        card.classList.add('web-square-feed-card');
+        card.tabIndex=0;
+      });
+      select(selected||String(rows[0].dataset.id||''),false);
+    }finally{syncing=false;}
+  }
+  function schedule(){clearTimeout(scheduled);scheduled=setTimeout(rebuild,50)}
+
+  feed.addEventListener('click',function(e){
+    var card=e.target.closest('.post-card[data-id]');
+    if(card&&feed.contains(card))select(card.dataset.id,false);
+  },true);
+  feed.addEventListener('keydown',function(e){
+    if(e.key!=='Enter'&&e.key!==' ')return;
+    if(e.target.closest('button,input,textarea,a,select'))return;
+    var card=e.target.closest('.post-card[data-id]');
+    if(!card)return;
+    e.preventDefault();
+    select(card.dataset.id,false);
+  });
+  detail.addEventListener('click',function(e){
+    var clone=e.target.closest('.post-card[data-id]');
+    if(clone)selected=String(clone.dataset.id||selected);
+  },true);
+
+  var observer=new MutationObserver(schedule);
+  observer.observe(feed,{childList:true,subtree:true,characterData:true});
+  document.addEventListener('click',function(e){
+    if(e.target.closest('[data-square-refresh]'))setTimeout(schedule,250);
+  });
   schedule();
 })();
