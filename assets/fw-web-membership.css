@@ -1,4 +1,4 @@
-/* 网页端会员身份：与电脑端共用三套主题，保持静态高光以减少卡顿。 */
+/* 网页端会员身份：与电脑端共用三套主题；仅 VIP 小标保留轻量流光。 */
 .fw-web-vip-identity{
   --fw-vip-a:#171715;
   --fw-vip-b:#c8a34f;
@@ -7,11 +7,15 @@
   border-color:var(--fw-vip-b)!important;
   box-shadow:0 0 0 2px #fff,0 0 0 4px var(--fw-vip-b),0 7px 18px color-mix(in srgb,var(--fw-vip-a) 18%,transparent)!important;
 }
+@keyframes fw-web-vip-badge-flow{to{background-position:64px 0}}
 .fw-web-vip-badge{
   --fw-vip-a:#171715;
   --fw-vip-b:#c8a34f;
   --fw-vip-c:#f3df9a;
+  position:relative;
+  isolation:isolate;
   display:inline-flex;
+  overflow:hidden;
   min-height:17px;
   align-items:center;
   justify-content:center;
@@ -19,7 +23,8 @@
   padding:0 6px;
   border:1px solid color-mix(in srgb,var(--fw-vip-b) 72%,transparent);
   border-radius:999px;
-  background:linear-gradient(110deg,var(--fw-vip-a),var(--fw-vip-b),var(--fw-vip-c));
+  background:linear-gradient(110deg,var(--fw-vip-a) 0 20%,var(--fw-vip-b) 38%,var(--fw-vip-c) 50%,var(--fw-vip-b) 62%,var(--fw-vip-a) 80% 100%);
+  background-size:64px 100%;
   color:#fff8dc;
   font-size:9px;
   font-weight:950;
@@ -27,6 +32,10 @@
   letter-spacing:.06em;
   vertical-align:middle;
   white-space:nowrap;
+  animation:fw-web-vip-badge-flow 6s linear infinite;
+  animation-delay:var(--fw-vip-motion-delay,0ms);
+  transform:translateZ(0);
+  will-change:background-position;
 }
 .fw-vip-theme-rose_gold{--fw-vip-a:#3b2528;--fw-vip-b:#c88b8f;--fw-vip-c:#f0c6b6}
 .fw-vip-theme-black_gold{--fw-vip-a:#171715;--fw-vip-b:#c8a34f;--fw-vip-c:#f3df9a}

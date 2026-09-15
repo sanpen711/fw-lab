@@ -17,6 +17,10 @@
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
   }
   function themeClass(theme){ return 'fw-vip-theme-' + (THEMES[theme] ? theme : 'rose_gold'); }
+  function motionDelay(){
+    var now = window.performance && typeof window.performance.now === 'function' ? window.performance.now() : Date.now();
+    return '-' + Math.round(now % 6000) + 'ms';
+  }
   function clearTheme(node){
     node.classList.remove('fw-web-vip-identity','fw-vip-theme-rose_gold','fw-vip-theme-black_gold','fw-vip-theme-pink_starlight');
   }
@@ -37,6 +41,7 @@
     }
     clearTheme(badge);
     badge.classList.add('fw-web-vip-badge', themeClass(theme));
+    badge.style.setProperty('--fw-vip-motion-delay', motionDelay());
   }
   function decorate(root){
     var scope = root && root.querySelectorAll ? root : document;
