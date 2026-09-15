@@ -65,6 +65,8 @@
       '.fw-download-head h2{margin:0;font-size:22px;line-height:1.2;color:#f6f6f0}',
       '.fw-download-close{width:38px;height:38px;border:1px solid rgba(246,246,240,.22);border-radius:999px;background:rgba(246,246,240,.08);color:#f6f6f0;font-size:22px;line-height:1;cursor:pointer}',
       '.fw-download-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:14px 24px 24px}',
+      '.fw-download-list[data-scope="desktop"]{grid-template-columns:minmax(0,420px);justify-content:center}',
+      '.fw-download-list[data-scope="mobile"]{grid-template-columns:repeat(2,minmax(0,1fr))}',
       '.fw-download-card{display:flex;min-height:174px;flex-direction:column;gap:10px;padding:18px;border:1px solid rgba(246,246,240,.18);border-radius:22px;background:rgba(246,246,240,.07)}',
       '.fw-download-card.is-current{border-color:rgba(246,246,240,.42);background:rgba(246,246,240,.11)}',
       '.fw-download-card h3{margin:0;font-size:20px;line-height:1.15;color:#f6f6f0}',
@@ -74,17 +76,18 @@
       '.fw-download-file[aria-disabled="true"]{cursor:wait;opacity:.56;pointer-events:none}',
       '.fw-download-ios-note{margin-top:auto;padding:12px 13px;border-radius:16px;background:rgba(246,246,240,.08);color:rgba(246,246,240,.86);font-size:14px;line-height:1.55;font-weight:850}',
       'body.fw-download-modal-open{overflow:hidden}',
-      '@media(max-width:760px){.fw-download-modal{align-items:flex-end;padding:12px}.fw-download-panel{max-height:86vh;border-radius:24px}.fw-download-head{padding:19px 18px 8px}.fw-download-head h2{font-size:19px}.fw-download-list{grid-template-columns:1fr;padding:12px 18px 18px}.fw-download-card{min-height:auto}.nav-secondary .fw-download-client-btn{margin-left:0;margin-top:8px}}'
+      '@media(max-width:760px){.fw-download-modal{align-items:flex-end;padding:12px}.fw-download-panel{max-height:86vh;border-radius:24px}.fw-download-head{padding:19px 18px 8px}.fw-download-head h2{font-size:19px}.fw-download-list,.fw-download-list[data-scope="desktop"],.fw-download-list[data-scope="mobile"]{grid-template-columns:1fr;padding:12px 18px 18px}.fw-download-card{min-height:auto}.nav-secondary .fw-download-client-btn{margin-left:0;margin-top:8px}}'
     ].join('\n');
     document.head.appendChild(style);
   }
 
-  function makeButton(className){
+  function makeButton(className, label, target){
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = className;
-    btn.textContent = '下载客户端';
+    btn.textContent = label || '下载客户端';
     btn.setAttribute('data-fw-download-client', '');
+    if(target) btn.setAttribute('data-fw-download-target', target);
     return btn;
   }
 
@@ -100,11 +103,6 @@
       appSecondary.appendChild(makeButton('app-btn fw-download-client-btn'));
     }
 
-    var heroActions = $('.hero-actions');
-    if(heroActions && !heroActions.querySelector('[data-fw-download-client]')){
-      heroActions.appendChild(makeButton('btn light fw-download-client-btn'));
-    }
-
     $$('[data-fw-download-client]').forEach(function(btn){ btn.removeAttribute('hidden'); });
   }
 
@@ -113,7 +111,7 @@
       return '<section class="fw-download-card' + (current ? ' is-current' : '') + '"><h3>Windows</h3><p data-fw-windows-release>正在检查 Windows 版本…</p><span class="fw-download-spacer"></span><a class="fw-download-file" data-fw-windows-download href="' + DOWNLOADS.windows + '" aria-disabled="true" download>正在准备</a></section>';
     }
     if(type === 'ios'){
-      return '<section class="fw-download-card' + (current ? ' is-current' : '') + '"><h3>IOS</h3><div class="fw-download-ios-note">使用 Safari 打开本站，点击底部分享按钮，选择“添加到主屏幕”。</div></section>';
+      return '<section class="fw-download-card' + (current ? ' is-current' : '') + '"><h3>iOS</h3><div class="fw-download-ios-note">使用 Safari 打开本站，点击底部分享按钮，选择“添加到主屏幕”。</div></section>';
     }
     return '<section class="fw-download-card' + (current ? ' is-current' : '') + '"><h3>Android</h3><p>适用于安卓手机</p><span class="fw-download-spacer"></span><a class="fw-download-file" href="' + DOWNLOADS.android + '" download>下载安装包</a></section>';
   }
@@ -155,24 +153,28 @@
     return modal;
   }
 
-  function ensureModal(){
+  function ensureModal(scope){
     var modal = document.getElementById(MODAL_ID) || buildModal();
     var current = getDeviceType();
-    var order = ['windows', 'ios', 'android'];
-    if(current === 'ios') order = ['ios', 'windows', 'android'];
-    else if(current === 'android') order = ['android', 'windows', 'ios'];
+    scope = scope === 'desktop' || scope === 'mobile' ? scope : 'all';
+    var order = scope === 'desktop' ? ['windows'] : (scope === 'mobile' ? ['ios', 'android'] : ['windows', 'ios', 'android']);
+    if(scope === 'all' && current === 'ios') order = ['ios', 'windows', 'android'];
+    else if(scope === 'all' && current === 'android') order = ['android', 'windows', 'ios'];
+    var title = document.getElementById('fw-download-title');
+    if(title) title.textContent = scope === 'desktop' ? '下载电脑客户端' : (scope === 'mobile' ? '下载手机端' : '下载 F.w 研究所客户端');
     var list = $('[data-fw-download-list]', modal);
     if(list){
+      list.setAttribute('data-scope', scope);
       list.innerHTML = order.map(function(type){ return cardHtml(type, type === current); }).join('');
     }
     updateWindowsRelease(modal);
     return modal;
   }
 
-  function openModal(){
+  function openModal(scope){
     if(shouldHideDownloadClient()) return;
     injectStyle();
-    var modal = ensureModal();
+    var modal = ensureModal(scope);
     modal.removeAttribute('hidden');
     document.body.classList.add('fw-download-modal-open');
     var close = $('[data-fw-download-close]', modal);
@@ -191,7 +193,7 @@
       var trigger = event.target.closest && event.target.closest('[data-fw-download-client]');
       if(trigger){
         event.preventDefault();
-        openModal();
+        openModal(trigger.getAttribute('data-fw-download-target') || 'all');
         return;
       }
       if(event.target.closest && event.target.closest('[data-fw-download-close]')){
