@@ -11,16 +11,16 @@
     if(!square) return;
     var back = square.querySelector('[data-app-open="nav"]');
     var subtitle = square.querySelector('.view-head h1');
-    if(back) back.textContent = '‹ 首页';
+    if(back) back.textContent = '‹ 导航';
     if(subtitle) subtitle.textContent = '发牢骚、评论、互动';
   }
 
   function viewFromHash(){
     var hash = String(window.location.hash || '').replace(/^#/, '').toLowerCase();
     var map = {
-      home:'nav',
+      home:'home',
       nav:'nav',
-      index:'nav',
+      index:'home',
       square:'square',
       rooms:'rooms',
       bird:'bird',
@@ -43,7 +43,7 @@
 
   function replaceHashForView(view){
     if(!window.history || !window.history.replaceState) return;
-    var hash = view === 'nav' ? '' : '#' + view;
+    var hash = view === 'home' ? '' : '#' + view;
     window.history.replaceState(null, document.title, window.location.pathname + window.location.search + hash);
   }
 
@@ -57,7 +57,7 @@
 
   function openView(view, options){
     var api = app();
-    view = view || 'nav';
+    view = view || 'home';
     if(!api) return;
     if(typeof api.openView === 'function'){
       api.openView(view, options);
@@ -90,7 +90,7 @@
       var open = e.target.closest && e.target.closest('[data-app-open]');
       if(open){
         e.preventDefault();
-        var view = open.dataset.appOpen || 'nav';
+        var view = open.dataset.appOpen || 'home';
         openView(view);
         return;
       }

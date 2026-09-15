@@ -53,7 +53,7 @@
   }
 
   function tabForView(view){
-    return (view === 'buddy' || view === 'echo' || view === 'profile') ? view : 'nav';
+    return (view === 'home' || view === 'nav' || view === 'buddy' || view === 'profile') ? view : 'nav';
   }
 
   function parentOf(view){
@@ -69,9 +69,9 @@
   function transitionType(from, to){
     if(!from || from === to) return '';
     if(to === parentOf(from)) return 'back';
+    if(tabForView(from) !== tabForView(to)) return 'tab';
     if(to === 'nav' && from !== 'nav') return 'back';
     if(from === 'nav' && to !== 'nav') return 'forward';
-    if(tabForView(from) !== tabForView(to)) return 'tab';
     return 'forward';
   }
 

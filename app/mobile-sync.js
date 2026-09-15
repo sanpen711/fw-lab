@@ -78,7 +78,7 @@
   function scheduleCountdown(){
     stopCountdown();renderCountdown();
     var view=window.FWApp&&window.FWApp.state&&window.FWApp.state.view;
-    if(!document.hidden&&view==='nav'&&typeof read(OFFWORK_TIME_KEY)==='string')countdownTimer=setTimeout(scheduleCountdown,1000);
+    if(!document.hidden&&view==='home'&&typeof read(OFFWORK_TIME_KEY)==='string')countdownTimer=setTimeout(scheduleCountdown,1000);
   }
   async function submitFeedback(form){
     var user=me();if(!user){toast('请先登录后再提交反馈。');window.FWApp.setView('profile');closeHomeTool();return;}
@@ -221,8 +221,8 @@
   }
 
   function bind(){
-    document.addEventListener('fw:app-viewchange',function(event){var view=event.detail&&event.detail.view;if(view==='nav'){renderHomeDate();renderWeather();loadWeather(false);scheduleCountdown();}else stopCountdown();if(view==='play'||view==='play-detail'){loadParties(false);subscribeParty();}else unsubscribeParty();if(view==='membership')loadMembership(false);if(view==='square'||view==='square-detail'||view==='buddy'||view==='echo'||view==='bird')setTimeout(enhanceProfiles,80);});
-    document.addEventListener('fw:app-visibility',function(event){var visible=!!(event&&event.detail&&event.detail.visible),view=window.FWApp&&window.FWApp.state&&window.FWApp.state.view;if(!visible){stopCountdown();unsubscribeParty();return;}if(view==='nav')scheduleCountdown();if(view==='play'||view==='play-detail')subscribeParty();});
+    document.addEventListener('fw:app-viewchange',function(event){var view=event.detail&&event.detail.view;if(view==='home'){renderHomeDate();renderWeather();loadWeather(false);scheduleCountdown();}else stopCountdown();if(view==='play'||view==='play-detail'){loadParties(false);subscribeParty();}else unsubscribeParty();if(view==='membership')loadMembership(false);if(view==='square'||view==='square-detail'||view==='buddy'||view==='bird')setTimeout(enhanceProfiles,80);});
+    document.addEventListener('fw:app-visibility',function(event){var visible=!!(event&&event.detail&&event.detail.visible),view=window.FWApp&&window.FWApp.state&&window.FWApp.state.view;if(!visible){stopCountdown();unsubscribeParty();return;}if(view==='home')scheduleCountdown();if(view==='play'||view==='play-detail')subscribeParty();});
     document.addEventListener('fw:app-userchange',function(){membership.loaded=false;party.loaded=false;party.rows=[];party.members=[];party.alerts=[];unsubscribeParty();loadMembership(true);if(window.FWApp&&['play','play-detail'].includes(window.FWApp.state.view)){loadParties(true);subscribeParty();}});
     document.addEventListener('click',async function(event){
       var target=event.target;

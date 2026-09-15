@@ -54,6 +54,7 @@ html,body{background:#171715}
 .mobile-weather-credit{display:block;margin:-4px 2px 12px;color:var(--muted);font-size:10px;text-align:right;text-decoration:none}
 .mobile-weather-credit[hidden]{display:none}
 .mobile-home-destination-head{margin-top:22px}
+.mobile-navigation-head{padding:15px 4px 18px}.mobile-navigation-head h1{font-size:29px;letter-spacing:-.055em}.mobile-navigation-head>span{display:block;margin-top:8px;color:var(--muted);font-size:11px;font-weight:850}.mobile-navigation-view .mobile-primary-grid{margin-bottom:2px}
 .nav-grid.mobile-primary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
 .nav-grid.mobile-primary-grid .mobile-destination{position:relative;min-height:126px;overflow:hidden;border:1px solid var(--line);border-radius:19px;background:#fff;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.04);text-align:left;transition:transform .18s ease,box-shadow .18s ease}
 .nav-grid.mobile-primary-grid .mobile-destination-featured{grid-column:1/-1;min-height:156px;background:linear-gradient(120deg,#fff 0%,#f7f7f5 100%)}
@@ -73,6 +74,7 @@ html,body{background:#171715}
 .mobile-more-grid b{font:inherit}.mobile-more-grid span{display:none}
 .mobile-home-tool:active,.nav-grid.mobile-primary-grid .mobile-destination:active{transform:scale(.985)}
 @media(hover:hover){.mobile-home-tool:hover,.nav-grid.mobile-primary-grid .mobile-destination:hover{transform:translateY(-2px);box-shadow:0 13px 30px rgba(0,0,0,.08)}}
+.mobile-square-switch{position:relative;display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin:0 0 12px;padding:4px;border-radius:14px;background:#e6e6e3}.mobile-square-switch button{position:relative;min-height:40px;border:0;border-radius:10px;background:transparent;color:#71716c;font-size:12px;font-weight:950}.mobile-square-switch button.active{background:#fff;color:#171715;box-shadow:0 3px 11px rgba(0,0,0,.08)}[data-mobile-square-panel][hidden]{display:none!important}.mobile-square-echo-panel{min-height:180px}.mobile-square-echo-panel [data-echo-list]{display:grid;gap:10px}
 .mobile-nav-dot,.mobile-party-filters i{position:absolute;width:8px;height:8px;border-radius:50%;background:#ff5a69;box-shadow:0 0 0 3px rgba(255,90,105,.15)}
 .mobile-nav-dot{right:12px;top:12px}.mobile-party-filters i{right:7px;top:6px}
 

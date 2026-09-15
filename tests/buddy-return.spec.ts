@@ -4,7 +4,7 @@ const appPath = '/app/index.html';
 
 async function gotoApp(page: Page) {
   await page.goto(appPath, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('[data-app-view="nav"].is-active', { timeout: 15_000 });
+  await page.waitForSelector('[data-app-view="home"].is-active', { timeout: 15_000 });
   await page.waitForTimeout(900);
 }
 

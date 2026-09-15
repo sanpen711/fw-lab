@@ -3,7 +3,8 @@
   window.FWMobileCoreFixes = true;
 
   var ROUTABLE_VIEWS = {
-    nav:'',
+    home:'',
+    nav:'#nav',
     square:'#square',
     rooms:'#rooms',
     bird:'#bird',
@@ -36,9 +37,9 @@
     return false;
   }
   function normalizeView(view){
-    view = view || 'nav';
+    view = view || 'home';
     if(routeHashForView(view) != null) return view;
-    return hasAppView(view) ? view : 'nav';
+    return hasAppView(view) ? view : 'home';
   }
   function replaceHashForView(view){
     var hash = routeHashForView(view);
@@ -60,7 +61,7 @@
     var originalSetView = window.FWApp.setView;
     if(typeof originalSetView !== 'function') return false;
     window.FWApp.setView = function(name){
-      var view = normalizeView(name || 'nav');
+      var view = normalizeView(name || 'home');
       var previousView = this && this.state && this.state.view || '';
       var result = originalSetView.call(this, view);
       if(view === 'profile' && previousView !== 'profile') scheduleProfileHomeReset();
@@ -75,7 +76,7 @@
     if(!window.FWApp || window.FWApp.__mobileCoreOpenView) return false;
     if(typeof window.FWApp.setView !== 'function') return false;
     window.FWApp.openView = function(name, options){
-      var view = normalizeView(name || 'nav');
+      var view = normalizeView(name || 'home');
       var result = window.FWApp.setView(view);
       if(!options || options.updateHash !== false) replaceHashForView(view);
       return result;
@@ -92,7 +93,7 @@
 
   function openAppView(view, options){
     var api = window.FWApp;
-    view = normalizeView(view || 'nav');
+    view = normalizeView(view || 'home');
     if(!api) return false;
     if(typeof api.openView === 'function'){ api.openView(view, options); return true; }
     if(typeof api.setView === 'function'){
@@ -128,7 +129,7 @@
       if(!target || !target.closest) return;
       var nav = target.closest('[data-app-nav]');
       if(nav){
-        var navView = normalizeView(nav.dataset.appNav || 'nav');
+        var navView = normalizeView(nav.dataset.appNav || 'home');
         if(navView === 'square') primeFeedCache();
         suppressNextViewMotion();
         if(openAppView(navView)){
@@ -148,7 +149,7 @@
       }
       var opener = target.closest('[data-app-open]');
       if(opener){
-        var openView = normalizeView(opener.dataset.appOpen || 'nav');
+        var openView = normalizeView(opener.dataset.appOpen || 'home');
         if(openView === 'square') primeFeedCache();
         setTimeout(function(){ replaceHashForView(openView); if(openView === 'square') refreshFeedCache(); }, 0);
       }
@@ -166,13 +167,13 @@
   }
 
   function ensureMobileDataCache(){ loadScriptOnce('FWMobileDataCache', 'data-mobile-data-cache', './mobile-data-cache.js?v=mobile-data-cache-20260709-1'); }
-  function ensureMobileDesktopSync(){ loadScriptOnce('__FW_MOBILE_DESKTOP_SYNC__', 'data-mobile-desktop-sync', './mobile-sync.js?v=mobile-home-editorial-20260915-1'); }
+  function ensureMobileDesktopSync(){ loadScriptOnce('__FW_MOBILE_DESKTOP_SYNC__', 'data-mobile-desktop-sync', './mobile-sync.js?v=mobile-home-nav-split-20260915-1'); }
   function ensureReportBridge(){ loadScriptOnce('__FW_MOBILE_REPORT_BRIDGE__', 'data-mobile-report-bridge', './report.js?v=mobile-report-20260609-1'); }
   function ensureBuddyChatReadFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4'); }
   function ensureBuddyReturnStability(){ loadScriptOnce('__FW_BUDDY_RETURN_STABILITY__', 'data-buddy-return-stability', './buddy-return-stability.js?v=buddy-return-stability-20260629-1'); }
   function ensureFeedDetailReturnBridge(){ loadScriptOnce('__FW_MOBILE_FEED_DETAIL_RETURN__', 'data-mobile-feed-detail-return', './feed-detail-return.js?v=mobile-feed-detail-return-20260614-1'); }
-  function ensureMobileSwipeBack(){ loadScriptOnce('__FW_MOBILE_SWIPE_BACK__', 'data-mobile-swipe-back', './mobile-swipe-back.js?v=mobile-swipe-back-20260629-direct-1'); }
-  function ensureMobileTransitions(){ loadScriptOnce('__FW_MOBILE_TRANSITIONS__', 'data-mobile-transitions', './mobile-transitions.js?v=mobile-transitions-20260629-unified-1'); }
+  function ensureMobileSwipeBack(){ loadScriptOnce('__FW_MOBILE_SWIPE_BACK__', 'data-mobile-swipe-back', './mobile-swipe-back.js?v=mobile-home-nav-split-20260915-1'); }
+  function ensureMobileTransitions(){ loadScriptOnce('__FW_MOBILE_TRANSITIONS__', 'data-mobile-transitions', './mobile-transitions.js?v=mobile-home-nav-split-20260915-1'); }
   function ensurePriorityFixes(){ loadScriptOnce('__FW_MOBILE_PRIORITY_FIXES__', 'data-mobile-priority-fixes', './mobile-priority-fixes.js?v=mobile-priority-fixes-20260629-echo-core-1'); }
   function ensureMediaCache(){ loadScriptOnce('__FW_MOBILE_MEDIA_CACHE__', 'data-mobile-media-cache', './mobile-media-cache.js?v=mobile-media-cache-20260629-avatar-repair-1'); }
   function ensureFeedCache(){ loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260618-speed-2'); }
@@ -223,7 +224,7 @@
   }
 
   function ensureViewModules(view){
-    view = view || window.FWApp && window.FWApp.state && window.FWApp.state.view || 'nav';
+    view = view || window.FWApp && window.FWApp.state && window.FWApp.state.view || 'home';
     if(view === 'square' || view === 'square-detail' || view === 'square-publish') ensureSquareModules();
     if(view === 'buddy') ensureBuddyModules();
     if(view === 'echo') ensureSharedMediaModules();

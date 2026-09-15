@@ -14,7 +14,7 @@ const fatalConsolePatterns = [
 
 async function gotoApp(page: Page) {
   await page.goto(appPath, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('[data-app-view="nav"].is-active', { timeout: 15_000 });
+  await page.waitForSelector('[data-app-view="home"].is-active', { timeout: 15_000 });
   await page.waitForTimeout(900);
 }
 
@@ -52,16 +52,30 @@ async function waitForLoggedInUser(page: Page) {
 }
 
 async function openView(page: Page, view: string) {
-  if (view === 'nav') {
-    await page.locator('[data-app-nav="nav"]').click();
+  if (view === 'home' || view === 'nav') {
+    await page.locator(`[data-app-nav="${view}"]`).click();
+  } else if (view === 'echo') {
+    if (!(await page.locator('[data-app-view="square"].is-active').count())) {
+      await page.locator('[data-app-nav="nav"]').click();
+      await page.locator('[data-app-open="square"]').first().click();
+    }
+    await page.locator('[data-mobile-square-mode="echo"]').click();
   } else if (view === 'profile') {
     await page.locator('[data-app-nav="profile"], [data-app-profile-trigger]').first().click();
-  } else if (view === 'buddy' || view === 'echo') {
+  } else if (view === 'buddy') {
     await page.locator(`[data-app-nav="${view}"]`).click();
   } else {
+    if (!(await page.locator('[data-app-view="nav"].is-active').count())) {
+      await page.locator('[data-app-nav="nav"]').click();
+    }
     await page.locator(`[data-app-open="${view}"]`).first().click();
   }
-  await expect(page.locator(`[data-app-view="${view}"].is-active`)).toBeVisible();
+  if (view === 'echo') {
+    await expect(page.locator('[data-app-view="square"].is-active')).toBeVisible();
+    await expect(page.locator('[data-mobile-square-panel="echo"]')).toBeVisible();
+  } else {
+    await expect(page.locator(`[data-app-view="${view}"].is-active`)).toBeVisible();
+  }
 }
 
 async function openViewStable(page: Page, view: string) {
@@ -73,7 +87,12 @@ async function openViewStable(page: Page, view: string) {
       const w = window as any;
       if (w.FWApp && typeof w.FWApp.setView === 'function') w.FWApp.setView(targetView);
     }, view);
-    await expect(page.locator(`[data-app-view="${view}"].is-active`)).toBeVisible();
+    if (view === 'echo') {
+      await expect(page.locator('[data-app-view="square"].is-active')).toBeVisible();
+      await expect(page.locator('[data-mobile-square-panel="echo"]')).toBeVisible();
+    } else {
+      await expect(page.locator(`[data-app-view="${view}"].is-active`)).toBeVisible();
+    }
   }
   await page.waitForTimeout(350);
 }
@@ -222,11 +241,17 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
 
     await expect(page.locator('.app-header')).toBeVisible();
     await expect(page.locator('.app-tabbar')).toBeVisible();
-    await expect(page.locator('[data-app-view="nav"].is-active')).toBeVisible();
+    await expect(page.locator('[data-app-view="home"].is-active')).toBeVisible();
+    await expect(page.locator('.app-tabbar button b')).toHaveText(['首页', '导航', '搭子', '我的']);
 
+    await openView(page, 'nav');
     for (const view of views.filter(view => view !== 'nav')) {
       await openView(page, view);
-      await expect(page.locator(`[data-app-view="${view}"].is-active`)).toBeVisible();
+      if (view === 'echo') {
+        await expect(page.locator('[data-mobile-square-panel="echo"]')).toBeVisible();
+      } else {
+        await expect(page.locator(`[data-app-view="${view}"].is-active`)).toBeVisible();
+      }
       await openView(page, 'nav');
       await expect(page.locator('[data-app-view="nav"].is-active')).toBeVisible();
     }
@@ -235,7 +260,7 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
     expect(fatalErrors, fatalErrors.join('\n')).toEqual([]);
   });
 
-  test('顶层页面左滑返回统一回首页', async ({ page }) => {
+  test('功能页面左滑返回统一回导航', async ({ page }) => {
     await gotoApp(page);
     for (const view of ['square', 'rooms', 'bird', 'echo', 'buddy', 'profile']) {
       await openView(page, view);
@@ -262,7 +287,8 @@ test.describe('F.w 研究所手机端 PWA 基础稳定性', () => {
         return button.dispatchEvent(event);
       }, view);
       expect(allowed).toBe(true);
-      await expect(page.locator(`[data-app-view="${view}"].is-active`)).toBeVisible();
+      if (view === 'echo') await expect(page.locator('[data-mobile-square-panel="echo"]')).toBeVisible();
+      else await expect(page.locator(`[data-app-view="${view}"].is-active`)).toBeVisible();
     }
   });
 

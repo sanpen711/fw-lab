@@ -618,7 +618,7 @@
       mode = 'home';
       await app().refreshUser();
       render();
-      app().setView('nav');
+      app().setView('home');
       app().toast('账号已注销。');
     }catch(err){
       app().toast(safeMessage(err, '账号注销失败。'));

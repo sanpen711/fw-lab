@@ -2,7 +2,7 @@
   if(window.FWApp) return;
 
   var state = {
-    view:'nav',
+    view:'home',
     user:null,
     posts:[],
     postsLoaded:false,
@@ -363,10 +363,14 @@
   }
 
   function applyTabbarVisuals(){
-    var home = $('[data-app-nav="nav"]');
-    if(home){
-      var homeLabel = $('b', home);
-      if(homeLabel) homeLabel.textContent = '首页';
+    var homeIcon = $('[data-app-nav="home"] span');
+    if(homeIcon){
+      homeIcon.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="display:block"><path d="M3.5 10.5 12 3l8.5 7.5"></path><path d="M5.5 9.5V21h13V9.5"></path><path d="M9.5 21v-6h5v6"></path></svg>';
+    }
+
+    var navIcon = $('[data-app-nav="nav"] span');
+    if(navIcon){
+      navIcon.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false" style="display:block"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.5"></rect><rect x="14" y="3.5" width="6.5" height="6.5" rx="1.5"></rect><rect x="3.5" y="14" width="6.5" height="6.5" rx="1.5"></rect><rect x="14" y="14" width="6.5" height="6.5" rx="1.5"></rect></svg>';
     }
 
     var buddyIcon = $('[data-app-nav="buddy"] span');
@@ -510,13 +514,15 @@
   }
 
   function tabForView(name){
-    if(name === 'buddy' || name === 'echo' || name === 'profile') return name;
+    if(name === 'home' || name === 'nav' || name === 'buddy' || name === 'profile') return name;
     return 'nav';
   }
 
   function setView(name){
     var previousView = state.view;
-    state.view = name || 'nav';
+    var requestedView = name || 'home';
+    var squareMode = requestedView === 'echo' ? 'echo' : (requestedView === 'square' ? 'feed' : '');
+    state.view = requestedView === 'echo' ? 'square' : requestedView;
     $$('[data-app-view]').forEach(function(view){
       view.classList.toggle('is-active', view.dataset.appView === state.view);
     });
@@ -529,8 +535,8 @@
     scheduleDebugRefresh();
 
     if(state.view === 'square' && window.FWAppFeed) window.FWAppFeed.ensureLoaded();
+    if(squareMode && window.FWAppEcho && window.FWAppEcho.setSquareMode) window.FWAppEcho.setSquareMode(squareMode);
     if(state.view === 'buddy' && window.FWAppBuddy) window.FWAppBuddy.ensureLoaded();
-    if(state.view === 'echo' && window.FWAppEcho) window.FWAppEcho.ensureLoaded();
     if(state.view === 'profile' && window.FWAppProfile) window.FWAppProfile.render();
     if(previousView !== state.view){
       document.dispatchEvent(new CustomEvent('fw:app-viewchange', {detail:{view:state.view, previousView:previousView}}));
@@ -549,7 +555,7 @@
       var nav = e.target.closest && e.target.closest('[data-app-nav]');
       if(nav){
         e.preventDefault();
-        setView(nav.dataset.appNav || 'nav');
+        setView(nav.dataset.appNav || 'home');
         return;
       }
 
@@ -592,7 +598,7 @@
     if(window.FWAppBuddy) window.FWAppBuddy.init();
     if(window.FWAppEcho) window.FWAppEcho.init();
     if(window.FWAppProfile) window.FWAppProfile.init();
-    setView('nav');
+    setView('home');
   }
 
   window.FWApp = {

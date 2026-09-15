@@ -6,6 +6,7 @@
   var lastLoadAt = 0;
   var badgeTimer = 0;
   var pendingEchoFocus = null;
+  var squareMode = 'feed';
   var FEED_RETURN_KEY = 'fw_mobile_feed_detail_return_view';
   var PROFILE_CACHE_KEY = 'fw_mobile_echo_profile_cache_v1';
   var PROFILE_CACHE_LIMIT = 260;
@@ -115,8 +116,8 @@
     style.id = 'fwMobileEchoCoreStyle';
     style.textContent = [
       '.app-tabbar button{position:relative}',
-      '[data-app-nav="echo"] .mobile-echo-badge{position:absolute;right:22px;top:6px;width:13px!important;min-width:13px!important;height:13px!important;padding:0!important;border-radius:999px;background:#d95353;color:transparent!important;border:2px solid #10170f;display:none;font-size:0!important;line-height:0!important;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.22);box-sizing:border-box}',
-      '[data-app-nav="echo"] .mobile-echo-badge.show{display:block}',
+      '[data-mobile-square-mode="echo"] .mobile-echo-badge{position:absolute;right:12px;top:8px;width:10px!important;min-width:10px!important;height:10px!important;padding:0!important;border-radius:999px;background:#d95353;color:transparent!important;border:2px solid #f4f4f2;display:none;font-size:0!important;line-height:0!important;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.2);box-sizing:border-box}',
+      '[data-mobile-square-mode="echo"] .mobile-echo-badge.show{display:block}',
       '.mobile-echo-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:0 0 10px;flex-wrap:wrap}',
       '.mobile-echo-toolbar b{font-size:14px;color:var(--deep);font-weight:1000}',
       '.mobile-echo-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}',
@@ -228,7 +229,7 @@
   }
 
   function setEchoBadge(count){
-    var button = document.querySelector('[data-app-nav="echo"]');
+    var button = document.querySelector('[data-mobile-square-mode="echo"]');
     if(!button) return;
     var badge = button.querySelector('.mobile-echo-badge');
     if(!badge){ badge = document.createElement('span'); badge.className = 'mobile-echo-badge'; button.appendChild(badge); }
@@ -245,6 +246,26 @@
       button.classList.remove('has-mobile-echo-badge');
     }
   }
+
+  function setSquareMode(mode){
+    squareMode = mode === 'echo' ? 'echo' : 'feed';
+    var buttons = app().$$('[data-mobile-square-mode]');
+    var panels = app().$$('[data-mobile-square-panel]');
+    buttons.forEach(function(button){
+      var active = button.dataset.mobileSquareMode === squareMode;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    panels.forEach(function(panel){ panel.hidden = panel.dataset.mobileSquarePanel !== squareMode; });
+    var title = document.querySelector('[data-mobile-square-title]');
+    if(title) title.textContent = squareMode === 'echo' ? '回声通知' : '发牢骚、评论、互动';
+    var main = document.getElementById('appMain');
+    if(main && app().state && app().state.view === 'square') main.scrollTop = 0;
+    if(squareMode === 'echo') load(true);
+    else if(window.FWAppFeed && window.FWAppFeed.ensureLoaded) window.FWAppFeed.ensureLoaded();
+  }
+
+  function isSquareMode(mode){ return squareMode === mode; }
 
   function visibleUnreadCount(){ return document.querySelectorAll('[data-echo-list] .mobile-echo-item.unread').length; }
   function updateBadgeFromVisibleItems(){ setEchoBadge(visibleUnreadCount()); }
@@ -382,6 +403,12 @@
     if(bound) return;
     bound = true;
     document.addEventListener('click', function(e){
+      var mode = e.target.closest && e.target.closest('[data-mobile-square-mode]');
+      if(mode){
+        e.preventDefault();
+        app().setView(mode.dataset.mobileSquareMode === 'echo' ? 'echo' : 'square');
+        return;
+      }
       var refresh = e.target.closest && e.target.closest('[data-mobile-echo-refresh]');
       if(refresh){ e.preventDefault(); loaded = false; replyEcho.invalidate(); load(true); return; }
       var markAll = e.target.closest && e.target.closest('[data-mobile-echo-mark-all]');
@@ -417,10 +444,11 @@
   function init(){
     injectStyle();
     bind();
+    setSquareMode('feed');
     refreshBadges();
     scheduleBadgeTimer();
     document.addEventListener('fw:app-visibility', function(event){ if(!(event && event.detail && event.detail.visible)) stopBadgeTimer(); else scheduleBadgeTimer(300); });
   }
   function ensureLoaded(){ load(true); }
-  window.FWAppEcho = {init:init, load:load, ensureLoaded:ensureLoaded, refreshBadges:refreshBadges, openPost:openPost, markRead:markRead};
+  window.FWAppEcho = {init:init, load:load, ensureLoaded:ensureLoaded, refreshBadges:refreshBadges, openPost:openPost, markRead:markRead, setSquareMode:setSquareMode, isSquareMode:isSquareMode};
 })();

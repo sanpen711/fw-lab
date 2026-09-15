@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="./app.css?v=mobile-release-ready-20260804-1">
   <link rel="stylesheet" href="./rooms.css?v=mobile-app-rooms-layout-20260527-1">
   <link rel="stylesheet" href="./bird.css?v=mobile-app-modules-20260527-1">
-  <link rel="stylesheet" href="./mobile-sync.css?v=mobile-home-editorial-20260915-1">
+  <link rel="stylesheet" href="./mobile-sync.css?v=mobile-home-nav-split-20260915-1">
 </head>
 <body>
   <div class="app-shell">
@@ -38,7 +38,7 @@
     </div>
 
     <main class="app-main" id="appMain">
-      <section class="app-view is-active" data-app-view="nav" aria-label="导航">
+      <section class="app-view is-active" data-app-view="home" aria-label="首页">
         <div class="app-hero mobile-home-hero">
           <div class="mobile-home-hero-top">
             <span class="mobile-home-live"><i aria-hidden="true"></i>低功耗运行中</span>
@@ -65,9 +65,13 @@
           <button class="mobile-home-tool mobile-home-tool-feedback" type="button" data-mobile-feedback-open><span class="mobile-home-tool-label"><b>研究所信箱</b><i>03</i></span><strong>反馈意见</strong><span>有问题，或者有个小建议</span><small>登录后可直接提交</small></button>
         </div>
         <a class="mobile-weather-credit" href="https://www.qweather.com" target="_blank" rel="noopener noreferrer" data-mobile-weather-credit hidden>天气服务由和风天气驱动</a>
-        <div class="mobile-home-section-head mobile-home-destination-head">
-          <div><small>馆内导航</small><h2>现在想去哪里</h2></div>
-          <span>6 个开放区域</span>
+      </section>
+
+      <section class="app-view mobile-navigation-view" data-app-view="nav" aria-label="导航">
+        <div class="view-head mobile-navigation-head">
+          <p>馆内导航</p>
+          <h1>现在想去哪里</h1>
+          <span>六个开放区域，随便逛逛。</span>
         </div>
         <div class="nav-grid mobile-primary-grid" aria-label="应用导航菜单">
           <button class="mobile-destination mobile-destination-featured" type="button" data-app-open="square"><span class="mobile-destination-meta">01 · 社区</span><b>精神广场</b><span class="mobile-destination-copy">发一句牢骚，看看大家<br>今天都在研究什么。</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i></button>
@@ -92,19 +96,28 @@
         <div class="view-head">
           <button class="back-btn" type="button" data-app-open="nav">‹ 导航</button>
           <p>精神广场</p>
-          <h1>发牢骚，然后低功耗互动</h1>
+          <h1 data-mobile-square-title>发牢骚、评论、互动</h1>
         </div>
-        <form class="publish-card" data-publish-form>
-          <label for="postContent">发一句牢骚</label>
-          <textarea id="postContent" name="content" maxlength="500" placeholder="例如：今天开了三个会，最后决定下次再讨论。"></textarea>
-          <div class="form-row"><span data-publish-count>0/500</span><button class="app-btn primary" type="submit">发布</button></div>
-        </form>
-        <div class="feed-list" data-feed-list="square"></div>
+        <div class="mobile-square-switch" role="tablist" aria-label="精神广场内容">
+          <button class="active" type="button" role="tab" aria-selected="true" data-mobile-square-mode="feed">广场</button>
+          <button type="button" role="tab" aria-selected="false" data-mobile-square-mode="echo">回声<span class="mobile-echo-badge" aria-hidden="true"></span></button>
+        </div>
+        <div data-mobile-square-panel="feed">
+          <form class="publish-card" data-publish-form>
+            <label for="postContent">发一句牢骚</label>
+            <textarea id="postContent" name="content" maxlength="500" placeholder="例如：今天开了三个会，最后决定下次再讨论。"></textarea>
+            <div class="form-row"><span data-publish-count>0/500</span><button class="app-btn primary" type="submit">发布</button></div>
+          </form>
+          <div class="feed-list" data-feed-list="square"></div>
+        </div>
+        <div class="list-stack mobile-square-echo-panel" data-mobile-square-panel="echo" hidden>
+          <div data-echo-list></div>
+        </div>
       </section>
 
       <section class="app-view" data-app-view="rooms" aria-label="学术研讨">
         <div class="view-head rooms-view-head">
-          <button class="back-btn" type="button" data-app-open="nav">‹ 首页</button>
+          <button class="back-btn" type="button" data-app-open="nav">‹ 导航</button>
           <button class="rooms-compose-entry" type="button" data-mobile-poll-open-create>发起投票</button>
           <p>课题与投票</p>
           <h1>学术研讨</h1>
@@ -148,7 +161,7 @@
 
       <section class="app-view" data-app-view="bird" aria-label="新闻专区">
         <div class="view-head">
-          <button class="back-btn" type="button" data-app-open="nav">‹ 首页</button>
+          <button class="back-btn" type="button" data-app-open="nav">‹ 导航</button>
           <p>新闻专区</p>
           <h1>值得围观的离谱事件</h1>
         </div>
@@ -189,23 +202,23 @@
       </section>
 
       <section class="app-view" data-app-view="archive" aria-label="废话档案">
-        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 首页</button><p>废话档案</p><h1>低功耗榜单</h1></div>
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>废话档案</p><h1>低功耗榜单</h1></div>
         <div class="module-card muted-card"><p>排行榜与历史精选将逐步迁移到 App 端。请先在桌面网页查看完整档案。</p></div>
       </section>
 
       <section class="app-view" data-app-view="rules" aria-label="入馆须知">
-        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 首页</button><p>入馆须知</p><h1>边界与声明</h1></div>
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>入馆须知</p><h1>边界与声明</h1></div>
         <div class="module-card"><p>这里是一个匿名表达空间，但不支持人身攻击、隐私泄露、违法内容或恶意引战。发言请保留一点低功耗文明。</p></div>
         <div class="form-row"><a class="app-btn" href="../rules.html" target="_blank" rel="noopener">查看用户规则</a><a class="app-btn dark" href="../privacy.html" target="_blank" rel="noopener">查看隐私政策</a></div>
       </section>
 
       <section class="app-view" data-app-view="moderation" aria-label="处理公告">
-        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 首页</button><p>处理公告</p><h1>违规处理说明</h1></div>
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>处理公告</p><h1>违规处理说明</h1></div>
         <div class="module-card muted-card"><p>管理员会根据举报和巡查处理违规内容。普通用户只看到必要的处理说明，不展示后台入口。</p></div>
       </section>
 
       <section class="app-view mobile-party-view" data-app-view="play" aria-label="下班开黑">
-        <div class="view-head mobile-section-head"><button class="back-btn" type="button" data-app-open="nav">‹ 首页</button><p>下班开黑</p><h1>找队友，组队开一把</h1></div>
+        <div class="view-head mobile-section-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>下班开黑</p><h1>找队友，组队开一把</h1></div>
         <div class="mobile-section-actions"><button class="app-btn" type="button" data-mobile-party-refresh>刷新</button><button class="app-btn dark" type="button" data-mobile-party-create-toggle>创建组队</button></div>
         <div class="mobile-party-filters" role="tablist"><button class="active" type="button" data-mobile-party-filter="open">可加入</button><button type="button" data-mobile-party-filter="all">全部房间</button><button type="button" data-mobile-party-filter="mine">我的组队<i data-mobile-party-tab-dot hidden></i></button></div>
         <div data-mobile-party-create-host hidden></div>
@@ -217,7 +230,7 @@
       </section>
 
       <section class="app-view mobile-games-view" data-app-view="games" aria-label="小游戏">
-        <div class="view-head mobile-section-head"><button class="back-btn" type="button" data-app-open="nav">‹ 首页</button><p>小游戏</p><h1>不用登录，点开就玩</h1></div>
+        <div class="view-head mobile-section-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>小游戏</p><h1>不用登录，点开就玩</h1></div>
         <div class="mobile-game-grid">
           <button type="button" data-mobile-game-open="2048"><i>2⁸</i><b>2048</b><span>滑动合并数字</span></button>
           <button type="button" data-mobile-game-open="minesweeper"><i>✦</i><b>扫雷</b><span>点按排雷，切换插旗</span></button>
@@ -236,7 +249,7 @@
       </section>
 
       <section class="app-view mobile-membership-view" data-app-view="membership" aria-label="会员中心">
-        <div class="view-head mobile-section-head"><button class="back-btn" type="button" data-app-open="nav">‹ 首页</button><p>会员中心</p><h1>会员身份与专属装扮</h1></div>
+        <div class="view-head mobile-section-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>会员中心</p><h1>会员身份与专属装扮</h1></div>
         <div class="mobile-membership-tabs"><button class="active" type="button" data-mobile-membership-tab="benefits">会员权益</button><button type="button" data-mobile-membership-tab="orders">订单记录</button></div>
         <div data-mobile-membership-content><div class="mobile-sync-empty">正在读取会员信息…</div></div>
       </section>
@@ -251,12 +264,6 @@
         <div class="list-stack" data-buddy-list></div>
       </section>
 
-      <section class="app-view" data-app-view="echo" aria-label="回声">
-        <div class="view-head"><p>回声</p><h1>通知中心</h1></div>
-        <div class="module-card muted-card"><p>这里显示评论、回复、点赞、搭子申请和组队提醒。精神广场帖子列表不放在这里。</p></div>
-        <div class="list-stack" data-echo-list></div>
-      </section>
-
       <section class="app-view" data-app-view="profile" aria-label="我的">
         <div class="view-head"><p>我的</p><h1>账号与资料</h1></div>
         <div data-profile-panel></div>
@@ -264,9 +271,9 @@
     </main>
 
     <nav class="app-tabbar" aria-label="应用导航">
-      <button class="active" type="button" data-app-nav="nav"><span>☰</span><b>导航</b></button>
+      <button class="active" type="button" data-app-nav="home"><span>⌂</span><b>首页</b></button>
+      <button type="button" data-app-nav="nav"><span>☰</span><b>导航</b></button>
       <button type="button" data-app-nav="buddy"><span>◇</span><b>搭子</b></button>
-      <button type="button" data-app-nav="echo"><span>◎</span><b>回声</b></button>
       <button type="button" data-app-nav="profile"><span>○</span><b>我的</b></button>
     </nav>
 
@@ -288,14 +295,14 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../assets/supabase-config.js"></script>
   <script src="../assets/supabase-db.js?v=critical-relations-account-20260710-1"></script>
-  <script src="./app.js?v=mobile-performance-20260806-1"></script>
-  <script src="./nav.js?v=mobile-app-shell-20260525-6"></script>
+  <script src="./app.js?v=mobile-home-nav-split-20260915-1"></script>
+  <script src="./nav.js?v=mobile-home-nav-split-20260915-1"></script>
   <script src="./feed.js?v=mobile-performance-20260806-1"></script>
   <script src="./publish.js?v=no-mental-status-20260713-1"></script>
   <script src="./buddy.js?v=mobile-performance-20260806-1"></script>
-  <script src="./echo.js?v=echo-auto-read-20260808-1"></script>
+  <script src="./echo.js?v=mobile-square-inline-echo-20260915-1"></script>
   <script src="./echo-enhance.js?v=mobile-echo-enhance-20260529-2"></script>
-  <script src="./profile.js?v=mobile-auth-switch-20260720-1"></script>
+  <script src="./profile.js?v=mobile-home-nav-split-20260915-1"></script>
   <script src="./profile-login-ui.js?v=mobile-auth-switch-20260720-1"></script>
   <script src="./profile-email-guard.js?v=mobile-email-guard-20260608-1"></script>
   <script src="./rooms.js?v=mobile-performance-20260806-1"></script>
@@ -303,7 +310,7 @@
   <script src="./modules-init.js?v=mobile-performance-20260806-1"></script>
   <script src="./admin.js?v=mobile-admin-20260611-2"></script>
   <script src="../assets/fw-emoji-panel.js?v=mobile-performance-20260806-1"></script>
-  <script src="./mobile-core-fixes.js?v=mobile-performance-20260806-1"></script>
+  <script src="./mobile-core-fixes.js?v=mobile-home-nav-split-20260915-1"></script>
   <script src="../assets/fw-download-client.js?v=download-client-20260810-1"></script>
 </body>
 </html>

@@ -232,8 +232,9 @@ test.describe('账号功能闭环与数据库权限', () => {
 
       await page.setViewportSize({ width: 412, height: 915 });
       await page.goto('/app/index.html', { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector('[data-app-view="nav"].is-active', { timeout: 15_000 });
+      await page.waitForSelector('[data-app-view="home"].is-active', { timeout: 15_000 });
       await waitForDbReady(page);
+      await page.locator('[data-app-nav="nav"]').click();
       await page.locator('[data-app-open="square"]').first().click();
       await expect(page.locator('[data-app-view="square"].is-active')).toBeVisible();
       await expect(page.locator('[data-app-view="square"]').getByText(marker, { exact: false }).first())

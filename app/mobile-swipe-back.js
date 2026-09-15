@@ -212,13 +212,13 @@
   }
 
   function shouldHandleView(view){
-    if(!view || view === 'nav') return false;
+    if(!view || view === 'home' || view === 'nav') return false;
     return hasInternalBack(view);
   }
 
   function shouldBlockEdgeSwipe(view){
     // 首页也要拦一下左边缘右滑，防止 iOS / 浏览器历史手势把旧页面状态滑出来。
-    if(view === 'nav') return true;
+    if(view === 'home' || view === 'nav') return true;
     return shouldHandleView(view);
   }
 
