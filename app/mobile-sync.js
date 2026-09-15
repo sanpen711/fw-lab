@@ -22,6 +22,10 @@
   var countdownTimer = 0;
   var weatherEndpoint = ((window.FW_SUPABASE && window.FW_SUPABASE.url) || '') + '/functions/v1/fw-weather';
 
+  function renderHomeDate(){
+    var node=$('[data-mobile-home-date]');if(!node)return;
+    node.textContent=new Date().toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'short'}).replace('星期','周');
+  }
   function setHomeStatus(message){ var node=$('[data-mobile-home-status]'); if(node) node.textContent=message || ''; }
   function openHomeTool(name){
     var modal=$('[data-mobile-home-modal]'); if(!modal) return;
@@ -217,7 +221,7 @@
   }
 
   function bind(){
-    document.addEventListener('fw:app-viewchange',function(event){var view=event.detail&&event.detail.view;if(view==='nav'){renderWeather();loadWeather(false);scheduleCountdown();}else stopCountdown();if(view==='play'||view==='play-detail'){loadParties(false);subscribeParty();}else unsubscribeParty();if(view==='membership')loadMembership(false);if(view==='square'||view==='square-detail'||view==='buddy'||view==='echo'||view==='bird')setTimeout(enhanceProfiles,80);});
+    document.addEventListener('fw:app-viewchange',function(event){var view=event.detail&&event.detail.view;if(view==='nav'){renderHomeDate();renderWeather();loadWeather(false);scheduleCountdown();}else stopCountdown();if(view==='play'||view==='play-detail'){loadParties(false);subscribeParty();}else unsubscribeParty();if(view==='membership')loadMembership(false);if(view==='square'||view==='square-detail'||view==='buddy'||view==='echo'||view==='bird')setTimeout(enhanceProfiles,80);});
     document.addEventListener('fw:app-visibility',function(event){var visible=!!(event&&event.detail&&event.detail.visible),view=window.FWApp&&window.FWApp.state&&window.FWApp.state.view;if(!visible){stopCountdown();unsubscribeParty();return;}if(view==='nav')scheduleCountdown();if(view==='play'||view==='play-detail')subscribeParty();});
     document.addEventListener('fw:app-userchange',function(){membership.loaded=false;party.loaded=false;party.rows=[];party.members=[];party.alerts=[];unsubscribeParty();loadMembership(true);if(window.FWApp&&['play','play-detail'].includes(window.FWApp.state.view)){loadParties(true);subscribeParty();}});
     document.addEventListener('click',async function(event){
@@ -249,6 +253,6 @@
     },true);
     var observer=new MutationObserver(function(){clearTimeout(observer.timer);observer.timer=setTimeout(enhanceProfiles,120);});observer.observe($('#appMain')||document.body,{childList:true,subtree:true});
   }
-  function start(){bind();renderWeather();scheduleCountdown();setTimeout(function(){loadWeather(false);loadMembership(false);enhanceProfiles();},100);}
+  function start(){bind();renderHomeDate();renderWeather();scheduleCountdown();setTimeout(function(){loadWeather(false);loadMembership(false);enhanceProfiles();},100);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();

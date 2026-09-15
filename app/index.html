@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="./app.css?v=mobile-release-ready-20260804-1">
   <link rel="stylesheet" href="./rooms.css?v=mobile-app-rooms-layout-20260527-1">
   <link rel="stylesheet" href="./bird.css?v=mobile-app-modules-20260527-1">
-  <link rel="stylesheet" href="./mobile-sync.css?v=mobile-sync-20260915-1">
+  <link rel="stylesheet" href="./mobile-sync.css?v=mobile-home-editorial-20260915-1">
 </head>
 <body>
   <div class="app-shell">
@@ -40,26 +40,44 @@
     <main class="app-main" id="appMain">
       <section class="app-view is-active" data-app-view="nav" aria-label="导航">
         <div class="app-hero mobile-home-hero">
-          <h1>F.w 研究所</h1>
-          <span>上班已经够累了，来这里喘口气。</span>
+          <div class="mobile-home-hero-top">
+            <span class="mobile-home-live"><i aria-hidden="true"></i>低功耗运行中</span>
+            <time data-mobile-home-date>今天</time>
+          </div>
+          <div class="mobile-home-hero-copy">
+            <small>F.w 研究所</small>
+            <h1>工作先放一放，<br><em>喘口气。</em></h1>
+            <p>给忙里偷闲的人，一块不必解释的角落。</p>
+          </div>
+          <div class="mobile-home-orbit" aria-hidden="true"><i>F.w</i><span></span></div>
+          <div class="mobile-home-hero-foot"><span>今日模式</span><b>保持清醒，拒绝内耗</b></div>
         </div>
         <div class="hero-actions-app single-action">
           <button class="app-btn primary" type="button" data-app-login>加入研究所</button>
         </div>
+        <div class="mobile-home-section-head">
+          <div><small>每日状态</small><h2>今天过得怎么样</h2></div>
+          <span>点击卡片可设置</span>
+        </div>
         <div class="mobile-home-tools" aria-label="首页工具">
-          <button type="button" data-mobile-weather-open><strong data-mobile-weather-main>设置天气</strong><span data-mobile-weather-detail>点击选择你所在的县区</span><small data-mobile-weather-meta>无需定位权限</small></button>
-          <button type="button" data-mobile-offwork-open><strong data-mobile-offwork-value>设置时间</strong><span data-mobile-offwork-detail>今天几点下班？</span><small data-mobile-offwork-meta>点击设置下班时间</small></button>
-          <button type="button" data-mobile-feedback-open><strong>反馈意见</strong><span>遇到问题，或者有个小建议</span><small>登录后可直接提交</small></button>
+          <button class="mobile-home-tool mobile-home-tool-time" type="button" data-mobile-offwork-open><span class="mobile-home-tool-label"><b>下班倒计时</b><i>01</i></span><strong data-mobile-offwork-value>设置时间</strong><span data-mobile-offwork-detail>今天几点下班？</span><small data-mobile-offwork-meta>点击设置下班时间</small></button>
+          <button class="mobile-home-tool mobile-home-tool-weather" type="button" data-mobile-weather-open><span class="mobile-home-tool-label"><b>所在地区</b><i>02</i></span><strong data-mobile-weather-main>设置天气</strong><span data-mobile-weather-detail>点击选择你所在的县区</span><small data-mobile-weather-meta>无需定位权限</small></button>
+          <button class="mobile-home-tool mobile-home-tool-feedback" type="button" data-mobile-feedback-open><span class="mobile-home-tool-label"><b>研究所信箱</b><i>03</i></span><strong>反馈意见</strong><span>有问题，或者有个小建议</span><small>登录后可直接提交</small></button>
         </div>
         <a class="mobile-weather-credit" href="https://www.qweather.com" target="_blank" rel="noopener noreferrer" data-mobile-weather-credit hidden>天气服务由和风天气驱动</a>
-        <div class="nav-grid mobile-primary-grid" aria-label="应用导航菜单">
-          <button type="button" data-app-open="square"><b>精神广场</b><span>发牢骚、评论、互动</span></button>
-          <button type="button" data-app-open="rooms"><b>学术研讨</b><span>投票与课题</span></button>
-          <button type="button" data-app-open="bird"><b>新闻专区</b><span>值得围观的离谱事件</span></button>
-          <button type="button" data-app-open="play"><b>下班开黑</b><span>找队友，组队开一把</span><i class="mobile-nav-dot" data-mobile-party-dot hidden></i></button>
-          <button type="button" data-app-open="games"><b>小游戏</b><span>不用登录，点开就玩</span></button>
-          <button type="button" data-app-open="membership"><b>会员中心</b><span>身份、装扮与会员权益</span></button>
+        <div class="mobile-home-section-head mobile-home-destination-head">
+          <div><small>馆内导航</small><h2>现在想去哪里</h2></div>
+          <span>6 个开放区域</span>
         </div>
+        <div class="nav-grid mobile-primary-grid" aria-label="应用导航菜单">
+          <button class="mobile-destination mobile-destination-featured" type="button" data-app-open="square"><span class="mobile-destination-meta">01 · 社区</span><b>精神广场</b><span class="mobile-destination-copy">发一句牢骚，看看大家<br>今天都在研究什么。</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i></button>
+          <button class="mobile-destination" type="button" data-app-open="rooms"><span class="mobile-destination-meta">02 · 投票</span><b>学术研讨</b><span class="mobile-destination-copy">一本正经地研究小事</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i></button>
+          <button class="mobile-destination" type="button" data-app-open="bird"><span class="mobile-destination-meta">03 · 围观</span><b>新闻专区</b><span class="mobile-destination-copy">收录值得围观的事件</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i></button>
+          <button class="mobile-destination mobile-destination-dark" type="button" data-app-open="play"><span class="mobile-destination-meta">04 · 组队</span><b>下班开黑</b><span class="mobile-destination-copy">找队友，组队开一把</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i><i class="mobile-nav-dot" data-mobile-party-dot hidden></i></button>
+          <button class="mobile-destination" type="button" data-app-open="games"><span class="mobile-destination-meta">05 · 放空</span><b>小游戏</b><span class="mobile-destination-copy">不用登录，点开就玩</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i></button>
+          <button class="mobile-destination mobile-destination-member" type="button" data-app-open="membership"><span class="mobile-destination-meta">06 · 身份</span><b>会员中心</b><span class="mobile-destination-copy">装扮与会员权益</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i></button>
+        </div>
+        <div class="mobile-home-section-head mobile-home-more-head"><div><small>更多</small><h2>研究所资料</h2></div></div>
         <div class="mobile-more-grid" aria-label="更多栏目">
           <button type="button" data-app-open="archive">档案</button>
           <button type="button" data-app-open="rules"><b>入馆须知</b><span>规则与隐私</span></button>

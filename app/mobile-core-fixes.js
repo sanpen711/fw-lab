@@ -166,7 +166,7 @@
   }
 
   function ensureMobileDataCache(){ loadScriptOnce('FWMobileDataCache', 'data-mobile-data-cache', './mobile-data-cache.js?v=mobile-data-cache-20260709-1'); }
-  function ensureMobileDesktopSync(){ loadScriptOnce('__FW_MOBILE_DESKTOP_SYNC__', 'data-mobile-desktop-sync', './mobile-sync.js?v=mobile-sync-20260915-1'); }
+  function ensureMobileDesktopSync(){ loadScriptOnce('__FW_MOBILE_DESKTOP_SYNC__', 'data-mobile-desktop-sync', './mobile-sync.js?v=mobile-home-editorial-20260915-1'); }
   function ensureReportBridge(){ loadScriptOnce('__FW_MOBILE_REPORT_BRIDGE__', 'data-mobile-report-bridge', './report.js?v=mobile-report-20260609-1'); }
   function ensureBuddyChatReadFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4'); }
   function ensureBuddyReturnStability(){ loadScriptOnce('__FW_BUDDY_RETURN_STABILITY__', 'data-buddy-return-stability', './buddy-return-stability.js?v=buddy-return-stability-20260629-1'); }

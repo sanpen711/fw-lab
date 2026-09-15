@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-windows-download-20260810-1-sync-20260915-1';
+const CACHE_NAME = 'fw-mobile-app-pwa-windows-download-20260810-1-home-editorial-20260915-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
