@@ -1,4 +1,4 @@
-// F.w 研究所：观鸟台移动端文案、指南入口、手势返回与互动取消补丁
+// F.w 研究所：新闻专区移动端文案、发布守则与互动取消补丁
 (function(){
   var bound = false;
   var swipeBound = false;
@@ -33,16 +33,16 @@
     var section = document.createElement('section');
     section.className = 'app-view mobile-bird-guide-view';
     section.dataset.appView = 'bird-guide';
-    section.setAttribute('aria-label', '观鸟指南');
+    section.setAttribute('aria-label', '发布守则');
     section.innerHTML = [
       '<div class="view-head">',
-        '<button class="back-btn" type="button" data-mobile-bird-guide-back>‹ 观鸟台</button>',
-        '<p>观鸟指南</p>',
-        '<h1>林子大了，什么鸟都有</h1>',
+        '<button class="back-btn" type="button" data-mobile-bird-guide-back>‹ 新闻专区</button>',
+        '<p>发布守则</p>',
+        '<h1>保护隐私，文明记录</h1>',
       '</div>',
       '<div class="module-card bird-guide-card">',
-        '<h2>林子大了，什么鸟都有</h2>',
-        '<p>这里收录生活和职场里的奇异样本。请匿名观察，文明记录，不要实名攻击。</p>',
+        '<h2>发布内容前请确认</h2>',
+        '<p>这里收录研究所里值得围观的事件与长图文。请保护隐私，文明记录，不要实名攻击。</p>',
         '<ol>',
           '<li>不写真姓名、手机号、住址、公司全称。</li>',
           '<li>不上传他人清晰正脸、工牌、车牌等可识别信息。</li>',
@@ -57,7 +57,7 @@
 
   function applyBirdCopy(){
     var navBird = $('[data-app-open="bird"] span');
-    if(navBird) navBird.textContent = '离谱八卦分享';
+    if(navBird) navBird.textContent = '值得围观的离谱事件';
 
     var bird = $('[data-app-view="bird"]');
     var head = bird && $('.view-head', bird);
@@ -65,8 +65,8 @@
       head.classList.add('bird-main-head');
       var kicker = $('p', head);
       var title = $('h1', head);
-      if(title) title.textContent = '观鸟台';
-      if(kicker) kicker.textContent = '离谱八卦分享';
+      if(title) title.textContent = '新闻专区';
+      if(kicker) kicker.textContent = '值得围观的离谱事件';
       if(title && kicker && title.compareDocumentPosition(kicker) & Node.DOCUMENT_POSITION_FOLLOWING){
         head.insertBefore(title, kicker);
       }
@@ -77,7 +77,7 @@
 
     var guideBtn = bird && $('[data-mobile-bird-refresh]', bird);
     if(guideBtn){
-      guideBtn.textContent = '观鸟指南';
+      guideBtn.textContent = '发布守则';
       guideBtn.removeAttribute('data-mobile-bird-refresh');
       guideBtn.setAttribute('data-mobile-bird-guide', '');
     }
@@ -144,7 +144,7 @@
   }
 
   function reactionLabel(type){
-    return {valid:'标本有效', seen:'我也见过', tissue:'递纸巾'}[type] || type;
+    return {valid:'有点意思', seen:'我也见过', tissue:'递纸巾'}[type] || type;
   }
 
   function countFromButton(button){
@@ -202,7 +202,7 @@
         if(result && result.error){
           if(result.error.code === '23505' || /duplicate|unique/i.test(String(result.error.message || ''))){
             sameButtons.forEach(function(item){ setReactionButton(item, type, true, Math.max(oldCount, newCount)); });
-            toast('你已经标记过这个品种了。');
+            toast('你已经做过这个互动了。');
             return;
           }
           throw result.error;

@@ -171,7 +171,7 @@
 
   function isEditableOrControl(target){
     // 只屏蔽真正会输入/编辑的控件；普通按钮、卡片按钮和链接允许从左边缘开始滑动返回。
-    // 这样能避免精神广场详情、观鸟台卡片等区域被 button/a 误拦截。
+    // 这样能避免精神广场详情、新闻专区卡片等区域被 button/a 误拦截。
     return !!(target && target.closest && target.closest('input,textarea,select,[contenteditable="true"]'));
   }
 

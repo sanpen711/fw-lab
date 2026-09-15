@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-windows-download-20260810-1';
+const CACHE_NAME = 'fw-mobile-app-pwa-windows-download-20260810-1-sync-20260915-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -10,6 +10,7 @@ const APP_SHELL = [
   appPath('app.css'),
   appPath('rooms.css'),
   appPath('bird.css'),
+  appPath('mobile-sync.css'),
   assetPath('supabase-config.js'),
   assetPath('supabase-db.js'),
   assetPath('fw-download-client.js'),
@@ -49,6 +50,7 @@ const APP_SHELL = [
   appPath('report.js'),
   appPath('comment-reply-fix.js'),
   appPath('mobile-core-fixes.js'),
+  appPath('mobile-sync.js'),
   appPath('mobile-priority-fixes.js'),
   appPath('mobile-swipe-back.js'),
   appPath('mobile-transitions.js'),

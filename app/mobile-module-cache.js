@@ -23,7 +23,7 @@
   var DISABLED_HTML_CACHE_MODULES = ['echo','buddy'];
 
   var MODULES = [
-    {name:'bird',api:'FWAppBird',selector:'[data-mobile-bird-feed]',loading:/正在打开观鸟镜/,ttl:90 * DAY,blockPreviewClicks:true},
+    {name:'bird',api:'FWAppBird',selector:'[data-mobile-bird-feed]',loading:/正在(?:打开观鸟镜|读取新闻专区)/,ttl:90 * DAY,blockPreviewClicks:true},
     {name:'rooms',api:'FWAppRooms',selector:'[data-mobile-polls-list]',statusSelector:'[data-mobile-polls-status]',loading:/正在读取学术研讨课题/,ttl:7 * DAY,blockPreviewClicks:true,quietOptions:true}
   ];
 

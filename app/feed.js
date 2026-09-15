@@ -28,8 +28,10 @@
   function avatar(profile){
     var name = profile.authorName || profile.nickname || '研究员';
     var url = profile.authorAvatar || profile.avatar_url || '';
-    if(url) return '<span class="post-avatar"><img src="' + esc(url) + '" alt="' + esc(name) + '"></span>';
-    return '<span class="post-avatar">' + esc(app().initials(name)) + '</span>';
+    var userId = profile.userId || profile.user_id || profile.authorId || '';
+    var interactive = userId ? ' data-profile-user="' + esc(userId) + '" role="button" tabindex="0"' : '';
+    if(url) return '<span class="post-avatar"' + interactive + '><img src="' + esc(url) + '" alt="' + esc(name) + '"></span>';
+    return '<span class="post-avatar"' + interactive + '>' + esc(app().initials(name)) + '</span>';
   }
 
   function timeText(value){
@@ -505,8 +507,6 @@
       '<div class="post-actions">' +
         '<button class="' + (mine.resonance ? 'active' : '') + '" type="button" data-app-react="resonance" aria-pressed="' + (mine.resonance ? 'true' : 'false') + '">点赞 ' + Number(post.resonance || 0) + '</button>' +
         commentControl +
-        '<button class="' + (mine.same ? 'active' : '') + '" type="button" data-app-react="same" aria-pressed="' + (mine.same ? 'true' : 'false') + '">俺也一样 ' + Number(post.same || 0) + '</button>' +
-        '<button class="' + (mine.tissue ? 'active' : '') + '" type="button" data-app-react="tissue" aria-pressed="' + (mine.tissue ? 'true' : 'false') + '">递纸巾 ' + Number(post.tissue || 0) + '</button>' +
       '</div>' +
     '</article>';
   }

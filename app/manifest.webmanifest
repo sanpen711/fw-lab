@@ -7,8 +7,8 @@
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#171715",
+  "theme_color": "#171715",
   "icons": [
     {
       "src": "../assets/icons/fw-lab-icon.svg",

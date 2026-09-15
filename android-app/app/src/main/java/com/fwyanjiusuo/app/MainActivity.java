@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
         ));
-        webView.setBackgroundColor(Color.parseColor("#10170F"));
+        webView.setBackgroundColor(Color.parseColor("#171715"));
         setContentView(webView);
         configureWebView();
 
@@ -60,8 +60,8 @@ public class MainActivity extends Activity {
 
     private void configureSystemBars() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(Color.parseColor("#10170F"));
-            getWindow().setNavigationBarColor(Color.parseColor("#10170F"));
+            getWindow().setStatusBarColor(Color.parseColor("#171715"));
+            getWindow().setNavigationBarColor(Color.parseColor("#171715"));
         }
     }
 
@@ -143,10 +143,10 @@ public class MainActivity extends Activity {
         if (webView == null) return;
         String html = "<!doctype html><html lang=\"zh-CN\"><head>" +
                 "<meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\">" +
-                "<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#10170f;color:#f4f7ec;font-family:system-ui,-apple-system,sans-serif}" +
-                "main{width:min(420px,100%);padding:24px;border:1px solid rgba(244,247,236,.15);border-radius:22px;background:#162116;text-align:center}" +
+                "<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#171715;color:#f5f5f3;font-family:system-ui,-apple-system,sans-serif}" +
+                "main{width:min(420px,100%);padding:24px;border:1px solid rgba(255,255,255,.14);border-radius:22px;background:#272724;text-align:center}" +
                 "h1{margin:0 0 10px;font-size:25px}p{margin:0;color:rgba(244,247,236,.72);line-height:1.7;font-weight:700}" +
-                "a{display:block;margin-top:20px;padding:13px 18px;border-radius:999px;background:#f4f7ec;color:#10170f;text-decoration:none;font-weight:900}</style>" +
+                "a{display:block;margin-top:20px;padding:13px 18px;border-radius:999px;background:#ff8995;color:#171715;text-decoration:none;font-weight:900}</style>" +
                 "</head><body><main><h1>暂时无法连接</h1><p>请检查 Wi-Fi 或移动数据后重试。已经缓存的内容会在网络恢复后继续使用。</p>" +
                 "<a href=\"" + HOME_URL + "\">重新连接</a></main></body></html>";
         webView.loadDataWithBaseURL(HOME_URL, html, "text/html", "UTF-8", null);

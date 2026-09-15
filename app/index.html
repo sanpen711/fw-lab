@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
   <title>F.w 研究所 App</title>
-  <meta name="theme-color" content="#10170f">
+  <meta name="theme-color" content="#171715">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="F.w 研究所">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="./app.css?v=mobile-release-ready-20260804-1">
   <link rel="stylesheet" href="./rooms.css?v=mobile-app-rooms-layout-20260527-1">
   <link rel="stylesheet" href="./bird.css?v=mobile-app-modules-20260527-1">
+  <link rel="stylesheet" href="./mobile-sync.css?v=mobile-sync-20260915-1">
 </head>
 <body>
   <div class="app-shell">
@@ -38,19 +39,29 @@
 
     <main class="app-main" id="appMain">
       <section class="app-view is-active" data-app-view="nav" aria-label="导航">
-        <div class="app-hero">
-          <p>FW LAB / LOW POWER MODE</p>
+        <div class="app-hero mobile-home-hero">
           <h1>F.w 研究所</h1>
-          <span>一个临时放下情绪的地方</span>
+          <span>上班已经够累了，来这里喘口气。</span>
         </div>
         <div class="hero-actions-app single-action">
           <button class="app-btn primary" type="button" data-app-login>加入研究所</button>
         </div>
-        <div class="nav-grid" aria-label="应用导航菜单">
+        <div class="mobile-home-tools" aria-label="首页工具">
+          <button type="button" data-mobile-weather-open><strong data-mobile-weather-main>设置天气</strong><span data-mobile-weather-detail>点击选择你所在的县区</span><small data-mobile-weather-meta>无需定位权限</small></button>
+          <button type="button" data-mobile-offwork-open><strong data-mobile-offwork-value>设置时间</strong><span data-mobile-offwork-detail>今天几点下班？</span><small data-mobile-offwork-meta>点击设置下班时间</small></button>
+          <button type="button" data-mobile-feedback-open><strong>反馈意见</strong><span>遇到问题，或者有个小建议</span><small>登录后可直接提交</small></button>
+        </div>
+        <a class="mobile-weather-credit" href="https://www.qweather.com" target="_blank" rel="noopener noreferrer" data-mobile-weather-credit hidden>天气服务由和风天气驱动</a>
+        <div class="nav-grid mobile-primary-grid" aria-label="应用导航菜单">
           <button type="button" data-app-open="square"><b>精神广场</b><span>发牢骚、评论、互动</span></button>
           <button type="button" data-app-open="rooms"><b>学术研讨</b><span>投票与课题</span></button>
-          <button type="button" data-app-open="bird"><b>观鸟台</b><span>离谱样本观察</span></button>
-          <button type="button" data-app-open="archive"><b>废话档案</b><span>低功耗榜单</span></button>
+          <button type="button" data-app-open="bird"><b>新闻专区</b><span>值得围观的离谱事件</span></button>
+          <button type="button" data-app-open="play"><b>下班开黑</b><span>找队友，组队开一把</span><i class="mobile-nav-dot" data-mobile-party-dot hidden></i></button>
+          <button type="button" data-app-open="games"><b>小游戏</b><span>不用登录，点开就玩</span></button>
+          <button type="button" data-app-open="membership"><b>会员中心</b><span>身份、装扮与会员权益</span></button>
+        </div>
+        <div class="mobile-more-grid" aria-label="更多栏目">
+          <button type="button" data-app-open="archive">档案</button>
           <button type="button" data-app-open="rules"><b>入馆须知</b><span>规则与隐私</span></button>
           <button type="button" data-app-open="moderation"><b>处理公告</b><span>违规处理说明</span></button>
         </div>
@@ -117,33 +128,33 @@
         </form>
       </section>
 
-      <section class="app-view" data-app-view="bird" aria-label="观鸟台">
+      <section class="app-view" data-app-view="bird" aria-label="新闻专区">
         <div class="view-head">
           <button class="back-btn" type="button" data-app-open="nav">‹ 首页</button>
-          <p>观鸟台</p>
-          <h1>离谱样本观察</h1>
+          <p>新闻专区</p>
+          <h1>值得围观的离谱事件</h1>
         </div>
-        <div class="module-card bird-rule-mini"><h2>林子大了，什么鸟都有</h2><p>这里收录生活和职场里的奇异样本。请匿名观察，文明记录，不要实名攻击。</p><ol><li>不写真姓名、手机号、住址、公司全称。</li><li>不上传他人清晰正脸、工牌、车牌等可识别信息。</li><li>可以吐槽行为，不要煽动攻击个人。</li></ol></div>
-        <div class="bird-mobile-tools"><button class="app-btn primary" type="button" data-mobile-bird-compose>发布观察记录</button><button class="app-btn" type="button" data-mobile-bird-refresh>刷新观鸟台</button></div>
-        <div class="bird-feed-mobile" data-mobile-bird-feed><div class="mobile-bird-empty">正在打开观鸟镜...</div></div>
+        <div class="module-card bird-rule-mini"><h2>发布守则</h2><p>这里收录研究所里值得围观的事件与长图文。请保护隐私，文明记录，不要实名攻击。</p><ol><li>不写真姓名、手机号、住址、公司全称。</li><li>不上传他人清晰正脸、工牌、车牌等可识别信息。</li><li>可以吐槽行为，不要煽动攻击个人。</li></ol></div>
+        <div class="bird-mobile-tools"><button class="app-btn primary" type="button" data-mobile-bird-compose>发布内容</button><button class="app-btn" type="button" data-mobile-bird-refresh>刷新</button></div>
+        <div class="bird-feed-mobile" data-mobile-bird-feed><div class="mobile-bird-empty">正在读取新闻专区...</div></div>
       </section>
 
-      <section class="app-view mobile-bird-detail-view" data-app-view="bird-detail" aria-label="观鸟台详情">
-        <div class="view-head"><button class="back-btn" type="button" data-mobile-bird-back>‹ 观鸟台</button><p>观鸟台</p><h1>完整观察记录</h1></div>
+      <section class="app-view mobile-bird-detail-view" data-app-view="bird-detail" aria-label="新闻详情">
+        <div class="view-head"><button class="back-btn" type="button" data-mobile-bird-back>‹ 新闻专区</button><p>新闻专区</p><h1>完整内容</h1></div>
         <div data-mobile-bird-detail-body></div>
       </section>
 
-      <section class="app-view mobile-bird-compose-view" data-app-view="bird-compose" aria-label="发布观察记录">
-        <div class="view-head"><button class="back-btn" type="button" data-app-open="bird">‹ 观鸟台</button><p>观鸟台</p><h1>收录新的奇异样本</h1></div>
+      <section class="app-view mobile-bird-compose-view" data-app-view="bird-compose" aria-label="发布内容">
+        <div class="view-head"><button class="back-btn" type="button" data-app-open="bird">‹ 新闻专区</button><p>新闻专区</p><h1>发布新内容</h1></div>
         <form class="publish-card" data-mobile-bird-form>
-          <label for="mobileBirdTitle">这是什么品种？</label>
-          <input id="mobileBirdTitle" name="title" maxlength="80" placeholder="例如：一种开会三小时但没有任何结论的鸟">
-          <label for="mobileBirdContent">观察记录</label>
-          <textarea id="mobileBirdContent" name="content" maxlength="5000" placeholder="请描述它的出没场景、行为特征、攻击方式和你的精神损耗。"></textarea>
+          <label for="mobileBirdTitle">内容标题</label>
+          <input id="mobileBirdTitle" name="title" maxlength="80" placeholder="给这条内容起个标题">
+          <label for="mobileBirdContent">正文内容</label>
+          <textarea id="mobileBirdContent" name="content" maxlength="5000" placeholder="写清楚发生了什么，以及为什么值得围观。"></textarea>
           <label>发布身份</label>
           <div class="mobile-bird-mode-row">
             <label class="mobile-bird-mode"><input type="radio" name="display_mode" value="profile" checked> 使用当前昵称</label>
-            <label class="mobile-bird-mode"><input type="radio" name="display_mode" value="anonymous"> 匿名观察员</label>
+            <label class="mobile-bird-mode"><input type="radio" name="display_mode" value="anonymous"> 匿名发布</label>
             <label class="mobile-bird-mode"><input type="radio" name="display_mode" value="pen_name"> 临时笔名</label>
           </div>
           <div class="mobile-bird-pen" data-mobile-bird-pen hidden><label for="mobileBirdPen">临时笔名</label><input id="mobileBirdPen" name="pen_name" maxlength="20" placeholder="例如：路过的观察员"></div>
@@ -155,7 +166,7 @@
             <div class="mobile-bird-preview-grid" data-mobile-bird-preview></div>
           </div>
           <p class="mobile-bird-notice" data-mobile-bird-notice></p>
-          <div class="form-row"><button class="app-btn" type="button" data-app-open="bird">取消</button><button class="app-btn primary" type="submit">发布观察记录</button></div>
+          <div class="form-row"><button class="app-btn" type="button" data-app-open="bird">取消</button><button class="app-btn primary" type="submit">发布内容</button></div>
         </form>
       </section>
 
@@ -175,6 +186,43 @@
         <div class="module-card muted-card"><p>管理员会根据举报和巡查处理违规内容。普通用户只看到必要的处理说明，不展示后台入口。</p></div>
       </section>
 
+      <section class="app-view mobile-party-view" data-app-view="play" aria-label="下班开黑">
+        <div class="view-head mobile-section-head"><button class="back-btn" type="button" data-app-open="nav">‹ 首页</button><p>下班开黑</p><h1>找队友，组队开一把</h1></div>
+        <div class="mobile-section-actions"><button class="app-btn" type="button" data-mobile-party-refresh>刷新</button><button class="app-btn dark" type="button" data-mobile-party-create-toggle>创建组队</button></div>
+        <div class="mobile-party-filters" role="tablist"><button class="active" type="button" data-mobile-party-filter="open">可加入</button><button type="button" data-mobile-party-filter="all">全部房间</button><button type="button" data-mobile-party-filter="mine">我的组队<i data-mobile-party-tab-dot hidden></i></button></div>
+        <div data-mobile-party-create-host hidden></div>
+        <div class="mobile-party-list" data-mobile-party-list><div class="mobile-sync-empty">进入后读取组队房间。</div></div>
+      </section>
+
+      <section class="app-view mobile-party-detail-view" data-app-view="play-detail" aria-label="组队详情">
+        <div data-mobile-party-detail></div>
+      </section>
+
+      <section class="app-view mobile-games-view" data-app-view="games" aria-label="小游戏">
+        <div class="view-head mobile-section-head"><button class="back-btn" type="button" data-app-open="nav">‹ 首页</button><p>小游戏</p><h1>不用登录，点开就玩</h1></div>
+        <div class="mobile-game-grid">
+          <button type="button" data-mobile-game-open="2048"><i>2⁸</i><b>2048</b><span>滑动合并数字</span></button>
+          <button type="button" data-mobile-game-open="minesweeper"><i>✦</i><b>扫雷</b><span>点按排雷，切换插旗</span></button>
+          <button type="button" data-mobile-game-open="snake"><i>〰</i><b>贪吃蛇</b><span>使用屏幕方向按钮</span></button>
+          <button type="button" data-mobile-game-open="sudoku"><i>九</i><b>数独</b><span>从简单到困难</span></button>
+          <button type="button" data-mobile-game-open="reaction"><i>●</i><b>反应测试</b><span>变绿以后尽快点</span></button>
+          <button type="button" data-mobile-game-open="catch"><i>⌄</i><b>接住掉落物</b><span>移动托盘接住文件</span></button>
+        </div>
+        <details class="mobile-game-license"><summary>开源许可</summary><p>2048、扫雷、贪吃蛇和数独基于 MIT 许可的开源项目；完整许可证随项目保留。反应测试和接住掉落物由 F.w 研究所制作。</p></details>
+      </section>
+
+      <section class="app-view mobile-game-stage-view" data-app-view="game-stage" aria-label="正在玩小游戏">
+        <div class="mobile-game-stage-head"><button class="app-btn back-btn" type="button" data-mobile-game-back>‹ 小游戏</button><div><b data-mobile-game-title>小游戏</b><span data-mobile-game-tip></span></div><button class="app-btn" type="button" data-mobile-game-reload>重开</button></div>
+        <iframe data-mobile-game-frame title="小游戏" referrerpolicy="no-referrer"></iframe>
+        <div class="mobile-game-controls" data-mobile-game-controls hidden><button type="button" data-mobile-game-key="ArrowUp">↑</button><span><button type="button" data-mobile-game-key="ArrowLeft">←</button><button type="button" data-mobile-game-key="ArrowDown">↓</button><button type="button" data-mobile-game-key="ArrowRight">→</button></span></div>
+      </section>
+
+      <section class="app-view mobile-membership-view" data-app-view="membership" aria-label="会员中心">
+        <div class="view-head mobile-section-head"><button class="back-btn" type="button" data-app-open="nav">‹ 首页</button><p>会员中心</p><h1>会员身份与专属装扮</h1></div>
+        <div class="mobile-membership-tabs"><button class="active" type="button" data-mobile-membership-tab="benefits">会员权益</button><button type="button" data-mobile-membership-tab="orders">订单记录</button></div>
+        <div data-mobile-membership-content><div class="mobile-sync-empty">正在读取会员信息…</div></div>
+      </section>
+
       <section class="app-view" data-app-view="buddy" aria-label="搭子">
         <div class="view-head"><p>摸鱼搭子</p><h1>找个人一起低功耗在线</h1></div>
         <div class="tabs" data-buddy-tabs>
@@ -187,7 +235,7 @@
 
       <section class="app-view" data-app-view="echo" aria-label="回声">
         <div class="view-head"><p>回声</p><h1>通知中心</h1></div>
-        <div class="module-card muted-card"><p>这里显示评论、点赞、递纸巾、俺也一样、搭子申请等互动通知。精神广场帖子列表不放在这里。</p></div>
+        <div class="module-card muted-card"><p>这里显示评论、回复、点赞、搭子申请和组队提醒。精神广场帖子列表不放在这里。</p></div>
         <div class="list-stack" data-echo-list></div>
       </section>
 
@@ -203,6 +251,18 @@
       <button type="button" data-app-nav="echo"><span>◎</span><b>回声</b></button>
       <button type="button" data-app-nav="profile"><span>○</span><b>我的</b></button>
     </nav>
+
+    <div class="mobile-sync-modal" data-mobile-home-modal hidden>
+      <section role="dialog" aria-modal="true" aria-label="首页工具"><button class="mobile-sync-close" type="button" data-mobile-home-close aria-label="关闭">×</button>
+        <div data-mobile-home-view="weather" hidden><h2>设置天气</h2><p>输入县、区或县级市，再选择正确地区。</p><form data-mobile-weather-form><label>地区<input name="city" maxlength="40" placeholder="例如：曹县、镇平县、义乌市" required></label><button class="app-btn dark" type="submit">查找地区</button><div class="mobile-weather-results" data-mobile-weather-results hidden></div></form></div>
+        <div data-mobile-home-view="offwork" hidden><h2>设置下班时间</h2><p>时间只保存在当前设备。</p><form data-mobile-offwork-form><label>下班时间<input name="time" type="time" value="18:00" required></label><button class="app-btn dark" type="submit">开始倒计时</button></form></div>
+        <div data-mobile-home-view="feedback" hidden><h2>反馈意见</h2><p>简单说一下遇到的问题或想要的功能。</p><form data-mobile-feedback-form><label>反馈类型<select name="category"><option>功能问题</option><option>使用建议</option><option>其他</option></select></label><label>反馈内容<textarea name="content" maxlength="500" rows="5" required></textarea></label><button class="app-btn dark" type="submit">提交反馈</button></form></div>
+        <p class="mobile-sync-status" data-mobile-home-status></p>
+      </section>
+    </div>
+
+    <div class="mobile-profile-sheet" data-mobile-profile-sheet hidden><section role="dialog" aria-modal="true" aria-label="用户资料"><button class="mobile-sync-close" type="button" data-mobile-profile-close aria-label="关闭">×</button><div data-mobile-profile-body></div></section></div>
+    <div class="mobile-avatar-lightbox" data-mobile-avatar-lightbox hidden><button type="button" data-mobile-avatar-close>×</button><img data-mobile-avatar-image alt="用户头像"></div>
 
     <div class="app-toast" data-app-toast role="status" aria-live="polite"></div>
   </div>

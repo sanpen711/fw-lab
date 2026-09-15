@@ -9,7 +9,7 @@
   var FEED_RETURN_KEY = 'fw_mobile_feed_detail_return_view';
   var PROFILE_CACHE_KEY = 'fw_mobile_echo_profile_cache_v1';
   var PROFILE_CACHE_LIMIT = 260;
-  var ECHO_TYPES = ['like','same','tissue','comment','comment_reply','chat_agree','system'];
+  var ECHO_TYPES = ['like','comment','comment_reply','chat_agree','system'];
   var replyEcho = createReplyEchoFallback();
 
   function createReplyEchoFallback(){
@@ -79,7 +79,7 @@
   function isPostNotice(notice){
     if(!notice) return false;
     if(notice.type === 'comment_reply') return !!notice.__post_id;
-    return !!(notice.target_id && (notice.target_type === 'post' || ['like','same','tissue','comment'].indexOf(notice.type) >= 0));
+    return !!(notice.target_id && (notice.target_type === 'post' || ['like','comment'].indexOf(notice.type) >= 0));
   }
   function writeFeedReturnView(value){ try{ if(value) sessionStorage.setItem(FEED_RETURN_KEY, value); else sessionStorage.removeItem(FEED_RETURN_KEY); }catch(e){} }
 
@@ -97,7 +97,7 @@
   }
 
   function typeText(type){
-    return ({like:'点赞了你的帖子',same:'对你说：俺也一样',tissue:'给你递了纸巾',comment:'评论了你的帖子',comment_reply:'回复了你的评论',chat_agree:'赞同了你的房间消息',system:'系统通知'})[type] || '给你发来一条回声';
+    return ({like:'点赞了你的帖子',comment:'评论了你的帖子',comment_reply:'回复了你的评论',chat_agree:'赞同了你的房间消息',system:'系统通知'})[type] || '给你发来一条回声';
   }
 
   function noticePreview(value){
@@ -293,7 +293,8 @@
       actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-post="' + esc(targetPost) + '" data-mobile-echo-notice="' + esc(notice.id) + '" data-mobile-echo-type="' + esc(notice.type || '') + '" data-mobile-echo-actor="' + esc(notice.actor_id || '') + '" data-mobile-echo-time="' + esc(notice.created_at || '') + '" data-open-comments="' + ((notice.type === 'comment' || notice.type === 'comment_reply') ? '1' : '0') + '">查看帖子</button>';
     }
     if(notice.type === 'chat_agree') actions += '<button class="mobile-echo-mini dark" type="button" data-mobile-echo-rooms data-mobile-echo-notice="' + esc(notice.id) + '">去学术研讨</button>';
-    return '<article class="notice-item mobile-echo-item ' + (notice.is_read ? '' : 'unread') + '" data-mobile-echo-item="' + esc(notice.id) + '">' + avatar(profile) + '<div class="list-main"><b>' + esc((profile && profile.nickname || '某位研究员') + ' ' + action) + '</b><span>' + esc(content) + '</span><small>' + esc(timeText(notice.created_at)) + '</small>' + (actions ? '<div class="notice-actions">' + actions + '</div>' : '') + '</div></article>';
+    var actorAvatar = notice.actor_id ? '<span data-profile-user="' + esc(notice.actor_id) + '" role="button" tabindex="0">' + avatar(profile) + '</span>' : avatar(profile);
+    return '<article class="notice-item mobile-echo-item ' + (notice.is_read ? '' : 'unread') + '" data-mobile-echo-item="' + esc(notice.id) + '">' + actorAvatar + '<div class="list-main"><b>' + esc((profile && profile.nickname || '某位研究员') + ' ' + action) + '</b><span>' + esc(content) + '</span><small>' + esc(timeText(notice.created_at)) + '</small>' + (actions ? '<div class="notice-actions">' + actions + '</div>' : '') + '</div></article>';
   }
 
   async function load(force){

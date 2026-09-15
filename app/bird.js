@@ -43,16 +43,16 @@
   function uniq(arr){ var seen = {}; return (arr || []).filter(function(v){ if(!v || seen[v]) return false; seen[v] = true; return true; }); }
   function profileMap(rows){ var map = {}; (rows || []).forEach(function(row){ map[row.id] = row || {}; }); return map; }
   function avatarHtml(name, url){
-    return url ? '<span class="mobile-bird-avatar"><img src="' + esc(url) + '" alt="' + esc(name || '观察员') + '"></span>' : '<span class="mobile-bird-avatar">' + esc(String(name || '观').trim().slice(0, 2) || '观') + '</span>';
+    return url ? '<span class="mobile-bird-avatar"><img src="' + esc(url) + '" alt="' + esc(name || '研究员') + '"></span>' : '<span class="mobile-bird-avatar">' + esc(String(name || '研').trim().slice(0, 2) || '研') + '</span>';
   }
   function displayAuthor(post, profile){
-    if(post.display_mode === 'anonymous') return {name:'匿名观察员', avatar:''};
-    if(post.display_mode === 'pen_name') return {name:post.pen_name || '临时观察员', avatar:''};
-    return {name:(profile && profile.nickname) || '观察员', avatar:(profile && profile.avatar_url) || ''};
+    if(post.display_mode === 'anonymous') return {name:'匿名研究员', avatar:''};
+    if(post.display_mode === 'pen_name') return {name:post.pen_name || '临时笔名', avatar:''};
+    return {name:(profile && profile.nickname) || '研究员', avatar:(profile && profile.avatar_url) || ''};
   }
   function emptyStats(){ return {validCount:0, seenCount:0, tissueCount:0, myReactions:{valid:false, seen:false, tissue:false}}; }
   function countKey(type){ return type === 'valid' ? 'validCount' : type === 'seen' ? 'seenCount' : 'tissueCount'; }
-  function reactionLabel(type){ return {valid:'标本有效', seen:'我也见过', tissue:'递纸巾'}[type] || type; }
+  function reactionLabel(type){ return {valid:'有点意思', seen:'我也见过', tissue:'递纸巾'}[type] || type; }
   function imageList(images){ return Array.isArray(images) ? images.filter(function(image){ return image && image.url; }) : []; }
   function postById(id){ id = String(id); return posts.find(function(post){ return String(post.id) === id; }) || null; }
 
@@ -65,15 +65,15 @@
   async function loadPosts(){
     if(!(await app().waitForDb())) throw new Error('暂时无法连接数据服务。');
     var c = client();
-    var postRows = fail(await c.from('bird_posts').select('id,user_id,title,content,display_mode,pen_name,images,is_deleted,created_at,updated_at').or('is_deleted.eq.false,is_deleted.is.null').order('created_at', {ascending:false}).limit(100), '读取观鸟台失败') || [];
+    var postRows = fail(await c.from('bird_posts').select('id,user_id,title,content,display_mode,pen_name,images,is_deleted,created_at,updated_at').or('is_deleted.eq.false,is_deleted.is.null').order('created_at', {ascending:false}).limit(100), '读取新闻专区失败') || [];
     if(!postRows.length) return [];
     var meId = null;
     try{ var session = await c.auth.getSession(); meId = session && session.data && session.data.session && session.data.session.user && session.data.session.user.id || null; }catch(e){}
     var postIds = postRows.map(function(post){ return post.id; });
-    var comments = fail(await c.from('bird_comments').select('id,post_id,user_id,content,is_deleted,created_at').in('post_id', postIds).or('is_deleted.eq.false,is_deleted.is.null').order('created_at', {ascending:true}), '读取观鸟评论失败') || [];
+    var comments = fail(await c.from('bird_comments').select('id,post_id,user_id,content,is_deleted,created_at').in('post_id', postIds).or('is_deleted.eq.false,is_deleted.is.null').order('created_at', {ascending:true}), '读取新闻评论失败') || [];
     var reactions = [];
     try{
-      reactions = fail(await c.from('bird_reactions').select('post_id,user_id,type').in('post_id', postIds), '读取观鸟互动失败') || [];
+      reactions = fail(await c.from('bird_reactions').select('post_id,user_id,type').in('post_id', postIds), '读取新闻互动失败') || [];
     }catch(e){
       console.warn('[FW mobile app] bird reactions load skipped', e);
       reactions = [];
@@ -87,7 +87,7 @@
     });
     var profileIds = uniq(postRows.filter(function(post){ return post.display_mode === 'profile'; }).map(function(post){ return post.user_id; }).concat(comments.map(function(comment){ return comment.user_id; })));
     var profiles = [];
-    if(profileIds.length) profiles = fail(await c.from('profiles').select('id,nickname,avatar_url').in('id', profileIds), '读取观察员资料失败') || [];
+    if(profileIds.length) profiles = fail(await c.from('profiles').select('id,nickname,avatar_url').in('id', profileIds), '读取研究员资料失败') || [];
     var profilesById = profileMap(profiles);
     var commentsByPost = {};
     comments.forEach(function(comment){
@@ -134,25 +134,25 @@
   function renderCover(post){
     var images = imageList(post.images);
     var badge = images.length > 1 ? '<span class="mobile-bird-cover-badge">共 ' + images.length + ' 张图</span>' : '';
-    if(images.length) return '<div class="mobile-bird-cover"><img src="' + esc(images[0].url) + '" alt="观察图片">' + badge + '</div>';
-    return '<div class="mobile-bird-cover mobile-bird-cover-empty"><span>暂无观察图</span></div>';
+    if(images.length) return '<div class="mobile-bird-cover"><img src="' + esc(images[0].url) + '" alt="新闻配图">' + badge + '</div>';
+    return '<div class="mobile-bird-cover mobile-bird-cover-empty"><span>暂无配图</span></div>';
   }
   function renderCard(post){
     return '<article class="mobile-bird-card" data-mobile-bird-card data-post-id="' + esc(post.id) + '">' +
-      '<button type="button" data-mobile-bird-open="' + esc(post.id) + '" aria-label="查看完整观察记录" style="display:block;width:100%;border:0;background:transparent;padding:0;text-align:left;color:inherit">' +
-        renderCover(post) + '<div class="mobile-bird-info"><h2>' + esc(post.title) + '</h2><div class="mobile-bird-meta">' + avatarHtml(post.authorName, post.authorAvatar) + '<span>' + esc(post.authorName) + '</span></div><div class="mobile-bird-time">' + esc(post.time + (post.exactTime ? ' · ' + post.exactTime : '')) + '</div></div>' +
+      '<button type="button" data-mobile-bird-open="' + esc(post.id) + '" aria-label="查看完整内容" style="display:block;width:100%;border:0;background:transparent;padding:0;text-align:left;color:inherit">' +
+        renderCover(post) + '<div class="mobile-bird-info"><h2>' + esc(post.title) + '</h2><div class="mobile-bird-meta">' + (post.displayMode === 'profile' ? '<span data-profile-user="' + esc(post.userId || '') + '" role="button" tabindex="0">' + avatarHtml(post.authorName, post.authorAvatar) + '</span>' : avatarHtml(post.authorName, post.authorAvatar)) + '<span>' + esc(post.authorName) + '</span></div><div class="mobile-bird-time">' + esc(post.time + (post.exactTime ? ' · ' + post.exactTime : '')) + '</div></div>' +
       '</button></article>';
   }
   function renderFeed(){
     var node = $('[data-mobile-bird-feed]');
     if(!node) return;
-    node.innerHTML = posts.length ? posts.map(renderCard).join('') : '<div class="mobile-bird-empty">还没有收录新的品种。你可以先放下一条观察记录。</div>';
+    node.innerHTML = posts.length ? posts.map(renderCard).join('') : '<div class="mobile-bird-empty">还没有内容，可以先发布一条。</div>';
   }
 
   function renderImages(images){
     images = imageList(images);
     if(!images.length) return '';
-    return '<div class="mobile-bird-images">' + images.map(function(image){ return '<a href="' + esc(image.url) + '" target="_blank" rel="noopener"><img src="' + esc(image.url) + '" alt="观察图片"></a>'; }).join('') + '</div>';
+    return '<div class="mobile-bird-images">' + images.map(function(image){ return '<a href="' + esc(image.url) + '" target="_blank" rel="noopener"><img src="' + esc(image.url) + '" alt="新闻配图"></a>'; }).join('') + '</div>';
   }
   function reactionButton(post, type, label, count){
     var active = !!(post.myReactions && post.myReactions[type]);
@@ -161,15 +161,16 @@
   function renderComments(post){
     var comments = (post.comments || []).map(function(comment){
       var del = comment.canDelete ? '<button type="button" class="mobile-bird-comment-delete" data-mobile-bird-delete-comment="' + esc(comment.id) + '">删除</button>' : '';
-      return '<li class="mobile-bird-comment">' + avatarHtml(comment.authorName, comment.authorAvatar) + '<div class="mobile-bird-comment-body"><b>' + esc(comment.authorName) + '</b><time>' + esc(comment.time) + '</time>' + del + '<p>' + esc(comment.content) + '</p></div></li>';
+      return '<li class="mobile-bird-comment"><span data-profile-user="' + esc(comment.userId || '') + '" role="button" tabindex="0">' + avatarHtml(comment.authorName, comment.authorAvatar) + '</span><div class="mobile-bird-comment-body"><b>' + esc(comment.authorName) + '</b><time>' + esc(comment.time) + '</time>' + del + '<p>' + esc(comment.content) + '</p></div></li>';
     }).join('');
-    return '<section class="mobile-bird-comments"><ul class="mobile-bird-comment-list">' + (comments || '<li class="mobile-bird-empty">还没有评论，可以先留一句。</li>') + '</ul><form class="mobile-bird-comment-form" data-mobile-bird-comment-form data-post-id="' + esc(post.id) + '"><input maxlength="500" placeholder="留一句观察补充"><button type="submit">发送</button></form></section>';
+    return '<section class="mobile-bird-comments"><ul class="mobile-bird-comment-list">' + (comments || '<li class="mobile-bird-empty">还没有评论，可以先留一句。</li>') + '</ul><form class="mobile-bird-comment-form" data-mobile-bird-comment-form data-post-id="' + esc(post.id) + '"><input maxlength="500" placeholder="留一句补充"><button type="submit">发送</button></form></section>';
   }
   function renderDetail(post){
     var node = $('[data-mobile-bird-detail-body]');
     if(!node) return;
-    if(!post){ node.innerHTML = '<div class="mobile-bird-empty">这条观察记录暂时读取失败。</div>'; return; }
-    node.innerHTML = '<article class="mobile-bird-detail-card" data-post-id="' + esc(post.id) + '"><div class="mobile-bird-label">这是什么品种：</div><h2 class="mobile-bird-detail-title">' + esc(post.title) + '</h2><div class="mobile-bird-author">' + avatarHtml(post.authorName, post.authorAvatar) + '<span>' + esc(post.authorName) + '</span><span>' + esc(post.time) + '</span></div><p class="mobile-bird-content">' + esc(post.content) + '</p>' + renderImages(post.images) + '<div class="mobile-bird-controls">' + reactionButton(post, 'valid', '标本有效', post.validCount) + reactionButton(post, 'seen', '我也见过', post.seenCount) + reactionButton(post, 'tissue', '递纸巾', post.tissueCount) + (post.canDelete ? '<button type="button" class="danger" data-mobile-bird-delete-post="' + esc(post.id) + '">删除</button>' : '<button type="button" disabled>评论 ' + (post.comments || []).length + '</button>') + '</div>' + renderComments(post) + '</article>';
+    if(!post){ node.innerHTML = '<div class="mobile-bird-empty">这条内容暂时读取失败。</div>'; return; }
+    var authorAvatar = post.displayMode === 'profile' ? '<span data-profile-user="' + esc(post.userId || '') + '" role="button" tabindex="0">' + avatarHtml(post.authorName, post.authorAvatar) + '</span>' : avatarHtml(post.authorName, post.authorAvatar);
+    node.innerHTML = '<article class="mobile-bird-detail-card" data-post-id="' + esc(post.id) + '"><div class="mobile-bird-label">新闻专区</div><h2 class="mobile-bird-detail-title">' + esc(post.title) + '</h2><div class="mobile-bird-author">' + authorAvatar + '<span>' + esc(post.authorName) + '</span><span>' + esc(post.time) + '</span></div><p class="mobile-bird-content">' + esc(post.content) + '</p>' + renderImages(post.images) + '<div class="mobile-bird-controls">' + reactionButton(post, 'valid', '有点意思', post.validCount) + reactionButton(post, 'seen', '我也见过', post.seenCount) + reactionButton(post, 'tissue', '递纸巾', post.tissueCount) + (post.canDelete ? '<button type="button" class="danger" data-mobile-bird-delete-post="' + esc(post.id) + '">删除</button>' : '<button type="button" disabled>评论 ' + (post.comments || []).length + '</button>') + '</div>' + renderComments(post) + '</article>';
   }
   function openDetail(postId){
     detailPostId = String(postId);
@@ -187,7 +188,7 @@
     if(loaded && !force){ renderFeed(); return; }
     loading = true;
     var node = $('[data-mobile-bird-feed]');
-    if(node) node.innerHTML = '<div class="mobile-bird-empty">正在打开观鸟镜...</div>';
+    if(node) node.innerHTML = '<div class="mobile-bird-empty">正在读取新闻专区...</div>';
     try{
       posts = await loadPosts();
       loaded = true;
@@ -195,7 +196,7 @@
       if(detailPostId) renderDetail(postById(detailPostId));
     }catch(e){
       console.warn('[FW mobile app] bird load failed', e);
-      if(node) node.innerHTML = '<div class="mobile-bird-empty">' + esc(e.message || '观鸟台暂时读取失败。') + '</div>';
+      if(node) node.innerHTML = '<div class="mobile-bird-empty">' + esc(e.message || '新闻专区暂时读取失败。') + '</div>';
     }finally{ loading = false; }
   }
 
@@ -288,8 +289,8 @@
     if(!title) return '标题不能为空。';
     if(title.length < 2) return '品种名至少 2 个字。';
     if(title.length > MAX_TITLE) return '标题太长了，品种名不宜超过 80 字。';
-    if(!content) return '观察记录不能为空。';
-    if(content.length > MAX_CONTENT) return '观察记录最多 5000 字。';
+    if(!content) return '正文内容不能为空。';
+    if(content.length > MAX_CONTENT) return '正文内容最多 5000 字。';
     if(mode === 'pen_name' && !penName) return '临时笔名不能为空。';
     if(mode === 'pen_name' && penName.length < 2) return '临时笔名至少 2 个字。';
     if(mode === 'pen_name' && penName.length > 20) return '临时笔名不宜超过 20 字。';
@@ -310,8 +311,8 @@
       fail(await client().from('bird_posts').insert({user_id:user.id, title:String(form.title.value || '').trim(), content:String(form.content.value || '').trim(), display_mode:mode, pen_name:mode === 'pen_name' ? String(form.pen_name.value || '').trim() : null, images:images, is_deleted:false}).select('id').single(), '发布失败');
       form.reset();
       clearPending();
-      setNotice('观察记录已收录。');
-      toast('观察记录已收录。');
+      setNotice('内容已发布。');
+      toast('内容已发布。');
       loaded = false;
       await load(true);
       app().setView('bird');
@@ -368,10 +369,10 @@
     finally{ button.disabled = false; }
   }
   async function deletePost(postId){
-    if(!window.confirm('确定删除这条观察记录吗？')) return;
+    if(!window.confirm('确定删除这条内容吗？')) return;
     try{
-      fail(await client().rpc('fw_delete_own_bird_post', {p_post_id:postId}), '删除观察记录失败');
-      toast('观察记录已删除。');
+      fail(await client().rpc('fw_delete_own_bird_post', {p_post_id:postId}), '删除内容失败');
+      toast('内容已删除。');
       loaded = false;
       await load(true);
       app().setView('bird');

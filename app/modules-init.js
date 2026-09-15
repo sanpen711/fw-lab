@@ -47,7 +47,12 @@
       moderation:true,
       buddy:true,
       echo:true,
-      profile:true
+      profile:true,
+      play:true,
+      'play-detail':true,
+      games:true,
+      'game-stage':true,
+      membership:true
     };
     return allowed[hash] ? hash : '';
   }

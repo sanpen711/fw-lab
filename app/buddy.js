@@ -75,8 +75,9 @@
     profile = profile || {};
     var name = profile.nickname || '研究员';
     var cls = className || 'list-avatar';
-    if(profile.avatar_url) return '<span class="' + cls + '"><img src="' + esc(profile.avatar_url) + '" alt="' + esc(name) + '"></span>';
-    return '<span class="' + cls + '">' + esc(app().initials(name)) + '</span>';
+    var interactive = profile.id ? ' data-profile-user="' + esc(profile.id) + '" role="button" tabindex="0"' : '';
+    if(profile.avatar_url) return '<span class="' + cls + '"' + interactive + '><img src="' + esc(profile.avatar_url) + '" alt="' + esc(name) + '"></span>';
+    return '<span class="' + cls + '"' + interactive + '>' + esc(app().initials(name)) + '</span>';
   }
   function timeText(value){
     if(!value) return '刚刚';

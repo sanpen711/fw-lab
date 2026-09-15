@@ -145,9 +145,7 @@
         '<div class="profile-top-main"><h2>' + esc(user.nickname || '临时研究员') + '</h2><p>实验品编号：' + esc(user.lab_code || '未设置') + '</p></div>' +
       '</button>' +
       '<div class="profile-menu">' +
-        menuButton('center', 'green', '✓', '个人中心') +
         menuButton('member', 'blue', '◇', '会员中心') +
-        menuButton('shop', 'orange', '▣', '周边商城') +
         menuButton('stickers', 'yellow', '☺', '表情管理') +
         menuButton('info', 'cyan', '⚙', '设置') +
       '</div>' +
@@ -163,7 +161,6 @@
       '<div class="profile-menu">' +
         menuButton('login', 'green', '✓', '个人中心') +
         menuButton('member', 'blue', '◇', '会员中心') +
-        menuButton('shop', 'orange', '▣', '周边商城') +
         menuButton('login', 'yellow', '☺', '表情管理') +
         menuButton('login', 'cyan', '⚙', '设置') +
       '</div>' +
@@ -779,6 +776,10 @@
       var modeBtn = e.target.closest && e.target.closest('[data-profile-mode]');
       if(modeBtn){
         e.preventDefault();
+        if(modeBtn.dataset.profileMode === 'member'){
+          if(app() && app().setView) app().setView('membership');
+          return;
+        }
         mode = modeBtn.dataset.profileMode || 'home';
         render();
         return;
