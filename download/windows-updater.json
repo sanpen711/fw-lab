@@ -1,11 +1,11 @@
 {
-  "version": "1.2.21",
+  "version": "1.2.22",
+  "pub_date": "2026-09-17T01:37:36.4530973Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.21-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlZPUXBXVDlzVDBJUlQ3b3ljWTdBVDU0b2VscmxXa0pmRXRMQTFSUDlpUFdGdWtaMjdCUzNhZ2Vtd3pLL0IxM2NqU3p6anpzZjhaNmtMYnV6UDdQV3dRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5MzY2MzczCWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMjFfeDY0LXNldHVwLmV4ZQpPTURKRXpOcGI3OXJUVi93K0Z3MURJK3N3RjY5YnVmZjJqSmdVejRVRmtFRndLWnlPOFV4eGZGdllzSWcwc2xpYllocE03bzc1alJuRHJmOUVRVHlBUT09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.22-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmZmQVFTZEdxMUxUVVVMbzEzNXlybHNMMXE0dnFxamhLdzIvbDhKOFhFenM3Y2tENjhXZGN5UG5aTk95Ym9vSnJRVlRaeUo2ZXdYU0V2Tk1mMnB6Vnc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5NjA5MDU1CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMjJfeDY0LXNldHVwLmV4ZQp1NUR4dDFSNHdvYmtMVm91N2VxVytFalczTDdWazdHT3VFZDJDYXhISENZTzIwL3Z3UnNLa3hSYU11NkdrbTl6Q2tSeDN4KzlUc1M1citLdklONmlBZz09Cg=="
     }
   },
-  "notes": "Windows 1.2.21：恢复 VIP 头像框与身份标识的连续动画；修复精神广场切换帖子后左侧红色选中描边停留在旧帖子的问题。",
-  "pub_date": "2026-09-14T06:12:53.8118866Z"
+  "notes": "Windows 1.2.22：小游戏新增 NES 播放器，并加入魂斗罗 1代无限人＋散弹枪版本；游戏与模拟器均随电脑客户端本地安装。"
 }

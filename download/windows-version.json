@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.2.21：恢复 VIP 头像框与身份标识的连续动画；修复精神广场切换帖子后左侧红色选中描边停留在旧帖子的问题。",
-  "available": true,
-  "version": "1.2.21",
-  "sha256": "9684684169dca57f3a9d644a9c135e334afc28ca48954dc9ac3306a7395eb36d",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.21-setup.exe",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "rollbackVersion": "1.0.5",
   "platform": "Windows 10/11 64 位",
-  "publishedAt": "2026-09-14T06:12:53.8118866Z"
+  "version": "1.2.22",
+  "rollbackVersion": "1.0.5",
+  "notes": "Windows 1.2.22：小游戏新增 NES 播放器，并加入魂斗罗 1代无限人＋散弹枪版本；游戏与模拟器均随电脑客户端本地安装。",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.22-setup.exe",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "publishedAt": "2026-09-17T01:37:36.4530973Z",
+  "available": true,
+  "sha256": "16c56222f4bf5109c51b191bd4bdb711ecf0b127c2e9cd604b2d842dae255284"
 }
