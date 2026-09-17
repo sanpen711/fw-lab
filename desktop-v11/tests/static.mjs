@@ -196,8 +196,10 @@ assert.match(nesPlayer,/EJS_forceLegacyCores=true/,'NES 页面必须固定使用
 assert.match(nesPlayer,/contra-infinite-spread\.nes/,'NES 页面必须加载内置魂斗罗 ROM');
 assert.match(nesPlayer,/EJS_gameID='fw-contra-1-infinite-spread'/,'NES 存档必须使用稳定的本地游戏编号');
 assert.doesNotMatch(nesPlayer,/https?:\/\//,'NES 页面不得联网加载模拟器或 ROM');
-assert.ok(existsSync(resolve(root,'desktop-v11/public/emulatorjs/cores/fceumm-wasm.data')),'FCEUmm 核心必须随 Windows 安装包保留');
-assert.ok(existsSync(resolve(root,'desktop-v11/public/emulatorjs/cores/fceumm-legacy-wasm.data')),'FCEUmm 兼容核心必须随 Windows 安装包保留');
+const fceummCore=readBinary('desktop-v11/public/emulatorjs/cores/fceumm-wasm.data');
+const fceummLegacyCore=readBinary('desktop-v11/public/emulatorjs/cores/fceumm-legacy-wasm.data');
+assert.equal(createHash('sha256').update(fceummCore).digest('hex'),'8c449fd5c36646fb0769423ed6ffa9efbdfc21fbfdc9bac7952b559d34d5b493','FCEUmm 核心必须是完整的官方 4.2.3 文件');
+assert.equal(createHash('sha256').update(fceummLegacyCore).digest('hex'),'f1054b094e7149fd6278485bc1b2e51ff75c5259048ddb1134171e53d651f239','FCEUmm 兼容核心必须是完整的官方 4.2.3 文件');
 assert.ok(existsSync(resolve(root,'desktop-v11/public/emulatorjs/cores/reports/fceumm.json')),'FCEUmm 核心版本报告必须随 Windows 安装包保留');
 assert.ok(existsSync(resolve(root,'desktop-v11/public/emulatorjs/loader.js')),'EmulatorJS 加载器必须随 Windows 安装包保留');
 const contraRom=readBinary('desktop-v11/public/games/nes/roms/contra-infinite-spread.nes');

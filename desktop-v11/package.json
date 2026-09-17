@@ -4,9 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare:nes": "node scripts/prepare-nes-assets.mjs",
+    "predev": "npm run prepare:nes",
     "dev": "vite --host 127.0.0.1 --port 1421 --strictPort",
+    "prebuild": "npm run prepare:nes",
     "build": "vite build",
+    "pretest:static": "npm run prepare:nes",
     "test:static": "node tests/static.mjs",
+    "pretest:browser": "npm run prepare:nes",
     "test:browser": "playwright test --config playwright.config.ts",
     "test": "npm run test:static && npm run build && npm run test:browser"
   },

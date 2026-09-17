@@ -3,3 +3,5 @@ src-tauri/target/
 playwright-report/
 test-results/
 *.log
+desktop-v11/public/emulatorjs/cores/fceumm-legacy-wasm.data
+desktop-v11/public/emulatorjs/cores/fceumm-wasm.data
