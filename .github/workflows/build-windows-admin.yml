@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: windows-admin-build
@@ -58,3 +58,24 @@ jobs:
           path: admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish stable installer download
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $source = Get-ChildItem "admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe" | Select-Object -First 1
+          $installer = Join-Path $source.DirectoryName "FW-Admin-0.1.0-Windows-x64-Setup.exe"
+          Copy-Item $source.FullName $installer -Force
+
+          gh release view fw-admin-v0.1.0 --repo "${{ github.repository }}" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload fw-admin-v0.1.0 $installer --clobber --repo "${{ github.repository }}"
+          } else {
+            gh release create fw-admin-v0.1.0 $installer `
+              --repo "${{ github.repository }}" `
+              --target "${{ github.sha }}" `
+              --title "FW管理台 0.1.0" `
+              --notes "FW研究所管理员专用 Windows 客户端。包含举报处理、禁言与封禁、问题反馈、内容管理和处理记录。" `
+              --prerelease
+          }
