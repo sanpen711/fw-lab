@@ -226,7 +226,7 @@ test('小游戏在电脑端内部打开且离开后卸载',async({page})=>{
   const original=page.url();
   await page.locator('[data-nav="games"].nav-item').click();
   await expect(page.locator('[data-view-panel="games"]')).toHaveClass(/active/);
-  await expect(page.locator('[data-game-open]')).toHaveCount(6);
+  await expect(page.locator('[data-game-open]')).toHaveCount(7);
   await expect(page.locator('.game-card-symbol')).toHaveCount(6);
   await page.locator('[data-game-open="reaction"]').click();
   await expect(page.locator('[data-game-stage]')).toBeVisible();
@@ -235,6 +235,20 @@ test('小游戏在电脑端内部打开且离开后卸载',async({page})=>{
   await page.locator('[data-game-back]').click();
   await expect(page.locator('[data-game-hall]')).toBeVisible();
   await expect(page.locator('[data-game-stage]')).toBeHidden();
+});
+
+test('内置 NES 模拟器可加载 Mapper 23 魂斗罗并启动',async({page})=>{
+  test.setTimeout(60000);
+  const pageErrors:string[]=[];
+  page.on('pageerror',error=>pageErrors.push(error.message));
+  await page.goto('/nes-player.html');
+  await expect(page.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
+  const start=page.locator('.ejs_start_button');
+  await expect(start).toHaveText('开始游戏');
+  await start.click();
+  await expect(page.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  await expect(page.locator('#game canvas')).toBeVisible();
+  expect(pageErrors.filter(message=>/unsupported mapper|failed to start game/i.test(message))).toEqual([]);
 });
 
 test('废话档案为本地按需榜单页面',async({page})=>{

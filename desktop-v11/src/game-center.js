@@ -1,4 +1,5 @@
 const games={
+  contra:{title:'魂斗罗 1代',tip:'方向键移动，Z 键 B，X 键 A，Enter 开始，V 键选择',page:'./nes-player.html'},
   '2048':{title:'2048',tip:'使用方向键移动数字方块',path:'2048'},
   minesweeper:{title:'扫雷',tip:'左键翻开，右键插旗',path:'minesweeper'},
   snake:{title:'贪吃蛇',tip:'使用方向键控制方向',path:'snake'},
@@ -10,7 +11,12 @@ const games={
 const $=selector=>document.querySelector(selector);
 let current='';
 
-function frameUrl(game){return new URL(`./games/${game.path}/index.html?v=1.2.21`,document.baseURI).href;}
+function frameUrl(game){
+  const target=game.page||`./games/${game.path}/index.html`;
+  const url=new URL(target,document.baseURI);
+  url.searchParams.set('v','1.2.22');
+  return url.href;
+}
 
 function open(id){
   const game=games[id];if(!game)return;

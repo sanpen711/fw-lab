@@ -22,4 +22,14 @@ F.w 研究所 Windows 小游戏第三方许可说明
    Source: https://github.com/TN1ck/super-sudoku
    Revision: 165dcdba85f01624faf2acfd1524fdd8ac8bef63
 
+5. EmulatorJS 4.2.3
+   License: GNU General Public License v3.0
+   Source: https://github.com/EmulatorJS/EmulatorJS
+   许可证全文：games/nes/LICENSE-EMULATORJS-GPL-3.txt
+
+6. FCEUmm EmulatorJS Core 4.2.3
+   License: GNU General Public License v2.0 or later
+   Source: https://github.com/EmulatorJS/libretro-fceumm
+   许可证全文：games/nes/LICENSE-FCEUMM-GPL-2.txt
+
 反应测试与接住掉落物为 F.w 研究所本地小游戏，不包含第三方游戏代码。
