@@ -39,12 +39,14 @@ class EJS_COMPRESSION {
             const res = await this.EJS.downloadFile(path, null, false, { responseType: "text", method: "GET" });
             if (res === -1) {
                 this.EJS.startGameError(this.EJS.localization("Network Error"));
+                reject(new Error(`Could not load ${method} decompression worker`));
                 return;
             }
             if (method === "rar") {
                 const res2 = await this.EJS.downloadFile("compression/libunrar.wasm", null, false, { responseType: "arraybuffer", method: "GET" });
                 if (res2 === -1) {
                     this.EJS.startGameError(this.EJS.localization("Network Error"));
+                    reject(new Error("Could not load RAR decompression runtime"));
                     return;
                 }
                 const path = URL.createObjectURL(new Blob([res2.data], { type: "application/wasm" }));
@@ -108,10 +110,33 @@ class EJS_COMPRESSION {
         })
     }
     decompressFile(method, data, updateMsg, fileCbFunc) {
-        return new Promise(async callback => {
-            const file = await this.getWorkerFile(method);
-            const worker = new Worker(URL.createObjectURL(file));
+        return new Promise(async (callback, reject) => {
+            let file;
+            try {
+                file = await this.getWorkerFile(method);
+            } catch (error) {
+                reject(error);
+                return;
+            }
+            const workerUrl = URL.createObjectURL(file);
+            const worker = new Worker(workerUrl);
             const files = {};
+            let settled = false;
+            let timeout;
+            const finish = (error) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeout);
+                worker.terminate();
+                URL.revokeObjectURL(workerUrl);
+                if (error) reject(error); else callback(files);
+            };
+            timeout = setTimeout(() => finish(new Error(`${method} decompression timed out`)), 15000);
+            worker.onerror = event => {
+                event.preventDefault();
+                finish(new Error(event.message || `${method} decompression worker failed`));
+            };
+            worker.onmessageerror = () => finish(new Error(`${method} decompression worker returned invalid data`));
             worker.onmessage = (data) => {
                 if (!data.data) return;
                 //data.data.t/ 4=progress, 2 is file, 1 is zip done
@@ -131,7 +156,7 @@ class EJS_COMPRESSION {
                     }
                 }
                 if (data.data.t === 1) {
-                    callback(files);
+                    finish();
                 }
             }
             worker.postMessage(data);

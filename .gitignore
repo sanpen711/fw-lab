@@ -5,3 +5,6 @@ test-results/
 *.log
 desktop-v11/public/emulatorjs/cores/fceumm-legacy-wasm.data
 desktop-v11/public/emulatorjs/cores/fceumm-wasm.data
+desktop-v11/public/emulatorjs/cores/unpacked/
+desktop-v11/.cache/
+desktop-v11/dist/

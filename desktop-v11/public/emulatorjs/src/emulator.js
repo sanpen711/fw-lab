@@ -521,6 +521,65 @@ class EmulatorJS {
         this.handleResize();
         this.failedToStart = true;
     }
+    prepareGameCore(files) {
+        this.defaultCoreOpts = {};
+        let js, thread, wasm;
+        const decode = data => typeof data === "string" ? data : new TextDecoder().decode(data);
+        for (let k in files) {
+            if (k.endsWith(".wasm")) {
+                wasm = files[k];
+            } else if (k.endsWith(".worker.js")) {
+                thread = files[k];
+            } else if (k.endsWith(".js")) {
+                js = files[k];
+            } else if (k === "build.json") {
+                this.checkCoreCompatibility(JSON.parse(decode(files[k])));
+            } else if (k === "core.json") {
+                const core = JSON.parse(decode(files[k]));
+                this.extensions = core.extensions;
+                this.coreName = core.name;
+                this.repository = core.repo;
+                this.defaultCoreOpts = core.options;
+                this.enableMouseLock = core.options.supportsMouse;
+                this.retroarchOpts = core.retroarchOpts;
+                this.saveFileExt = core.save;
+            } else if (k === "license.txt") {
+                this.license = decode(files[k]);
+            }
+        }
+        if (!js || !wasm) throw new Error("The unpacked game core is incomplete");
+        if (this.saveFileExt === false) {
+            this.elements.bottomBar.saveSavFiles[0].style.display = "none";
+            this.elements.bottomBar.loadSavFiles[0].style.display = "none";
+        }
+        this.initGameCore(js, wasm, thread);
+    }
+    async downloadUnpackedGameCore() {
+        const core = this.getCore();
+        const base = this.config.unpackedCorePath.endsWith("/") ? this.config.unpackedCorePath : this.config.unpackedCorePath + "/";
+        const names = [`${core}_libretro.js`, `${core}_libretro.wasm`, "build.json", "core.json", "license.txt"];
+        let timeout;
+        try {
+            this.textElem.innerText = "正在读取本地游戏核心";
+            const load = Promise.all(names.map(async name => {
+                const res = await this.downloadFile(base + name, progress => {
+                    this.textElem.innerText = "正在读取本地游戏核心" + progress;
+                }, false, { responseType: "arraybuffer", method: "GET" });
+                if (res === -1) throw new Error(`Missing unpacked core file: ${name}`);
+                return [name, new Uint8Array(res.data)];
+            }));
+            const expired = new Promise((resolve, reject) => {
+                timeout = setTimeout(() => reject(new Error("Timed out loading the unpacked game core")), 15000);
+            });
+            const files = Object.fromEntries(await Promise.race([load, expired]));
+            this.prepareGameCore(files);
+        } catch (error) {
+            console.error("Failed to load unpacked game core", error);
+            this.startGameError("本地 NES 游戏核心加载失败，请重新打开游戏。");
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
     downloadGameCore() {
         this.textElem.innerText = this.localization("Download Game Core");
         if (!this.config.threads && this.requiresThreads(this.getCore())) {
@@ -537,39 +596,16 @@ class EmulatorJS {
             console.warn("Threads is set to true, but the SharedArrayBuffer function is not exposed. Threads requires 2 headers to be set when sending you html page. See https://stackoverflow.com/a/68630724");
             return;
         }
+        if (typeof this.config.unpackedCorePath === "string" && this.config.unpackedCorePath.length) {
+            this.downloadUnpackedGameCore();
+            return;
+        }
         const gotCore = (data) => {
-            this.defaultCoreOpts = {};
             this.checkCompression(new Uint8Array(data), this.localization("Decompress Game Core")).then((data) => {
-                let js, thread, wasm;
-                for (let k in data) {
-                    if (k.endsWith(".wasm")) {
-                        wasm = data[k];
-                    } else if (k.endsWith(".worker.js")) {
-                        thread = data[k];
-                    } else if (k.endsWith(".js")) {
-                        js = data[k];
-                    } else if (k === "build.json") {
-                        this.checkCoreCompatibility(JSON.parse(new TextDecoder().decode(data[k])));
-                    } else if (k === "core.json") {
-                        let core = JSON.parse(new TextDecoder().decode(data[k]));
-                        this.extensions = core.extensions;
-                        this.coreName = core.name;
-                        this.repository = core.repo;
-                        this.defaultCoreOpts = core.options;
-                        this.enableMouseLock = core.options.supportsMouse;
-                        this.retroarchOpts = core.retroarchOpts;
-                        this.saveFileExt = core.save;
-                    } else if (k === "license.txt") {
-                        this.license = new TextDecoder().decode(data[k]);
-                    }
-                }
-
-                if (this.saveFileExt === false) {
-                    this.elements.bottomBar.saveSavFiles[0].style.display = "none";
-                    this.elements.bottomBar.loadSavFiles[0].style.display = "none";
-                }
-
-                this.initGameCore(js, wasm, thread);
+                this.prepareGameCore(data);
+            }).catch(error => {
+                console.error("Failed to decompress game core", error);
+                this.startGameError(this.localization("Failed to start game"));
             });
         }
         const report = "cores/reports/" + this.getCore() + ".json";
@@ -638,9 +674,15 @@ class EmulatorJS {
     }
     initGameCore(js, wasm, thread) {
         let script = this.createElement("script");
-        script.src = URL.createObjectURL(new Blob([js], { type: "application/javascript" }));
+        const scriptUrl = URL.createObjectURL(new Blob([js], { type: "application/javascript" }));
+        script.src = scriptUrl;
         script.addEventListener("load", () => {
+            URL.revokeObjectURL(scriptUrl);
             this.initModule(wasm, thread);
+        });
+        script.addEventListener("error", () => {
+            URL.revokeObjectURL(scriptUrl);
+            this.startGameError(this.localization("Failed to start game"));
         });
         document.body.appendChild(script);
     }

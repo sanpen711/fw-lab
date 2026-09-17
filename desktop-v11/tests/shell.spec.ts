@@ -241,8 +241,12 @@ test('内置 NES 模拟器可加载 Mapper 23 魂斗罗并启动',async({page})=
   test.setTimeout(60000);
   const pageErrors:string[]=[];
   const consoleMessages:string[]=[];
+  const coreRequests:string[]=[];
   page.on('pageerror',error=>pageErrors.push(error.message));
   page.on('console',message=>consoleMessages.push(`${message.type()}: ${message.text()}`));
+  page.on('request',request=>{
+    if(request.url().includes('/emulatorjs/cores/'))coreRequests.push(request.url());
+  });
   await page.goto('/nes-player.html');
   await expect(page.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
   const start=page.locator('.ejs_start_button');
@@ -267,6 +271,8 @@ test('内置 NES 模拟器可加载 Mapper 23 魂斗罗并启动',async({page})=
     throw error;
   }
   await expect(page.locator('#game canvas')).toBeVisible();
+  expect(coreRequests.some(url=>url.endsWith('/unpacked/fceumm/fceumm_libretro.wasm'))).toBe(true);
+  expect(coreRequests.some(url=>/fceumm(?:-legacy)?-wasm\.data$/.test(url))).toBe(false);
   expect(pageErrors.filter(message=>/unsupported mapper|failed to start game/i.test(message))).toEqual([]);
 });
 

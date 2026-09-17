@@ -8,11 +8,11 @@ const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
 const read=path=>readFileSync(resolve(root,path),'utf8');
 const readBinary=path=>readFileSync(resolve(root,path));
 const config=JSON.parse(read('src-tauri/tauri.v11.conf.json'));
-assert.equal(config.version,'1.2.22');
+assert.equal(config.version,'1.2.23');
 assert.equal(config.build.frontendDist,'../desktop-v11/dist');
 assert.equal(config.build.devUrl,'http://127.0.0.1:1421');
 assert.equal(config.app.windows[0].url,'index.html');
-assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.2\.22/);
+assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.2\.23/);
 assert.doesNotMatch(JSON.stringify(config),/fwyanjiusuo\.com\/index\.html/);
 assert.match(config.app.security.csp,/supabase\.co/);
 assert.doesNotMatch(config.app.security.csp,/open-meteo/,'Windows 不应再直连旧天气服务');
@@ -43,10 +43,13 @@ const cargo=read('src-tauri/Cargo.toml');
 const styles=read('desktop-v11/styles.css');
 const windowsWorkflow=read('.github/workflows/build-windows-app.yml');
 const gameCenter=read('desktop-v11/src/game-center.js');
+const nesGames=read('desktop-v11/src/nes-games.js');
 const gameStyles=read('desktop-v11/public/game-center.css');
 const gameNotices=read('desktop-v11/public/games/THIRD_PARTY_NOTICES.txt');
 const nesPlayer=read('desktop-v11/src/nes-player.js');
 const nesPlayerHtml=read('desktop-v11/nes-player.html');
+const emulatorCoreLoader=read('desktop-v11/public/emulatorjs/src/emulator.js');
+const emulatorCompression=read('desktop-v11/public/emulatorjs/src/compression.js');
 const webGames=read('games.html');
 const gamePartyStore=read('desktop-v11/src/game-party-store.js');
 const gamePartyUi=read('desktop-v11/src/game-party-ui.js');
@@ -188,18 +191,29 @@ assert.match(config.app.security.csp,/frame-src 'self'/,'CSP 必须只允许内�
 assert.match(config.app.security.csp,/frame-ancestors 'self'/,'内置游戏必须允许由本地电脑端页面承载');
 assert.match(config.app.security.csp,/script-src 'self' blob: 'wasm-unsafe-eval'/,'桌面端 CSP 必须允许本地 NES WebAssembly 核心');
 assert.match(config.app.security.csp,/worker-src 'self' blob:/,'桌面端 CSP 必须允许模拟器的本地工作线程');
-assert.match(gameCenter,/page:'\.\/nes-player\.html'/,'魂斗罗必须从独立电脑端 NES 页面启动');
+assert.match(gameCenter,/nes-player\.html\?game=/,'NES 游戏必须通过统一游戏 ID 从独立电脑端播放器启动');
 assert.match(nesPlayerHtml,/id="game"/,'NES 页面必须提供独立播放器容器');
 assert.match(nesPlayer,/EJS_core='nes'/,'NES 页面必须固定使用 NES 核心');
 assert.match(nesPlayer,/retroarch_core:'fceumm'/,'NES 页面必须使用兼容 Mapper 23 的 FCEUmm 核心');
 assert.match(nesPlayer,/EJS_forceLegacyCores=true/,'NES 页面必须固定使用 Windows WebView 兼容核心');
-assert.match(nesPlayer,/contra-infinite-spread\.nes/,'NES 页面必须加载内置魂斗罗 ROM');
-assert.match(nesPlayer,/EJS_gameID='fw-contra-1-infinite-spread'/,'NES 存档必须使用稳定的本地游戏编号');
+assert.match(nesPlayer,/EJS_unpackedCorePath='cores\/unpacked\/fceumm\/'/,'NES 页面必须直接加载构建期预解包核心');
+assert.match(nesPlayer,/NES_GAMES\[requestedGame\]/,'NES 播放器必须从统一目录按 ID 选择游戏');
+assert.match(nesGames,/contra-infinite-spread\.nes/,'NES 游戏目录必须登记内置魂斗罗 ROM');
+assert.match(nesGames,/storageId:'fw-contra-1-infinite-spread'/,'NES 存档必须使用稳定的本地游戏编号');
 assert.doesNotMatch(nesPlayer,/https?:\/\//,'NES 页面不得联网加载模拟器或 ROM');
-const fceummCore=readBinary('desktop-v11/public/emulatorjs/cores/fceumm-wasm.data');
-const fceummLegacyCore=readBinary('desktop-v11/public/emulatorjs/cores/fceumm-legacy-wasm.data');
-assert.equal(createHash('sha256').update(fceummCore).digest('hex'),'8c449fd5c36646fb0769423ed6ffa9efbdfc21fbfdc9bac7952b559d34d5b493','FCEUmm 核心必须是完整的官方 4.2.3 文件');
-assert.equal(createHash('sha256').update(fceummLegacyCore).digest('hex'),'f1054b094e7149fd6278485bc1b2e51ff75c5259048ddb1134171e53d651f239','FCEUmm 兼容核心必须是完整的官方 4.2.3 文件');
+const unpackedCoreDir='desktop-v11/public/emulatorjs/cores/unpacked/fceumm';
+for(const [name,hash] of Object.entries({
+  'fceumm_libretro.js':'dba07936f4502e66cd1d31adfcea8102664c3c6d8fd947bf3c151a3c93e5e73c',
+  'fceumm_libretro.wasm':'86b8aca214421da72b2eb4827c93bddc8bd35c5e529f141de74ab5c5f57c8b8e',
+  'build.json':'27d8d02b31afc26c5beeb9dd6a8603b1b2d05c447fef13288e12ef2066090996',
+  'core.json':'5d568c0241a1ffb1e8b0496fd864d8be390b88f4ca5ce031be6e67a2ebfcf17e',
+  'license.txt':'a6996dcf0c334281f734560926e079b2dbbd5b78e81c0ca00a413ec01e1cd2fb',
+}))assert.equal(createHash('sha256').update(readBinary(`${unpackedCoreDir}/${name}`)).digest('hex'),hash,`${name} 必须来自完整的官方 FCEUmm 4.2.3 兼容核心`);
+assert.ok(!existsSync(resolve(root,'desktop-v11/public/emulatorjs/cores/fceumm-legacy-wasm.data')),'Windows 安装包不得再携带运行时 7z 核心');
+assert.match(emulatorCoreLoader,/downloadUnpackedGameCore\(\)/,'模拟器必须提供预解包核心直载流程');
+assert.match(emulatorCoreLoader,/Timed out loading the unpacked game core/,'本地核心加载必须有明确超时');
+assert.match(emulatorCompression,/worker\.onerror/,'通用压缩工作线程必须处理运行错误');
+assert.match(emulatorCompression,/decompression timed out/,'通用压缩工作线程必须有超时保护');
 assert.ok(existsSync(resolve(root,'desktop-v11/public/emulatorjs/cores/reports/fceumm.json')),'FCEUmm 核心版本报告必须随 Windows 安装包保留');
 assert.ok(existsSync(resolve(root,'desktop-v11/public/emulatorjs/loader.js')),'EmulatorJS 加载器必须随 Windows 安装包保留');
 const contraRom=readBinary('desktop-v11/public/games/nes/roms/contra-infinite-spread.nes');
@@ -246,7 +260,7 @@ assert.match(app,/function selectedStickerPreview/,'选择我的表情后必须�
 assert.match(styles,/\.selected-sticker-preview img\{width:42px;height:42px/,'已选择表情预览必须保持与小表情格子一致的大小');
 assert.match(composeUi,/\[data-comment-emoji\],\[data-comment-sticker\][\s\S]*openPickerKey=''/,'评论选择一个表情后必须自动关闭表情面板');
 assert.match(composeUi,/event\.ctrlKey\|\|event\.key!==\'Enter\'/,'评论输入区必须支持 Ctrl + Enter 快速发送');
-assert.match(cargo,/version = "1\.2\.22"/);
+assert.match(cargo,/version = "1\.2\.23"/);
 assert.match(cargo,/tauri-plugin-updater = "2\.10\.1"/);
 assert.match(cargo,/rusqlite = \{ version = "0\.32", features = \["bundled"\] \}/,'持久缓存必须使用内置 SQLite，不能依赖用户额外安装数据库');
 assert.match(rust,/mod persistent_cache;/,'Rust 主程序必须注册持久缓存模块');
@@ -393,7 +407,7 @@ assert.match(composeUi,/data-comment-compact-media/,'评论区必须提供同款
 assert.match(composeUi,/\.media-tools,\[data-comment-form\] \.media-tools\{display:none!important\}/,'旧的大号添加图片\/视频工具行必须收起');
 assert.match(composeUi,/openPickerKey/,'表情面板必须按需展开而不是常驻');
 assert.match(composeUi,/\[data-compose-image\]/,'加号必须继续复用现有图片\/视频上传能力');
-assert.match(squareScroll,/Windows 1\.2\.22 本地前端 · NES 游戏/,'右下角版本标识必须更新');
+assert.match(squareScroll,/Windows 1\.2\.23 本地前端 · NES 游戏/,'右下角版本标识必须更新');
 assert.match(squareScroll,/square-scroll-locked/,'精神广场必须锁住整页滚动');
 assert.match(squareScroll,/buddy-scroll-locked/,'搭子页必须锁住整页滚动');
 assert.match(squareScroll,/\.chat-messages\{min-height:0;overflow-y:auto/,'搭子聊天记录必须独立滚动');
@@ -403,8 +417,8 @@ assert.match(squareScroll,/\.square-feed\{min-height:0;overflow-y:auto/,'左侧�
 assert.match(squareScroll,/\.detail-scroll\{height:100%;min-height:0;overflow:hidden/,'右侧详情外层必须固定在窗口内');
 assert.match(squareScroll,/\.detail-content-scroll\{min-height:0;overflow-y:auto/,'右侧正文与评论必须连续滚动');
 assert.match(squareScroll,/attributeFilter:\['data-view'\]/,'滚动锁监听必须只观察 data-view，不能监听整棵 DOM');
-assert.match(windowsWorkflow,/url = 'https:\/\/ekbovsmxbiplhyrzxoyw\.supabase\.co\/storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.2\.22-setup\.exe'/,'自动更新必须使用 Supabase Storage 的版本化安装包');
-assert.match(windowsWorkflow,/installer\.Name -notmatch '1\\\.2\\\.22'/,'安装包名称校验必须跟随当前 Windows 版本');
+assert.match(windowsWorkflow,/url = 'https:\/\/ekbovsmxbiplhyrzxoyw\.supabase\.co\/storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.2\.23-setup\.exe'/,'自动更新必须使用 Supabase Storage 的版本化安装包');
+assert.match(windowsWorkflow,/installer\.Name -notmatch '1\\\.2\\\.23'/,'安装包名称校验必须跟随当前 Windows 版本');
 assert.match(windowsWorkflow,/functions\/v1\/sync-windows-release/,'Windows 发布必须先同步 Supabase 安装包');
 assert.match(windowsWorkflow,/gh release create/,'Windows 构建必须发布独立版本安装包');
 assert.doesNotMatch(windowsWorkflow,/cdn\.jsdelivr\.net|windows-cdn-build/,'自动更新不能再发布到会拒绝安装包的 CDN 线路');
