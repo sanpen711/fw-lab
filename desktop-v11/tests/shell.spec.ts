@@ -240,13 +240,32 @@ test('小游戏在电脑端内部打开且离开后卸载',async({page})=>{
 test('内置 NES 模拟器可加载 Mapper 23 魂斗罗并启动',async({page})=>{
   test.setTimeout(60000);
   const pageErrors:string[]=[];
+  const consoleMessages:string[]=[];
   page.on('pageerror',error=>pageErrors.push(error.message));
+  page.on('console',message=>consoleMessages.push(`${message.type()}: ${message.text()}`));
   await page.goto('/nes-player.html');
   await expect(page.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
   const start=page.locator('.ejs_start_button');
   await expect(start).toHaveText('开始游戏');
   await start.click();
-  await expect(page.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  try{
+    await expect(page.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  }catch(error){
+    const diagnostics=await page.evaluate(()=>{
+      const emulator=(window as any).EJS_emulator;
+      return{
+        emulatorState:document.documentElement.dataset.emulatorState||'',
+        gameState:document.documentElement.dataset.gameState||'',
+        loadingText:document.querySelector('.ejs_loading_text')?.textContent||'',
+        failedToStart:Boolean(emulator?.failedToStart),
+        started:Boolean(emulator?.started),
+        core:emulator?.getCore?.()||'',
+        canvasCount:document.querySelectorAll('#game canvas').length,
+      };
+    });
+    console.log('NES diagnostics:',JSON.stringify({diagnostics,pageErrors,consoleMessages}));
+    throw error;
+  }
   await expect(page.locator('#game canvas')).toBeVisible();
   expect(pageErrors.filter(message=>/unsupported mapper|failed to start game/i.test(message))).toEqual([]);
 });
