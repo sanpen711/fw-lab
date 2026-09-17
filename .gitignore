@@ -8,3 +8,6 @@ desktop-v11/public/emulatorjs/cores/fceumm-wasm.data
 desktop-v11/public/emulatorjs/cores/unpacked/
 desktop-v11/.cache/
 desktop-v11/dist/
+admin-desktop/dist/
+admin-desktop/src-tauri/target/
+supabase/.temp/

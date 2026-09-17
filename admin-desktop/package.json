@@ -1,0 +1,21 @@
+{
+  "name": "fw-admin-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 1422 --strictPort",
+    "build": "vite build",
+    "test:static": "node tests/static.mjs",
+    "test": "npm run test:static && npm run build",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build --bundles nsis"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.55.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4",
+    "vite": "7.1.1"
+  }
+}
