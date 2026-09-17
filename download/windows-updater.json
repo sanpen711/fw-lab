@@ -1,11 +1,11 @@
 {
-  "version": "1.2.22",
-  "pub_date": "2026-09-17T01:37:36.4530973Z",
+  "pub_date": "2026-09-17T02:36:08.7342975Z",
+  "notes": "Windows 1.2.23：修复 NES 游戏核心在 Windows WebView2 中解压后无响应的问题；核心改为构建期预解包，后续 NES 游戏共用同一本地核心，并补充加载超时和错误提示。",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.22-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmZmQVFTZEdxMUxUVVVMbzEzNXlybHNMMXE0dnFxamhLdzIvbDhKOFhFenM3Y2tENjhXZGN5UG5aTk95Ym9vSnJRVlRaeUo2ZXdYU0V2Tk1mMnB6Vnc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5NjA5MDU1CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMjJfeDY0LXNldHVwLmV4ZQp1NUR4dDFSNHdvYmtMVm91N2VxVytFalczTDdWazdHT3VFZDJDYXhISENZTzIwL3Z3UnNLa3hSYU11NkdrbTl6Q2tSeDN4KzlUc1M1citLdklONmlBZz09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.23-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlR5Q0l2WnlPZzNyU3pqdWNYN2dRdnJLbU1GMm5lUTQzU3pEc214UWw0dEdPanQxSkJUQ3RtL0U5TWVIMUNtaUlkQ05wNTNRd3dCQkh5SXludE9kVWdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5NjEyNTY4CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMjNfeDY0LXNldHVwLmV4ZQovbFdqY0pKekZreHc2NzNiQXF5SnNYL0lhMUlvaEtlYUNxRW9EcHlJbnpqekx0dG9oWHBoVUdDbHFzUHpQZzJ1aGx1QzQ3MGpMQm5HZTdrR014NmJDQT09Cg=="
     }
   },
-  "notes": "Windows 1.2.22：小游戏新增 NES 播放器，并加入魂斗罗 1代无限人＋散弹枪版本；游戏与模拟器均随电脑客户端本地安装。"
+  "version": "1.2.23"
 }
