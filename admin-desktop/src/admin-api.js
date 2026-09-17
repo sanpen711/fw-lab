@@ -82,6 +82,22 @@ async function listParties(){
   return rpc('admin_list_game_parties',{},'读取组队房间失败');
 }
 
+async function listBirdPosts(){
+  return rpc('admin_list_bird_posts',{},'读取树洞帖子失败');
+}
+
+async function listBirdComments(){
+  return rpc('admin_list_bird_comments',{},'读取树洞评论失败');
+}
+
+async function listPolls(){
+  return rpc('admin_list_polls',{},'读取投票失败');
+}
+
+async function listPartyMessages(){
+  return rpc('admin_list_game_party_messages',{},'读取组队留言失败');
+}
+
 async function listLogs(){
   return fail(await client.from('moderation_logs')
     .select('id,target_type,target_id,target_user_id,target_display_name,action,reason,duration_text,public_visible,is_revoked,created_at,expires_at')
@@ -128,8 +144,42 @@ async function moderateParty({id,reason}){
   return rpc('admin_delete_game_party',{p_party_id:Number(id),p_reason:reason},'删除组队房间失败');
 }
 
+async function moderateBirdPost({id,remove,reason,publicVisible=false}){
+  return rpc('admin_moderate_bird_post',{p_id:Number(id),p_delete:Boolean(remove),p_reason:reason,p_public_visible:publicVisible},'处理树洞帖子失败');
+}
+
+async function moderateBirdComment({id,remove,reason,publicVisible=false}){
+  return rpc('admin_moderate_bird_comment',{p_id:Number(id),p_delete:Boolean(remove),p_reason:reason,p_public_visible:publicVisible},'处理树洞评论失败');
+}
+
+async function moderatePoll({id,remove,reason,publicVisible=false}){
+  return rpc('admin_moderate_poll',{p_id:Number(id),p_delete:Boolean(remove),p_reason:reason,p_public_visible:publicVisible},'处理投票失败');
+}
+
+async function deletePartyMessage({id,reason,publicVisible=false}){
+  return rpc('admin_delete_game_party_message',{p_id:Number(id),p_reason:reason,p_public_visible:publicVisible},'删除组队留言失败');
+}
+
+async function deleteUserAccount({targetUserId,confirmCode,confirmText,reason}){
+  const result=await client.functions.invoke('admin-delete-user',{
+    body:{targetUserId,confirmCode,confirmText,reason}
+  });
+  if(result.error){
+    let message=result.error.message||'删除账号失败';
+    const response=result.error.context;
+    if(response&&typeof response.json==='function'){
+      try{message=(await response.json())?.error||message;}catch{/* 保留原始错误 */}
+    }
+    throw new Error(message);
+  }
+  if(result.data?.error)throw new Error(result.data.error);
+  return result.data;
+}
+
 export const adminApi={
-  client,restoreAdmin,signIn,signOut,listUsers,listReports,listFeedback,listPosts,listComments,listChats,listParties,listLogs,
+  client,restoreAdmin,signIn,signOut,listUsers,listReports,listFeedback,listPosts,listComments,listChats,listParties,
+  listBirdPosts,listBirdComments,listPolls,listPartyMessages,listLogs,
   moderateUser,moderatePost,moderateComment,moderateChat,resolveReport,updateFeedback,moderateParty,
+  moderateBirdPost,moderateBirdComment,moderatePoll,deletePartyMessage,deleteUserAccount,
   onAuthStateChange(callback){return client.auth.onAuthStateChange((event)=>callback(event));}
 };

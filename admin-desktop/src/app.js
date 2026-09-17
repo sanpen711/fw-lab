@@ -5,8 +5,8 @@ const app=document.querySelector('#app');
 const toastHost=document.querySelector('#toast');
 const dialog=document.querySelector('#action-dialog');
 
-const emptyRows=()=>({users:[],reports:[],feedback:[],posts:[],comments:[],chats:[],parties:[],logs:[]});
-const state={admin:null,ready:false,busy:false,error:'',view:'dashboard',query:'',filter:'pending',contentType:'posts',selection:null,rows:emptyRows()};
+const emptyRows=()=>({users:[],reports:[],feedback:[],posts:[],comments:[],chats:[],parties:[],birdPosts:[],birdComments:[],polls:[],partyMessages:[],logs:[]});
+const state={admin:null,ready:false,busy:false,error:'',view:'dashboard',query:'',filter:'pending',contentType:'posts',showTestData:false,selection:null,rows:emptyRows()};
 let dialogSubmit=null;
 
 const viewMeta={
@@ -14,7 +14,7 @@ const viewMeta={
   reports:['举报中心','统一处理用户、帖子、评论和房间消息举报'],
   feedback:['问题反馈','查看问题、建议并向用户回复'],
   users:['用户管理','搜索账号并处理禁言和封禁'],
-  content:['内容管理','管理帖子、评论、房间消息和下班开黑'],
+  content:['内容管理','统一管理广场、树洞、投票、房间和组队内容'],
   logs:['处理记录','查看所有管理操作和公开状态']
 };
 
@@ -22,7 +22,10 @@ const actionText={
   ban:'封禁账号',unban:'解除封禁',mute:'禁言',unmute:'解除禁言',
   delete_post:'删除帖子',restore_post:'恢复帖子',delete_comment:'删除评论',restore_comment:'恢复评论',
   delete_chat_message:'删除房间消息',restore_chat_message:'恢复房间消息',resolve_report:'处理举报',
-  ignore_report:'忽略举报',delete_game_party:'删除组队房间',feedback_update:'更新反馈',system_note:'系统记录'
+  delete_bird_post:'删除树洞帖子',restore_bird_post:'恢复树洞帖子',
+  delete_bird_comment:'删除树洞评论',restore_bird_comment:'恢复树洞评论',
+  delete_poll:'删除投票',restore_poll:'恢复投票',delete_game_party_message:'删除组队留言',
+  delete_account:'永久删除账号',ignore_report:'忽略举报',delete_game_party:'删除组队房间',feedback_update:'更新反馈',system_note:'系统记录'
 };
 const reportTypeText={post:'精神广场帖子',comment:'精神广场评论',user:'用户 / 搭子',chat_message:'房间消息'};
 const feedbackStatusText={new:'未处理',in_progress:'处理中',waiting_user:'等待用户',resolved:'已解决',closed:'已关闭'};
@@ -36,6 +39,12 @@ function profileOf(row){const value=row?.profiles;return Array.isArray(value)?(v
 function reportType(row){return row?.room_key||((Number(row?.id)>0&&row?.message_id)?'chat_message':'unknown');}
 function statusBadge(status,label){return `<span class="badge ${esc(status||'')}">${esc(label||status||'未知')}</span>`;}
 function includesQuery(...values){const query=state.query.trim().toLowerCase();return !query||values.some(value=>String(value||'').toLowerCase().includes(query));}
+function userById(id){return id?state.rows.users.find(row=>String(row.id)===String(id)):null;}
+function isTestRow(row){
+  const ids=[row?.user_id,row?.target_user_id,row?.reporter_id,row?.captain_id];
+  return ids.some(id=>userById(id)?.is_test_account)||String(row?.content||row?.message_content||'').startsWith('[FW-AUTO-TEST]');
+}
+function withoutTestRows(rows){return state.showTestData?rows:rows.filter(row=>!isTestRow(row));}
 
 function toast(message,error=false){
   toastHost.textContent=message;
@@ -73,9 +82,9 @@ function navButton(id,index,label,count=0,attention=false){
   return `<button class="nav-button ${state.view===id?'active':''}" type="button" data-nav="${id}"><span class="nav-index">${index}</span><span>${label}</span>${count?`<span class="nav-count ${attention?'attention':''}">${count>99?'99+':count}</span>`:''}</button>`;
 }
 
-function pendingReportCount(){return state.rows.reports.filter(row=>(row.status||'pending')==='pending').length;}
-function pendingFeedbackCount(){return state.rows.feedback.filter(row=>['new','in_progress','waiting_user'].includes(row.status||'new')).length;}
-function mutedCount(){return state.rows.users.filter(row=>row.muted_until&&new Date(row.muted_until).getTime()>Date.now()).length;}
+function pendingReportCount(){return withoutTestRows(state.rows.reports).filter(row=>(row.status||'pending')==='pending').length;}
+function pendingFeedbackCount(){return withoutTestRows(state.rows.feedback).filter(row=>['new','in_progress','waiting_user'].includes(row.status||'new')).length;}
+function mutedCount(){return state.rows.users.filter(row=>!row.is_test_account&&row.muted_until&&new Date(row.muted_until).getTime()>Date.now()).length;}
 
 function shellView(){
   const [title,subtitle]=viewMeta[state.view];
@@ -98,7 +107,7 @@ function shellView(){
       <section class="main-area">
         <header class="topbar">
           <div class="topbar-title"><h1>${esc(title)}</h1><p>${esc(subtitle)}</p></div>
-          <div class="topbar-actions"><span class="connection-dot" aria-hidden="true"></span><span>数据库已连接</span><button class="button compact" type="button" data-refresh>刷新</button></div>
+          <div class="topbar-actions"><span class="connection-dot" aria-hidden="true"></span><span>数据库已连接</span><button class="button compact ${state.showTestData?'test-active':''}" type="button" data-toggle-tests>${state.showTestData?'隐藏测试数据':'显示测试数据'}</button><button class="button compact" type="button" data-refresh>刷新</button></div>
         </header>
         <div class="page">${renderPage()}</div>
       </section>
@@ -117,10 +126,10 @@ function renderPage(){
 function renderDashboard(){
   const reports=pendingReportCount();
   const feedback=pendingFeedbackCount();
-  const banned=state.rows.users.filter(row=>row.is_banned).length;
+  const banned=state.rows.users.filter(row=>!row.is_test_account&&row.is_banned).length;
   const todo=[
-    ...state.rows.reports.filter(row=>(row.status||'pending')==='pending').map(row=>({kind:'report',time:row.created_at,title:`${reportTypeText[reportType(row)]||'内容'}举报`,text:`${row.target_name||'未知用户'} · ${row.report_reason||'用户举报'}`,row})),
-    ...state.rows.feedback.filter(row=>['new','in_progress','waiting_user'].includes(row.status||'new')).map(row=>({kind:'feedback',time:row.created_at,title:`${row.category||'问题'}反馈`,text:`${row.nickname||'用户'} · ${short(row.content,70)}`,row}))
+    ...withoutTestRows(state.rows.reports).filter(row=>(row.status||'pending')==='pending').map(row=>({kind:'report',time:row.created_at,title:`${reportTypeText[reportType(row)]||'内容'}举报`,text:`${row.target_name||'未知用户'} · ${row.report_reason||'用户举报'}`,row})),
+    ...withoutTestRows(state.rows.feedback).filter(row=>['new','in_progress','waiting_user'].includes(row.status||'new')).map(row=>({kind:'feedback',time:row.created_at,title:`${row.category||'问题'}反馈`,text:`${row.nickname||'用户'} · ${short(row.content,70)}`,row}))
   ].sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,12);
   return `
     <section class="metric-grid">
@@ -136,7 +145,7 @@ function renderDashboard(){
 }
 
 function reportRows(){
-  return state.rows.reports.filter(row=>{
+  return withoutTestRows(state.rows.reports).filter(row=>{
     const status=row.status||'pending';
     const filterOk=state.filter==='all'||status===state.filter;
     return filterOk&&includesQuery(row.id,row.target_name,row.reporter_name,row.report_reason,row.message_content,reportTypeText[reportType(row)]);
@@ -156,7 +165,7 @@ function renderReports(){
 }
 
 function feedbackRows(){
-  return state.rows.feedback.filter(row=>{
+  return withoutTestRows(state.rows.feedback).filter(row=>{
     const status=row.status||'new';
     const filterOk=state.filter==='all'||(state.filter==='pending'?['new','in_progress','waiting_user'].includes(status):status===state.filter);
     return filterOk&&includesQuery(row.id,row.nickname,row.email,row.category,row.content,row.platform,row.version);
@@ -183,8 +192,8 @@ function renderUsers(){
   const rows=userRows();
   return `<div class="workspace ${state.selection?.type==='user'?'with-detail':''}">
     <section class="panel">
-      <div class="panel-heading"><div><h2>用户列表</h2><p>共 ${state.rows.users.length} 个账号</p></div><div class="panel-tools"><input class="toolbar-search" data-search value="${esc(state.query)}" placeholder="搜索昵称、编号或账号"></div></div>
-      ${rows.length?`<div class="table-wrap"><table class="data-table"><colgroup><col style="width:28%"><col style="width:24%"><col style="width:24%"><col></colgroup><thead><tr><th>用户</th><th>实验品编号</th><th>账号状态</th><th>注册时间</th></tr></thead><tbody>${rows.map(row=>`<tr data-select-type="user" data-select-id="${esc(row.id)}" class="${isSelected('user',row.id)?'selected':''}"><td><strong class="ellipsis">${esc(row.nickname||'研究员')}</strong><small class="ellipsis">${esc(row.id)}</small></td><td>${esc(row.lab_code||'未设置')}</td><td>${userStatusBadge(row)}</td><td>${esc(fmt(row.created_at))}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state">没有符合条件的用户。</div>'}
+      <div class="panel-heading"><div><h2>用户列表</h2><p>共 ${state.rows.users.length} 个账号，测试账号会单独标记</p></div><div class="panel-tools"><input class="toolbar-search" data-search value="${esc(state.query)}" placeholder="搜索昵称、编号或账号"></div></div>
+      ${rows.length?`<div class="table-wrap"><table class="data-table"><colgroup><col style="width:28%"><col style="width:24%"><col style="width:24%"><col></colgroup><thead><tr><th>用户</th><th>实验品编号</th><th>账号状态</th><th>最近登录</th></tr></thead><tbody>${rows.map(row=>`<tr data-select-type="user" data-select-id="${esc(row.id)}" class="${isSelected('user',row.id)?'selected':''}"><td><strong class="ellipsis">${esc(row.nickname||'研究员')} ${row.is_test_account?'<span class="inline-tag">测试</span>':''}</strong><small class="ellipsis">${esc(row.email_search||row.id)}</small></td><td>${esc(row.lab_code||'未设置')}</td><td>${userStatusBadge(row)}</td><td>${esc(fmt(row.last_sign_in_at))}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state">没有符合条件的用户。</div>'}
     </section>
     ${state.selection?.type==='user'?renderUserDetail(state.selection.row):''}
   </div>`;
@@ -192,7 +201,7 @@ function renderUsers(){
 
 function contentRows(){
   const rows=state.rows[state.contentType]||[];
-  return rows.filter(row=>includesQuery(row.id,row.content,row.game_name,row.note,row.nickname,profileOf(row).nickname,row.room_key,row.status));
+  return withoutTestRows(rows).filter(row=>includesQuery(row.id,row.title,row.content,row.game_name,row.note,row.nickname,profileOf(row).nickname,row.room_key,row.status,row.post_title));
 }
 
 function renderContent(){
@@ -200,7 +209,7 @@ function renderContent(){
   return `<div class="workspace ${state.selection?.type==='content'?'with-detail':''}">
     <section class="panel">
       <div class="panel-heading"><div><h2>内容列表</h2><p>管理公开内容和互动消息</p></div><div class="panel-tools"><input class="toolbar-search" data-search value="${esc(state.query)}" placeholder="搜索用户或内容"></div></div>
-      <div class="filter-row">${contentButton('posts','帖子')}${contentButton('comments','评论')}${contentButton('chats','房间消息')}${contentButton('parties','下班开黑')}</div>
+      <div class="filter-row">${contentButton('posts','广场帖子')}${contentButton('comments','广场评论')}${contentButton('birdPosts','树洞帖子')}${contentButton('birdComments','树洞评论')}${contentButton('polls','投票')}${contentButton('chats','房间消息')}${contentButton('parties','组队房间')}${contentButton('partyMessages','组队留言')}</div>
       ${rows.length?renderContentTable(rows):'<div class="empty-state">当前分类暂无内容。</div>'}
     </section>
     ${state.selection?.type==='content'?renderContentDetail(state.selection.row,state.selection.kind):''}
@@ -212,11 +221,12 @@ function renderContentTable(rows){
     const kind=state.contentType;
     const profile=profileOf(row);
     const owner=row.nickname||row.captain_name||profile.nickname||'未知用户';
-    const content=kind==='parties'?`${row.game_name||'未命名游戏'}${row.mode?` · ${row.mode}`:''}${row.note?` · ${row.note}`:''}`:(row.content||'');
+    const content=kind==='parties'?`${row.game_name||'未命名游戏'}${row.mode?` · ${row.mode}`:''}${row.note?` · ${row.note}`:''}`:kind==='polls'?row.title:kind==='birdPosts'?`${row.title||'无标题'} · ${row.content||''}`:(row.content||'');
     const deleted=Boolean(row.is_deleted);
     const label=kind==='parties'?(row.status||'open'):(deleted?'已删除':'正常');
     const badge=kind==='parties'?statusBadge(row.status||'open',partyStatus(row.status)):statusBadge(deleted?'deleted':'normal',label);
-    return `<tr data-select-type="content" data-select-kind="${kind}" data-select-id="${esc(row.id)}" class="${isSelected('content',row.id,kind)?'selected':''}"><td><strong class="ellipsis">${esc(owner)}</strong><small>${esc(kindLabel(kind))}</small></td><td><strong class="wrap-text">${esc(short(content,145))}</strong>${kind==='comments'?`<small class="wrap-text">原帖：${esc(short(row.posts?.content||'',70))}</small>`:''}</td><td>${badge}</td><td>${esc(fmt(row.created_at))}</td></tr>`;
+    const source=kind==='comments'?`原帖：${short(row.posts?.content||'',70)}`:kind==='birdComments'?`树洞：${short(row.post_title||'',70)}`:kind==='partyMessages'?`房间：${row.game_name||row.party_id}`:kind==='polls'?`${row.option_count||0} 个选项`:'';
+    return `<tr data-select-type="content" data-select-kind="${kind}" data-select-id="${esc(row.id)}" class="${isSelected('content',row.id,kind)?'selected':''}"><td><strong class="ellipsis">${esc(owner)}</strong><small>${esc(kindLabel(kind))}</small></td><td><strong class="wrap-text">${esc(short(content,145))}</strong>${source?`<small class="wrap-text">${esc(source)}</small>`:''}</td><td>${badge}</td><td>${esc(fmt(row.created_at))}</td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
 
@@ -231,8 +241,8 @@ function isSelected(type,id,kind=''){return state.selection?.type===type&&String
 function reportStatusLabel(value){return value==='resolved'?'已处理':value==='ignored'?'已忽略':'待处理';}
 function userStatusBadge(row){if(row.role==='admin')return statusBadge('in_progress','管理员');if(row.is_banned)return statusBadge('banned','已封禁');if(row.muted_until&&new Date(row.muted_until).getTime()>Date.now())return statusBadge('pending',`禁言至 ${fmt(row.muted_until)}`);return statusBadge('normal','正常');}
 function partyStatus(value){return ({open:'可加入',full:'已满员',closed:'已结束',cancelled:'已取消'})[value]||value||'未知';}
-function kindLabel(value){return ({posts:'帖子',comments:'评论',chats:'房间消息',parties:'下班开黑'})[value]||value;}
-function logBadge(action){return ['ban','mute','delete_post','delete_comment','delete_chat_message','delete_game_party'].includes(action)?'ignored':['unban','unmute','restore_post','restore_comment','restore_chat_message'].includes(action)?'resolved':'in_progress';}
+function kindLabel(value){return ({posts:'广场帖子',comments:'广场评论',birdPosts:'树洞帖子',birdComments:'树洞评论',polls:'投票',chats:'房间消息',parties:'组队房间',partyMessages:'组队留言'})[value]||value;}
+function logBadge(action){return ['ban','mute','delete_post','delete_comment','delete_chat_message','delete_bird_post','delete_bird_comment','delete_poll','delete_game_party_message','delete_game_party','delete_account'].includes(action)?'ignored':['unban','unmute','restore_post','restore_comment','restore_chat_message','restore_bird_post','restore_bird_comment','restore_poll'].includes(action)?'resolved':'in_progress';}
 
 function detailShell(title,subtitle,body,actions=''){
   return `<aside class="panel detail-panel"><div class="detail-head"><div><h2>${esc(title)}</h2><p>${esc(subtitle)}</p></div><button class="icon-button" type="button" data-close-detail aria-label="关闭详情">×</button></div><div class="detail-body">${body}</div>${actions?`<div class="detail-actions">${actions}</div>`:''}</aside>`;
@@ -263,19 +273,23 @@ function renderFeedbackDetail(row){
 
 function renderUserDetail(row){
   const body=`
-    <div class="detail-block"><h3>账号状态</h3><p>${userStatusBadge(row)}</p></div>
-    <div class="detail-block"><h3>用户资料</h3><p>${esc(row.nickname||'研究员')}<br>实验品编号：${esc(row.lab_code||'未设置')}<br><small>${esc(row.id)}</small></p></div>
-    <div class="detail-block"><h3>注册时间</h3><p>${esc(fmt(row.created_at))}</p></div>`;
-  const actions=row.role==='admin'?'<span class="badge in_progress">管理员账号不可处罚</span>':`<button class="button danger-solid" type="button" data-action="user" data-id="${esc(row.id)}">调整账号状态</button>`;
+    <div class="detail-block"><h3>账号状态</h3><p>${userStatusBadge(row)} ${row.is_test_account?statusBadge('test','测试账号'):''}</p></div>
+    <div class="detail-block"><h3>用户资料</h3><p>${esc(row.nickname||'研究员')}<br>实验品编号：${esc(row.lab_code||'未设置')}<br>登录账号：${esc(row.email_search||'未记录')}<br><small>${esc(row.id)}</small></p></div>
+    <div class="detail-block"><h3>账号时间</h3><p>注册：${esc(fmt(row.created_at))}<br>最近登录：${esc(fmt(row.last_sign_in_at))}</p></div>
+    <div class="user-stat-grid"><div><strong>${Number(row.post_count||0)}</strong><span>公开发布</span></div><div><strong>${Number(row.comment_count||0)}</strong><span>互动内容</span></div><div><strong>${Number(row.report_count||0)}</strong><span>被举报</span></div><div><strong>${Number(row.moderation_count||0)}</strong><span>处理记录</span></div></div>
+    ${row.role==='admin'?'':`<div class="danger-note"><strong>永久删除账号</strong><span>将删除登录账号及其关联内容、会话和文件，无法恢复。</span></div>`}`;
+  const actions=row.role==='admin'?'<span class="badge in_progress">管理员账号不可处罚或删除</span>':`<button class="button danger-solid" type="button" data-action="user" data-id="${esc(row.id)}">调整账号状态</button><button class="button danger" type="button" data-action="user-delete" data-id="${esc(row.id)}">永久删除账号</button>`;
   return detailShell(row.nickname||'用户详情',row.lab_code||'未设置编号',body,actions);
 }
 
 function renderContentDetail(row,kind){
   const profile=profileOf(row);
   const owner=row.nickname||row.captain_name||profile.nickname||'未知用户';
-  const content=kind==='parties'?`${row.game_name||'未命名游戏'}\n游戏模式：${row.mode||'未填写'}\n开黑时间：${row.starts_at_text||'未填写'}\n备注：${row.note||'无'}`:(row.content||'');
-  const body=`<div class="detail-block"><h3>发布用户</h3><p>${esc(owner)}<br><small>${esc(row.user_id||row.captain_id||'')}</small></p></div><div class="detail-block"><h3>${esc(kindLabel(kind))}内容</h3><div class="detail-content">${esc(content)}</div></div><div class="detail-block"><h3>发布时间</h3><p>${esc(fmt(row.created_at))}</p></div>`;
-  const actions=`<button class="button ${kind==='parties'||!row.is_deleted?'danger-solid':'primary'}" type="button" data-action="content" data-kind="${esc(kind)}" data-id="${esc(row.id)}">${kind==='parties'?'删除组队房间':row.is_deleted?'恢复内容':'删除内容'}</button>`;
+  const content=kind==='parties'?`${row.game_name||'未命名游戏'}\n游戏模式：${row.mode||'未填写'}\n开黑时间：${row.starts_at_text||'未填写'}\n备注：${row.note||'无'}`:kind==='polls'?`${row.title||'无标题'}\n选项数：${row.option_count||0}\n截止时间：${fmt(row.ends_at)}\n结论：${row.conclusion||'暂无'}`:kind==='birdPosts'?`${row.title||'无标题'}\n${row.content||''}`:(row.content||'');
+  const extra=kind==='birdComments'?`<div class="detail-block"><h3>所属树洞</h3><p>${esc(row.post_title||`#${row.post_id}`)}</p></div>`:kind==='partyMessages'?`<div class="detail-block"><h3>所属房间</h3><p>${esc(row.game_name||`#${row.party_id}`)}</p></div>`:'';
+  const body=`<div class="detail-block"><h3>发布用户</h3><p>${esc(owner)}<br><small>${esc(row.user_id||row.captain_id||'')}</small></p></div><div class="detail-block"><h3>${esc(kindLabel(kind))}内容</h3><div class="detail-content">${esc(content)}</div></div>${extra}<div class="detail-block"><h3>发布时间</h3><p>${esc(fmt(row.created_at))}</p></div>`;
+  const hardDelete=kind==='parties'||kind==='partyMessages';
+  const actions=`<button class="button ${hardDelete||!row.is_deleted?'danger-solid':'primary'}" type="button" data-action="content" data-kind="${esc(kind)}" data-id="${esc(row.id)}">${hardDelete?(kind==='parties'?'删除组队房间':'删除组队留言'):row.is_deleted?'恢复内容':'删除内容'}</button>`;
   return detailShell(`${kindLabel(kind)} #${row.id}`,owner,body,actions);
 }
 
@@ -336,20 +350,40 @@ function openUserAction(row){
     }});
 }
 
+function openDeleteUserAction(row){
+  const confirmation=row.lab_code||row.id;
+  openDialog({title:'永久删除账号',description:`${row.nickname||'用户'} · 此操作无法恢复`,danger:true,submitLabel:'永久删除',body:`
+    <div class="dialog-warning"><strong>将永久删除：</strong><span>登录账号、个人资料、帖子评论、聊天消息、组队数据以及存储文件。处理记录会保留。</span></div>
+    <label class="field">删除原因<textarea name="reason" maxlength="240" required>用户申请注销账号</textarea></label>
+    <label class="field">输入账号编号确认<small>请输入：${esc(confirmation)}</small><input name="confirmCode" autocomplete="off" required></label>
+    <label class="field">最后确认<small>请输入：永久删除</small><input name="confirmText" autocomplete="off" required></label>`,onSubmit:data=>{
+      const confirmCode=String(data.get('confirmCode')||'').trim();
+      const confirmText=String(data.get('confirmText')||'').trim();
+      if(confirmCode!==confirmation)throw new Error('账号编号不匹配，请重新确认。');
+      if(confirmText!=='永久删除')throw new Error('请输入“永久删除”完成确认。');
+      return adminApi.deleteUserAccount({targetUserId:row.id,confirmCode,confirmText,reason:String(data.get('reason')||'').trim()});
+    }});
+}
+
 function openContentAction(row,kind){
-  const isParty=kind==='parties';
-  const remove=isParty?true:!row.is_deleted;
-  openDialog({title:isParty?'删除组队房间':remove?'删除内容':'恢复内容',description:`${kindLabel(kind)} #${row.id}`,danger:remove,submitLabel:isParty?'确认删除':remove?'确认删除':'确认恢复',body:`<label class="field">处理原因<textarea name="reason" maxlength="240" required>${isParty?'组队房间违规，管理员删除':remove?'内容不适合公开展示':'内容复核后恢复'}</textarea></label>${isParty?'':'<label class="checkbox-field"><input name="publicVisible" type="checkbox">同步到公开处理公告</label>'}`,onSubmit:data=>{
+  const hardDelete=kind==='parties'||kind==='partyMessages';
+  const remove=hardDelete?true:!row.is_deleted;
+  const title=kind==='parties'?'删除组队房间':kind==='partyMessages'?'删除组队留言':remove?'删除内容':'恢复内容';
+  openDialog({title,description:`${kindLabel(kind)} #${row.id}`,danger:remove,submitLabel:hardDelete?'确认删除':remove?'确认删除':'确认恢复',body:`<label class="field">处理原因<textarea name="reason" maxlength="240" required>${hardDelete?'内容违规，管理员删除':remove?'内容不适合公开展示':'内容复核后恢复'}</textarea></label>${kind==='parties'?'':'<label class="checkbox-field"><input name="publicVisible" type="checkbox">同步到公开处理公告</label>'}`,onSubmit:data=>{
     const reason=String(data.get('reason')||'').trim();
-    if(isParty)return adminApi.moderateParty({id:row.id,reason});
-    return moderateContent(kind.slice(0,-1),row,remove,reason,Boolean(data.get('publicVisible')));
+    if(kind==='parties')return adminApi.moderateParty({id:row.id,reason});
+    if(kind==='partyMessages')return adminApi.deletePartyMessage({id:row.id,reason,publicVisible:Boolean(data.get('publicVisible'))});
+    return moderateContent(kind,row,remove,reason,Boolean(data.get('publicVisible')));
   }});
 }
 
 async function moderateContent(type,row,remove,reason,publicVisible){
-  if(type==='post')return adminApi.moderatePost({id:row.message_id||row.id,remove,reason,publicVisible});
-  if(type==='comment')return adminApi.moderateComment({id:row.message_id||row.id,remove,reason,publicVisible});
-  if(type==='chat_message'||type==='chat')return adminApi.moderateChat({id:row.message_id||row.id,remove,reason,publicVisible});
+  if(type==='post'||type==='posts')return adminApi.moderatePost({id:row.message_id||row.id,remove,reason,publicVisible});
+  if(type==='comment'||type==='comments')return adminApi.moderateComment({id:row.message_id||row.id,remove,reason,publicVisible});
+  if(type==='chat_message'||type==='chat'||type==='chats')return adminApi.moderateChat({id:row.message_id||row.id,remove,reason,publicVisible});
+  if(type==='birdPosts')return adminApi.moderateBirdPost({id:row.id,remove,reason,publicVisible});
+  if(type==='birdComments')return adminApi.moderateBirdComment({id:row.id,remove,reason,publicVisible});
+  if(type==='polls')return adminApi.moderatePoll({id:row.id,remove,reason,publicVisible});
 }
 
 async function loadAll({quiet=false}={}){
@@ -357,9 +391,10 @@ async function loadAll({quiet=false}={}){
   try{
     const results=await Promise.allSettled([
       adminApi.listUsers(),adminApi.listReports(),adminApi.listFeedback(),adminApi.listPosts(),
-      adminApi.listComments(),adminApi.listChats(),adminApi.listParties(),adminApi.listLogs()
+      adminApi.listComments(),adminApi.listChats(),adminApi.listParties(),adminApi.listBirdPosts(),
+      adminApi.listBirdComments(),adminApi.listPolls(),adminApi.listPartyMessages(),adminApi.listLogs()
     ]);
-    const keys=['users','reports','feedback','posts','comments','chats','parties','logs'];
+    const keys=['users','reports','feedback','posts','comments','chats','parties','birdPosts','birdComments','polls','partyMessages','logs'];
     const failures=[];
     results.forEach((result,index)=>{if(result.status==='fulfilled')state.rows[keys[index]]=result.value||[];else failures.push(result.reason?.message||`${keys[index]}读取失败`);});
     if(failures.length)toast(failures[0],true);
@@ -393,6 +428,7 @@ document.addEventListener('click',async event=>{
   const nav=event.target.closest('[data-nav]');
   if(nav){state.view=nav.dataset.nav;state.query='';state.filter=state.view==='feedback'||state.view==='reports'?'pending':'all';state.selection=null;shellView();return;}
   if(event.target.closest('[data-refresh]')){refresh().catch(error=>toast(error.message||'刷新失败。',true));return;}
+  if(event.target.closest('[data-toggle-tests]')){state.showTestData=!state.showTestData;state.selection=null;shellView();return;}
   if(event.target.closest('[data-logout]')){setBusy(true,'正在退出…');try{await adminApi.signOut();state.admin=null;state.rows=emptyRows();loginView();}catch(error){toast(error.message,true);}finally{setBusy(false);}return;}
   const filter=event.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;state.selection=null;shellView();return;}
   const content=event.target.closest('[data-content-type]');if(content){state.contentType=content.dataset.contentType;state.selection=null;shellView();return;}
@@ -401,7 +437,7 @@ document.addEventListener('click',async event=>{
   if(event.target.closest('[data-close-detail]')){state.selection=null;shellView();return;}
   if(event.target.closest('[data-dialog-close]')){dialog.close();dialogSubmit=null;return;}
   const action=event.target.closest('[data-action]');
-  if(action){const kind=action.dataset.action;const row=findRow(kind==='content'?'content':kind,action.dataset.id,action.dataset.kind||'');if(!row)return;if(kind==='report')openReportAction(row);if(kind==='feedback')openFeedbackAction(row);if(kind==='user')openUserAction(row);if(kind==='content')openContentAction(row,action.dataset.kind);}
+  if(action){const kind=action.dataset.action;const lookup=kind==='content'?'content':kind==='user-delete'?'user':kind;const row=findRow(lookup,action.dataset.id,action.dataset.kind||'');if(!row)return;if(kind==='report')openReportAction(row);if(kind==='feedback')openFeedbackAction(row);if(kind==='user')openUserAction(row);if(kind==='user-delete')openDeleteUserAction(row);if(kind==='content')openContentAction(row,action.dataset.kind);}
 });
 
 document.addEventListener('input',event=>{
