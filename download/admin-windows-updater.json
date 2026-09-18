@@ -1,0 +1,11 @@
+{
+  "pub_date": "2026-09-18T08:56:32.2213015Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWllGa1p4YkUrVUl2Q0N2NWRreTFKRVpBMXdCWmg4UGhJTGNwNDVBU3BRKzN2M3JBdlJudGNmMDZkalI4ajdPWFd4cG94SEJQalBqZVArM2JBTitvTHdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5NzIxNzg2CWZpbGU6RlfnrqHnkIblj7BfNi4wLjFfeDY0LXNldHVwLmV4ZQpJRlo2V2d2eHBjRHQ5Z3ZqMVFjaW9WUGNOdDFzazNBUEdOTm5UU0NSWkJhbFUzZVAwdlJNTDVydmxGNzU2d3p1cHlaYm11SjFPU0w2YzIrQ1EvRjVCQT09Cg==",
+      "url": "https://github.com/sanpen711/fw-lab/releases/download/fw-admin-v6.0.1/FW-Admin-6.0.1-Windows-x64-Setup.exe"
+    }
+  },
+  "version": "6.0.1",
+  "notes": "管理台自动更新基线版：启动检测新版本，显示下载、校验和安装阶段，完成后自动重启。"
+}
