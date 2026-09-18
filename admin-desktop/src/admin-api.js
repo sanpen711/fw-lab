@@ -62,6 +62,10 @@ async function listFeedback(){
   return rpc('admin_list_feedback_tickets',{},'读取问题反馈失败');
 }
 
+async function listMemberships(){
+  return rpc('admin_list_memberships',{},'读取会员列表失败');
+}
+
 async function listPosts(){
   return fail(await client.from('posts')
     .select('id,user_id,content,is_deleted,created_at,profiles(nickname,avatar_url,lab_code)')
@@ -130,14 +134,31 @@ async function resolveReport({id,status,reason,publicVisible=false}){
   return rpc('admin_resolve_chat_report',{p_report_id:Number(id),p_status:status,p_reason:reason,p_public_visible:publicVisible},'处理举报失败');
 }
 
-async function updateFeedback({id,status,priority,reply,note}){
+async function updateFeedback({id,status,priority,note}){
   return rpc('admin_update_feedback_ticket',{
     p_ticket_id:Number(id),
     p_status:status,
     p_priority:priority,
-    p_admin_reply:reply||'',
+    p_admin_reply:'',
     p_internal_note:note||''
   },'更新反馈失败');
+}
+
+async function grantMembership({userId,months=0,days=0,planId=null,reason}){
+  return rpc('admin_grant_membership',{
+    p_user_id:userId,
+    p_months:Number(months)||0,
+    p_days:Number(days)||0,
+    p_plan_id:planId||null,
+    p_reason:reason||'管理员手动开通或续期会员'
+  },'增加会员时间失败');
+}
+
+async function cancelMembership({userId,reason}){
+  return rpc('admin_cancel_membership',{
+    p_user_id:userId,
+    p_reason:reason||'管理员取消会员'
+  },'取消会员失败');
 }
 
 async function moderateParty({id,reason}){
@@ -177,9 +198,9 @@ async function deleteUserAccount({targetUserId,confirmCode,confirmText,reason}){
 }
 
 export const adminApi={
-  client,restoreAdmin,signIn,signOut,listUsers,listReports,listFeedback,listPosts,listComments,listChats,listParties,
+  client,restoreAdmin,signIn,signOut,listUsers,listReports,listFeedback,listMemberships,listPosts,listComments,listChats,listParties,
   listBirdPosts,listBirdComments,listPolls,listPartyMessages,listLogs,
   moderateUser,moderatePost,moderateComment,moderateChat,resolveReport,updateFeedback,moderateParty,
-  moderateBirdPost,moderateBirdComment,moderatePoll,deletePartyMessage,deleteUserAccount,
+  moderateBirdPost,moderateBirdComment,moderatePoll,deletePartyMessage,deleteUserAccount,grantMembership,cancelMembership,
   onAuthStateChange(callback){return client.auth.onAuthStateChange((event)=>callback(event));}
 };

@@ -104,6 +104,9 @@ button:disabled{cursor:not-allowed;opacity:.55}
 .badge{display:inline-flex;align-items:center;min-height:24px;border-radius:999px;padding:3px 9px;background:#eef0f3;color:#555a62;font-size:12px;font-weight:700;white-space:nowrap}
 .badge.pending,.badge.high{background:var(--warning-soft);color:var(--warning)}
 .badge.resolved,.badge.normal,.badge.closed{background:var(--success-soft);color:var(--success)}
+.badge.active{background:var(--success-soft);color:var(--success)}
+.badge.expired,.badge.none{background:#eef0f3;color:#666b73}
+.badge.cancelled{background:var(--accent-soft);color:var(--accent)}
 .badge.ignored,.badge.deleted,.badge.banned{background:var(--accent-soft);color:var(--accent)}
 .badge.in_progress,.badge.medium{background:var(--blue-soft);color:var(--blue)}
 .badge.test{background:#f0eafa;color:#69449b}
@@ -127,6 +130,7 @@ button:disabled{cursor:not-allowed;opacity:.55}
 .user-stat-grid span{display:block;color:var(--muted);font-size:12px}
 .danger-note,.dialog-warning{display:grid;gap:4px;border:1px solid #efd0d0;border-radius:9px;background:#fff8f8;padding:11px 12px;color:#8d3131}
 .danger-note span,.dialog-warning span{font-size:12px;line-height:1.6}
+.dialog-note{border:1px solid #dbe3ee;border-radius:9px;background:#f7f9fc;padding:11px 12px;color:#4f5968;font-size:13px;line-height:1.6}
 .todo-list{display:grid}
 .todo-row{display:grid;grid-template-columns:100px minmax(0,1fr) 120px;gap:14px;align-items:center;border-bottom:1px solid var(--line);padding:13px 16px;cursor:pointer}
 .todo-row:last-child{border-bottom:0}

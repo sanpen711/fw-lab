@@ -54,7 +54,7 @@ jobs:
       - name: Upload private installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-admin-windows-0.2.0
+          name: fw-admin-windows-0.3.0
           path: admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
           if-no-files-found: error
           retention-days: 30
@@ -65,17 +65,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $source = Get-ChildItem "admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe" | Select-Object -First 1
-          $installer = Join-Path $source.DirectoryName "FW-Admin-0.2.0-Windows-x64-Setup.exe"
+          $installer = Join-Path $source.DirectoryName "FW-Admin-0.3.0-Windows-x64-Setup.exe"
           Copy-Item $source.FullName $installer -Force
 
-          gh release view fw-admin-v0.2.0 --repo "${{ github.repository }}" *> $null
+          gh release view fw-admin-v0.3.0 --repo "${{ github.repository }}" *> $null
           if ($LASTEXITCODE -eq 0) {
-            gh release upload fw-admin-v0.2.0 $installer --clobber --repo "${{ github.repository }}"
+            gh release upload fw-admin-v0.3.0 $installer --clobber --repo "${{ github.repository }}"
           } else {
-            gh release create fw-admin-v0.2.0 $installer `
+            gh release create fw-admin-v0.3.0 $installer `
               --repo "${{ github.repository }}" `
               --target "${{ github.sha }}" `
-              --title "FW管理台 0.2.0" `
-              --notes "新增安全账号删除、完整内容管理、测试数据隐藏和增强用户详情。" `
+              --title "FW管理台 0.3.0" `
+              --notes "问题反馈改为仅接收和内部处理；新增会员时间增加、取消与操作记录。" `
               --prerelease
           }

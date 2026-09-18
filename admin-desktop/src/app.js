@@ -5,15 +5,16 @@ const app=document.querySelector('#app');
 const toastHost=document.querySelector('#toast');
 const dialog=document.querySelector('#action-dialog');
 
-const emptyRows=()=>({users:[],reports:[],feedback:[],posts:[],comments:[],chats:[],parties:[],birdPosts:[],birdComments:[],polls:[],partyMessages:[],logs:[]});
+const emptyRows=()=>({users:[],reports:[],feedback:[],memberships:[],posts:[],comments:[],chats:[],parties:[],birdPosts:[],birdComments:[],polls:[],partyMessages:[],logs:[]});
 const state={admin:null,ready:false,busy:false,error:'',view:'dashboard',query:'',filter:'pending',contentType:'posts',showTestData:false,selection:null,rows:emptyRows()};
 let dialogSubmit=null;
 
 const viewMeta={
   dashboard:['工作台','优先处理举报和用户反馈'],
   reports:['举报中心','统一处理用户、帖子、评论和房间消息举报'],
-  feedback:['问题反馈','查看问题、建议并向用户回复'],
+  feedback:['问题反馈','接收问题和建议，记录内部处理结果'],
   users:['用户管理','搜索账号并处理禁言和封禁'],
+  memberships:['会员管理','为用户增加会员时间或取消会员'],
   content:['内容管理','统一管理广场、树洞、投票、房间和组队内容'],
   logs:['处理记录','查看所有管理操作和公开状态']
 };
@@ -25,11 +26,14 @@ const actionText={
   delete_bird_post:'删除树洞帖子',restore_bird_post:'恢复树洞帖子',
   delete_bird_comment:'删除树洞评论',restore_bird_comment:'恢复树洞评论',
   delete_poll:'删除投票',restore_poll:'恢复投票',delete_game_party_message:'删除组队留言',
-  delete_account:'永久删除账号',ignore_report:'忽略举报',delete_game_party:'删除组队房间',feedback_update:'更新反馈',system_note:'系统记录'
+  delete_account:'永久删除账号',ignore_report:'忽略举报',delete_game_party:'删除组队房间',feedback_update:'更新反馈',
+  grant_membership:'增加会员时间',cancel_membership:'取消会员',system_note:'系统记录'
 };
 const reportTypeText={post:'精神广场帖子',comment:'精神广场评论',user:'用户 / 搭子',chat_message:'房间消息'};
-const feedbackStatusText={new:'未处理',in_progress:'处理中',waiting_user:'等待用户',resolved:'已解决',closed:'已关闭'};
+const feedbackStatusText={new:'未处理',in_progress:'处理中',waiting_user:'处理中',resolved:'已解决',closed:'已关闭'};
 const priorityText={low:'低',normal:'普通',medium:'中',high:'高'};
+const membershipStatusText={none:'未开通',active:'有效会员',expired:'已到期',cancelled:'已取消'};
+const membershipSourceText={payment:'用户购买',manual:'管理员操作',gift:'赠送',migration:'历史迁移'};
 
 function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
 function short(value,max=90){const text=String(value||'').replace(/\s+/g,' ').trim();return text.length>max?`${text.slice(0,max)}…`:text;}
@@ -42,7 +46,7 @@ function includesQuery(...values){const query=state.query.trim().toLowerCase();r
 function userById(id){return id?state.rows.users.find(row=>String(row.id)===String(id)):null;}
 function isTestRow(row){
   const ids=[row?.user_id,row?.target_user_id,row?.reporter_id,row?.captain_id];
-  return ids.some(id=>userById(id)?.is_test_account)||String(row?.content||row?.message_content||'').startsWith('[FW-AUTO-TEST]');
+  return Boolean(row?.is_test_account)||ids.some(id=>userById(id)?.is_test_account)||String(row?.content||row?.message_content||'').startsWith('[FW-AUTO-TEST]');
 }
 function withoutTestRows(rows){return state.showTestData?rows:rows.filter(row=>!isTestRow(row));}
 
@@ -99,8 +103,9 @@ function shellView(){
           ${navButton('reports','02','举报中心',reportCount,reportCount>0)}
           ${navButton('feedback','03','问题反馈',feedbackCount,feedbackCount>0)}
           ${navButton('users','04','用户管理')}
-          ${navButton('content','05','内容管理')}
-          ${navButton('logs','06','处理记录')}
+          ${navButton('memberships','05','会员管理')}
+          ${navButton('content','06','内容管理')}
+          ${navButton('logs','07','处理记录')}
         </nav>
         <div class="sidebar-user"><strong>${esc(state.admin.nickname)}</strong><span>${esc(state.admin.email)}</span><button type="button" data-logout>退出登录</button></div>
       </aside>
@@ -119,6 +124,7 @@ function renderPage(){
   if(state.view==='reports')return renderReports();
   if(state.view==='feedback')return renderFeedback();
   if(state.view==='users')return renderUsers();
+  if(state.view==='memberships')return renderMemberships();
   if(state.view==='content')return renderContent();
   return renderLogs();
 }
@@ -199,6 +205,22 @@ function renderUsers(){
   </div>`;
 }
 
+function membershipRows(){
+  return withoutTestRows(state.rows.memberships).filter(row=>includesQuery(row.user_id,row.nickname,row.lab_code,row.email_search,row.plan_name,membershipStatusText[row.status]));
+}
+
+function renderMemberships(){
+  const rows=membershipRows();
+  const active=withoutTestRows(state.rows.memberships).filter(row=>row.is_active).length;
+  return `<div class="workspace ${state.selection?.type==='membership'?'with-detail':''}">
+    <section class="panel">
+      <div class="panel-heading"><div><h2>会员用户</h2><p>当前有效 ${active} 人；可搜索任意用户开通或续期</p></div><div class="panel-tools"><input class="toolbar-search" data-search value="${esc(state.query)}" placeholder="搜索昵称、编号或账号"></div></div>
+      ${rows.length?`<div class="table-wrap"><table class="data-table"><colgroup><col style="width:28%"><col style="width:20%"><col style="width:27%"><col></colgroup><thead><tr><th>用户</th><th>会员状态</th><th>到期时间</th><th>剩余时间</th></tr></thead><tbody>${rows.map(row=>`<tr data-select-type="membership" data-select-id="${esc(row.user_id)}" class="${isSelected('membership',row.user_id)?'selected':''}"><td><strong class="ellipsis">${esc(row.nickname||'研究员')} ${row.is_test_account?'<span class="inline-tag">测试</span>':''}</strong><small class="ellipsis">${esc(row.lab_code||row.email_search||row.user_id)}</small></td><td>${membershipStatusBadge(row)}<small>${esc(row.plan_name||'无套餐')}</small></td><td>${esc(fmt(row.expires_at))}</td><td>${row.is_active?`<strong>${Number(row.remaining_days||0)} 天</strong><small>有效期内</small>`:'—'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state">没有符合条件的用户。</div>'}
+    </section>
+    ${state.selection?.type==='membership'?renderMembershipDetail(state.selection.row):''}
+  </div>`;
+}
+
 function contentRows(){
   const rows=state.rows[state.contentType]||[];
   return withoutTestRows(rows).filter(row=>includesQuery(row.id,row.title,row.content,row.game_name,row.note,row.nickname,profileOf(row).nickname,row.room_key,row.status,row.post_title));
@@ -237,9 +259,10 @@ function renderLogs(){
 
 function filterButton(value,label){return `<button class="filter-button ${state.filter===value?'active':''}" type="button" data-filter="${value}">${label}</button>`;}
 function contentButton(value,label){return `<button class="filter-button ${state.contentType===value?'active':''}" type="button" data-content-type="${value}">${label}</button>`;}
-function isSelected(type,id,kind=''){return state.selection?.type===type&&String(state.selection?.row?.id)===String(id)&&(!kind||state.selection?.kind===kind);}
+function isSelected(type,id,kind=''){const selectedId=type==='membership'?state.selection?.row?.user_id:state.selection?.row?.id;return state.selection?.type===type&&String(selectedId)===String(id)&&(!kind||state.selection?.kind===kind);}
 function reportStatusLabel(value){return value==='resolved'?'已处理':value==='ignored'?'已忽略':'待处理';}
 function userStatusBadge(row){if(row.role==='admin')return statusBadge('in_progress','管理员');if(row.is_banned)return statusBadge('banned','已封禁');if(row.muted_until&&new Date(row.muted_until).getTime()>Date.now())return statusBadge('pending',`禁言至 ${fmt(row.muted_until)}`);return statusBadge('normal','正常');}
+function membershipStatusBadge(row){return statusBadge(row.is_active?'active':row.status||'none',membershipStatusText[row.is_active?'active':row.status||'none']||'未开通');}
 function partyStatus(value){return ({open:'可加入',full:'已满员',closed:'已结束',cancelled:'已取消'})[value]||value||'未知';}
 function kindLabel(value){return ({posts:'广场帖子',comments:'广场评论',birdPosts:'树洞帖子',birdComments:'树洞评论',polls:'投票',chats:'房间消息',parties:'组队房间',partyMessages:'组队留言'})[value]||value;}
 function logBadge(action){return ['ban','mute','delete_post','delete_comment','delete_chat_message','delete_bird_post','delete_bird_comment','delete_poll','delete_game_party_message','delete_game_party','delete_account'].includes(action)?'ignored':['unban','unmute','restore_post','restore_comment','restore_chat_message','restore_bird_post','restore_bird_comment','restore_poll'].includes(action)?'resolved':'in_progress';}
@@ -266,8 +289,7 @@ function renderFeedbackDetail(row){
     <div class="detail-block"><h3>提交用户</h3><p>${esc(row.nickname||'未知用户')}<br><small>${esc(row.email||row.user_id||'')}</small></p></div>
     <div class="detail-block"><h3>反馈内容</h3><div class="detail-content">${esc(row.content||'')}</div></div>
     <div class="detail-block"><h3>来源</h3><p>${esc(row.platform||'未知')} · ${esc(row.version||'未知版本')}<br>${esc(fmt(row.created_at))}</p></div>
-    ${row.admin_reply?`<div class="detail-block"><h3>最近回复</h3><div class="detail-content">${esc(row.admin_reply)}</div></div>`:''}
-    ${row.internal_note?`<div class="detail-block"><h3>内部备注</h3><div class="detail-content">${esc(row.internal_note)}</div></div>`:''}`;
+    ${row.internal_note?`<div class="detail-block"><h3>处理备注</h3><div class="detail-content">${esc(row.internal_note)}</div></div>`:''}`;
   return detailShell(`反馈 #${row.id}`,row.category||'其他反馈',body,`<button class="button primary" type="button" data-action="feedback" data-id="${esc(row.id)}">处理反馈</button>`);
 }
 
@@ -282,6 +304,16 @@ function renderUserDetail(row){
   return detailShell(row.nickname||'用户详情',row.lab_code||'未设置编号',body,actions);
 }
 
+function renderMembershipDetail(row){
+  const body=`
+    <div class="detail-block"><h3>会员状态</h3><p>${membershipStatusBadge(row)} ${row.is_test_account?statusBadge('test','测试账号'):''}</p></div>
+    <div class="detail-block"><h3>用户资料</h3><p>${esc(row.nickname||'研究员')}<br>实验品编号：${esc(row.lab_code||'未设置')}<br>登录账号：${esc(row.email_search||'未记录')}<br><small>${esc(row.user_id)}</small></p></div>
+    <div class="detail-block"><h3>会员时间</h3><p>开始：${esc(fmt(row.starts_at))}<br>到期：${esc(fmt(row.expires_at))}${row.is_active?`<br>剩余：${Number(row.remaining_days||0)} 天`:''}</p></div>
+    <div class="detail-block"><h3>开通信息</h3><p>套餐：${esc(row.plan_name||'未指定')}<br>来源：${esc(membershipSourceText[row.source]||row.source||'未开通')}</p></div>`;
+  const cancel=row.is_active?`<button class="button danger" type="button" data-action="membership-cancel" data-id="${esc(row.user_id)}">取消会员</button>`:'';
+  return detailShell(row.nickname||'会员详情',row.lab_code||'未设置编号',body,`<button class="button primary" type="button" data-action="membership-grant" data-id="${esc(row.user_id)}">增加会员时间</button>${cancel}`);
+}
+
 function renderContentDetail(row,kind){
   const profile=profileOf(row);
   const owner=row.nickname||row.captain_name||profile.nickname||'未知用户';
@@ -294,8 +326,8 @@ function renderContentDetail(row,kind){
 }
 
 function findRow(type,id,kind=''){
-  const list=type==='report'?state.rows.reports:type==='feedback'?state.rows.feedback:type==='user'?state.rows.users:state.rows[kind]||[];
-  return list.find(row=>String(row.id)===String(id))||null;
+  const list=type==='report'?state.rows.reports:type==='feedback'?state.rows.feedback:type==='user'?state.rows.users:type==='membership'?state.rows.memberships:state.rows[kind]||[];
+  return list.find(row=>String(type==='membership'?row.user_id:row.id)===String(id))||null;
 }
 
 function selectRow(type,id,kind=''){
@@ -330,15 +362,36 @@ function openReportAction(row){
 }
 
 function openFeedbackAction(row){
+  const currentStatus=row.status==='waiting_user'?'in_progress':row.status;
   openDialog({title:`处理反馈 #${row.id}`,description:`${row.nickname||'用户'} · ${row.category||'其他'}`,submitLabel:'保存处理结果',body:`
-    <label class="field">处理状态<select name="status">${feedbackOption('new','未处理',row.status)}${feedbackOption('in_progress','处理中',row.status)}${feedbackOption('waiting_user','等待用户回复',row.status)}${feedbackOption('resolved','已解决',row.status)}${feedbackOption('closed','已关闭',row.status)}</select></label>
+    <label class="field">处理状态<select name="status">${feedbackOption('new','未处理',currentStatus)}${feedbackOption('in_progress','处理中',currentStatus)}${feedbackOption('resolved','已解决',currentStatus)}${feedbackOption('closed','已关闭',currentStatus)}</select></label>
     <label class="field">优先级<select name="priority">${priorityOption('low','低',row.priority)}${priorityOption('normal','普通',row.priority)}${priorityOption('medium','中',row.priority)}${priorityOption('high','高',row.priority)}</select></label>
-    <label class="field">回复用户<small>填写后通过“回声”发送系统通知；不回复可留空。</small><textarea name="reply" maxlength="500">${esc(row.admin_reply||'')}</textarea></label>
-    <label class="field">内部备注<small>仅管理员可见。</small><textarea name="note" maxlength="500">${esc(row.internal_note||'')}</textarea></label>`,onSubmit:data=>adminApi.updateFeedback({id:row.id,status:String(data.get('status')),priority:String(data.get('priority')),reply:String(data.get('reply')||'').trim(),note:String(data.get('note')||'').trim()})});
+    <label class="field">处理备注<small>仅管理员可见，不会发送给用户。</small><textarea name="note" maxlength="500">${esc(row.internal_note||'')}</textarea></label>`,onSubmit:data=>adminApi.updateFeedback({id:row.id,status:String(data.get('status')),priority:String(data.get('priority')),note:String(data.get('note')||'').trim()})});
 }
 
 function feedbackOption(value,label,current){return `<option value="${value}" ${(current||'new')===value?'selected':''}>${label}</option>`;}
 function priorityOption(value,label,current){return `<option value="${value}" ${(current||'normal')===value?'selected':''}>${label}</option>`;}
+
+function openMembershipGrantAction(row){
+  openDialog({title:'增加会员时间',description:`${row.nickname||'用户'} · ${row.lab_code||'未设置编号'}`,submitLabel:'确认增加',body:`
+    <div class="dialog-note">已有有效会员会从原到期日继续累加；未开通或已到期则从现在开始。</div>
+    <label class="field">增加时长<select name="duration"><option value="monthly">月度会员 · 增加 1 个月</option><option value="quarterly">季度会员 · 增加 3 个月</option><option value="yearly">年度会员 · 增加 12 个月</option><option value="custom">自定义天数</option></select></label>
+    <label class="field">自定义天数<small>只有选择“自定义天数”时填写，范围 1–730 天。</small><input name="customDays" type="number" min="1" max="730" placeholder="例如：30"></label>
+    <label class="field">操作原因<textarea name="reason" maxlength="240" required>管理员手动开通或续期会员</textarea></label>`,onSubmit:data=>{
+      const duration=String(data.get('duration'));
+      const preset={monthly:{months:1,planId:'monthly'},quarterly:{months:3,planId:'quarterly'},yearly:{months:12,planId:'yearly'}}[duration];
+      if(preset)return adminApi.grantMembership({userId:row.user_id,months:preset.months,days:0,planId:preset.planId,reason:String(data.get('reason')||'').trim()});
+      const days=Number(data.get('customDays'));
+      if(!Number.isInteger(days)||days<1||days>730)throw new Error('自定义天数需要填写 1–730 之间的整数。');
+      return adminApi.grantMembership({userId:row.user_id,months:0,days,planId:null,reason:String(data.get('reason')||'').trim()});
+    }});
+}
+
+function openMembershipCancelAction(row){
+  openDialog({title:'取消会员',description:`${row.nickname||'用户'} · 取消后立即失效`,danger:true,submitLabel:'确认取消',body:`
+    <div class="dialog-warning"><strong>确认取消当前会员？</strong><span>原到期时间会保留在记录中，但会员权益会立即停止；之后仍可重新增加时间。</span></div>
+    <label class="field">取消原因<textarea name="reason" maxlength="240" required>管理员取消会员</textarea></label>`,onSubmit:data=>adminApi.cancelMembership({userId:row.user_id,reason:String(data.get('reason')||'').trim()})});
+}
 
 function openUserAction(row){
   openDialog({title:'调整账号状态',description:`${row.nickname||'用户'} · ${row.lab_code||'未设置编号'}`,danger:true,submitLabel:'确认处理',body:`
@@ -390,11 +443,11 @@ async function loadAll({quiet=false}={}){
   if(!quiet)setBusy(true,'正在同步管理数据…');
   try{
     const results=await Promise.allSettled([
-      adminApi.listUsers(),adminApi.listReports(),adminApi.listFeedback(),adminApi.listPosts(),
+      adminApi.listUsers(),adminApi.listReports(),adminApi.listFeedback(),adminApi.listMemberships(),adminApi.listPosts(),
       adminApi.listComments(),adminApi.listChats(),adminApi.listParties(),adminApi.listBirdPosts(),
       adminApi.listBirdComments(),adminApi.listPolls(),adminApi.listPartyMessages(),adminApi.listLogs()
     ]);
-    const keys=['users','reports','feedback','posts','comments','chats','parties','birdPosts','birdComments','polls','partyMessages','logs'];
+    const keys=['users','reports','feedback','memberships','posts','comments','chats','parties','birdPosts','birdComments','polls','partyMessages','logs'];
     const failures=[];
     results.forEach((result,index)=>{if(result.status==='fulfilled')state.rows[keys[index]]=result.value||[];else failures.push(result.reason?.message||`${keys[index]}读取失败`);});
     if(failures.length)toast(failures[0],true);
@@ -437,7 +490,7 @@ document.addEventListener('click',async event=>{
   if(event.target.closest('[data-close-detail]')){state.selection=null;shellView();return;}
   if(event.target.closest('[data-dialog-close]')){dialog.close();dialogSubmit=null;return;}
   const action=event.target.closest('[data-action]');
-  if(action){const kind=action.dataset.action;const lookup=kind==='content'?'content':kind==='user-delete'?'user':kind;const row=findRow(lookup,action.dataset.id,action.dataset.kind||'');if(!row)return;if(kind==='report')openReportAction(row);if(kind==='feedback')openFeedbackAction(row);if(kind==='user')openUserAction(row);if(kind==='user-delete')openDeleteUserAction(row);if(kind==='content')openContentAction(row,action.dataset.kind);}
+  if(action){const kind=action.dataset.action;const lookup=kind==='content'?'content':kind==='user-delete'?'user':kind.startsWith('membership-')?'membership':kind;const row=findRow(lookup,action.dataset.id,action.dataset.kind||'');if(!row)return;if(kind==='report')openReportAction(row);if(kind==='feedback')openFeedbackAction(row);if(kind==='user')openUserAction(row);if(kind==='user-delete')openDeleteUserAction(row);if(kind==='membership-grant')openMembershipGrantAction(row);if(kind==='membership-cancel')openMembershipCancelAction(row);if(kind==='content')openContentAction(row,action.dataset.kind);}
 });
 
 document.addEventListener('input',event=>{
