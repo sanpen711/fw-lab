@@ -161,8 +161,11 @@ test('搭子和私聊使用本地左右分栏且没有定时轮询',async({page}
 });
 
 test('登录后账号入口打开个人资料并可正常关闭',async({page})=>{
+  await page.route('https://**.supabase.co/rest/v1/profiles**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({id:TEST_USER.id,nickname:'测试研究员',avatar_url:'',lab_code:'FWTEST1'})}));
   await page.goto('/');
-  await page.locator('.account-button[data-open-account] [data-account-label]').click();
+  await page.locator('[data-account-avatar]').click();
+  await expect(page.locator('[data-align-profile-modal]')).toBeVisible();
+  await page.locator('[data-profile-edit]').click();
   await expect(page.locator('[data-account-modal]')).toBeVisible();
   await expect(page.locator('[data-auth-view="profile"]')).toBeVisible();
   await expect(page.locator('[data-auth-view="profile"] input[name="labCode"]')).toBeDisabled();
