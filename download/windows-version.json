@@ -1,11 +1,11 @@
 {
-  "version": "1.2.24",
-  "notes": "Windows 1.2.24：电脑客户端改为强制登录；启动时先验证登录状态，登录成功后才加载客户端内容。",
-  "sha256": "65a0acd50be50fbd70a7c4af2c9d55f368d12a4cc12aaebb1f0691d1ce9b321e",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.24-setup.exe",
-  "publishedAt": "2026-09-18T01:23:29.7328175Z",
+  "available": true,
+  "version": "1.2.25",
   "rollbackVersion": "1.0.5",
-  "platform": "Windows 10/11 64 位",
+  "publishedAt": "2026-09-18T02:39:42.0171654Z",
+  "sha256": "6482e95c8e016db6de208a05492adcbf6bb87abbbf9e1f9b487cec0871b80ea7",
+  "notes": "Windows 1.2.25：优化电脑端强制登录页版式；保留原主题配色，新增品牌展示区并提升表单层级与适配。",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "available": true
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.25-setup.exe",
+  "platform": "Windows 10/11 64 位"
 }
