@@ -9,6 +9,10 @@ const app=read('src/app.js');
 const api=read('src/admin-api.js');
 const css=read('styles.css');
 const tauri=JSON.parse(read('src-tauri/tauri.conf.json'));
+const cargo=read('src-tauri/Cargo.toml');
+const rust=read('src-tauri/src/main.rs');
+const updateUi=read('src-tauri/src/update_ui.js');
+const workflow=read('../.github/workflows/build-windows-admin.yml');
 
 assert.match(html,/FW管理台/,'页面必须使用独立管理台名称');
 assert.match(app,/举报中心/,'管理台必须提供举报中心');
@@ -41,8 +45,19 @@ assert.match(api,/admin-delete-user/,'账号删除必须走受控服务端函数
 assert.doesNotMatch(api,/service[_-]?role/i,'安装包不得包含 service role 密钥');
 assert.match(css,/--bg:#f4f5f7/,'管理台必须使用白色浅灰管理界面');
 assert.equal(tauri.productName,'FW管理台');
+assert.equal(tauri.version,'6.0.1');
 assert.equal(tauri.identifier,'com.fwyanjiusuo.admin');
 assert.equal(tauri.app.windows[0].minWidth,1080);
 assert.notEqual(tauri.identifier,'com.fwyanjiusuo.desktop','管理台必须使用独立应用标识');
+assert.equal(tauri.bundle.createUpdaterArtifacts,true,'管理台必须生成签名更新包');
+assert.match(tauri.plugins.updater.endpoints[0],/admin-windows-updater\.json$/,'管理台必须读取独立更新清单');
+assert.match(cargo,/tauri-plugin-updater = "2\.10\.1"/,'管理台必须包含签名更新插件');
+assert.match(rust,/updater_builder\(\)/,'管理台启动时必须检查新版本');
+assert.match(rust,/立即更新/,'管理台必须提供立即更新入口');
+assert.match(rust,/app\.restart\(\)/,'更新安装完成后必须自动重启');
+assert.match(rust,/正在下载更新/,'更新过程必须显示下载阶段');
+assert.match(updateUi,/正在连接/,'更新过程必须显示连接阶段');
+assert.match(workflow,/TAURI_SIGNING_PRIVATE_KEY/,'发布流程必须生成签名更新包');
+assert.match(workflow,/admin-windows-updater\.json/,'发布流程必须生成管理台更新清单');
 
 console.log('FW管理台静态检查通过。');

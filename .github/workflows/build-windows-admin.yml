@@ -49,13 +49,17 @@ jobs:
 
       - name: Build Windows NSIS installer
         working-directory: admin-desktop
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: npx tauri build --bundles nsis
 
       - name: Upload private installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-admin-windows-0.3.0
-          path: admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+          name: fw-admin-windows-6.0.1
+          path: |
+            admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+            admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe.sig
           if-no-files-found: error
           retention-days: 30
 
@@ -65,17 +69,62 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $source = Get-ChildItem "admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe" | Select-Object -First 1
-          $installer = Join-Path $source.DirectoryName "FW-Admin-0.3.0-Windows-x64-Setup.exe"
-          Copy-Item $source.FullName $installer -Force
+          if (-not $source) { throw 'FW管理台 6.0.1 安装包没有生成。' }
+          $signatureSource = Get-Item "$($source.FullName).sig" -ErrorAction SilentlyContinue
+          if (-not $signatureSource) { throw 'FW管理台自动更新签名没有生成。' }
 
-          gh release view fw-admin-v0.3.0 --repo "${{ github.repository }}" *> $null
+          $installer = Join-Path $source.DirectoryName "FW-Admin-6.0.1-Windows-x64-Setup.exe"
+          $signature = "$installer.sig"
+          Copy-Item $source.FullName $installer -Force
+          Copy-Item $signatureSource.FullName $signature -Force
+
+          gh release view fw-admin-v6.0.1 --repo "${{ github.repository }}" *> $null
           if ($LASTEXITCODE -eq 0) {
-            gh release upload fw-admin-v0.3.0 $installer --clobber --repo "${{ github.repository }}"
+            gh release upload fw-admin-v6.0.1 $installer $signature --clobber --repo "${{ github.repository }}"
           } else {
-            gh release create fw-admin-v0.3.0 $installer `
+            gh release create fw-admin-v6.0.1 $installer $signature `
               --repo "${{ github.repository }}" `
               --target "${{ github.sha }}" `
-              --title "FW管理台 0.3.0" `
-              --notes "问题反馈改为仅接收和内部处理；新增会员时间增加、取消与操作记录。" `
-              --prerelease
+              --title "FW管理台 6.0.1" `
+              --notes "管理台自动更新基线版：启动检测新版本，显示下载、校验和安装阶段，完成后自动重启。"
+          }
+
+      - name: Publish admin updater metadata
+        shell: pwsh
+        run: |
+          $installer = Get-Item "admin-desktop/src-tauri/target/release/bundle/nsis/FW-Admin-6.0.1-Windows-x64-Setup.exe"
+          $signatureFile = Get-Item "$($installer.FullName).sig"
+          $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
+          $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
+          $notes = '管理台自动更新基线版：启动检测新版本，显示下载、校验和安装阶段，完成后自动重启。'
+          $downloadUrl = 'https://github.com/${{ github.repository }}/releases/download/fw-admin-v6.0.1/FW-Admin-6.0.1-Windows-x64-Setup.exe'
+          $metadata = @{
+            version = '6.0.1'
+            notes = $notes
+            pub_date = $publishedAt
+            platforms = @{
+              'windows-x86_64' = @{
+                signature = $signature
+                url = $downloadUrl
+              }
+            }
+          }
+
+          $manifestTemp = Join-Path $env:RUNNER_TEMP 'admin-windows-updater.json'
+          $metadata | ConvertTo-Json -Depth 5 | Set-Content $manifestTemp -Encoding utf8
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git reset --hard origin/main
+          New-Item -ItemType Directory -Force -Path 'download' | Out-Null
+          Copy-Item $manifestTemp 'download/admin-windows-updater.json' -Force
+          node -e "JSON.parse(require('fs').readFileSync('download/admin-windows-updater.json','utf8'))"
+          git add download/admin-windows-updater.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host '管理台更新清单无需变更。'
+          } else {
+            git commit -m "Release FW Admin 6.0.1 updater metadata"
+            git push origin HEAD:main
           }
