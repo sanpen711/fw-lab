@@ -1,11 +1,11 @@
 {
-  "available": true,
-  "version": "1.2.25",
-  "rollbackVersion": "1.0.5",
-  "publishedAt": "2026-09-18T02:39:42.0171654Z",
-  "sha256": "6482e95c8e016db6de208a05492adcbf6bb87abbbf9e1f9b487cec0871b80ea7",
-  "notes": "Windows 1.2.25：优化电脑端强制登录页版式；保留原主题配色，新增品牌展示区并提升表单层级与适配。",
+  "notes": "Windows 1.2.26：继续优化电脑端登录页；检测状态改为独立简洁卡片，登录页改用浅色办公风格并精简文案。",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.25-setup.exe",
-  "platform": "Windows 10/11 64 位"
+  "sha256": "6605942057f2b3b643997d2dd168306c1e5f57b790d490541679181a6f170ab4",
+  "rollbackVersion": "1.0.5",
+  "version": "1.2.26",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.26-setup.exe",
+  "platform": "Windows 10/11 64 位",
+  "available": true,
+  "publishedAt": "2026-09-18T03:16:23.0996309Z"
 }
