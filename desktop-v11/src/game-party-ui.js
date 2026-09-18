@@ -19,7 +19,7 @@ function profile(userId){return partyState.profiles[String(userId)]||{};}
 function myMember(party){return partyState.members.find(row=>String(row.party_id)===String(party.id)&&String(row.user_id)===String(me()?.id));}
 function contact(partyId,userId){return partyState.contacts.find(row=>String(row.party_id)===String(partyId)&&String(row.user_id)===String(userId));}
 function isCaptain(party){return String(party.captain_id)===String(me()?.id||'');}
-function statusInfo(party){if(party.status==='full'||Number(party.member_count)>=Number(party.capacity))return['已满员','full'];return['可加入',''];}
+function statusInfo(party){if(party.status==='full'||Number(party.member_count)>=Number(party.capacity))return['已满员','is-full'];return['可加入',''];}
 function startText(party){const manual=String(party?.starts_at_text||'').trim();if(manual)return manual;const value=party?.starts_at;if(!value)return'时间待定';const date=new Date(value);if(Number.isNaN(date.getTime()))return'时间待定';const now=new Date();const tomorrow=new Date(now);tomorrow.setDate(now.getDate()+1);const day=date.toDateString()===now.toDateString()?'今天':date.toDateString()===tomorrow.toDateString()?'明天':date.toLocaleDateString('zh-CN',{month:'numeric',day:'numeric',weekday:'short'});return`${day} ${date.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false})}`;}
 function stateLabel(value){return({pending:'等待确认',accepted:'已加入',rejected:'未通过',left:'已退出'})[value]||value;}
 function hasApplicationAlert(partyId){return partyState.applicationAlerts.some(row=>String(row.target_id)===String(partyId));}
