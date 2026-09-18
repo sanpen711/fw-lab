@@ -1,11 +1,11 @@
 {
-  "publishedAt": "2026-09-17T02:36:08.7342975Z",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "platform": "Windows 10/11 64 位",
-  "notes": "Windows 1.2.23：修复 NES 游戏核心在 Windows WebView2 中解压后无响应的问题；核心改为构建期预解包，后续 NES 游戏共用同一本地核心，并补充加载超时和错误提示。",
+  "version": "1.2.24",
+  "notes": "Windows 1.2.24：电脑客户端改为强制登录；启动时先验证登录状态，登录成功后才加载客户端内容。",
+  "sha256": "65a0acd50be50fbd70a7c4af2c9d55f368d12a4cc12aaebb1f0691d1ce9b321e",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.24-setup.exe",
+  "publishedAt": "2026-09-18T01:23:29.7328175Z",
   "rollbackVersion": "1.0.5",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.23-setup.exe",
-  "available": true,
-  "sha256": "e5ebf2ce077028478d07f3f96475011ce0163dcac0ee0a2943f9d9721d04c5a0",
-  "version": "1.2.23"
+  "platform": "Windows 10/11 64 位",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "available": true
 }
