@@ -48,6 +48,8 @@ let pollFilter='all';
 let pollCreateOpen=false;
 let birdComposeOpen=false;
 let avatarPreviewUrl='';
+let authGateLocked=true;
+let protectedAppStarted=false;
 const birdDraft={title:'',content:'',displayMode:'profile',penName:'',files:[],previews:[]};
 const composeDraft={text:'',imageFile:null,imagePreview:'',stickers:new Set(),pickerTab:'emoji'};
 const commentDrafts=new Map();
@@ -144,6 +146,37 @@ function renderMembership(next=membershipState){
   const nextSignature=JSON.stringify(next.publicStyles||{});const stylesChanged=membershipStyleSignature!==nextSignature;membershipStyleSignature=nextSignature;membershipState=next;renderMembershipContent();renderMembershipEntry();celebrateMembership();
   if(stylesChanged){socialRenderMemo=null;lastChatRenderSignature='';renderFeed();renderSocial();renderBird();renderArchive();}
 }
+function authenticatedUser(next=accountState){
+  const user=next.user;const sessionUser=next.session?.user;
+  if(!next.ready||!user||user.cached||user.disabled||!sessionUser)return null;
+  return String(user.id)===String(sessionUser.id)?user:null;
+}
+function startProtectedApp(){
+  if(protectedAppStarted)return;protectedAppStarted=true;
+  homeWidgets.init({toast,openAccount});
+  gamePartyUi.init({toast});
+  membershipStore.start();
+}
+function renderAuthGate(next){
+  const app=$('#app');const modal=$('[data-account-modal]');const checking=$('[data-auth-checking]');const content=$('[data-auth-content]');
+  const close=$('[data-close-account]');const retry=$('[data-auth-retry]');const checkingCopy=$('[data-auth-checking-copy]');const gateMessage=$('[data-auth-gate-message]');
+  const user=authenticatedUser(next);const canUnlock=Boolean(user)&&(!authGateLocked||!next.busy);const locked=!canUnlock;const wasLocked=authGateLocked;authGateLocked=locked;
+  const bootFailure=Boolean(next.ready&&next.error&&(next.session?.user||next.user?.cached));
+  document.body.classList.toggle('auth-required',locked);app.hidden=locked;app.inert=locked;app.setAttribute('aria-hidden',String(locked));
+  modal.dataset.authLocked=String(locked);modal.classList.toggle('auth-gate-modal',locked);close.hidden=locked;
+  if(locked){
+    modal.hidden=false;document.body.classList.add('modal-open');checking.hidden=next.ready&&!bootFailure;content.hidden=!next.ready||bootFailure;
+    if(checkingCopy)checkingCopy.textContent=bootFailure?(next.error||'登录状态确认失败，请检查网络后重试。'):'请稍候，确认完成后会自动进入客户端。';
+    if(retry)retry.hidden=!bootFailure;
+    if(!content.hidden){
+      if(currentAuthView==='profile')showAuth('login');
+      const message=String(next.error||'');gateMessage.hidden=!message;gateMessage.textContent=message;
+    }
+    return;
+  }
+  startProtectedApp();checking.hidden=true;content.hidden=false;if(gateMessage){gateMessage.hidden=true;gateMessage.textContent='';}
+  if(wasLocked){modal.hidden=true;document.body.classList.remove('modal-open');setFormStatus('');}
+}
 function renderAccount(next){
   const previousUserId=String(accountState.user?.id||'');accountState=next;const user=next.user;
   $('[data-account-label]').textContent=user?user.nickname:(next.ready?'注册 / 登录':'正在连接…');
@@ -161,6 +194,7 @@ function renderAccount(next){
   if(next.ready)renderBird();
   if(next.ready)renderArchive();
   renderMembershipEntry();
+  renderAuthGate(next);
 }
 
 function showAuth(view){
@@ -169,7 +203,7 @@ function showAuth(view){
   $$('[data-auth-view]').forEach(panel=>panel.hidden=panel.dataset.authView!==view);setFormStatus('');if(view==='profile'){if(avatarPreviewUrl){URL.revokeObjectURL(avatarPreviewUrl);avatarPreviewUrl='';}const input=$('[data-auth-view="profile"] input[name="avatar"]');if(input)input.value='';setAvatar($('[data-profile-avatar]'),accountState.user);}requestAnimationFrame(()=>{$(`[data-auth-view="${view}"] input:not([disabled])`)?.focus();});
 }
 function openAccount(){const modal=$('[data-account-modal]');modal.hidden=false;document.body.classList.add('modal-open');showAuth(accountState.user?'profile':'login');}
-function closeAccount(){$('[data-account-modal]').hidden=true;document.body.classList.remove('modal-open');setFormStatus('');}
+function closeAccount(){if(authGateLocked)return;$('[data-account-modal]').hidden=true;document.body.classList.remove('modal-open');setFormStatus('');}
 function closeSidebarMore(){const wrap=$('[data-sidebar-more-wrap]');wrap?.classList.remove('open');$('[data-sidebar-more-toggle]')?.setAttribute('aria-expanded','false');}
 function bindSidebarMore(){document.addEventListener('click',event=>{const toggle=event.target.closest('[data-sidebar-more-toggle]');if(toggle){const wrap=toggle.closest('[data-sidebar-more-wrap]');const open=!wrap.classList.contains('open');closeSidebarMore();wrap.classList.toggle('open',open);toggle.setAttribute('aria-expanded',String(open));return;}if(!event.target.closest('[data-sidebar-more-wrap]'))closeSidebarMore();},true);}
 
@@ -400,6 +434,7 @@ function bindNavigation(){
     if(event.target.closest('[data-media-lightbox-close]')||event.target.matches('[data-media-lightbox]')){closeLightbox();return;}
     const nav=event.target.closest('[data-nav]');if(nav){navigate(nav.dataset.nav);return;}
     if(event.target.closest('[data-open-account]')){openAccount();return;}if(event.target.closest('[data-close-account]')){closeAccount();return;}
+    if(event.target.closest('[data-auth-retry]')){window.location.reload();return;}
     const membershipTabButton=event.target.closest('[data-membership-tab]');if(membershipTabButton){membershipTab=membershipTabButton.dataset.membershipTab;membershipPlanId='';renderMembershipContent();return;}
     const membershipThemeButton=event.target.closest('[data-membership-theme]');if(membershipThemeButton){membershipThemeButton.disabled=true;membershipStore.setTheme(membershipThemeButton.dataset.membershipTheme).then(()=>toast('会员装扮已切换。')).catch(error=>toast(error.message||'装扮切换失败。')).finally(()=>{membershipThemeButton.disabled=false;});return;}
     const membershipPlanButton=event.target.closest('[data-membership-plan]');if(membershipPlanButton){if(!accountState.user){openAccount();return;}membershipPlanId=membershipPlanButton.dataset.membershipPlan;renderMembershipContent();requestAnimationFrame(()=>$('[data-view-panel="membership"] .membership-checkout')?.scrollIntoView({behavior:'smooth',block:'nearest'}));return;}
@@ -496,4 +531,4 @@ function bindForms(){
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
-bindSidebarMore();bindNavigation();bindForms();homeWidgets.init({toast,openAccount});gamePartyUi.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);membershipStore.start();socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();
+bindSidebarMore();bindNavigation();bindForms();authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();

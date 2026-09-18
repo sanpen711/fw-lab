@@ -1,11 +1,50 @@
 import {expect,test} from '@playwright/test';
 
-test.beforeEach(async({page})=>{
+const TEST_USER={
+  id:'00000000-0000-4000-8000-000000000024',
+  aud:'authenticated',
+  role:'authenticated',
+  email:'desktop-test@example.com',
+  email_confirmed_at:'2026-09-18T00:00:00.000Z',
+  app_metadata:{provider:'email',providers:['email']},
+  user_metadata:{nickname:'测试研究员',lab_code:'FWTEST1'},
+  created_at:'2026-09-18T00:00:00.000Z'
+};
+
+test.beforeEach(async({page},testInfo)=>{
+  if(!testInfo.title.includes('未登录必须')){
+    await page.addInitScript(user=>{
+      localStorage.setItem('fw-lab-auth-token',JSON.stringify({
+        access_token:'desktop-test-access-token',
+        refresh_token:'desktop-test-refresh-token',
+        expires_in:3600,
+        expires_at:Math.floor(Date.now()/1000)+3600,
+        token_type:'bearer',
+        user
+      }));
+    },TEST_USER);
+  }
   await page.route('https://**.supabase.co/**',async route=>{
     const url=route.request().url();
-    if(url.includes('/auth/v1/token') || url.includes('/auth/v1/user')) return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({user:null,session:null})});
+    if(url.includes('/auth/v1/user'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(TEST_USER)});
+    if(url.includes('/auth/v1/token'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({access_token:'desktop-test-access-token',refresh_token:'desktop-test-refresh-token',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,token_type:'bearer',user:TEST_USER})});
+    if(url.includes('/rest/v1/rpc/fw_get_current_profile'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{id:TEST_USER.id,nickname:'测试研究员',role:'user',lab_code:'FWTEST1',is_banned:false}])});
     return route.fulfill({status:200,contentType:'application/json',body:'[]'});
   });
+});
+
+test('未登录必须先登录或注册且不能进入客户端',async({page})=>{
+  await page.goto('/');
+  await expect(page.locator('#app')).toBeHidden();
+  await expect(page.locator('[data-account-modal]')).toBeVisible();
+  await expect(page.locator('[data-account-modal]')).toHaveAttribute('data-auth-locked','true');
+  await expect(page.locator('[data-auth-view="login"]')).toBeVisible();
+  await expect(page.locator('[data-close-account]')).toBeHidden();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[data-account-modal]')).toBeVisible();
+  await page.getByRole('button',{name:'没有账号？去注册'}).click();
+  await expect(page.locator('[data-auth-view="register"]')).toBeVisible();
+  await expect(page.locator('[data-auth-view="register"] input[name="labCode"]')).toBeVisible();
 });
 
 test('本地首页保留桌面视觉和完整导航框架',async({page})=>{
@@ -48,7 +87,7 @@ test('下班开黑是本地双栏页面并说明游戏 ID 的可见边界',async
   await page.locator('[data-party-create-toggle]').click();
   await expect(page.locator('[data-party-detail]')).toBeHidden();
   await expect(page.locator('[data-party-create-host]')).toBeVisible();
-  await expect(page.locator('[data-party-create-host]')).toContainText('登录后创建组队');
+  await expect(page.locator('[data-party-create-form]')).toBeVisible();
 });
 
 test('复制的图片可以直接粘贴到发布输入框',async({page})=>{
@@ -98,7 +137,7 @@ test('回声整合在精神广场左栏且不会重载网页',async({page})=>{
   await page.locator('[data-square-echo-toggle]').click();
   await expect(page.locator('[data-square-echo-panel]')).toBeVisible();
   await expect(page.locator('[data-square-feed]')).toBeHidden();
-  await expect(page.getByText('登录后查看回声')).toBeVisible();
+  await expect(page.getByText('暂时没有新的回声')).toBeVisible();
   expect(page.url()).toBe(original);
   await page.locator('[data-square-echo-toggle]').click();
   await expect(page.locator('[data-square-feed]')).toBeVisible();
@@ -121,14 +160,12 @@ test('搭子和私聊使用本地左右分栏且没有定时轮询',async({page}
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.pollingTimers)).toBe(0);
 });
 
-test('账号入口打开本地登录注册界面',async({page})=>{
+test('登录后账号入口打开个人资料并可正常关闭',async({page})=>{
   await page.goto('/');
   await page.locator('.account-button[data-open-account]').click();
   await expect(page.locator('[data-account-modal]')).toBeVisible();
-  await expect(page.locator('[data-auth-view="login"]')).toBeVisible();
-  await page.getByRole('button',{name:'没有账号？去注册'}).click();
-  await expect(page.locator('[data-auth-view="register"]')).toBeVisible();
-  await expect(page.locator('[data-auth-view="register"] input[name="labCode"]')).toBeVisible();
+  await expect(page.locator('[data-auth-view="profile"]')).toBeVisible();
+  await expect(page.locator('[data-auth-view="profile"] input[name="labCode"]')).toBeDisabled();
   await page.locator('[data-close-account]').click();
   await expect(page.locator('[data-account-modal]')).toBeHidden();
 });
@@ -180,7 +217,7 @@ test('发牢骚和精神广场均为本地页面且内容按需读取',async({pa
   await page.locator('.hero-actions [data-nav="compose"]').click();
   await expect(page.locator('[data-view-panel="compose"]')).toHaveClass(/active/);
   await expect(page.getByRole('heading',{name:'发一句牢骚'})).toBeVisible();
-  await expect(page.getByText('登录后发牢骚')).toBeVisible();
+  await expect(page.locator('[data-compose-form]')).toBeVisible();
   expect(page.url()).toBe(original);
   await page.locator('[data-nav="square"].nav-item').click();
   await expect(page.locator('[data-view-panel="square"]')).toHaveClass(/active/);
@@ -203,7 +240,7 @@ test('学术研讨为本地按需页面并保留投票分类',async({page})=>{
   await expect(page.locator('[data-poll-filter="ended"]')).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBeGreaterThan(0);
   await page.locator('[data-poll-create-toggle]').click();
-  await expect(page.getByText('登录后发起课题')).toBeVisible();
+  await expect(page.locator('[data-poll-create-form]')).toBeVisible();
   expect(page.url()).toBe(original);
 });
 
@@ -217,7 +254,7 @@ test('新闻专区为本地双栏按需页面',async({page})=>{
   await expect(page.locator('[data-bird-detail]')).toContainText('选择一条内容');
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBeGreaterThan(0);
   await page.locator('[data-bird-compose-toggle]').click();
-  await expect(page.getByText('登录后发布内容')).toBeVisible();
+  await expect(page.locator('[data-bird-compose-form]')).toBeVisible();
   expect(page.url()).toBe(original);
 });
 

@@ -10,8 +10,8 @@
   <link rel="stylesheet" href="/game-center.css">
   <link rel="stylesheet" href="/game-party.css">
 </head>
-<body>
-  <div id="app" class="app-shell" data-view="home">
+<body class="auth-required">
+  <div id="app" class="app-shell" data-view="home" hidden inert aria-hidden="true">
     <aside class="sidebar" aria-label="软件主导航">
       <button class="brand" type="button" data-nav="home" aria-label="F.w 研究所首页">
         <strong>F.W</strong><span>研究所</span>
@@ -160,7 +160,7 @@
       <section class="view" data-view-panel="games">
         <div class="games-page">
           <div class="section-heading games-heading">
-            <div><h1>小游戏</h1><span>不用登录，点开就玩；成绩和进度只保存在这台电脑上。</span></div>
+            <div><h1>小游戏</h1><span>点开就玩；成绩和进度只保存在这台电脑上。</span></div>
           </div>
           <div class="game-hall" data-game-hall>
             <div class="game-grid">
@@ -250,52 +250,64 @@
     </main>
   </div>
 
-  <div class="modal" data-account-modal hidden>
+  <div class="modal auth-gate-modal" data-account-modal data-auth-locked="true">
     <section class="account-panel" role="dialog" aria-modal="true" aria-labelledby="account-title">
-      <button class="close-button" type="button" data-close-account aria-label="关闭">×</button>
-      <p class="eyebrow">FW ACCOUNT</p>
-      <h2 id="account-title" data-account-title>账号登录</h2>
-      <p class="panel-copy" data-account-copy>输入邮箱和密码，进入研究所。</p>
+      <button class="close-button" type="button" data-close-account aria-label="关闭" hidden>×</button>
 
-      <form class="account-form" data-auth-view="login">
-        <label>邮箱<input name="email" type="email" autocomplete="email" required></label>
-        <label>密码<input name="password" type="password" autocomplete="current-password" minlength="6" required></label>
-        <button class="primary full" type="submit">登录</button>
-        <div class="form-links"><button type="button" data-show-auth="register">没有账号？去注册</button><button type="button" data-show-auth="reset">忘记密码？</button></div>
-      </form>
+      <div class="auth-checking" data-auth-checking>
+        <span class="auth-checking-mark">F.W</span>
+        <p class="eyebrow">FW ACCOUNT</p>
+        <h2>正在确认登录状态</h2>
+        <p class="panel-copy" data-auth-checking-copy>请稍候，确认完成后会自动进入客户端。</p>
+        <button class="secondary full" type="button" data-auth-retry hidden>重新检测</button>
+      </div>
 
-      <form class="account-form" data-auth-view="register" hidden>
-        <label>邮箱<input name="email" type="email" autocomplete="email" required></label>
-        <label>实验品编号<input name="labCode" maxlength="7" pattern="[A-Za-z0-9]{7}" placeholder="例如 FW2026A" required></label>
-        <label>密码<input name="password" type="password" autocomplete="new-password" minlength="6" required></label>
-        <label>确认密码<input name="password2" type="password" autocomplete="new-password" minlength="6" required></label>
-        <label class="consent"><input name="consent" type="checkbox" required><span>我已阅读并同意《F.w研究所声明》</span></label>
-        <button class="primary full" type="submit">发送邮箱验证码</button>
-        <div class="form-links"><button type="button" data-show-auth="login">返回登录</button></div>
-      </form>
+      <div data-auth-content hidden>
+        <p class="eyebrow">FW ACCOUNT</p>
+        <h2 id="account-title" data-account-title>账号登录</h2>
+        <p class="panel-copy" data-account-copy>输入邮箱和密码，进入研究所。</p>
+        <p class="auth-gate-message" data-auth-gate-message hidden></p>
 
-      <form class="account-form" data-auth-view="verify" hidden>
-        <p class="verify-tip" data-verify-tip>验证码已发送，请输入邮件中的验证码。</p>
-        <label>验证码<input name="token" inputmode="numeric" autocomplete="one-time-code" required></label>
-        <button class="primary full" type="submit">确认验证码，完成注册</button>
-        <div class="form-links"><button type="button" data-resend-code>重新发送</button><button type="button" data-show-auth="register">返回修改</button></div>
-      </form>
+        <form class="account-form" data-auth-view="login">
+          <label>邮箱<input name="email" type="email" autocomplete="email" required></label>
+          <label>密码<input name="password" type="password" autocomplete="current-password" minlength="6" required></label>
+          <button class="primary full" type="submit">登录</button>
+          <div class="form-links"><button type="button" data-show-auth="register">没有账号？去注册</button><button type="button" data-show-auth="reset">忘记密码？</button></div>
+        </form>
 
-      <form class="account-form" data-auth-view="reset" hidden>
-        <label>邮箱<input name="email" type="email" autocomplete="email" required></label>
-        <button class="primary full" type="submit">发送找回密码邮件</button>
-        <div class="form-links"><button type="button" data-show-auth="login">返回登录</button></div>
-      </form>
+        <form class="account-form" data-auth-view="register" hidden>
+          <label>邮箱<input name="email" type="email" autocomplete="email" required></label>
+          <label>实验品编号<input name="labCode" maxlength="7" pattern="[A-Za-z0-9]{7}" placeholder="例如 FW2026A" required></label>
+          <label>密码<input name="password" type="password" autocomplete="new-password" minlength="6" required></label>
+          <label>确认密码<input name="password2" type="password" autocomplete="new-password" minlength="6" required></label>
+          <label class="consent"><input name="consent" type="checkbox" required><span>我已阅读并同意《F.w研究所声明》</span></label>
+          <button class="primary full" type="submit">发送邮箱验证码</button>
+          <div class="form-links"><button type="button" data-show-auth="login">返回登录</button></div>
+        </form>
 
-      <form class="account-form" data-auth-view="profile" hidden>
-        <div class="profile-summary"><span class="avatar" data-profile-avatar>FW</span><div><strong data-profile-name>研究员</strong><span data-profile-email></span></div></div>
-        <label>实验品编号<input name="labCode" maxlength="7" disabled></label>
-        <label>昵称<input name="nickname" maxlength="12" required></label>
-        <label>头像<input name="avatar" type="file" accept="image/jpeg,image/png,image/webp"><small class="avatar-upload-hint">支持 JPG、PNG、WebP；预览按中心裁成正方形，保存时自动压缩。</small></label>
-        <button class="primary full" type="submit">保存资料</button>
-        <button class="secondary full" type="button" data-sign-out>退出登录</button>
-      </form>
-      <p class="form-status" data-form-status aria-live="polite"></p>
+        <form class="account-form" data-auth-view="verify" hidden>
+          <p class="verify-tip" data-verify-tip>验证码已发送，请输入邮件中的验证码。</p>
+          <label>验证码<input name="token" inputmode="numeric" autocomplete="one-time-code" required></label>
+          <button class="primary full" type="submit">确认验证码，完成注册</button>
+          <div class="form-links"><button type="button" data-resend-code>重新发送</button><button type="button" data-show-auth="register">返回修改</button></div>
+        </form>
+
+        <form class="account-form" data-auth-view="reset" hidden>
+          <label>邮箱<input name="email" type="email" autocomplete="email" required></label>
+          <button class="primary full" type="submit">发送找回密码邮件</button>
+          <div class="form-links"><button type="button" data-show-auth="login">返回登录</button></div>
+        </form>
+
+        <form class="account-form" data-auth-view="profile" hidden>
+          <div class="profile-summary"><span class="avatar" data-profile-avatar>FW</span><div><strong data-profile-name>研究员</strong><span data-profile-email></span></div></div>
+          <label>实验品编号<input name="labCode" maxlength="7" disabled></label>
+          <label>昵称<input name="nickname" maxlength="12" required></label>
+          <label>头像<input name="avatar" type="file" accept="image/jpeg,image/png,image/webp"><small class="avatar-upload-hint">支持 JPG、PNG、WebP；预览按中心裁成正方形，保存时自动压缩。</small></label>
+          <button class="primary full" type="submit">保存资料</button>
+          <button class="secondary full" type="button" data-sign-out>退出登录</button>
+        </form>
+        <p class="form-status" data-form-status aria-live="polite"></p>
+      </div>
     </section>
   </div>
 

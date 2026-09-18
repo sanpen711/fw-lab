@@ -64,10 +64,31 @@ async function readProfile(sessionUser, force=false){
     profile=fail(await client.from('profiles').select('id,nickname,avatar_url,role,is_banned,created_at,lab_code').eq('id',sessionUser.id).maybeSingle(), '读取用户资料失败') || {};
   }
   lastProfileUserId=sessionUser.id;
-  state.user=profileToUser(sessionUser, profile);
+  const user=profileToUser(sessionUser, profile);
+  if(user.disabled){
+    lastProfileUserId='';state.session=null;state.user=null;persistUser(null);
+    await client.auth.signOut({scope:'local'});
+    emit();
+    throw new Error('这个账号已被封禁，暂时无法进入客户端。');
+  }
+  state.user=user;
   persistUser(state.user);
   emit();
   return state.user;
+}
+
+async function verifyStoredSession(session){
+  if(!session?.user)return null;
+  const result=await client.auth.getUser();
+  if(result.error||!result.data?.user){
+    const status=Number(result.error?.status||0);
+    if(status===401||status===403){
+      state.session=null;state.user=null;persistUser(null);
+      await client.auth.signOut({scope:'local'});
+    }
+    throw new Error(status===401||status===403?'登录状态已失效，请重新登录。':`确认登录状态失败：${result.error?.message||'请检查网络后重试'}`);
+  }
+  return result.data.user;
 }
 
 async function boot(){
@@ -79,9 +100,12 @@ async function boot(){
       const data=fail(await client.auth.getSession(), '读取登录状态失败');
       state.session=data?.session || null;
       if(state.session?.user){
-        if(!state.user||String(state.user.id)!==String(state.session.user.id))await hydrateProfileCache(state.session.user.id);
-        await readProfile(state.session.user, true);
+        const sessionUser=await verifyStoredSession(state.session);
+        state.session={...state.session,user:sessionUser};
+        if(!state.user||String(state.user.id)!==String(sessionUser.id))await hydrateProfileCache(sessionUser.id);
+        await readProfile(sessionUser, true);
       }else {state.user=null;persistUser(null);}
+      state.error='';
     }catch(error){
       state.error=error.message || String(error);
     }finally{
@@ -95,9 +119,9 @@ async function boot(){
     if(event === 'SIGNED_OUT' || !session?.user){
       lastProfileUserId='';state.user=null;persistUser(null);emit();return;
     }
-    if(event === 'SIGNED_IN' || event === 'USER_UPDATED'){
+    if(event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED'){
       if(!state.user||String(state.user.id)!==String(session.user.id))hydrateProfileCache(session.user.id).catch(()=>{});
-      readProfile(session.user, event === 'USER_UPDATED').catch(()=>{});
+      readProfile(session.user, event !== 'SIGNED_IN').catch(error=>{state.error=error.message||String(error);emit();});
     }
   });
   return bootPromise;
