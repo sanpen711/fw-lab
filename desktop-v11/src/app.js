@@ -162,8 +162,9 @@ function renderAuthGate(next){
   const close=$('[data-close-account]');const retry=$('[data-auth-retry]');const checkingCopy=$('[data-auth-checking-copy]');const gateMessage=$('[data-auth-gate-message]');
   const user=authenticatedUser(next);const canUnlock=Boolean(user)&&(!authGateLocked||!next.busy);const locked=!canUnlock;const wasLocked=authGateLocked;authGateLocked=locked;
   const bootFailure=Boolean(next.ready&&next.error&&(next.session?.user||next.user?.cached));
+  const checkingOnly=locked&&(!next.ready||bootFailure);
   document.body.classList.toggle('auth-required',locked);app.hidden=locked;app.inert=locked;app.setAttribute('aria-hidden',String(locked));
-  modal.dataset.authLocked=String(locked);modal.classList.toggle('auth-gate-modal',locked);close.hidden=locked;
+  modal.dataset.authLocked=String(locked);modal.classList.toggle('auth-gate-modal',locked);modal.classList.toggle('auth-gate-checking',checkingOnly);close.hidden=locked;
   if(locked){
     modal.hidden=false;document.body.classList.add('modal-open');checking.hidden=next.ready&&!bootFailure;content.hidden=!next.ready||bootFailure;
     if(checkingCopy)checkingCopy.textContent=bootFailure?(next.error||'登录状态确认失败，请检查网络后重试。'):'请稍候，确认完成后会自动进入客户端。';
