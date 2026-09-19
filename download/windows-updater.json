@@ -1,11 +1,11 @@
 {
+  "notes": "Windows 1.2.28：优化电脑端登录状态检测页；改用小型确认动画，移除英文标识并缩小卡片和文字。",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlZVMndOelRSaFFtYm5vZ1Nkc0VqRHMxTEpURTVaaGF6cDYycDlJc1ZWTTFYZVRQV0pqM0c5RzlhYzI3RGZ4MFNXVzFsWVRnSmdNWjZnZnNWUlZkT2dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5NzEwNjU3CWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMjdfeDY0LXNldHVwLmV4ZQpTd0xNcFlMY09VcW53ajRxMFZmOXFncWlJODVxUjZrTHptOW9tYVo3NWVqU0o2c2hYS0FQcC93TzNESXV5ZFNIWjRhemNFc01oSlpnT3o5SU1IZ0dEUT09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.27-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlhnWnVmSndNc3hINXRWcjIxRTQvK3h6ZXErNnBwWjJIY05Wa0ExZDlNd1lGTnlDWkJndkRjWEZQTDY4WmZnWDZNZlRaMGZFYjlneDJKT2UzZWJZQ2d3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5Nzg1NzAwCWZpbGU6Ri53IOeglOeptuaJgF8xLjIuMjhfeDY0LXNldHVwLmV4ZQp4OXloeWloUnh6RkhsOFlET3VFb2l3TS9RSUNhU3ptV000c0ZBUXJvVjRCRXdicjF6VW10K0NsSVdRN1J1RE80RGVoYkhTYmx0REZrUFRiQWY1bzVDUT09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.2.28-setup.exe"
     }
   },
-  "version": "1.2.27",
-  "pub_date": "2026-09-18T05:50:57.5910187Z",
-  "notes": "Windows 1.2.27：修正下班开黑满员状态；已满员直接替换可加入标签，不再挤压左侧房间信息。"
+  "pub_date": "2026-09-19T02:41:40.5650281Z",
+  "version": "1.2.28"
 }
