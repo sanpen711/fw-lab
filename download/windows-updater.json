@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.3.1：接入研究所形象“伏伏”，更新首页欢迎、登录确认、精神广场与回声状态提示。",
-  "pub_date": "2026-09-19T06:30:29.1821832Z",
-  "version": "1.3.1",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlJwNnYzR0sxZ0NPTWxHVldKcGFNOHVSbkZhazA0TDNJQkZiZndOdGJsc1BVSEtKU0lLaUQ4dHppWStVbUk1NXc3SWZCdlAvM0MzR0ZoeGVoejFBbXdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5Nzk5NDI4CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMV94NjQtc2V0dXAuZXhlCmFGNmFRNzVRSnlQeHUrS0pEQyt3eHg0dVlRbU51VnBuK2drTTRxRE9HTGVuQmNVS1hXSTVuUWsyR3poL0Rpa1NkVVkyRXF2cFFDNXVVS3V6TERaOUJBPT0K",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.1-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWllFYVc4djZORkNJWStpemZhbWJnenVFREVhbWcvcGdzNWJMSUVJQWlhV1hHcUVXSmFiZmtmM2wvMjJ2NEJVaWptRThnN1RCOGpHR2M0TG82TjFub1FrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5ODA3NzE3CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMl94NjQtc2V0dXAuZXhlCmdubTdGZWZ0cVJ2S2RMUXNIVytqeS9WTVU1aDk3S1lESlF5N2VGaWN1MXQyQUZlRlhUM0lUejBnc3d6b1JIT0FIbEdkWjFJQ1RWK0xNMlBmYXB0MEJRPT0K",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.2-setup.exe"
     }
-  }
+  },
+  "version": "1.3.2",
+  "pub_date": "2026-09-19T08:48:37.9823670Z",
+  "notes": "Windows 1.3.2：伏伏升级为首页主视觉，新增坐姿托脸形象、轻量待机动画与柔和背景。"
 }
