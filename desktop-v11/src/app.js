@@ -64,6 +64,13 @@ function emojiText(value){
   EMOJIS.slice().sort((a,b)=>b[0].length-a[0].length).forEach(item=>{html=html.split(esc(item[0])).join(emojiImage(item,'inline'));});
   return html.replace(/\n/g,'<br>');
 }
+function mascotStateHtml({title,copy='',tone='idle',action=''}={}){
+  return `<div class="state-card mascot-state" data-mascot-state="${esc(tone)}"><img src="/mascot-fufu.webp" alt="伏伏"><div class="mascot-state-copy"><b>${esc(title)}</b>${copy?`<span>${esc(copy)}</span>`:''}${action}</div></div>`;
+}
+function setMascotGreeting(){
+  const node=$('[data-mascot-status]');if(!node)return;const hour=new Date().getHours();
+  node.textContent=hour<11?'今日研究任务已启动':hour<14?'午间低功耗运行中':hour<18?'检测到下班时间正在靠近':'今日研究暂告一段落';
+}
 function recentStickerUrls(){try{return JSON.parse(localStorage.getItem(RECENT_STICKERS_KEY)||'[]').filter(Boolean).slice(0,12);}catch{return[];}}
 function rememberSticker(url){if(!url)return;const next=[url,...recentStickerUrls().filter(item=>item!==url)].slice(0,12);try{localStorage.setItem(RECENT_STICKERS_KEY,JSON.stringify(next));}catch{}}
 function sortedStickers(){const recent=recentStickerUrls();return [...(socialState.stickers.rows||[])].sort((a,b)=>{const ai=recent.indexOf(a.image_url);const bi=recent.indexOf(b.image_url);return (ai<0?999:ai)-(bi<0?999:bi);});}
@@ -153,6 +160,7 @@ function authenticatedUser(next=accountState){
 }
 function startProtectedApp(){
   if(protectedAppStarted)return;protectedAppStarted=true;
+  setMascotGreeting();
   homeWidgets.init({toast,openAccount});
   gamePartyUi.init({toast});
   membershipStore.start();
@@ -291,9 +299,9 @@ function postCard(post){
 }
 function renderSquareFeed(){
   const host=$('[data-square-feed]');if(!host)return;
-  if(feedState.loading&&!feedState.loaded){host.innerHTML='<div class="state-card">正在读取精神广场...</div>';return;}
-  if(feedState.error&&!feedState.posts.length){host.innerHTML=`<div class="state-card"><b>精神广场暂时读取失败</b><span>${esc(feedState.error)}</span><button class="secondary compact" type="button" data-square-refresh>重试</button></div>`;return;}
-  host.innerHTML=feedState.posts.length?feedState.posts.map(postCard).join(''):'<div class="state-card"><b>广场还很安静</b><span>可以留下第一条低功耗记录。</span><button class="primary compact" type="button" data-nav="compose">发牢骚</button></div>';
+  if(feedState.loading&&!feedState.loaded){host.innerHTML=mascotStateHtml({title:'正在读取精神广场',copy:'伏伏正在同步今天的研究记录。',tone:'loading'});return;}
+  if(feedState.error&&!feedState.posts.length){host.innerHTML=mascotStateHtml({title:'精神广场暂时读取失败',copy:feedState.error,tone:'error',action:'<button class="secondary compact" type="button" data-square-refresh>重试</button>'});return;}
+  host.innerHTML=feedState.posts.length?feedState.posts.map(postCard).join(''):mascotStateHtml({title:'广场还很安静',copy:'可以留下第一条低功耗记录。',tone:'empty',action:'<button class="primary compact" type="button" data-nav="compose">发牢骚</button>'});
 }
 function syncSquarePostSelection(){
   $$('[data-square-feed] .square-post[data-open-post]').forEach(card=>{
@@ -313,7 +321,7 @@ function commentHtml(comment,{reply=false}={}){
 }
 function renderPostDetail(){
   const host=$('[data-post-detail]');if(!host)return;const previousPostId=host.dataset.renderedPostId||'';const previousScrollTop=host.querySelector('.detail-content-scroll')?.scrollTop||0;const post=feedState.posts.find(row=>String(row.id)===String(feedState.openPostId));
-  if(!post){delete host.dataset.renderedPostId;host.innerHTML='<div class="post-detail-empty"><b>选择一条帖子</b><span>在这里查看完整评论、回复和互动。</span></div>';return;}
+  if(!post){delete host.dataset.renderedPostId;host.innerHTML='<div class="post-detail-empty mascot-detail-empty"><img src="/mascot-fufu.webp" alt="伏伏"><b>选择一条帖子</b><span>伏伏会在这里陪你查看评论和互动。</span></div>';return;}
   const profile=currentProfile(post.user_id);const reaction=reactionInfo(post);const mine=String(post.user_id)===String(accountState.user?.id);const tree=commentTree(post.comments);const draft=draftFor(post.id);const reply=feedState.reply&&String(feedState.reply.postId)===String(post.id)?feedState.reply:null;
   const comments=tree.roots.length?tree.roots.map(root=>`<div class="comment-thread">${commentHtml(root)}${(tree.replies.get(String(root.id))||[]).map(item=>commentHtml(item,{reply:true})).join('')}</div>`).join(''):'<div class="comment-empty">还没有评论，来说两句吧。</div>';
   const composer=accountState.user?`<form class="comment-compose-card" data-comment-form="${esc(post.id)}">${reply?`<div class="replying">正在回复 ${esc(reply.name)}<button type="button" data-clear-reply>取消</button></div>`:''}<div class="comment-compose-toolbar"><div class="media-tools"><label class="secondary compact file-button">图片<input type="file" accept="image/*" data-comment-image="${esc(post.id)}" hidden></label><span>也可以只发送图片或表情</span></div>${selectedStickerPreview(draft,'comment',post.id)}</div><textarea name="content" maxlength="180" placeholder="发表评论，最多 180 字">${esc(draft.text)}</textarea>${draft.imagePreview?`<div class="image-preview small"><img src="${esc(draft.imagePreview)}" alt="待发送图片"><button class="secondary compact danger" type="button" data-comment-image-remove="${esc(post.id)}">移除</button></div>`:''}<div class="picker-block compact-picker" hidden>${sharedPicker(draft,'comment',post.id)}</div><div class="comment-compose-footer"><span>Ctrl + Enter 发送</span><button class="primary compact" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发送中...':'发表评论'}</button></div></form>`:'';
@@ -360,8 +368,8 @@ function renderEcho(){
   const list=$('[data-echo-list]');if(!list)return;
   const markAll=$('[data-echo-mark-all]');const rows=socialState.echo.rows||[];if(markAll)markAll.hidden=!rows.some(row=>!row.is_read);
   if(!accountState.user){list.innerHTML='<div class="state-card"><b>登录后查看回声</b><span>账号数据与网页和手机端共用。</span><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';return;}
-  if(socialState.echo.loading&&!socialState.echo.loaded){list.innerHTML='<div class="state-card">正在读取回声...</div>';return;}
-  if(!rows.length){list.innerHTML='<div class="state-card"><b>暂时没有新的回声</b><span>安静也是一种运行状态。</span></div>';return;}
+  if(socialState.echo.loading&&!socialState.echo.loaded){list.innerHTML=mascotStateHtml({title:'正在读取回声',copy:'伏伏正在检查有没有新的回应。',tone:'loading'});return;}
+  if(!rows.length){list.innerHTML=mascotStateHtml({title:'暂时没有新的回声',copy:'安静也是一种运行状态。',tone:'empty'});return;}
   list.innerHTML=rows.map(row=>{
     const profile=socialState.echo.profiles[row.actor_id]||{};const name=profile.nickname||'某位研究员';const postId=echoPostId(row);
     return `<article class="echo-item ${row.is_read?'':'unread'}" data-echo-item="${esc(row.id)}">${avatarHtml(profile,'social-avatar',{userId:row.actor_id})}<div class="echo-main"><b>${esc(name)} ${vipBadgeHtml(row.actor_id)} ${esc(noticeText(row.type))}</b><span>${esc(previewText(row.content))}</span><time>${esc(timeText(row.created_at))}</time></div><div class="row-actions">${postId?`<button class="primary compact" type="button" data-echo-post="${esc(postId)}">查看帖子</button>`:'<span class="echo-expired">帖子已不可查看</span>'}</div></article>`;

@@ -51,6 +51,8 @@ test('本地首页保留桌面视觉和完整导航框架',async({page})=>{
   await page.goto('/');
   await expect(page.locator('.sidebar')).toBeVisible();
   await expect(page.getByRole('heading',{name:'F.w 研究所'})).toBeVisible();
+  await expect(page.locator('.hero-mascot')).toBeVisible();
+  await expect(page.locator('[data-mascot-status]')).not.toBeEmpty();
   await expect(page.locator('[data-nav="home"].nav-item')).toHaveClass(/active/);
   await expect(page.locator('[data-dot="square"]')).toBeHidden();
   await expect(page.locator('[data-dot="play"]')).toBeHidden();
