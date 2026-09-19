@@ -167,7 +167,7 @@ function renderAuthGate(next){
   modal.dataset.authLocked=String(locked);modal.classList.toggle('auth-gate-modal',locked);modal.classList.toggle('auth-gate-checking',checkingOnly);close.hidden=locked;
   if(locked){
     modal.hidden=false;document.body.classList.add('modal-open');checking.hidden=next.ready&&!bootFailure;content.hidden=!next.ready||bootFailure;
-    if(checkingCopy)checkingCopy.textContent=bootFailure?(next.error||'登录状态确认失败，请检查网络后重试。'):'请稍候，确认完成后会自动进入客户端。';
+    if(checkingCopy)checkingCopy.textContent=bootFailure?(next.error||'登录状态确认失败，请检查网络后重试。'):'请稍候，确认后将自动进入客户端。';
     if(retry)retry.hidden=!bootFailure;
     if(!content.hidden){
       if(currentAuthView==='profile')showAuth('login');
