@@ -97,7 +97,7 @@ test('下班开黑是本地双栏页面并说明游戏 ID 的可见边界',async
 
 test('复制的图片可以直接粘贴到发布输入框',async({page})=>{
   await page.goto('/');
-  await page.locator('[data-nav="compose"]').first().click();
+  await page.locator('.hero-actions [data-nav="compose"]').click();
   await expect(page.locator('[data-compose-form]')).toBeVisible();
   await expect(page.locator('.compose-paste-hint')).toHaveText('Ctrl+V 粘贴图片');
   const imagePrevented=await page.locator('[data-compose-form] textarea').evaluate(textarea=>{
