@@ -43,12 +43,19 @@ function extension(file,fallback='bin'){
 }
 function clipboardImages(event){
   const clipboard=event.clipboardData;if(!clipboard)return[];
-  const itemFiles=Array.from(clipboard.items||[]).filter(item=>item.kind==='file'&&String(item.type||'').toLowerCase().startsWith('image/')).map(item=>item.getAsFile()).filter(Boolean);
-  const files=itemFiles.length?itemFiles:Array.from(clipboard.files||[]).filter(file=>String(file.type||'').toLowerCase().startsWith('image/'));
-  const stamp=Date.now().toString(36);return files.map((file,index)=>{if(/\.[a-z0-9]+$/i.test(String(file.name||'')))return file;const ext=({'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif','image/bmp':'bmp'})[String(file.type||'').toLowerCase()]||'png';return new File([file],`clipboard_${stamp}_${index+1}.${ext}`,{type:file.type||`image/${ext}`,lastModified:Date.now()});});
+  const itemFiles=Array.from(clipboard.items||[]).filter(item=>item.kind==='file').map(item=>item.getAsFile()).filter(file=>fileKind(file)==='image');
+  const files=itemFiles.length?itemFiles:Array.from(clipboard.files||[]).filter(file=>fileKind(file)==='image');
+  const stamp=Date.now().toString(36);const normalized=files.map((file,index)=>{if(/\.[a-z0-9]+$/i.test(String(file.name||'')))return file;const ext=({'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif','image/bmp':'bmp'})[String(file.type||'').toLowerCase()]||'png';return new File([file],`clipboard_${stamp}_${index+1}.${ext}`,{type:file.type||`image/${ext}`,lastModified:Date.now()});});
+  if(normalized.length)return normalized;
+  const html=String(clipboard.getData?.('text/html')||'');const plain=String(clipboard.getData?.('text/plain')||'');const sources=[];
+  if(html){const doc=new DOMParser().parseFromString(html,'text/html');doc.querySelectorAll('img[src^="data:image/"]').forEach(node=>sources.push(node.getAttribute('src')));}
+  if(/^data:image\//i.test(plain.trim()))sources.push(plain.trim());
+  return sources.map((source,index)=>{try{const match=String(source||'').match(/^data:(image\/[a-z0-9.+-]+);base64,([a-z0-9+/=\s]+)$/i);if(!match)return null;const binary=atob(match[2].replace(/\s/g,''));const bytes=new Uint8Array(binary.length);for(let offset=0;offset<binary.length;offset+=1)bytes[offset]=binary.charCodeAt(offset);const ext=extension({name:'',type:match[1]},'png');return new File([bytes],`clipboard_${stamp}_${index+1}.${ext}`,{type:match[1],lastModified:Date.now()});}catch{return null;}}).filter(Boolean);
 }
 function handoffClipboardFiles(input,files){
-  if(!input||!files.length)return false;const transfer=new DataTransfer();files.forEach(file=>transfer.items.add(file));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true;
+  if(!input||!files.length)return false;
+  const bridge=new CustomEvent('fw:clipboard-files',{bubbles:true,cancelable:true,detail:{files}});input.dispatchEvent(bridge);if(bridge.defaultPrevented)return true;
+  try{const transfer=new DataTransfer();files.forEach(file=>transfer.items.add(file));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true;}catch{return false;}
 }
 async function videoDuration(file){
   const url=URL.createObjectURL(file);
@@ -208,7 +215,7 @@ function bind(){
     const comment=target.closest('[data-comment-form]');if(comment&&target.matches('textarea')){event.preventDefault();if(handoffClipboardFiles($('[data-comment-image]',comment),images.slice(0,1)))toast('已粘贴图片，可预览后发送。');return;}
     const bird=target.closest('[data-bird-compose-form]');if(bird&&target.matches('textarea')){event.preventDefault();const available=Math.max(0,20-$$('[data-bird-remove-file]',bird).length);const accepted=images.slice(0,available);if(!accepted.length){toast('最多上传 20 张图片。');return;}if(handoffClipboardFiles($('[data-bird-files]',bird),accepted))toast(images.length>accepted.length?`已粘贴 ${accepted.length} 张，最多保留 20 张图片。`:accepted.length>1?`已粘贴 ${accepted.length} 张图片。`:'已粘贴图片。');return;}
     const chat=target.closest('[data-chat-compose]');if(chat&&target.matches('input[name="message"]')){event.preventDefault();sendChatMedia(images[0]).catch(error=>toast(error.message||'发送失败。'));}
-  });
+  },true);
   document.addEventListener('change',event=>{
     if(event.target.matches('[data-compose-image]')){const file=event.target.files?.[0];videoDrafts.compose=fileKind(file)==='video';}
     if(event.target.matches('[data-comment-image]')){const file=event.target.files?.[0];const id=String(event.target.dataset.commentImage||'');if(fileKind(file)==='video')videoDrafts.comments.add(id);else videoDrafts.comments.delete(id);}

@@ -76,7 +76,7 @@ function bindFufuMotion(){
   if(!visual||!character||window.matchMedia('(prefers-reduced-motion: reduce)').matches||!window.matchMedia('(pointer: fine)').matches)return;
   let frame=0;
   const move=(x,y)=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{character.style.setProperty('--fufu-x',`${x.toFixed(2)}px`);character.style.setProperty('--fufu-y',`${y.toFixed(2)}px`);});};
-  visual.addEventListener('pointermove',event=>{const rect=visual.getBoundingClientRect();const x=((event.clientX-rect.left)/rect.width-.5)*9;const y=((event.clientY-rect.top)/rect.height-.5)*5;move(x,y);});
+  visual.addEventListener('pointermove',event=>{const rect=visual.getBoundingClientRect();const x=((event.clientX-rect.left)/rect.width-.5)*6;move(x,0);});
   visual.addEventListener('pointerleave',()=>move(0,0));
 }
 function recentStickerUrls(){try{return JSON.parse(localStorage.getItem(RECENT_STICKERS_KEY)||'[]').filter(Boolean).slice(0,12);}catch{return[];}}
@@ -274,6 +274,10 @@ function reactionInfo(post){
 }
 function draftFor(postId){const key=String(postId);if(!commentDrafts.has(key))commentDrafts.set(key,{text:'',imageFile:null,imagePreview:'',stickers:new Set(),pickerTab:'emoji'});return commentDrafts.get(key);}
 function releasePreview(draft){if(draft?.imagePreview){try{URL.revokeObjectURL(draft.imagePreview);}catch{}}if(draft){draft.imageFile=null;draft.imagePreview='';}}
+function isImageFile(file){return Boolean(file)&&(/^image\//i.test(String(file.type||''))||/\.(?:jpe?g|png|webp|gif|bmp)$/i.test(String(file.name||'')));}
+function setComposeDraftFile(file){if(!file)return false;releasePreview(composeDraft);composeDraft.imageFile=file;composeDraft.imagePreview=URL.createObjectURL(file);renderCompose();return true;}
+function setCommentDraftFile(postId,file){if(!file)return false;const draft=draftFor(postId);releasePreview(draft);draft.imageFile=file;draft.imagePreview=URL.createObjectURL(file);renderPostDetail();return true;}
+function appendBirdDraftFiles(files){const requested=Array.from(files||[]).filter(isImageFile);const incoming=requested.slice(0,20-birdDraft.files.length);birdDraft.files.push(...incoming);birdDraft.previews.push(...incoming.map(file=>URL.createObjectURL(file)));if(incoming.length<requested.length)toast('最多上传 20 张图片。');renderBirdCompose();return incoming.length>0;}
 function selectedStickerPreview(draft,context,postId=''){
   const url=Array.from(draft.stickers||[])[0];if(!url)return'';
   const remove=context==='compose'?'data-compose-sticker-remove':`data-comment-sticker-remove="${esc(postId)}"`;
@@ -532,12 +536,18 @@ function bindForms(){
     if(event.target.matches('[data-compose-form] textarea')){composeDraft.text=event.target.value;const count=$('.compose-count');if(count)count.textContent=`${composeDraft.text.length}/500`;return;}
     const form=event.target.closest?.('[data-comment-form]');if(form&&event.target.matches('textarea'))draftFor(form.dataset.commentForm).text=event.target.value;
   });
+  document.addEventListener('fw:clipboard-files',event=>{
+    const files=Array.from(event.detail?.files||[]).filter(isImageFile);if(!files.length)return;
+    if(event.target.matches?.('[data-compose-image]')){event.preventDefault();setComposeDraftFile(files[0]);return;}
+    if(event.target.matches?.('[data-comment-image]')){event.preventDefault();setCommentDraftFile(event.target.dataset.commentImage,files[0]);return;}
+    if(event.target.matches?.('[data-bird-files]')){event.preventDefault();appendBirdDraftFiles(files);}
+  });
   document.addEventListener('change',event=>{
     if(event.target.matches('[data-auth-view="profile"] input[name="avatar"]')){const file=event.target.files?.[0];if(avatarPreviewUrl){URL.revokeObjectURL(avatarPreviewUrl);avatarPreviewUrl='';}if(!file){setAvatar($('[data-profile-avatar]'),accountState.user);return;}if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>10*1024*1024){event.target.value='';setAvatar($('[data-profile-avatar]'),accountState.user);setFormStatus('头像请选择 JPG、PNG 或 WebP，原图不超过 10MB。',true);return;}avatarPreviewUrl=URL.createObjectURL(file);const preview=$('[data-profile-avatar]');preview.textContent='';preview.style.backgroundImage=`url("${avatarPreviewUrl}")`;preview.classList.add('has-image');setFormStatus('将按中心裁剪为正方形，并自动压缩到适合头像的大小。');return;}
-    if(event.target.matches('[data-bird-files]')){const requested=Array.from(event.target.files||[]).filter(file=>/^image\//i.test(file.type||''));const incoming=requested.slice(0,20-birdDraft.files.length);birdDraft.files.push(...incoming);birdDraft.previews.push(...incoming.map(file=>URL.createObjectURL(file)));event.target.value='';if(incoming.length<requested.length)toast('最多上传 20 张图片。');renderBirdCompose();return;}
+    if(event.target.matches('[data-bird-files]')){appendBirdDraftFiles(event.target.files);event.target.value='';return;}
     if(event.target.matches('[data-bird-compose-form] input[name="displayMode"]')){birdDraft.displayMode=event.target.value;renderBirdCompose();return;}
-    if(event.target.matches('[data-compose-image]')){const file=event.target.files?.[0];if(!file)return;releasePreview(composeDraft);composeDraft.imageFile=file;composeDraft.imagePreview=URL.createObjectURL(file);renderCompose();return;}
-    if(event.target.matches('[data-comment-image]')){const file=event.target.files?.[0];if(!file)return;const draft=draftFor(event.target.dataset.commentImage);releasePreview(draft);draft.imageFile=file;draft.imagePreview=URL.createObjectURL(file);renderPostDetail();}
+    if(event.target.matches('[data-compose-image]')){setComposeDraftFile(event.target.files?.[0]);return;}
+    if(event.target.matches('[data-comment-image]'))setCommentDraftFile(event.target.dataset.commentImage,event.target.files?.[0]);
   });
   document.addEventListener('submit',async event=>{
     const birdCompose=event.target.closest?.('[data-bird-compose-form]');if(birdCompose){event.preventDefault();try{await birdStore.createPost({title:birdDraft.title,content:birdDraft.content,displayMode:birdDraft.displayMode,penName:birdDraft.penName,files:birdDraft.files});releaseBirdFiles();birdDraft.title='';birdDraft.content='';birdDraft.displayMode='profile';birdDraft.penName='';birdComposeOpen=false;toast('内容已发布。');renderBird();}catch(error){toast(error.message||'发布失败。');}return;}

@@ -14,6 +14,7 @@ function ensureStyles(){
     .compose-compact-tool{width:40px;height:40px;min-width:40px;border:1px solid rgba(27,27,24,.18);border-radius:999px;background:#fffdf7;color:#181916;display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:none;transition:transform .12s ease,border-color .12s ease,background .12s ease}
     .compose-compact-tool:hover,.compose-compact-tool[aria-expanded="true"]{border-color:rgba(217,121,121,.55);background:#fff8f4;transform:translateY(-1px)}
     .compose-compact-tool .ui-symbol{width:20px;height:20px}
+    .compose-paste-hint{margin-left:3px;color:#827b72;font-size:11px;font-weight:760;letter-spacing:.01em}
     .compose-compact-picker{margin-top:8px;padding:10px;border:1px solid rgba(27,27,24,.13);border-radius:14px;background:#fffaf3}
   `;
   document.head.appendChild(style);
@@ -28,7 +29,7 @@ function enhanceSurface(form,key){
     tools=document.createElement('div');tools.className='compose-compact-tools';tools.dataset.composeCompactTools='1';tools.dataset.pickerSurface=key;
     const legacy=key==='compose'?' data-compose-compact-emoji':' data-comment-compact-emoji';
     const legacyMedia=key==='compose'?' data-compose-compact-media':' data-comment-compact-media';
-    tools.innerHTML=`<button class="compose-compact-tool" type="button" data-compact-picker-toggle${legacy} aria-label="打开表情" aria-expanded="false">${icon('face')}</button><button class="compose-compact-tool" type="button" data-compact-media${legacyMedia} aria-label="添加图片或视频">${icon('media')}</button>`;
+    tools.innerHTML=`<button class="compose-compact-tool" type="button" data-compact-picker-toggle${legacy} aria-label="打开表情" aria-expanded="false">${icon('face')}</button><button class="compose-compact-tool" type="button" data-compact-media${legacyMedia} aria-label="添加图片或视频">${icon('media')}</button>${key==='compose'?'<span class="compose-paste-hint">Ctrl+V 粘贴图片</span>':''}`;
     const mediaTools=form.querySelector('.media-tools');
     if(mediaTools)mediaTools.before(tools);else form.querySelector('textarea')?.after(tools);
   }

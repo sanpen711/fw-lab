@@ -1,4 +1,4 @@
-/* F.w 研究所 Windows 1.3.3 — Figma-aligned desktop visual system. */
+/* F.w 研究所 Windows 1.3.4 — Figma-aligned desktop visual system. */
 
 :root{
   --bg:#f7f7f6!important;
@@ -120,10 +120,10 @@ html body .hero-halo{position:absolute!important;z-index:0!important;right:-28px
 html body .hero-platform{position:absolute!important;z-index:1!important;right:-18px!important;bottom:14px!important;width:492px!important;height:78px!important;border:1px solid rgba(206,195,184,.84)!important;border-radius:44px 44px 25px 25px!important;background:linear-gradient(180deg,#f7f1ed 0%,#eee6df 52%,#e3d8cf 100%)!important;box-shadow:0 24px 34px rgba(74,66,57,.13),inset 0 2px 0 rgba(255,255,255,.92),inset 0 -1px 0 rgba(180,164,151,.16)!important;}
 html body .hero-platform::before{content:""!important;position:absolute!important;z-index:1!important;left:12px!important;right:12px!important;top:-27px!important;height:55px!important;border:1px solid rgba(211,201,192,.86)!important;border-radius:50%!important;background:linear-gradient(180deg,#fffdfb 0%,#f7f1ed 58%,#eee5de 100%)!important;box-shadow:inset 0 7px 12px rgba(255,255,255,.86),0 7px 12px rgba(76,66,57,.07)!important;}
 html body .hero-platform::after{content:""!important;position:absolute!important;z-index:2!important;left:132px!important;top:-13px!important;width:254px!important;height:34px!important;border-radius:50%!important;background:radial-gradient(ellipse at center,rgba(74,67,61,.2) 0%,rgba(74,67,61,.09) 48%,transparent 74%)!important;filter:blur(4px)!important;opacity:.78!important;}
-html body .hero-character{--fufu-x:0px;--fufu-y:0px;position:absolute!important;z-index:3!important;right:46px!important;bottom:43px!important;width:372px!important;transform:translate3d(var(--fufu-x),var(--fufu-y),0)!important;transition:transform .5s cubic-bezier(.2,.8,.2,1)!important;will-change:transform!important;}
-html body .hero-character-motion{position:relative!important;width:100%!important;animation:fufu-breathe 5.6s ease-in-out infinite!important;transform-origin:54% 88%!important;will-change:transform!important;}
+html body .hero-character{--fufu-x:0px;--fufu-y:0px;position:absolute!important;z-index:3!important;right:46px!important;bottom:24px!important;width:372px!important;transform:translate3d(var(--fufu-x),var(--fufu-y),0)!important;transition:transform .5s cubic-bezier(.2,.8,.2,1)!important;will-change:transform!important;}
+html body .hero-character-motion{position:relative!important;width:100%!important;animation:fufu-breathe 5.8s ease-in-out infinite!important;transform-origin:54% 94%!important;will-change:transform!important;}
 html body .hero-mascot{display:block!important;width:100%!important;height:auto!important;object-fit:contain!important;filter:drop-shadow(0 18px 22px rgba(31,35,33,.13))!important;user-select:none!important;}
-html body .fufu-eye-blink{position:absolute!important;z-index:4!important;display:block!important;height:4.7%!important;border-bottom:2px solid #33312f!important;border-radius:50%!important;background:radial-gradient(ellipse at center,#efeeeb 24%,#f4f2ef 76%)!important;opacity:0!important;animation:fufu-blink 7.6s linear infinite!important;pointer-events:none!important;}
+html body .fufu-eye-blink{position:absolute!important;z-index:4!important;display:block!important;height:4.9%!important;border-bottom:3px solid #403f3c!important;border-radius:50%!important;background:radial-gradient(ellipse at center,#e8e7e4 18%,#f1efec 76%)!important;opacity:0!important;animation:fufu-blink 5.4s ease-in-out infinite!important;pointer-events:none!important;will-change:opacity!important;}
 html body .fufu-eye-blink.eye-left{left:27.5%!important;top:40.6%!important;width:7.5%!important;transform:rotate(11deg)!important;}
 html body .fufu-eye-blink.eye-right{left:55.1%!important;top:35.6%!important;width:7.8%!important;transform:rotate(-7deg)!important;}
 html body .fufu-antenna-light{position:absolute!important;z-index:4!important;left:35.4%!important;top:5.2%!important;width:7.4%!important;aspect-ratio:1!important;border-radius:50%!important;background:rgba(255,144,152,.34)!important;box-shadow:0 0 16px rgba(255,132,143,.34)!important;filter:blur(2px)!important;animation:fufu-antenna 2.4s ease-in-out infinite!important;pointer-events:none!important;}
@@ -159,8 +159,8 @@ html body .note-open{--tilt:2deg;--float-delay:-5.8s;left:17px!important;bottom:
 html body .note-news{--tilt:-3deg;--float-delay:-2.1s;right:16px!important;bottom:88px!important;font-size:10px!important;}
 
 @keyframes mascot-idle{0%,100%{transform:translateY(0) rotate(-.4deg)}50%{transform:translateY(-4px) rotate(.4deg)}}
-@keyframes fufu-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.006)}}
-@keyframes fufu-blink{0%,43%,45.2%,73%,75.1%,100%{opacity:0}43.5%,44.7%,73.5%,74.6%{opacity:1}}
+@keyframes fufu-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(1px) scale(1.004,.998)}}
+@keyframes fufu-blink{0%,40%,48%,100%{opacity:0}42%,46%{opacity:1}}
 @keyframes fufu-antenna{0%,100%{opacity:.3;transform:scale(.88)}50%{opacity:.78;transform:scale(1.08)}}
 @keyframes hero-note-float{0%,100%{transform:translateY(0) rotate(var(--tilt,0deg))}50%{transform:translateY(-3px) rotate(var(--tilt,0deg))}}
 @keyframes mascot-signal{0%,100%{opacity:.52;transform:scale(.86)}50%{opacity:1;transform:scale(1.08)}}
@@ -335,7 +335,7 @@ html body .connection-state.offline::before{background:#ff969e!important;}
   html body .hero-card h2{font-size:23px!important;}
   html body .hero-copy{font-size:13px!important;}
   html body .hero-visual{left:49%!important;}
-  html body .hero-character{right:-6px!important;bottom:43px!important;width:305px!important;}
+  html body .hero-character{right:-6px!important;bottom:24px!important;width:305px!important;}
   html body .hero-halo{right:-92px!important;width:390px!important;}
   html body .hero-platform{right:-84px!important;width:404px!important;}
   html body .hero-platform::after{left:112px!important;width:216px!important;}

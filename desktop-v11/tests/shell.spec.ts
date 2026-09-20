@@ -52,6 +52,9 @@ test('本地首页保留桌面视觉和完整导航框架',async({page})=>{
   await expect(page.locator('.sidebar')).toBeVisible();
   await expect(page.getByRole('heading',{name:'F.w 研究所'})).toBeVisible();
   await expect(page.locator('.hero-mascot')).toBeVisible();
+  await expect(page.locator('.hero-character')).toHaveCSS('bottom','24px');
+  await expect(page.locator('.fufu-eye-blink.eye-left')).toHaveCSS('animation-name','fufu-blink');
+  await expect(page.locator('.fufu-eye-blink.eye-left')).toHaveCSS('animation-duration','5.4s');
   await expect(page.locator('[data-mascot-status]')).not.toBeEmpty();
   await expect(page.locator('[data-nav="home"].nav-item')).toHaveClass(/active/);
   await expect(page.locator('[data-dot="square"]')).toBeHidden();
@@ -94,19 +97,20 @@ test('下班开黑是本地双栏页面并说明游戏 ID 的可见边界',async
 
 test('复制的图片可以直接粘贴到发布输入框',async({page})=>{
   await page.goto('/');
-  const result=await page.evaluate(()=>{
-    const form=document.createElement('form');form.dataset.composeForm='';
-    const textarea=document.createElement('textarea');
-    const input=document.createElement('input');input.type='file';input.dataset.composeImage='';
-    form.append(textarea,input);document.body.appendChild(form);
-    let fileName='';let fileType='';input.addEventListener('change',()=>{fileName=input.files?.[0]?.name||'';fileType=input.files?.[0]?.type||'';});
-    const imageData=new DataTransfer();imageData.items.add(new File([new Uint8Array([137,80,78,71])],'clipboard.png',{type:'image/png'}));
-    const imagePaste=new ClipboardEvent('paste',{clipboardData:imageData,bubbles:true,cancelable:true});textarea.dispatchEvent(imagePaste);
-    const textData=new DataTransfer();textData.setData('text/plain','普通文字');
-    const textPaste=new ClipboardEvent('paste',{clipboardData:textData,bubbles:true,cancelable:true});textarea.dispatchEvent(textPaste);
-    return{fileName,fileType,imagePrevented:imagePaste.defaultPrevented,textPrevented:textPaste.defaultPrevented};
+  await page.locator('[data-nav="compose"]').first().click();
+  await expect(page.locator('[data-compose-form]')).toBeVisible();
+  await expect(page.locator('.compose-paste-hint')).toHaveText('Ctrl+V 粘贴图片');
+  const imagePrevented=await page.locator('[data-compose-form] textarea').evaluate(textarea=>{
+    const imageData=new DataTransfer();imageData.items.add(new File([new Uint8Array([137,80,78,71])],'clipboard.png',{type:''}));
+    const imagePaste=new ClipboardEvent('paste',{clipboardData:imageData,bubbles:true,cancelable:true});textarea.dispatchEvent(imagePaste);return imagePaste.defaultPrevented;
   });
-  expect(result).toEqual({fileName:'clipboard.png',fileType:'image/png',imagePrevented:true,textPrevented:false});
+  expect(imagePrevented).toBe(true);
+  await expect(page.locator('[data-compose-form] .image-preview img')).toHaveAttribute('src',/^blob:/);
+  await expect(page.locator('[data-toast]')).toContainText('已粘贴图片');
+  const textPrevented=await page.locator('[data-compose-form] textarea').evaluate(textarea=>{
+    const textData=new DataTransfer();textData.setData('text/plain','普通文字');const textPaste=new ClipboardEvent('paste',{clipboardData:textData,bubbles:true,cancelable:true});textarea.dispatchEvent(textPaste);return textPaste.defaultPrevented;
+  });
+  expect(textPrevented).toBe(false);
 });
 
 test('首页轻工具按天气、下班倒计时和反馈意见排列',async({page})=>{
