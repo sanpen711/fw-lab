@@ -1,11 +1,11 @@
 {
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.4-setup.exe",
-  "sha256": "c3bd7065cfa14d6d88d3c421b50e284fea8eb0e8f4e67a9d16e2ec8189e1ab30",
-  "rollbackVersion": "1.0.5",
-  "notes": "Windows 1.3.4：修正伏伏落座与眨眼动画，并恢复发牢骚的剪贴板图片粘贴。",
-  "version": "1.3.4",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "publishedAt": "2026-09-20T00:59:48.0675806Z",
+  "sha256": "c82afd8ed2f8a5196920d762aa8b32b90f3521e0eb6a0520798bb500899823fc",
+  "version": "1.3.5",
+  "publishedAt": "2026-09-20T02:43:50.3627011Z",
+  "platform": "Windows 10/11 64 位",
   "available": true,
-  "platform": "Windows 10/11 64 位"
+  "notes": "Windows 1.3.5：伏伏改为静态默认坐姿，重做柔软坐台与落座位置，取消眨眼及动作效果。",
+  "rollbackVersion": "1.0.5",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.5-setup.exe",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
 }
