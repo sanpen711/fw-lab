@@ -52,9 +52,12 @@ test('本地首页保留桌面视觉和完整导航框架',async({page})=>{
   await expect(page.locator('.sidebar')).toBeVisible();
   await expect(page.getByRole('heading',{name:'F.w 研究所'})).toBeVisible();
   await expect(page.locator('.hero-mascot')).toBeVisible();
-  await expect(page.locator('.hero-character')).toHaveCSS('bottom','24px');
-  await expect(page.locator('.fufu-eye-blink.eye-left')).toHaveCSS('animation-name','fufu-blink');
-  await expect(page.locator('.fufu-eye-blink.eye-left')).toHaveCSS('animation-duration','5.4s');
+  await expect(page.locator('.hero-mascot')).toHaveCount(1);
+  await expect(page.locator('.hero-character')).toHaveCSS('bottom','-12px');
+  await expect(page.locator('.hero-character')).toHaveCSS('transform','none');
+  await expect(page.locator('.hero-character-motion')).toHaveCSS('animation-name','none');
+  await expect(page.locator('.hero-note').first()).toHaveCSS('animation-name','none');
+  await expect(page.locator('[data-fufu-frame],.fufu-eye-blink')).toHaveCount(0);
   await expect(page.locator('[data-mascot-status]')).not.toBeEmpty();
   await expect(page.locator('[data-nav="home"].nav-item')).toHaveClass(/active/);
   await expect(page.locator('[data-dot="square"]')).toBeHidden();

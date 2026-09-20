@@ -71,14 +71,6 @@ function setMascotGreeting(){
   const node=$('[data-mascot-status]');if(!node)return;const hour=new Date().getHours();
   node.textContent=hour<11?'今日研究任务已启动':hour<14?'午间低功耗运行中':hour<18?'检测到下班时间正在靠近':'今日研究暂告一段落';
 }
-function bindFufuMotion(){
-  const visual=$('[data-fufu-visual]');const character=$('[data-fufu-character]');
-  if(!visual||!character||window.matchMedia('(prefers-reduced-motion: reduce)').matches||!window.matchMedia('(pointer: fine)').matches)return;
-  let frame=0;
-  const move=(x,y)=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{character.style.setProperty('--fufu-x',`${x.toFixed(2)}px`);character.style.setProperty('--fufu-y',`${y.toFixed(2)}px`);});};
-  visual.addEventListener('pointermove',event=>{const rect=visual.getBoundingClientRect();const x=((event.clientX-rect.left)/rect.width-.5)*6;move(x,0);});
-  visual.addEventListener('pointerleave',()=>move(0,0));
-}
 function recentStickerUrls(){try{return JSON.parse(localStorage.getItem(RECENT_STICKERS_KEY)||'[]').filter(Boolean).slice(0,12);}catch{return[];}}
 function rememberSticker(url){if(!url)return;const next=[url,...recentStickerUrls().filter(item=>item!==url)].slice(0,12);try{localStorage.setItem(RECENT_STICKERS_KEY,JSON.stringify(next));}catch{}}
 function sortedStickers(){const recent=recentStickerUrls();return [...(socialState.stickers.rows||[])].sort((a,b)=>{const ai=recent.indexOf(a.image_url);const bi=recent.indexOf(b.image_url);return (ai<0?999:ai)-(bi<0?999:bi);});}
@@ -558,4 +550,4 @@ function bindForms(){
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
-bindSidebarMore();bindNavigation();bindForms();bindFufuMotion();authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();
+bindSidebarMore();bindNavigation();bindForms();authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();
