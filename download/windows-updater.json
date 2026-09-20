@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-09-20T02:43:50.3627011Z",
+  "pub_date": "2026-09-20T06:53:28.0943009Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmRGVHp1ektUTXVXQ1lrR3F6bXIvMkVrWEc2eFZ1Z2NaR3ZpYm5YVUhpdXBPTDBYTWdKUGJjbDYvV0wybE1ra3FhcFZvUlNQbmdzeGl4d0RZSkNiaWdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5ODcyMjI5CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuNV94NjQtc2V0dXAuZXhlCldJRXpzSlpSMUdySmJRUFJnSnUwbFM3VDdKRjhhNnFscmxvYks4TnluNTJIZWNKRnVGc0xDa2k5UzEzdDlNQ2FReEZYQmVpT1JpRXZaRDEzUDdEckR3PT0K",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.5-setup.exe"
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.6-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmN5L3Z3WkZwKy92MDN0ZUlsaDRFSk5WTkJFcmV3dE9Ea24zQzFqSTRxbzAzR0ZYNkVkbkExMzM1R3d2d2tiSjVCdGNnaTdqc2I2ekdpc1hhZUZIUVEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5ODg3MjA3CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuNl94NjQtc2V0dXAuZXhlCndmanE4bmQ2RVhhaWFCTHkxdCswaXFnaWFMWWMvRGdhVjZ1aUNPbHgrdnFsQWZGdU91aklXcXVPNHNzRldRdEQzMWhuYjVSeEhGRVREUThhZFYzaENRPT0K"
     }
   },
-  "version": "1.3.5",
-  "notes": "Windows 1.3.5：伏伏改为静态默认坐姿，重做柔软坐台与落座位置，取消眨眼及动作效果。"
+  "notes": "Windows 1.3.6：首页伏伏改为自然落地坐姿，上移主视觉，柔化左右背景衔接并提升便签文字清晰度。",
+  "version": "1.3.6"
 }

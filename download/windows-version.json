@@ -1,11 +1,11 @@
 {
-  "sha256": "c82afd8ed2f8a5196920d762aa8b32b90f3521e0eb6a0520798bb500899823fc",
-  "version": "1.3.5",
-  "publishedAt": "2026-09-20T02:43:50.3627011Z",
-  "platform": "Windows 10/11 64 位",
   "available": true,
-  "notes": "Windows 1.3.5：伏伏改为静态默认坐姿，重做柔软坐台与落座位置，取消眨眼及动作效果。",
+  "sha256": "b3699266e6ab111741ac97f799efc9d80e31d5150f8842bba3c1747b89a60d31",
+  "notes": "Windows 1.3.6：首页伏伏改为自然落地坐姿，上移主视觉，柔化左右背景衔接并提升便签文字清晰度。",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "version": "1.3.6",
+  "platform": "Windows 10/11 64 位",
+  "publishedAt": "2026-09-20T06:53:28.0943009Z",
   "rollbackVersion": "1.0.5",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.5-setup.exe",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.6-setup.exe"
 }
