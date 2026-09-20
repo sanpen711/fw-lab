@@ -22,7 +22,7 @@ let current='';
 function frameUrl(game){
   const target=game.page||`./games/${game.path}/index.html`;
   const url=new URL(target,document.baseURI);
-  url.searchParams.set('v','1.3.5');
+  url.searchParams.set('v','1.3.6');
   return url.href;
 }
 

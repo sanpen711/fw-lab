@@ -53,8 +53,11 @@ test('本地首页保留桌面视觉和完整导航框架',async({page})=>{
   await expect(page.getByRole('heading',{name:'F.w 研究所'})).toBeVisible();
   await expect(page.locator('.hero-mascot')).toBeVisible();
   await expect(page.locator('.hero-mascot')).toHaveCount(1);
-  await expect(page.locator('.hero-character')).toHaveCSS('bottom','-12px');
+  await expect(page.locator('.hero-character')).toHaveCSS('bottom','14px');
   await expect(page.locator('.hero-character')).toHaveCSS('transform','none');
+  await expect(page.locator('.hero-ground')).toBeVisible();
+  await expect(page.locator('.hero-note').first()).toHaveCSS('transform','none');
+  await expect(page.locator('.hero-note').first()).toHaveCSS('backdrop-filter','none');
   await expect(page.locator('.hero-character-motion')).toHaveCSS('animation-name','none');
   await expect(page.locator('.hero-note').first()).toHaveCSS('animation-name','none');
   await expect(page.locator('[data-fufu-frame],.fufu-eye-blink')).toHaveCount(0);
