@@ -1,11 +1,11 @@
 {
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.7-setup.exe",
   "available": true,
-  "sha256": "b3699266e6ab111741ac97f799efc9d80e31d5150f8842bba3c1747b89a60d31",
-  "notes": "Windows 1.3.6：首页伏伏改为自然落地坐姿，上移主视觉，柔化左右背景衔接并提升便签文字清晰度。",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "version": "1.3.6",
-  "platform": "Windows 10/11 64 位",
-  "publishedAt": "2026-09-20T06:53:28.0943009Z",
+  "notes": "Windows 1.3.7：新增内置静态表情包“伏伏1”，包含 24 个常用、上班摸鱼和平台状态表情。",
+  "version": "1.3.7",
   "rollbackVersion": "1.0.5",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.6-setup.exe"
+  "publishedAt": "2026-09-21T01:03:31.9833367Z",
+  "platform": "Windows 10/11 64 位",
+  "sha256": "a4ff865fee58185fe72bb1d37520d163e32328178713f5086f4f7961084c45ec",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
 }

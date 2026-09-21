@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-09-20T06:53:28.0943009Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.6-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmN5L3Z3WkZwKy92MDN0ZUlsaDRFSk5WTkJFcmV3dE9Ea24zQzFqSTRxbzAzR0ZYNkVkbkExMzM1R3d2d2tiSjVCdGNnaTdqc2I2ekdpc1hhZUZIUVEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5ODg3MjA3CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuNl94NjQtc2V0dXAuZXhlCndmanE4bmQ2RVhhaWFCTHkxdCswaXFnaWFMWWMvRGdhVjZ1aUNPbHgrdnFsQWZGdU91aklXcXVPNHNzRldRdEQzMWhuYjVSeEhGRVREUThhZFYzaENRPT0K"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlhiWlgwdkR0NTB1K2lhbTlNZEI5M3hacnNhMUJuWkphelpSNGttQjNva1Q0NFJIVkw2RnpYZENkdjZsQmpFd3ZLdVJQdFdVcm1mTTRHUUFFY0c4dUFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5OTUyNjA5CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuN194NjQtc2V0dXAuZXhlCmZwSW14aXJJVEpCcGd1RkF1MGU3ajQ4MUhOOUVkbmhmaWY4cTFxM2VRY3RabWJrUTc2MDh3RVYycndlRnpNYjc0TVhhZEVFWDZmWUpXVGs5YVlpN0NBPT0K",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.7-setup.exe"
     }
   },
-  "notes": "Windows 1.3.6：首页伏伏改为自然落地坐姿，上移主视觉，柔化左右背景衔接并提升便签文字清晰度。",
-  "version": "1.3.6"
+  "pub_date": "2026-09-21T01:03:31.9833367Z",
+  "version": "1.3.7",
+  "notes": "Windows 1.3.7：新增内置静态表情包“伏伏1”，包含 24 个常用、上班摸鱼和平台状态表情。"
 }
