@@ -67,10 +67,10 @@ window.__FW_DESKTOP_V11__={version:APP_VERSION,architecture:'local-frontend',con
 function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
 function uiIcon(name,className=''){return `<svg class="ui-symbol ${esc(className)}" aria-hidden="true"><use href="/ui-icons.svg#${esc(name)}"></use></svg>`;}
 function emojiImage(item,className=''){return `<img class="twemoji ${esc(className)}" src="/emoji/twemoji/${esc(item[1])}.svg" alt="${esc(item[0])}" draggable="false">`;}
-function fufuImage(item,className=''){return `<img class="fufu-emoji ${esc(className)}" src="/emoji/fufu1/${esc(item[1])}" alt="${esc(item[2])}" draggable="false">`;}
+function fufuImage(item,className='',lightbox=false){const src=`/emoji/fufu1/${item[1]}`;return `<img class="fufu-emoji ${esc(className)}" src="${esc(src)}" alt="${esc(item[2])}" draggable="false"${lightbox?` data-lightbox-src="${esc(src)}" data-fufu-preview`:''}>`;}
 function emojiText(value){
   let html=esc(value);
-  FUFU_PACK.forEach(item=>{html=html.split(esc(item[0])).join(fufuImage(item,'inline'));});
+  FUFU_PACK.forEach(item=>{html=html.split(esc(item[0])).join(fufuImage(item,'inline',true));});
   EMOJIS.slice().sort((a,b)=>b[0].length-a[0].length).forEach(item=>{html=html.split(esc(item[0])).join(emojiImage(item,'inline'));});
   return html.replace(/\n/g,'<br>');
 }
@@ -106,8 +106,8 @@ function setAvatar(element,user){
   else{element.textContent=initials(user?.nickname);element.classList.remove('has-image');}
 }
 function toast(message){const node=$('[data-toast]');node.textContent=message;node.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>node.classList.remove('show'),2800);}
-function openLightbox(url){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||!image||!url)return;image.src=url;modal.hidden=false;document.body.classList.add('lightbox-open');}
-function closeLightbox(){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||modal.hidden)return;modal.hidden=true;if(image)image.removeAttribute('src');document.body.classList.remove('lightbox-open');}
+function openLightbox(url){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||!image||!url)return;image.src=url;modal.classList.toggle('sticker-preview',String(url).includes('/emoji/fufu1/'));modal.hidden=false;document.body.classList.add('lightbox-open');}
+function closeLightbox(){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||modal.hidden)return;modal.hidden=true;modal.classList.remove('sticker-preview');if(image)image.removeAttribute('src');document.body.classList.remove('lightbox-open');}
 function setFormStatus(message,error=false){const node=$('[data-form-status]');node.textContent=message||'';node.classList.toggle('error',error);}
 function timeText(value){
   if(!value)return'刚刚';const date=new Date(value);if(Number.isNaN(date.getTime()))return'刚刚';const minutes=Math.floor(Math.max(0,Date.now()-date.getTime())/60000);if(minutes<1)return'刚刚';if(minutes<60)return`${minutes}分钟前`;const hours=Math.floor(minutes/60);if(hours<24)return`${hours}小时前`;const days=Math.floor(hours/24);return days<7?`${days}天前`:date.toLocaleDateString('zh-CN');
