@@ -119,7 +119,8 @@ function safeMediaUrl(encoded){try{const url=new URL(atob(encoded));return['http
 function richContent(value){
   const source=String(value||'');const pattern=/\[\[(FW_MEDIA_IMAGE|FW_USER_STICKER):([A-Za-z0-9+/=]+)\]\]/g;let cursor=0;let match;const text=[];const media=[];
   while((match=pattern.exec(source))){text.push(source.slice(cursor,match.index));const url=safeMediaUrl(match[2]);if(url)media.push(match[1]==='FW_USER_STICKER'?`<img class="rich-sticker" src="${esc(url)}" alt="自定义表情" loading="lazy">`:`<img class="rich-image" src="${esc(url)}" alt="帖子图片，点击查看原图" loading="lazy" data-lightbox-src="${esc(url)}">`);cursor=match.index+match[0].length;}
-  text.push(source.slice(cursor));const clean=text.join('').trim();return `${clean?`<div class="rich-text">${emojiText(clean)}</div>`:''}${media.length?`<div class="rich-media">${media.join('')}</div>`:''}`||'<div class="rich-text">（空白记录）</div>';
+  text.push(source.slice(cursor));const clean=text.join('').trim();const standaloneFufu=!media.length&&FUFU_PACK.some(item=>item[0]===clean);
+  return `${clean?`<div class="rich-text${standaloneFufu?' fufu-only':''}">${emojiText(clean)}</div>`:''}${media.length?`<div class="rich-media">${media.join('')}</div>`:''}`||'<div class="rich-text">（空白记录）</div>';
 }
 
 function money(cents){return `¥${(Number(cents||0)/100).toFixed(Number(cents||0)%100?1:0)}`;}
@@ -286,15 +287,15 @@ function selectedStickerPreview(draft,context,postId=''){
   return `<div class="selected-sticker-preview"><img src="${esc(url)}" alt="已选择的表情"><span>已选择 1 个表情</span><button type="button" ${remove}>移除</button></div>`;
 }
 function sharedPicker(draft,context,postId=''){
-  const tab=draft.pickerTab||'emoji';const suffix=postId?` data-post-id="${esc(postId)}"`:'';const commentLayout=context==='comment';
+  const tab=draft.pickerTab||'emoji';const suffix=postId?` data-post-id="${esc(postId)}"`:'';const unifiedLayout=context==='compose'||context==='comment';
   const tabs=`<div class="inline-picker-tabs" role="tablist"><button class="${tab==='emoji'?'active':''}" type="button" data-${context}-picker-tab="emoji"${suffix}>小表情</button><button class="${tab==='stickers'?'active':''}" type="button" data-${context}-picker-tab="stickers"${suffix}>我的表情</button><button class="${tab==='fufu1'?'active':''}" type="button" data-${context}-picker-tab="fufu1"${suffix}>伏伏1</button></div>`;
   if(tab==='emoji')return `${tabs}<div class="inline-emoji-grid">${EMOJIS.map(item=>`<button type="button" data-${context}-emoji="${esc(item[0])}"${suffix} aria-label="${esc(item[0])}">${emojiImage(item)}</button>`).join('')}</div>`;
-  if(tab==='fufu1')return `${tabs}<div class="inline-fufu-grid${commentLayout?' labeled-sticker-pack':''}">${FUFU_PACK.map(item=>commentLayout?`<div class="fufu-pack-item"><button type="button" data-${context}-emoji="${esc(item[0])}"${suffix} aria-label="${esc(item[2])}">${fufuImage(item)}</button><span title="${esc(item[2])}">${esc(item[2])}</span></div>`:`<button type="button" data-${context}-emoji="${esc(item[0])}"${suffix} aria-label="${esc(item[2])}">${fufuImage(item)}</button>`).join('')}</div>`;
+  if(tab==='fufu1')return `${tabs}<div class="inline-fufu-grid${unifiedLayout?' labeled-sticker-pack':''}">${FUFU_PACK.map(item=>unifiedLayout?`<div class="fufu-pack-item"><button type="button" data-${context}-emoji="${esc(item[0])}"${suffix} aria-label="${esc(item[2])}">${fufuImage(item)}</button><span title="${esc(item[2])}">${esc(item[2])}</span></div>`:`<button type="button" data-${context}-emoji="${esc(item[0])}"${suffix} aria-label="${esc(item[2])}">${fufuImage(item)}</button>`).join('')}</div>`;
   if(socialState.stickers.loading&&!socialState.stickers.loaded)return `${tabs}<div class="state-card small">正在读取我的表情...</div>`;
   const rows=sortedStickers();const attribute=`data-${context}-sticker`;
-  const toolbar=commentLayout?`<div class="sticker-toolbar sticker-library-meta"><span>${rows.length}/${membershipStore.stickerLimit()}</span><small>最大 1MB · 每次选择 1 个</small></div>`:`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>${uiIcon('media')}添加表情</button><span>${rows.length}/${membershipStore.stickerLimit()} · 最大 1MB · 发送时仅选 1 个</span></div>`;
-  const addTile=commentLayout?`<div class="inline-sticker-item sticker-add-item"><button type="button" data-upload-sticker aria-label="添加表情"><b aria-hidden="true">＋</b><span>添加</span></button></div>`:'';
-  const gridClass=`inline-sticker-grid${commentLayout?' comment-sticker-grid':''}${!rows.length?' is-empty':''}`;
+  const toolbar=unifiedLayout?`<div class="sticker-toolbar sticker-library-meta"><span>${rows.length}/${membershipStore.stickerLimit()}</span><small>最大 1MB · 每次选择 1 个</small></div>`:`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>${uiIcon('media')}添加表情</button><span>${rows.length}/${membershipStore.stickerLimit()} · 最大 1MB · 发送时仅选 1 个</span></div>`;
+  const addTile=unifiedLayout?`<div class="inline-sticker-item sticker-add-item"><button type="button" data-upload-sticker aria-label="添加表情"><b aria-hidden="true">＋</b><span>添加</span></button></div>`:'';
+  const gridClass=`inline-sticker-grid${unifiedLayout?' unified-sticker-grid':''}${!rows.length?' is-empty':''}`;
   return `${tabs}${toolbar}<div class="${gridClass}"${!rows.length?' aria-label="我的表情为空"':''}>${addTile}${rows.map(row=>{const on=draft.stickers.has(row.image_url);return `<div class="inline-sticker-item"><button class="${on?'selected':''}" type="button" ${attribute}="${esc(row.image_url)}"${suffix} aria-pressed="${on}"><img src="${esc(row.image_url)}" alt="我的表情"></button><button class="inline-sticker-delete" type="button" data-delete-sticker="${esc(row.id)}" aria-label="删除这个表情">×</button></div>`;}).join('')}</div>`;
 }
 function renderCompose(){

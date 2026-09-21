@@ -236,6 +236,13 @@ test('发牢骚和精神广场均为本地页面且内容按需读取',async({pa
   await expect(page.locator('[data-view-panel="compose"]')).toHaveClass(/active/);
   await expect(page.getByRole('heading',{name:'发一句牢骚'})).toBeVisible();
   await expect(page.locator('[data-compose-form]')).toBeVisible();
+  await page.locator('[data-compose-compact-emoji]').click();
+  await expect(page.locator('[data-compose-form] .compose-compact-picker')).toBeVisible();
+  await page.locator('[data-compose-picker-tab="fufu1"]').click();
+  await expect(page.locator('[data-compose-form] .fufu-pack-item')).toHaveCount(24);
+  await expect(page.locator('[data-compose-form] .fufu-pack-item').first()).toContainText('默认微笑');
+  await expect.poll(()=>page.locator('[data-compose-form] .labeled-sticker-pack').evaluate(node=>getComputedStyle(node).gridTemplateColumns.split(' ').length)).toBe(5);
+  await expect.poll(()=>page.locator('[data-compose-form] .compose-compact-picker').evaluate(node=>Math.round(node.getBoundingClientRect().width))).toBeLessThanOrEqual(520);
   expect(page.url()).toBe(original);
   await page.locator('[data-nav="square"].nav-item').click();
   await expect(page.locator('[data-view-panel="square"]')).toHaveClass(/active/);
