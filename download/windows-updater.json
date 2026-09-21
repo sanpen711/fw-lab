@@ -1,11 +1,11 @@
 {
-  "version": "1.3.9",
+  "pub_date": "2026-09-21T08:27:54.2471611Z",
+  "notes": "Windows 1.3.10：放大精神广场中的纯伏伏帖子，并将发帖表情面板与评论区统一为五列正方形布局。",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.9-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWllLWHNFVWgzQWx1TGtNZWFqZURTeHU3a0hTeHVoWTZSbFhHVWh6T1RqRGlvYjZQMEhDdGJleWsrRWtDWTZ3UGNIeTF1SlVWYU5kV3g4S2laajJqdUFFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5OTc1ODE1CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuOV94NjQtc2V0dXAuZXhlCllUT0Q0RHZSSlVrYkxUempYSXI2STBJSW5QdmVab0ZETnIvUzNFcXNUU2pGYVp5VUFFaHQxMXBmSXJ5V3kwSVY1SFZyZjR4U3JxaXRnRnJrMWltakFnPT0K"
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.10-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlRDN0xOMjlyU29HUWRZYTgvYUhMaGhXRUJSODJyQnZoa2pmM0UzOEoyaGRiM3JyelpKSVpqZzFPUllvNldpZk5zV1NDUk1iZDBEaXNxYnBzWXpDTkEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5OTc5MjczCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMTBfeDY0LXNldHVwLmV4ZQpOWjlyR3RQb2M0eEpCVU1IRFBkNUc4UmVKR0lMOGZ6TUZUb1F4eGxFWUVyVkp6cTRQMXV2RGwvWGJhaytWOTZGZjRLYU9saXlldnQ3VTQ0UlZxd0RBdz09Cg=="
     }
   },
-  "notes": "Windows 1.3.9：将“伏伏1”升级为 24 张 1024×1024 高清正方形表情，优化帖子和评论显示尺寸，并支持点击查看高清图。",
-  "pub_date": "2026-09-21T07:30:15.6646130Z"
+  "version": "1.3.10"
 }

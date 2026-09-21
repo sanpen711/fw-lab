@@ -1,11 +1,11 @@
 {
-  "publishedAt": "2026-09-21T07:30:15.6646130Z",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.9-setup.exe",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "notes": "Windows 1.3.9：将“伏伏1”升级为 24 张 1024×1024 高清正方形表情，优化帖子和评论显示尺寸，并支持点击查看高清图。",
   "platform": "Windows 10/11 64 位",
-  "rollbackVersion": "1.0.5",
+  "publishedAt": "2026-09-21T08:27:54.2471611Z",
+  "version": "1.3.10",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.10-setup.exe",
   "available": true,
-  "sha256": "af5429702b71023ecf353b5ff3f118711181b029e4dadd6a808a84079f2115b6",
-  "version": "1.3.9"
+  "rollbackVersion": "1.0.5",
+  "sha256": "56072c03ed5290d04e3b44a702aee5b697c669f272a795633b85fae86ce8fe08",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "notes": "Windows 1.3.10：放大精神广场中的纯伏伏帖子，并将发帖表情面板与评论区统一为五列正方形布局。"
 }
