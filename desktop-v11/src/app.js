@@ -25,6 +25,14 @@ const EMOJIS=[
   ['❤️','2764'],['💕','1f495'],['💖','1f496'],['💔','1f494'],['💯','1f4af'],['🔥','1f525'],['✨','2728'],['⭐','2b50'],['🌟','1f31f'],['💥','1f4a5'],
   ['🎉','1f389'],['🎁','1f381'],['🏆','1f3c6'],['🚀','1f680'],['☕','2615'],['🍓','1f353'],['🍉','1f349'],['🐶','1f436'],['🐱','1f431'],['🐟','1f41f']
 ];
+const FUFU_PACK=[
+  ['[伏伏1:01]','01.webp','默认微笑'],['[伏伏1:02]','02.webp','开心大笑'],['[伏伏1:03]','03.webp','点头收到'],['[伏伏1:04]','04.webp','点赞好耶'],
+  ['[伏伏1:05]','05.webp','比心感谢'],['[伏伏1:06]','06.webp','歪头疑惑'],['[伏伏1:07]','07.webp','震惊'],['[伏伏1:08]','08.webp','无语摊手'],
+  ['[伏伏1:09]','09.webp','生气鼓脸'],['[伏伏1:10]','10.webp','委屈想哭'],['[伏伏1:11]','11.webp','咖啡续命'],['[伏伏1:12]','12.webp','笔记本办公'],
+  ['[伏伏1:13]','13.webp','趴桌没电'],['[伏伏1:14]','14.webp','偷偷摸鱼'],['[伏伏1:15]','15.webp','开会发呆'],['[伏伏1:16]','16.webp','文件堆工作'],
+  ['[伏伏1:17]','17.webp','吃瓜围观'],['[伏伏1:18]','18.webp','下班冲刺'],['[伏伏1:19]','19.webp','确认登录'],['[伏伏1:20]','20.webp','加载中'],
+  ['[伏伏1:21]','21.webp','暂无内容'],['[伏伏1:22]','22.webp','搜索不到'],['[伏伏1:23]','23.webp','操作成功'],['[伏伏1:24]','24.webp','出错维护']
+];
 const RECENT_STICKERS_KEY='fw:desktop:v11:recent-stickers';
 const VIP_MOTION_MS=6000;
 let accountState={ready:false,busy:false,user:null};
@@ -59,8 +67,10 @@ window.__FW_DESKTOP_V11__={version:APP_VERSION,architecture:'local-frontend',con
 function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
 function uiIcon(name,className=''){return `<svg class="ui-symbol ${esc(className)}" aria-hidden="true"><use href="/ui-icons.svg#${esc(name)}"></use></svg>`;}
 function emojiImage(item,className=''){return `<img class="twemoji ${esc(className)}" src="/emoji/twemoji/${esc(item[1])}.svg" alt="${esc(item[0])}" draggable="false">`;}
+function fufuImage(item,className=''){return `<img class="fufu-emoji ${esc(className)}" src="/emoji/fufu1/${esc(item[1])}" alt="${esc(item[2])}" draggable="false">`;}
 function emojiText(value){
   let html=esc(value);
+  FUFU_PACK.forEach(item=>{html=html.split(esc(item[0])).join(fufuImage(item,'inline'));});
   EMOJIS.slice().sort((a,b)=>b[0].length-a[0].length).forEach(item=>{html=html.split(esc(item[0])).join(emojiImage(item,'inline'));});
   return html.replace(/\n/g,'<br>');
 }
@@ -277,8 +287,9 @@ function selectedStickerPreview(draft,context,postId=''){
 }
 function sharedPicker(draft,context,postId=''){
   const tab=draft.pickerTab||'emoji';const suffix=postId?` data-post-id="${esc(postId)}"`:'';
-  const tabs=`<div class="inline-picker-tabs" role="tablist"><button class="${tab==='emoji'?'active':''}" type="button" data-${context}-picker-tab="emoji"${suffix}>小表情</button><button class="${tab==='stickers'?'active':''}" type="button" data-${context}-picker-tab="stickers"${suffix}>我的表情</button></div>`;
+  const tabs=`<div class="inline-picker-tabs" role="tablist"><button class="${tab==='emoji'?'active':''}" type="button" data-${context}-picker-tab="emoji"${suffix}>小表情</button><button class="${tab==='stickers'?'active':''}" type="button" data-${context}-picker-tab="stickers"${suffix}>我的表情</button><button class="${tab==='fufu1'?'active':''}" type="button" data-${context}-picker-tab="fufu1"${suffix}>伏伏1</button></div>`;
   if(tab==='emoji')return `${tabs}<div class="inline-emoji-grid">${EMOJIS.map(item=>`<button type="button" data-${context}-emoji="${esc(item[0])}"${suffix} aria-label="${esc(item[0])}">${emojiImage(item)}</button>`).join('')}</div>`;
+  if(tab==='fufu1')return `${tabs}<div class="inline-fufu-grid">${FUFU_PACK.map(item=>`<button type="button" data-${context}-emoji="${esc(item[0])}"${suffix} aria-label="${esc(item[2])}">${fufuImage(item)}</button>`).join('')}</div>`;
   if(socialState.stickers.loading&&!socialState.stickers.loaded)return `${tabs}<div class="state-card small">正在读取我的表情...</div>`;
   const rows=sortedStickers();const attribute=`data-${context}-sticker`;
   const toolbar=`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>${uiIcon('media')}添加表情</button><span>${rows.length}/${membershipStore.stickerLimit()} · 最大 1MB · 发送时仅选 1 个</span></div>`;
@@ -426,6 +437,7 @@ function renderChat(){
 function renderEmojiPanel(){
   const body=$('[data-emoji-body]');if(!body)return;$$('[data-emoji-tab]').forEach(button=>button.classList.toggle('active',button.dataset.emojiTab===emojiTab));
   if(emojiTab==='emoji'){body.innerHTML=`<div class="emoji-grid">${EMOJIS.map(item=>`<button type="button" data-insert-emoji="${esc(item[0])}" aria-label="${esc(item[0])}">${emojiImage(item)}</button>`).join('')}</div>`;return;}
+  if(emojiTab==='fufu1'){body.innerHTML=`<div class="fufu-grid">${FUFU_PACK.map(item=>`<button type="button" data-insert-emoji="${esc(item[0])}" aria-label="${esc(item[2])}">${fufuImage(item)}</button>`).join('')}</div>`;return;}
   if(socialState.stickers.loading&&!socialState.stickers.loaded){body.innerHTML='<div class="state-card small">正在读取我的表情...</div>';return;}
   const rows=sortedStickers();body.innerHTML=`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>${uiIcon('media')}添加表情</button><span>${rows.length}/${membershipStore.stickerLimit()} · 最大 1MB</span></div>`+(rows.length?`<div class="sticker-grid">${rows.map(row=>`<div class="sticker-item"><button type="button" data-send-sticker="${esc(row.image_url)}"><img src="${esc(row.image_url)}" alt="表情"></button><button class="sticker-delete" type="button" data-delete-sticker="${esc(row.id)}" aria-label="删除表情">×</button></div>`).join('')}</div>`:'<div class="state-card small">还没有添加自定义表情；可以添加 JPG、PNG、WebP 或 GIF。</div>');
 }

@@ -168,6 +168,9 @@ test('搭子和私聊使用本地左右分栏且没有定时轮询',async({page}
   await page.locator('[data-emoji-toggle]').evaluate((button:HTMLButtonElement)=>{button.disabled=false;button.click();});
   await expect(page.locator('[data-emoji-body] .emoji-grid button')).toHaveCount(89);
   await expect(page.locator('[data-emoji-body] .twemoji')).toHaveCount(89);
+  await page.locator('[data-emoji-tab="fufu1"]').click();
+  await expect(page.locator('[data-emoji-body] .fufu-grid button')).toHaveCount(24);
+  await expect(page.locator('[data-emoji-body] .fufu-emoji')).toHaveCount(24);
   await expect(page.locator('[data-media-lightbox]')).toBeHidden();
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.pollingTimers)).toBe(0);
 });
