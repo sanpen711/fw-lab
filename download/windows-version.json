@@ -1,11 +1,11 @@
 {
-  "platform": "Windows 10/11 64 位",
-  "publishedAt": "2026-09-21T08:27:54.2471611Z",
-  "version": "1.3.10",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.10-setup.exe",
   "available": true,
-  "rollbackVersion": "1.0.5",
-  "sha256": "56072c03ed5290d04e3b44a702aee5b697c669f272a795633b85fae86ce8fe08",
+  "publishedAt": "2026-09-22T03:46:28.4010680Z",
+  "sha256": "5bfdfc7221926a0119debc19ffd50dfe2889baaa6f6a3a7444a694d377b22a7f",
+  "platform": "Windows 10/11 64 位",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "notes": "Windows 1.3.10：放大精神广场中的纯伏伏帖子，并将发帖表情面板与评论区统一为五列正方形布局。"
+  "notes": "Windows 1.3.11：新增电脑端设置页，可切换默认或自定义应用名称与常见办公图标；个人资料迁入设置，头像菜单简化为退出登录，并加入本机缓存清理。",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.11-setup.exe",
+  "rollbackVersion": "1.0.5",
+  "version": "1.3.11"
 }

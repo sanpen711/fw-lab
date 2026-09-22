@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-09-21T08:27:54.2471611Z",
-  "notes": "Windows 1.3.10：放大精神广场中的纯伏伏帖子，并将发帖表情面板与评论区统一为五列正方形布局。",
+  "version": "1.3.11",
+  "pub_date": "2026-09-22T03:46:28.4010680Z",
+  "notes": "Windows 1.3.11：新增电脑端设置页，可切换默认或自定义应用名称与常见办公图标；个人资料迁入设置，头像菜单简化为退出登录，并加入本机缓存清理。",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.10-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlRDN0xOMjlyU29HUWRZYTgvYUhMaGhXRUJSODJyQnZoa2pmM0UzOEoyaGRiM3JyelpKSVpqZzFPUllvNldpZk5zV1NDUk1iZDBEaXNxYnBzWXpDTkEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5OTc5MjczCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMTBfeDY0LXNldHVwLmV4ZQpOWjlyR3RQb2M0eEpCVU1IRFBkNUc4UmVKR0lMOGZ6TUZUb1F4eGxFWUVyVkp6cTRQMXV2RGwvWGJhaytWOTZGZjRLYU9saXlldnQ3VTQ0UlZxd0RBdz09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlNBUTNiM29zcVAybCtZdEZkcEMyYjgwa2xhRjcwS0FleWc4OWtiQU43NW5tVnVXY2paTFFBditpVkM2cURvNHNrSjFuWFRGekl5VlZSM1ZiUTV6dGdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwMDQ4Nzg3CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMTFfeDY0LXNldHVwLmV4ZQp3TUcyOXlMK2JYc0R0M2ZJMVc3RXVJbFRWS21Ddkdhd2hJTHc0U1gwZjVqRjV3U1BiU1pTUUF4N3VQSkhZbXRMdS83L09nQkhhMmpFZjZRS1ljVExDQT09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.11-setup.exe"
     }
-  },
-  "version": "1.3.10"
+  }
 }
