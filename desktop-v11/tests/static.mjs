@@ -8,11 +8,11 @@ const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
 const read=path=>readFileSync(resolve(root,path),'utf8');
 const readBinary=path=>readFileSync(resolve(root,path));
 const config=JSON.parse(read('src-tauri/tauri.v11.conf.json'));
-assert.equal(config.version,'1.3.11');
+assert.equal(config.version,'1.3.12');
 assert.equal(config.build.frontendDist,'../desktop-v11/dist');
 assert.equal(config.build.devUrl,'http://127.0.0.1:1421');
 assert.equal(config.app.windows[0].url,'index.html');
-assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.3\.11/);
+assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.3\.12/);
 assert.doesNotMatch(JSON.stringify(config),/fwyanjiusuo\.com\/index\.html/);
 assert.match(config.app.security.csp,/supabase\.co/);
 assert.doesNotMatch(config.app.security.csp,/open-meteo/,'Windows 不应再直连旧天气服务');
@@ -285,7 +285,7 @@ assert.match(app,/function selectedStickerPreview/,'选择我的表情后必须�
 assert.match(styles,/\.selected-sticker-preview img\{width:42px;height:42px/,'已选择表情预览必须保持与小表情格子一致的大小');
 assert.match(composeUi,/\[data-comment-emoji\],\[data-comment-sticker\][\s\S]*openPickerKey=''/,'评论选择一个表情后必须自动关闭表情面板');
 assert.match(composeUi,/event\.ctrlKey\|\|event\.key!==\'Enter\'/,'评论输入区必须支持 Ctrl + Enter 快速发送');
-assert.match(cargo,/version = "1\.3\.11"/);
+assert.match(cargo,/version = "1\.3\.12"/);
 assert.match(cargo,/tauri-plugin-updater = "2\.10\.1"/);
 assert.match(cargo,/rusqlite = \{ version = "0\.32", features = \["bundled"\] \}/,'持久缓存必须使用内置 SQLite，不能依赖用户额外安装数据库');
 assert.match(rust,/mod persistent_cache;/,'Rust 主程序必须注册持久缓存模块');
@@ -446,9 +446,9 @@ assert.match(html,/feature-alignment\.js/,'P0-P2 功能对齐层必须随本地�
 assert.doesNotMatch(html,/刚刚有人说/,'Windows 首页不恢复网页端实时帖子流');
 assert.match(html,/data-settings-profile[\s\S]*?name="labCode"[^>]*disabled/,'设置页的实验品编号必须保持只读');
 assert.match(html,/data-identity-form[\s\S]*value="default"[\s\S]*value="custom"/,'应用显示必须提供默认和自定义两种模式');
-for(const icon of ['folder','document','computer','table','image','archive']){
+for(const icon of ['folder','document','computer','drive','image','archive','text','printer','network']){
   assert.match(html,new RegExp(`name="icon" value="${icon}"`),`${icon} 必须出现在自定义图标选项中`);
-  assert.ok(existsSync(resolve(root,`desktop-v11/public/app-icons/${icon}.svg`)),`${icon} 的设置页预览图标必须随客户端打包`);
+  assert.ok(existsSync(resolve(root,`desktop-v11/public/app-icons/${icon}.png`)),`${icon} 的设置页预览图标必须随客户端打包`);
   assert.ok(existsSync(resolve(root,`src-tauri/icons/identity/${icon}.ico`)),`${icon} 的 Windows 图标必须随客户端打包`);
 }
 assert.match(desktopSettings,/desktop_identity_set/,'设置页必须通过原生桥保存应用显示');
@@ -466,7 +466,7 @@ assert.match(composeUi,/data-comment-compact-media/,'评论区必须提供同款
 assert.match(composeUi,/\.media-tools,\[data-comment-form\] \.media-tools\{display:none!important\}/,'旧的大号添加图片\/视频工具行必须收起');
 assert.match(composeUi,/openPickerKey/,'表情面板必须按需展开而不是常驻');
 assert.match(composeUi,/\[data-compose-image\]/,'加号必须继续复用现有图片\/视频上传能力');
-assert.match(squareScroll,/Windows 1\.3\.11 本地前端 · 电脑端设置/,'右下角版本标识必须更新');
+assert.match(squareScroll,/Windows 1\.3\.12 本地前端 · 原生系统图标/,'右下角版本标识必须更新');
 assert.match(squareScroll,/square-scroll-locked/,'精神广场必须锁住整页滚动');
 assert.match(squareScroll,/buddy-scroll-locked/,'搭子页必须锁住整页滚动');
 assert.match(squareScroll,/\.chat-messages\{min-height:0;overflow-y:auto/,'搭子聊天记录必须独立滚动');
@@ -476,8 +476,8 @@ assert.match(squareScroll,/\.square-feed\{min-height:0;overflow-y:auto/,'左侧�
 assert.match(squareScroll,/\.detail-scroll\{height:100%;min-height:0;overflow:hidden/,'右侧详情外层必须固定在窗口内');
 assert.match(squareScroll,/\.detail-content-scroll\{min-height:0;overflow-y:auto/,'右侧正文与评论必须连续滚动');
 assert.match(squareScroll,/attributeFilter:\['data-view'\]/,'滚动锁监听必须只观察 data-view，不能监听整棵 DOM');
-assert.match(windowsWorkflow,/url = 'https:\/\/ekbovsmxbiplhyrzxoyw\.supabase\.co\/storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.3\.11-setup\.exe'/,'自动更新必须使用 Supabase Storage 的版本化安装包');
-assert.match(windowsWorkflow,/installer\.Name -notmatch '1\\\.3\\\.11'/,'安装包名称校验必须跟随当前 Windows 版本');
+assert.match(windowsWorkflow,/url = 'https:\/\/ekbovsmxbiplhyrzxoyw\.supabase\.co\/storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.3\.12-setup\.exe'/,'自动更新必须使用 Supabase Storage 的版本化安装包');
+assert.match(windowsWorkflow,/installer\.Name -notmatch '1\\\.3\\\.12'/,'安装包名称校验必须跟随当前 Windows 版本');
 assert.match(windowsWorkflow,/functions\/v1\/sync-windows-release/,'Windows 发布必须先同步 Supabase 安装包');
 assert.match(windowsWorkflow,/gh release create/,'Windows 构建必须发布独立版本安装包');
 assert.doesNotMatch(windowsWorkflow,/cdn\.jsdelivr\.net|windows-cdn-build/,'自动更新不能再发布到会拒绝安装包的 CDN 线路');

@@ -7,7 +7,10 @@ use std::{os::windows::process::CommandExt, process::Command};
 
 const DEFAULT_NAME: &str = "F.w 研究所";
 const IDENTITY_FILE: &str = "desktop-identity.json";
-const ICONS: &[&str] = &["folder", "document", "computer", "table", "image", "archive"];
+const ICONS: &[&str] = &[
+    "folder", "document", "computer", "drive", "image", "archive", "text", "printer",
+    "network",
+];
 
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -57,7 +60,9 @@ fn normalize(mut value: DesktopIdentity) -> DesktopIdentity {
     if !valid_name(&value.display_name) {
         value.display_name = "工作资料".to_owned();
     }
-    if !valid_icon(&value.icon) {
+    if value.icon == "table" {
+        value.icon = "drive".to_owned();
+    } else if !valid_icon(&value.icon) {
         value.icon = "folder".to_owned();
     }
     value
@@ -80,9 +85,12 @@ fn icon_png(name: &str) -> &'static [u8] {
         "folder" => include_bytes!("../icons/identity/folder.png"),
         "document" => include_bytes!("../icons/identity/document.png"),
         "computer" => include_bytes!("../icons/identity/computer.png"),
-        "table" => include_bytes!("../icons/identity/table.png"),
+        "drive" => include_bytes!("../icons/identity/drive.png"),
         "image" => include_bytes!("../icons/identity/image.png"),
         "archive" => include_bytes!("../icons/identity/archive.png"),
+        "text" => include_bytes!("../icons/identity/text.png"),
+        "printer" => include_bytes!("../icons/identity/printer.png"),
+        "network" => include_bytes!("../icons/identity/network.png"),
         _ => include_bytes!("../icons/identity/default.png"),
     }
 }
@@ -92,9 +100,12 @@ fn icon_ico(name: &str) -> &'static [u8] {
         "folder" => include_bytes!("../icons/identity/folder.ico"),
         "document" => include_bytes!("../icons/identity/document.ico"),
         "computer" => include_bytes!("../icons/identity/computer.ico"),
-        "table" => include_bytes!("../icons/identity/table.ico"),
+        "drive" => include_bytes!("../icons/identity/drive.ico"),
         "image" => include_bytes!("../icons/identity/image.ico"),
         "archive" => include_bytes!("../icons/identity/archive.ico"),
+        "text" => include_bytes!("../icons/identity/text.ico"),
+        "printer" => include_bytes!("../icons/identity/printer.ico"),
+        "network" => include_bytes!("../icons/identity/network.ico"),
         _ => include_bytes!("../icons/identity/default.ico"),
     }
 }

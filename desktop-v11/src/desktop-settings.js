@@ -1,7 +1,7 @@
 const invoke=window.__TAURI__?.core?.invoke;
 const FALLBACK_KEY='fw:desktop:v11:display-identity';
 const DEFAULT_IDENTITY={mode:'default',displayName:'F.w 研究所',icon:'folder'};
-const ICONS=new Set(['folder','document','computer','table','image','archive']);
+const ICONS=new Set(['folder','document','computer','drive','image','archive','text','printer','network']);
 let identity={...DEFAULT_IDENTITY};
 let notify=()=>{};
 
@@ -17,11 +17,12 @@ function safeFallback(){
 function normalize(value){
   const mode=value?.mode==='custom'?'custom':'default';
   const displayName=String(value?.displayName||'').trim()||DEFAULT_IDENTITY.displayName;
-  const icon=ICONS.has(value?.icon)?value.icon:'folder';
+  const savedIcon=value?.icon==='table'?'drive':value?.icon;
+  const icon=ICONS.has(savedIcon)?savedIcon:'folder';
   return{mode,displayName:mode==='custom'?displayName:DEFAULT_IDENTITY.displayName,icon};
 }
 
-function iconUrl(icon){return `/app-icons/${ICONS.has(icon)?icon:'folder'}.svg`;}
+function iconUrl(icon){return `/app-icons/${ICONS.has(icon)?icon:'folder'}.png`;}
 
 function setStatus(selector,message='',error=false){
   const node=$(selector);if(!node)return;node.textContent=message;node.classList.toggle('error',error);

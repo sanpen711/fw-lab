@@ -190,7 +190,7 @@ test('头像菜单只显示退出登录，个人资料与电脑端选项集中�
   await expect(page.locator('[data-identity-form] input[value="default"]')).toBeChecked();
   await page.locator('[data-identity-form] input[value="custom"]').check();
   await expect(page.locator('[data-identity-custom]')).toBeVisible();
-  await expect(page.locator('.identity-icon-grid input[name="icon"]')).toHaveCount(6);
+  await expect(page.locator('.identity-icon-grid input[name="icon"]')).toHaveCount(9);
   await page.locator('[data-identity-form] input[name="displayName"]').fill('工作资料');
   await page.locator('[data-identity-form] input[value="computer"] + span').click();
   await expect(page.locator('[data-identity-form] input[value="computer"]')).toBeChecked();
