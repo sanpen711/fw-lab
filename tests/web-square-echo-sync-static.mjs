@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {existsSync, readFileSync, statSync} from 'node:fs';
 import {resolve} from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
@@ -30,6 +30,19 @@ assert.match(split, /window\.__FW_WEB_SQUARE_SELECT__\s*=\s*function/, '网页�
 assert.match(split, /if\(!rows\.length\)\{[\s\S]*return false;/, '帖子尚未加载时不应丢失 URL 中的目标帖子');
 assert.match(split, /history\.replaceState/, '手动切换帖子后应保存当前帖子地址');
 assert.match(square, /window\.__FW_SQUARE_SHOW_POST__\s*=\s*function/, '广场应能按回声目标展开较早帖子');
+assert.match(square, /\\\[伏伏1:\(0\[1-9\]\|1\[0-9\]\|2\[0-4\]\)\\\]/, '网页版精神广场应只读识别伏伏1的24个有效标记');
+assert.match(square, /assets\/emoji\/fufu1\//, '网页版精神广场应从独立网页资源目录读取伏伏图片');
+const contentBodySource = square.match(/function contentBody\(text\)\{[\s\S]*?\n  \}\n\n  function readRaw/);
+assert.ok(contentBodySource, '应能提取网页版帖子内容渲染函数');
+const contentBody = Function('decode', 'esc', `${contentBodySource[0].replace(/\n\n  function readRaw[\s\S]*$/, '')}; return contentBody;`)(
+  value => Buffer.from(String(value || ''), 'base64').toString('utf8'),
+  value => String(value == null ? '' : value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]))
+);
+const renderedFufu = contentBody('[伏伏1:11]');
+assert.match(renderedFufu, /class="fw-square-img fw-square-fufu"/, '有效伏伏标记应渲染为伏伏图片');
+assert.match(renderedFufu, /assets\/emoji\/fufu1\/11\.webp/, '伏伏编号应映射到对应的网页图片资源');
+assert.doesNotMatch(renderedFufu, /\[伏伏1:11\]/, '有效伏伏标记不应作为文字残留');
+assert.match(contentBody('[伏伏1:25]'), /\[伏伏1:25\]/, '超出24张范围的标记不应被误识别');
 
 const selectCall = square.indexOf("window.__FW_WEB_SQUARE_SELECT__(postId");
 const stopCall = square.indexOf('event.stopImmediatePropagation', selectCall);
@@ -42,6 +55,9 @@ assert.match(stable, /\.in\('type', ECHO_TYPES\)/, '电脑端回声列表只应�
 assert.match(jump, /__FW_SQUARE_SHOW_POST__/, '回声跳转应能展示分页之外的帖子');
 assert.match(jump, /__FW_WEB_SQUARE_SELECT__/, '回声跳转应同步右侧详情与左侧选中框');
 assert.match(html, /web-square-split-20260914\.js\?v=6/, '精神广场应刷新选中同步脚本缓存版本');
+assert.match(html, /fw-square-ui-fix\.js\?v=fw-web-fufu-read-20260921-1/, '精神广场应刷新伏伏只读渲染脚本缓存版本');
+assert.match(html, /web-square-list \.fw-square-fufu\{width:136px!important;height:136px!important/, '网页版帖子列表中的伏伏应使用136像素预览');
+assert.match(html, /web-square-detail-card \.fw-square-fufu\{width:180px!important;height:180px!important/, '网页版帖子详情中的伏伏应使用180像素预览');
 assert.match(html, /data-web-square-echo-toggle/, '网页版精神广场应在左栏提供回声切换按钮');
 assert.match(html, /data-web-square-echo-panel/, '网页版精神广场应内嵌回声列表');
 assert.doesNotMatch(html, /href="echo\.html">回声/, '网页版精神广场不应再跳转到独立回声页');
@@ -57,5 +73,13 @@ assert.ok(desktopEmojis.length >= 80, '电脑软件版应保留完整常用小�
 assert.deepEqual(webEmojiList(postMedia), desktopEmojis, '网页版发帖和评论小表情应与电脑软件版完全一致');
 assert.deepEqual(webEmojiList(emojiPanel), desktopEmojis, '网页版聊天小表情应与电脑软件版完全一致');
 assert.match(postMedia, /insertAtCursor\(activeTarget,[\s\S]*?closeEmoji\(\)/, '选择小表情后应自动关闭面板');
+assert.doesNotMatch(postMedia, /伏伏1/, '网页版发帖和评论面板不应增加伏伏发送入口');
+assert.doesNotMatch(emojiPanel, /伏伏1/, '网页版聊天面板不应增加伏伏发送入口');
+for(let index = 1; index <= 24; index += 1){
+  const number = String(index).padStart(2, '0');
+  const asset = resolve(root, 'assets/emoji/fufu1', `${number}.webp`);
+  assert.ok(existsSync(asset), `网页版应包含伏伏1图片 ${number}.webp`);
+  assert.ok(statSync(asset).size > 10000, `伏伏1图片 ${number}.webp 不应是空文件或低清占位图`);
+}
 
 console.log('web square and echo sync checks passed');
