@@ -7,6 +7,7 @@ use std::{os::windows::process::CommandExt, process::Command};
 
 const DEFAULT_NAME: &str = "F.w 研究所";
 const IDENTITY_FILE: &str = "desktop-identity.json";
+const SHORTCUT_STATE_FILE: &str = "desktop-shortcut-state.txt";
 const ICONS: &[&str] = &[
     "folder", "document", "computer", "drive", "image", "archive", "text", "printer",
     "network",
@@ -110,6 +111,36 @@ fn icon_ico(name: &str) -> &'static [u8] {
     }
 }
 
+fn icon_revision(bytes: &[u8]) -> u64 {
+    bytes.iter().fold(0xcbf29ce484222325_u64, |hash, byte| {
+        (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3)
+    })
+}
+
+fn shortcut_fingerprint(identity: &DesktopIdentity) -> String {
+    let icon_name = if identity.mode == "custom" {
+        identity.icon.as_str()
+    } else {
+        "default"
+    };
+    format!(
+        "{}|{}|{}|{:016x}",
+        identity.mode,
+        identity.display_name,
+        icon_name,
+        icon_revision(icon_ico(icon_name))
+    )
+}
+
+fn shortcut_state_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|error| format!("无法定位快捷方式状态目录：{error}"))?;
+    fs::create_dir_all(&dir).map_err(|error| format!("无法创建快捷方式状态目录：{error}"))?;
+    Ok(dir.join(SHORTCUT_STATE_FILE))
+}
+
 fn icon_file(app: &AppHandle, icon: &str) -> Result<PathBuf, String> {
     let root = app
         .path()
@@ -118,8 +149,11 @@ fn icon_file(app: &AppHandle, icon: &str) -> Result<PathBuf, String> {
         .join("identity-icons");
     fs::create_dir_all(&root).map_err(|error| format!("无法创建图标目录：{error}"))?;
     let name = if valid_icon(icon) { icon } else { "default" };
-    let path = root.join(format!("{name}.ico"));
-    fs::write(&path, icon_ico(name)).map_err(|error| format!("无法保存客户端图标：{error}"))?;
+    let bytes = icon_ico(name);
+    let path = root.join(format!("{name}-{:016x}.ico", icon_revision(bytes)));
+    if fs::read(&path).unwrap_or_default() != bytes {
+        fs::write(&path, bytes).map_err(|error| format!("无法保存客户端图标：{error}"))?;
+    }
     Ok(path)
 }
 
@@ -180,6 +214,15 @@ foreach ($root in $roots) {
     }
   }
 }
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class FwShellRefresh {
+  [DllImport("shell32.dll")]
+  public static extern void SHChangeNotify(uint eventId, uint flags, IntPtr item1, IntPtr item2);
+}
+'@
+[FwShellRefresh]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)
 "#;
     let status = Command::new("powershell.exe")
         .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script])
@@ -190,7 +233,9 @@ foreach ($root in $roots) {
         .status()
         .map_err(|error| format!("无法更新桌面快捷方式：{error}"))?;
     if status.success() {
-        Ok(())
+        let state = shortcut_state_path(app)?;
+        fs::write(state, shortcut_fingerprint(identity))
+            .map_err(|error| format!("无法记录快捷方式状态：{error}"))
     } else {
         Err("Windows 没有完成快捷方式更新。".to_owned())
     }
@@ -201,9 +246,19 @@ fn update_shortcuts(_app: &AppHandle, _identity: &DesktopIdentity) -> Result<(),
     Ok(())
 }
 
+fn refresh_shortcuts_if_needed(app: &AppHandle, identity: &DesktopIdentity) -> Result<(), String> {
+    let expected = shortcut_fingerprint(identity);
+    let state = shortcut_state_path(app)?;
+    if fs::read_to_string(state).ok().as_deref() == Some(expected.as_str()) {
+        return Ok(());
+    }
+    update_shortcuts(app, identity)
+}
+
 pub fn apply_saved(app: &AppHandle) -> Result<DesktopIdentity, String> {
     let identity = read(app);
     apply_window(app, &identity)?;
+    let _ = refresh_shortcuts_if_needed(app, &identity);
     Ok(identity)
 }
 
