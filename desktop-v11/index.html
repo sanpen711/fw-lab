@@ -37,13 +37,19 @@
               <button type="button" role="menuitem" data-nav="archive"><span class="nav-icon nav-icon-archive" aria-hidden="true"></span><b>档案</b></button>
               <button type="button" role="menuitem" data-align-nav="rules"><span class="nav-icon nav-icon-info" aria-hidden="true"></span><b>入馆须知</b></button>
               <button type="button" role="menuitem" data-align-nav="moderation"><span class="nav-icon nav-icon-notice" aria-hidden="true"></span><b>处理公告</b></button>
+              <button class="sidebar-settings-entry" type="button" role="menuitem" data-nav="settings"><span class="nav-icon nav-icon-settings" aria-hidden="true"></span><b>设置</b></button>
             </div>
           </div>
         </div>
       </nav>
-      <button class="nav-item account-button" type="button" data-open-account>
-        <span class="avatar avatar-small" data-account-avatar>FW</span><b data-account-label>注册 / 登录</b>
-      </button>
+      <div class="account-menu-wrap">
+        <div class="account-menu" data-account-menu hidden>
+          <button type="button" data-sign-out>退出登录</button>
+        </div>
+        <button class="nav-item account-button" type="button" data-open-account aria-haspopup="menu" aria-expanded="false">
+          <span class="avatar avatar-small" data-account-avatar>FW</span><b data-account-label>注册 / 登录</b>
+        </button>
+      </div>
     </aside>
 
     <main class="main-content">
@@ -246,6 +252,60 @@
         </div>
       </section>
 
+      <section class="view" data-view-panel="settings">
+        <div class="settings-page">
+          <header class="section-heading settings-heading">
+            <div><h1>设置</h1><span>管理当前账号和这台电脑上的客户端显示。</span></div>
+          </header>
+          <div class="settings-scroll">
+            <section class="settings-card">
+              <header><div><h2>个人资料</h2><p>头像和昵称会同步到网页端与手机端。</p></div></header>
+              <form class="account-form settings-profile-form" data-settings-profile>
+                <div class="profile-summary"><span class="avatar" data-profile-avatar>FW</span><div><strong data-profile-name>研究员</strong><span data-profile-email></span></div></div>
+                <div class="settings-form-grid">
+                  <label>实验品编号<input name="labCode" maxlength="7" disabled></label>
+                  <label>昵称<input name="nickname" maxlength="12" required></label>
+                </div>
+                <label>头像<input name="avatar" type="file" accept="image/jpeg,image/png,image/webp"><small class="avatar-upload-hint">支持 JPG、PNG、WebP；预览按中心裁成正方形，保存时自动压缩。</small></label>
+                <div class="settings-actions"><button class="primary" type="submit">保存资料</button><span class="settings-status" data-profile-status aria-live="polite"></span></div>
+              </form>
+            </section>
+
+            <section class="settings-card">
+              <header><div><h2>应用显示</h2><p>仅修改这台电脑上的桌面快捷方式、窗口标题、任务栏和切换窗口显示。</p></div></header>
+              <form class="identity-form" data-identity-form>
+                <div class="settings-mode-list">
+                  <label class="settings-mode-option"><input type="radio" name="mode" value="default" checked><span><b>默认模式</b><small>保持 F.w 研究所名称和原来的客户端图标。</small></span></label>
+                  <label class="settings-mode-option"><input type="radio" name="mode" value="custom"><span><b>自定义模式</b><small>使用自定义名称和常见办公图标，只在本机生效。</small></span></label>
+                </div>
+                <div class="identity-custom" data-identity-custom hidden>
+                  <label class="identity-name-label">应用名称<input name="displayName" maxlength="24" autocomplete="off" placeholder="例如：KS资料"></label>
+                  <fieldset class="identity-icon-fieldset">
+                    <legend>选择图标</legend>
+                    <div class="identity-icon-grid">
+                      <label><input type="radio" name="icon" value="folder" checked><span><img src="/app-icons/folder.svg" alt=""><b>文件夹</b></span></label>
+                      <label><input type="radio" name="icon" value="document"><span><img src="/app-icons/document.svg" alt=""><b>文件</b></span></label>
+                      <label><input type="radio" name="icon" value="computer"><span><img src="/app-icons/computer.svg" alt=""><b>此电脑</b></span></label>
+                      <label><input type="radio" name="icon" value="table"><span><img src="/app-icons/table.svg" alt=""><b>表格</b></span></label>
+                      <label><input type="radio" name="icon" value="image"><span><img src="/app-icons/image.svg" alt=""><b>图片</b></span></label>
+                      <label><input type="radio" name="icon" value="archive"><span><img src="/app-icons/archive.svg" alt=""><b>压缩包</b></span></label>
+                    </div>
+                  </fieldset>
+                  <div class="identity-preview"><span><img data-identity-preview-icon src="/app-icons/folder.svg" alt=""></span><div><small>显示预览</small><b data-identity-preview-name>KS资料</b></div></div>
+                </div>
+                <div class="settings-actions"><button class="primary" type="submit">保存应用显示</button><span class="settings-status" data-identity-status aria-live="polite"></span></div>
+              </form>
+            </section>
+
+            <section class="settings-card settings-cache-card">
+              <header><div><h2>缓存管理</h2><p>清理帖子、图片等本机临时缓存，不会删除账号、登录状态、表情、游戏文件或应用显示设置。</p></div></header>
+              <div class="cache-summary"><div><small>当前缓存</small><strong data-cache-size>正在统计…</strong><span data-cache-detail></span></div><button class="secondary" type="button" data-clear-cache>清理缓存</button></div>
+              <p class="settings-status" data-cache-status aria-live="polite"></p>
+            </section>
+          </div>
+        </div>
+      </section>
+
       <section class="view" data-view-panel="pending">
         <div class="pending-card">
           <span>LOCAL MIGRATION</span>
@@ -317,14 +377,6 @@
           <div class="form-links"><button type="button" data-show-auth="login">返回登录</button></div>
         </form>
 
-        <form class="account-form" data-auth-view="profile" hidden>
-          <div class="profile-summary"><span class="avatar" data-profile-avatar>FW</span><div><strong data-profile-name>研究员</strong><span data-profile-email></span></div></div>
-          <label>实验品编号<input name="labCode" maxlength="7" disabled></label>
-          <label>昵称<input name="nickname" maxlength="12" required></label>
-          <label>头像<input name="avatar" type="file" accept="image/jpeg,image/png,image/webp"><small class="avatar-upload-hint">支持 JPG、PNG、WebP；预览按中心裁成正方形，保存时自动压缩。</small></label>
-          <button class="primary full" type="submit">保存资料</button>
-          <button class="secondary full" type="button" data-sign-out>退出登录</button>
-        </form>
         <p class="form-status" data-form-status aria-live="polite"></p>
       </div>
     </section>

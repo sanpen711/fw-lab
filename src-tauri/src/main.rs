@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod desktop_identity;
 mod persistent_cache;
 
 use serde::Serialize;
@@ -36,6 +37,14 @@ const UPDATE_MODE_SYSTEM: &str = "system-network";
 struct CacheStatus {
     enabled: bool,
     entries: usize,
+    bytes: u64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AppCacheStatus {
+    enabled: bool,
+    entries: u64,
     bytes: u64,
 }
 
@@ -151,6 +160,46 @@ fn desktop_cache_status(app: AppHandle) -> Result<CacheStatus, String> {
     Ok(CacheStatus { enabled: true, entries, bytes })
 }
 
+fn remove_cache_contents(dir: &PathBuf) -> Result<(), String> {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return Ok(());
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            fs::remove_dir_all(&path).map_err(|error| format!("无法清理缓存目录：{error}"))?;
+        } else {
+            fs::remove_file(&path).map_err(|error| format!("无法清理缓存文件：{error}"))?;
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn desktop_app_cache_status(app: AppHandle) -> Result<AppCacheStatus, String> {
+    let legacy = cache_dir(&app)?;
+    let (legacy_entries, legacy_bytes) = cache_usage(&legacy);
+    let persistent = persistent_cache::status(&app)?;
+    Ok(AppCacheStatus {
+        enabled: true,
+        entries: persistent.entries.saturating_add(legacy_entries as u64),
+        bytes: persistent.bytes.saturating_add(legacy_bytes),
+    })
+}
+
+#[tauri::command]
+fn desktop_app_cache_clear(app: AppHandle) -> Result<AppCacheStatus, String> {
+    let legacy = cache_dir(&app)?;
+    remove_cache_contents(&legacy)?;
+    let persistent = persistent_cache::clear(&app)?;
+    let (legacy_entries, legacy_bytes) = cache_usage(&legacy);
+    Ok(AppCacheStatus {
+        enabled: true,
+        entries: persistent.entries.saturating_add(legacy_entries as u64),
+        bytes: persistent.bytes.saturating_add(legacy_bytes),
+    })
+}
+
 fn update_log(app: &AppHandle, message: impl AsRef<str>) {
     let Ok(dir) = app.path().app_cache_dir() else {
         return;
@@ -204,7 +253,7 @@ fn render_update_ui(
 fn show_update_error(app: &AppHandle, detail: String) {
     update_log(app, format!("error {detail}"));
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.set_title("F.w 研究所 · 更新失败");
+        let _ = window.set_title(&format!("{} · 更新失败", desktop_identity::display_name(app)));
     }
     ensure_update_ui(app);
     render_update_ui(
@@ -223,7 +272,7 @@ fn show_update_error(app: &AppHandle, detail: String) {
         .message(format!(
             "自动更新没有完成。\n\n错误信息：{detail}\n\n可以重新尝试；如果仍然失败，请使用网页下载最新版。当前版本不会受到影响。"
         ))
-        .title("F.w 研究所更新")
+        .title(format!("{}更新", desktop_identity::display_name(app)))
         .kind(MessageDialogKind::Error)
         .buttons(MessageDialogButtons::OkCancelCustom(
             "重新尝试".to_owned(),
@@ -283,7 +332,7 @@ fn check_for_updates_direct_auto(app: AppHandle) {
 fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
     let version = update.version.clone();
     if let Some(window) = app.get_webview_window("main") {
-        let window_title = format!("F.w 研究所 · 正在更新到 {version}");
+        let window_title = format!("{} · 正在更新到 {version}", desktop_identity::display_name(&app));
         let _ = window.set_title(&window_title);
     }
     ensure_update_ui(&app);
@@ -555,7 +604,7 @@ fn check_for_updates(app: AppHandle) {
                 .message(format!(
                     "发现新版本 {version}。点击立即更新后会先下载安装包，遇到失败或持续低速时自动切换兼容直连通道，再显示安装进度；只有软件自动重新打开才表示更新完成，请不要在中途手动退出。账号和缓存都会保留。"
                 ))
-                .title("F.w 研究所更新")
+                .title(format!("{}更新", desktop_identity::display_name(&app)))
                 .kind(MessageDialogKind::Info)
                 .buttons(MessageDialogButtons::OkCancelCustom(
                     "立即更新".to_owned(),
@@ -585,6 +634,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
+            let _ = desktop_identity::apply_saved(app.handle());
             let _ = persistent_cache::init(app.handle());
             check_for_updates(app.handle().clone());
             Ok(())
@@ -594,6 +644,10 @@ fn main() {
             desktop_cache_write,
             desktop_cache_remove,
             desktop_cache_status,
+            desktop_app_cache_status,
+            desktop_app_cache_clear,
+            desktop_identity::desktop_identity_get,
+            desktop_identity::desktop_identity_set,
             persistent_cache::desktop_persistent_cache_read,
             persistent_cache::desktop_persistent_cache_write,
             persistent_cache::desktop_persistent_cache_remove,

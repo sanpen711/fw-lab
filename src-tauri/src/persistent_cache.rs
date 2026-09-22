@@ -16,11 +16,11 @@ static CACHE_LOCATION: OnceLock<(PathBuf, bool)> = OnceLock::new();
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PersistentCacheStatus {
-    enabled: bool,
-    entries: u64,
-    bytes: u64,
-    path: String,
-    fallback: bool,
+    pub enabled: bool,
+    pub entries: u64,
+    pub bytes: u64,
+    pub path: String,
+    pub fallback: bool,
 }
 
 fn valid_cache_key(key: &str) -> bool {
@@ -138,6 +138,30 @@ pub fn init(app: &AppHandle) -> Result<PersistentCacheStatus, String> {
     status_from(&connection, &path, fallback)
 }
 
+pub fn status(app: &AppHandle) -> Result<PersistentCacheStatus, String> {
+    let (connection, path, fallback) = open_db(app)?;
+    status_from(&connection, &path, fallback)
+}
+
+pub fn clear(app: &AppHandle) -> Result<PersistentCacheStatus, String> {
+    let (connection, path, fallback) = open_db(app)?;
+    connection
+        .execute("DELETE FROM cache_entries", [])
+        .map_err(|error| format!("无法清空本地缓存：{error}"))?;
+    connection
+        .execute_batch("PRAGMA wal_checkpoint(TRUNCATE); VACUUM;")
+        .map_err(|error| format!("无法整理本地缓存：{error}"))?;
+    if let Some(dir) = path.parent() {
+        for child in [dir.join("media"), dir.join("temp")] {
+            if child.exists() {
+                fs::remove_dir_all(&child).map_err(|error| format!("无法清理临时缓存：{error}"))?;
+            }
+            fs::create_dir_all(&child).map_err(|error| format!("无法恢复缓存目录：{error}"))?;
+        }
+    }
+    status_from(&connection, &path, fallback)
+}
+
 #[tauri::command]
 pub fn desktop_persistent_cache_read(app: AppHandle, key: String) -> Result<Option<Value>, String> {
     if !valid_cache_key(&key) {
@@ -197,6 +221,5 @@ pub fn desktop_persistent_cache_remove(app: AppHandle, key: String) -> Result<Pe
 
 #[tauri::command]
 pub fn desktop_persistent_cache_status(app: AppHandle) -> Result<PersistentCacheStatus, String> {
-    let (connection, path, fallback) = open_db(&app)?;
-    status_from(&connection, &path, fallback)
+    status(&app)
 }

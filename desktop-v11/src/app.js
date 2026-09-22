@@ -7,12 +7,13 @@ import {archiveStore} from './archive-store.js';
 import {gamePartyUi} from './game-party-ui.js';
 import {homeWidgets} from './home-widgets.js';
 import {membershipStore} from './membership-store.js';
+import {desktopSettings} from './desktop-settings.js';
 import {APP_VERSION} from './config.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
 const routes={
-  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],bird:['新闻专区','看看研究所里此刻发生了什么'],play:['下班开黑','找到今晚一起玩的队友'],games:['小游戏','不用跳出软件，点开直接玩'],buddy:['搭子','左边选人，右边直接聊天'],membership:['会员中心','查看会员权益、套餐和订单'],archive:['档案','翻一翻被留下来的研究记录']
+  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],bird:['新闻专区','看看研究所里此刻发生了什么'],play:['下班开黑','找到今晚一起玩的队友'],games:['小游戏','不用跳出软件，点开直接玩'],buddy:['搭子','左边选人，右边直接聊天'],membership:['会员中心','查看会员权益、套餐和订单'],archive:['档案','翻一翻被留下来的研究记录'],settings:['设置','管理个人资料、应用显示和本机缓存']
 };
 const EMOJIS=[
   ['😀','1f600'],['😁','1f601'],['😂','1f602'],['🤣','1f923'],['😄','1f604'],['😅','1f605'],['😆','1f606'],['😊','1f60a'],['😉','1f609'],['😌','1f60c'],
@@ -109,6 +110,7 @@ function toast(message){const node=$('[data-toast]');node.textContent=message;no
 function openLightbox(url){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||!image||!url)return;image.src=url;modal.classList.toggle('sticker-preview',String(url).includes('/emoji/fufu1/'));modal.hidden=false;document.body.classList.add('lightbox-open');}
 function closeLightbox(){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||modal.hidden)return;modal.hidden=true;modal.classList.remove('sticker-preview');if(image)image.removeAttribute('src');document.body.classList.remove('lightbox-open');}
 function setFormStatus(message,error=false){const node=$('[data-form-status]');node.textContent=message||'';node.classList.toggle('error',error);}
+function setProfileStatus(message,error=false){const node=$('[data-profile-status]');if(!node)return;node.textContent=message||'';node.classList.toggle('error',error);}
 function timeText(value){
   if(!value)return'刚刚';const date=new Date(value);if(Number.isNaN(date.getTime()))return'刚刚';const minutes=Math.floor(Math.max(0,Date.now()-date.getTime())/60000);if(minutes<1)return'刚刚';if(minutes<60)return`${minutes}分钟前`;const hours=Math.floor(minutes/60);if(hours<24)return`${hours}小时前`;const days=Math.floor(hours/24);return days<7?`${days}天前`:date.toLocaleDateString('zh-CN');
 }
@@ -189,7 +191,6 @@ function renderAuthGate(next){
     if(checkingCopy)checkingCopy.textContent=bootFailure?(next.error||'登录状态确认失败，请检查网络后重试。'):'请稍候，确认后将自动进入客户端。';
     if(retry)retry.hidden=!bootFailure;
     if(!content.hidden){
-      if(currentAuthView==='profile')showAuth('login');
       const message=String(next.error||'');gateMessage.hidden=!message;gateMessage.textContent=message;
     }
     return;
@@ -202,12 +203,12 @@ function renderAccount(next){
   $('[data-account-label]').textContent=user?user.nickname:(next.ready?'注册 / 登录':'正在连接…');
   setAvatar($('[data-account-avatar]'),user);setAvatar($('[data-profile-avatar]'),user);
   $('[data-profile-name]').textContent=user?.nickname||'研究员';$('[data-profile-email]').textContent=user?.email||'';
-  const profile=$('[data-auth-view="profile"]');if(profile&&user){profile.elements.labCode.value=user.labCode||'';profile.elements.nickname.value=user.nickname||'';}
+  const profile=$('[data-settings-profile]');if(profile&&user){profile.elements.labCode.value=user.labCode||'';profile.elements.nickname.value=user.nickname||'';}
   $$('[data-account-modal] button, [data-account-modal] input').forEach(node=>{
     if(node.matches('[data-close-account]'))return;
-    const fixedProfileCode=node.name==='labCode'&&Boolean(node.closest('[data-auth-view="profile"]'));
-    node.disabled=fixedProfileCode||Boolean(next.busy);
+    node.disabled=Boolean(next.busy);
   });
+  $$('[data-settings-profile] button, [data-settings-profile] input').forEach(node=>{node.disabled=node.name==='labCode'||Boolean(next.busy);});
   if(next.ready&&previousUserId!==String(user?.id||''))renderSocial();
   if(next.ready)renderFeed();
   if(next.ready)renderPolls();
@@ -218,14 +219,18 @@ function renderAccount(next){
 }
 
 function showAuth(view){
-  currentAuthView=view;const labels={login:['账号登录','输入邮箱和密码，进入研究所。'],register:['注册账号','填写信息后，我们会向邮箱发送验证码。'],verify:['验证邮箱','输入邮件中的验证码，完成注册。'],reset:['找回密码','输入邮箱，接收找回密码邮件。'],profile:['个人资料','修改昵称和头像，账号数据继续与网页、手机端共用。']};
+  currentAuthView=view;const labels={login:['账号登录','输入邮箱和密码，进入研究所。'],register:['注册账号','填写信息后，我们会向邮箱发送验证码。'],verify:['验证邮箱','输入邮件中的验证码，完成注册。'],reset:['找回密码','输入邮箱，接收找回密码邮件。']};
   const [title,copy]=labels[view]||labels.login;$('[data-account-title]').textContent=title;$('[data-account-copy]').textContent=copy;
-  $$('[data-auth-view]').forEach(panel=>panel.hidden=panel.dataset.authView!==view);setFormStatus('');if(view==='profile'){if(avatarPreviewUrl){URL.revokeObjectURL(avatarPreviewUrl);avatarPreviewUrl='';}const input=$('[data-auth-view="profile"] input[name="avatar"]');if(input)input.value='';setAvatar($('[data-profile-avatar]'),accountState.user);}requestAnimationFrame(()=>{$(`[data-auth-view="${view}"] input:not([disabled])`)?.focus();});
+  $$('[data-auth-view]').forEach(panel=>panel.hidden=panel.dataset.authView!==view);setFormStatus('');requestAnimationFrame(()=>{$(`[data-auth-view="${view}"] input:not([disabled])`)?.focus();});
 }
-function openAccount(){const modal=$('[data-account-modal]');modal.hidden=false;document.body.classList.add('modal-open');showAuth(accountState.user?'profile':'login');}
+function closeAccountMenu(){const menu=$('[data-account-menu]');if(menu)menu.hidden=true;$('[data-open-account]')?.setAttribute('aria-expanded','false');}
+function openAccount(){
+  if(accountState.user){const menu=$('[data-account-menu]');if(!menu)return;const next=menu.hidden;closeAccountMenu();menu.hidden=!next;$('[data-open-account]')?.setAttribute('aria-expanded',String(next));return;}
+  const modal=$('[data-account-modal]');modal.hidden=false;document.body.classList.add('modal-open');showAuth('login');
+}
 function closeAccount(){if(authGateLocked)return;$('[data-account-modal]').hidden=true;document.body.classList.remove('modal-open');setFormStatus('');}
 function closeSidebarMore(){const wrap=$('[data-sidebar-more-wrap]');wrap?.classList.remove('open');$('[data-sidebar-more-toggle]')?.setAttribute('aria-expanded','false');}
-function bindSidebarMore(){document.addEventListener('click',event=>{const toggle=event.target.closest('[data-sidebar-more-toggle]');if(toggle){const wrap=toggle.closest('[data-sidebar-more-wrap]');const open=!wrap.classList.contains('open');closeSidebarMore();wrap.classList.toggle('open',open);toggle.setAttribute('aria-expanded',String(open));return;}if(!event.target.closest('[data-sidebar-more-wrap]'))closeSidebarMore();},true);}
+function bindSidebarMore(){document.addEventListener('click',event=>{const toggle=event.target.closest('[data-sidebar-more-toggle]');if(toggle){const wrap=toggle.closest('[data-sidebar-more-wrap]');const open=!wrap.classList.contains('open');closeSidebarMore();closeAccountMenu();wrap.classList.toggle('open',open);toggle.setAttribute('aria-expanded',String(open));return;}if(!event.target.closest('[data-sidebar-more-wrap]'))closeSidebarMore();if(!event.target.closest('.account-menu-wrap'))closeAccountMenu();},true);}
 
 function navigate(view){
   closeSidebarMore();
@@ -233,7 +238,7 @@ function navigate(view){
   else if(view==='square')squareMode='feed';
   const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
-  const localViews=['home','compose','square','rooms','bird','play','games','buddy','membership','archive'];
+  const localViews=['home','compose','square','rooms','bird','play','games','buddy','membership','archive','settings'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
   if(!localViews.includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
   $('[data-emoji-panel]').hidden=true;
@@ -259,6 +264,7 @@ function navigate(view){
   if(view==='games')window.__FW_GAMES__?.activate();
   if(view==='membership'){renderMembershipContent();membershipStore.load(true).catch(error=>toast(error.message||'会员信息读取失败。'));}
   if(view==='archive')archiveStore.load().catch(error=>toast(error.message||'废话档案读取失败。'));
+  if(view==='settings')desktopSettings.activate();
 }
 
 function setBadge(kind,count){const badge=$(`[data-badge="${kind}"]`);if(!badge)return;const value=Number(count||0);badge.hidden=value<=0;badge.textContent=value>99?'99+':String(value||'');}
@@ -522,7 +528,7 @@ function bindNavigation(){
     const deleteSticker=event.target.closest('[data-delete-sticker]');if(deleteSticker){event.stopPropagation();try{await socialStore.deleteSticker(deleteSticker.dataset.deleteSticker);toast('表情已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
   });
   $('[data-account-modal]').addEventListener('click',event=>{if(event.target.matches('[data-account-modal]'))closeAccount();});
-  window.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if(!$('[data-media-lightbox]')?.hidden){closeLightbox();return;}if(!$('[data-account-modal]').hidden)closeAccount();});
+  window.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if(!$('[data-media-lightbox]')?.hidden){closeLightbox();return;}closeAccountMenu();if(!$('[data-account-modal]').hidden)closeAccount();});
 }
 
 async function runForm(form,action,success){setFormStatus('正在处理…');try{const value=await action(new FormData(form));setFormStatus('');await success?.(value);}catch(error){setFormStatus(error.message||'操作失败，请稍后重试。',true);}}
@@ -531,9 +537,9 @@ function bindForms(){
   $('[data-auth-view="register"]').addEventListener('submit',event=>{event.preventDefault();runForm(event.currentTarget,fd=>authStore.beginRegistration({email:fd.get('email'),password:fd.get('password'),password2:fd.get('password2'),labCode:fd.get('labCode')}),result=>{$('[data-verify-tip]').textContent=`验证码已发送至 ${result.email}。`;showAuth('verify');});});
   $('[data-auth-view="verify"]').addEventListener('submit',event=>{event.preventDefault();runForm(event.currentTarget,fd=>authStore.finishRegistration(fd.get('token')),()=>{toast('注册成功，请登录。');showAuth('login');});});
   $('[data-auth-view="reset"]').addEventListener('submit',event=>{event.preventDefault();runForm(event.currentTarget,fd=>authStore.sendPasswordReset(fd.get('email')),()=>{toast('找回密码邮件已发送。');showAuth('login');});});
-  $('[data-auth-view="profile"]').addEventListener('submit',event=>{event.preventDefault();runForm(event.currentTarget,fd=>authStore.updateProfile({nickname:fd.get('nickname'),avatarFile:fd.get('avatar')}),()=>{toast('资料已保存。');closeAccount();});});
+  $('[data-settings-profile]').addEventListener('submit',async event=>{event.preventDefault();setProfileStatus('正在保存…');try{const fd=new FormData(event.currentTarget);await authStore.updateProfile({nickname:fd.get('nickname'),avatarFile:fd.get('avatar')});setProfileStatus('资料已保存。');toast('资料已保存。');}catch(error){setProfileStatus(error.message||'保存失败，请稍后重试。',true);}});
   $('[data-resend-code]').addEventListener('click',()=>runForm($('[data-auth-view="verify"]'),()=>authStore.resendRegistration(),result=>{toast(`验证码已重新发送至 ${result.email}。`);}));
-  $('[data-sign-out]').addEventListener('click',()=>runForm($('[data-auth-view="profile"]'),()=>authStore.signOut(),()=>{toast('已退出登录。');showAuth('login');}));
+  $('[data-sign-out]').addEventListener('click',async event=>{if(!window.confirm('确定退出当前账号吗？'))return;event.currentTarget.disabled=true;try{closeAccountMenu();await authStore.signOut();toast('已退出登录。');showAuth('login');}catch(error){toast(error.message||'退出登录失败。');}finally{event.currentTarget.disabled=false;}});
   $('[data-buddy-search]').addEventListener('submit',event=>{event.preventDefault();socialStore.searchProfiles(new FormData(event.currentTarget).get('q')).catch(error=>toast(error.message||'搜索失败。'));});
   $('[data-chat-compose]').addEventListener('submit',async event=>{event.preventDefault();const input=event.currentTarget.elements.message;const text=input.value;try{const targetId=await socialStore.sendMessage(text);if(String(socialStore.state.chat.targetId)===String(targetId)){input.value='';input.focus();}}catch(error){toast(error.message||'发送失败。');}});
   $('[data-sticker-file]').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;try{await socialStore.uploadSticker(file);toast('表情已添加。');}catch(error){toast(error.message||'添加表情失败。');}});
@@ -549,7 +555,7 @@ function bindForms(){
     if(event.target.matches?.('[data-bird-files]')){event.preventDefault();appendBirdDraftFiles(files);}
   });
   document.addEventListener('change',event=>{
-    if(event.target.matches('[data-auth-view="profile"] input[name="avatar"]')){const file=event.target.files?.[0];if(avatarPreviewUrl){URL.revokeObjectURL(avatarPreviewUrl);avatarPreviewUrl='';}if(!file){setAvatar($('[data-profile-avatar]'),accountState.user);return;}if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>10*1024*1024){event.target.value='';setAvatar($('[data-profile-avatar]'),accountState.user);setFormStatus('头像请选择 JPG、PNG 或 WebP，原图不超过 10MB。',true);return;}avatarPreviewUrl=URL.createObjectURL(file);const preview=$('[data-profile-avatar]');preview.textContent='';preview.style.backgroundImage=`url("${avatarPreviewUrl}")`;preview.classList.add('has-image');setFormStatus('将按中心裁剪为正方形，并自动压缩到适合头像的大小。');return;}
+    if(event.target.matches('[data-settings-profile] input[name="avatar"]')){const file=event.target.files?.[0];if(avatarPreviewUrl){URL.revokeObjectURL(avatarPreviewUrl);avatarPreviewUrl='';}if(!file){setAvatar($('[data-profile-avatar]'),accountState.user);setProfileStatus('');return;}if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>10*1024*1024){event.target.value='';setAvatar($('[data-profile-avatar]'),accountState.user);setProfileStatus('头像请选择 JPG、PNG 或 WebP，原图不超过 10MB。',true);return;}avatarPreviewUrl=URL.createObjectURL(file);const preview=$('[data-profile-avatar]');preview.textContent='';preview.style.backgroundImage=`url("${avatarPreviewUrl}")`;preview.classList.add('has-image');setProfileStatus('将按中心裁剪为正方形，并自动压缩到适合头像的大小。');return;}
     if(event.target.matches('[data-bird-files]')){appendBirdDraftFiles(event.target.files);event.target.value='';return;}
     if(event.target.matches('[data-bird-compose-form] input[name="displayMode"]')){birdDraft.displayMode=event.target.value;renderBirdCompose();return;}
     if(event.target.matches('[data-compose-image]')){setComposeDraftFile(event.target.files?.[0]);return;}
@@ -564,4 +570,4 @@ function bindForms(){
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
-bindSidebarMore();bindNavigation();bindForms();authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();
+bindSidebarMore();bindNavigation();bindForms();desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();

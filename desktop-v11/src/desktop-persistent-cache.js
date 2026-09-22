@@ -48,6 +48,7 @@ async function status(){
   if(typeof invoke!=='function')return{enabled:false,entries:0,bytes:0,path:'',fallback:true};
   try{return await invoke('desktop_persistent_cache_status');}catch{return{enabled:false,entries:0,bytes:0,path:'',fallback:true};}
 }
+function clearMemory(){memory.clear();}
 
-export const desktopCache={enabled:typeof invoke==='function',read,write,remove,status,cacheKey};
+export const desktopCache={enabled:typeof invoke==='function',read,write,remove,status,cacheKey,clearMemory};
 window.__FW_PERSISTENT_CACHE__=desktopCache;

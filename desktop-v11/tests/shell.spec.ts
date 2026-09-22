@@ -175,17 +175,28 @@ test('搭子和私聊使用本地左右分栏且没有定时轮询',async({page}
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.pollingTimers)).toBe(0);
 });
 
-test('登录后账号入口打开个人资料并可正常关闭',async({page})=>{
-  await page.route('https://**.supabase.co/rest/v1/profiles**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({id:TEST_USER.id,nickname:'测试研究员',avatar_url:'',lab_code:'FWTEST1'})}));
+test('头像菜单只显示退出登录，个人资料与电脑端选项集中到设置',async({page})=>{
   await page.goto('/');
-  await page.locator('[data-account-avatar]').click();
-  await expect(page.locator('[data-align-profile-modal]')).toBeVisible();
-  await page.locator('[data-profile-edit]').click();
-  await expect(page.locator('[data-account-modal]')).toBeVisible();
-  await expect(page.locator('[data-auth-view="profile"]')).toBeVisible();
-  await expect(page.locator('[data-auth-view="profile"] input[name="labCode"]')).toBeDisabled();
-  await page.locator('[data-close-account]').click();
-  await expect(page.locator('[data-account-modal]')).toBeHidden();
+  await page.locator('[data-open-account]').click();
+  await expect(page.locator('[data-account-menu]')).toBeVisible();
+  await expect(page.locator('[data-account-menu] button')).toHaveCount(1);
+  await expect(page.locator('[data-account-menu] button')).toHaveText('退出登录');
+  await expect(page.locator('[data-align-profile-modal]')).toBeHidden();
+  await page.locator('[data-sidebar-more-toggle]').click();
+  await page.locator('.sidebar-more-menu [data-nav="settings"]').click();
+  await expect(page.locator('[data-view-panel="settings"]')).toHaveClass(/active/);
+  await expect(page.locator('[data-settings-profile] input[name="labCode"]')).toBeDisabled();
+  await expect(page.locator('[data-settings-profile] input[name="nickname"]')).toHaveValue('测试研究员');
+  await expect(page.locator('[data-identity-form] input[value="default"]')).toBeChecked();
+  await page.locator('[data-identity-form] input[value="custom"]').check();
+  await expect(page.locator('[data-identity-custom]')).toBeVisible();
+  await expect(page.locator('.identity-icon-grid input[name="icon"]')).toHaveCount(6);
+  await page.locator('[data-identity-form] input[name="displayName"]').fill('工作资料');
+  await page.locator('[data-identity-form] input[value="computer"]').check();
+  await page.locator('[data-identity-form]').evaluate((form:HTMLFormElement)=>form.requestSubmit());
+  await expect(page.locator('[data-identity-status]')).toContainText('已保存');
+  await expect(page).toHaveTitle('工作资料');
+  await expect(page.locator('[data-cache-size]')).toHaveText('仅客户端可用');
 });
 
 test('所有头像左键打开统一资料卡且不显示加入时间',async({page})=>{
