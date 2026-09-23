@@ -473,7 +473,7 @@ assert.match(composeUi,/data-comment-compact-media/,'评论区必须提供同款
 assert.match(composeUi,/\.media-tools,\[data-comment-form\] \.media-tools\{display:none!important\}/,'旧的大号添加图片\/视频工具行必须收起');
 assert.match(composeUi,/openPickerKey/,'表情面板必须按需展开而不是常驻');
 assert.match(composeUi,/\[data-compose-image\]/,'加号必须继续复用现有图片\/视频上传能力');
-assert.match(squareScroll,/Windows 1\.3\.14 本地前端 · 修复文件夹图标缓存/,'右下角版本标识必须更新');
+assert.match(squareScroll,/Windows 1\.3\.14 本地前端 · 首页伏伏新背景/,'右下角版本标识必须更新');
 assert.match(squareScroll,/square-scroll-locked/,'精神广场必须锁住整页滚动');
 assert.match(squareScroll,/buddy-scroll-locked/,'搭子页必须锁住整页滚动');
 assert.match(squareScroll,/\.chat-messages\{min-height:0;overflow-y:auto/,'搭子聊天记录必须独立滚动');
@@ -484,7 +484,7 @@ assert.match(squareScroll,/\.detail-scroll\{height:100%;min-height:0;overflow:hi
 assert.match(squareScroll,/\.detail-content-scroll\{min-height:0;overflow-y:auto/,'右侧正文与评论必须连续滚动');
 assert.match(squareScroll,/attributeFilter:\['data-view'\]/,'滚动锁监听必须只观察 data-view，不能监听整棵 DOM');
 assert.match(windowsWorkflow,/url = 'https:\/\/ekbovsmxbiplhyrzxoyw\.supabase\.co\/storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.3\.14-setup\.exe'/,'自动更新必须使用 Supabase Storage 的版本化安装包');
-assert.match(windowsWorkflow,/installer\.Name -notmatch '1\\\.3\\\.13'/,'安装包名称校验必须跟随当前 Windows 版本');
+assert.match(windowsWorkflow,/installer\.Name -notmatch '1\\\.3\\\.14'/,'安装包名称校验必须跟随当前 Windows 版本');
 assert.match(windowsWorkflow,/functions\/v1\/sync-windows-release/,'Windows 发布必须先同步 Supabase 安装包');
 assert.match(windowsWorkflow,/gh release create/,'Windows 构建必须发布独立版本安装包');
 assert.doesNotMatch(windowsWorkflow,/cdn\.jsdelivr\.net|windows-cdn-build/,'自动更新不能再发布到会拒绝安装包的 CDN 线路');
