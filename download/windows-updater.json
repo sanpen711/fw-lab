@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-09-23T06:28:52.6283504Z",
-  "version": "1.3.14",
-  "notes": "Windows 1.3.14：更新电脑端首页横幅，换上伏伏偷偷摸鱼的形象。",
+  "version": "1.3.15",
+  "pub_date": "2026-09-23T08:34:25.3618365Z",
+  "notes": "Windows 1.3.15：精简栏目重复标题与说明，优化精神广场操作栏。",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.14-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlNXUjZySnNKYWpMazBqU2YrQlR4MGZJakdtbkxFY0srM2NEMzN2WHJ0MFJVMXdQM0xIR3cyWkJ1clNjc1RNNUU3WHo3RnpXaml2MVk1Qm82ZVhpZHd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwMTQ0OTMyCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMTRfeDY0LXNldHVwLmV4ZQovMHhjQUh3TUVyWkZOdVppQnZITGV2QUtlZHhaRWpOZ29ib0l5NEtqSS81YlhuRFJHWnFCeXIwODFqRmxIOFYvV2VGR0tWSXJlaUp1TGlEbDBKRHlDdz09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.15-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlo2VEdzQTc1MkEyaitDRUxaem9pZmVKZExsUk9vaDIrcnBPVGlDTEhtUlRnNE1VcFNSSUtQTmFvV0ViSlZtQTNidUJTN0NDMUhGeitxU2dtWGplM2dVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwMTUyNDY0CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMTVfeDY0LXNldHVwLmV4ZQpTbVkwcXpTTTNyczFuVGtneG9nSHZYdEpndStkUkx6WkNuVTRabittV281by9RZTlsL2w5MU41bmlYb0dTNkhaRkUvVVFRVnV2UWtueTFOcTlienJDdz09Cg=="
     }
   }
 }
