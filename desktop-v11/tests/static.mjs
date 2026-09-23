@@ -174,8 +174,8 @@ assert.match(theme,/\.buddy-page,[\s\S]*\.bird-page\{height:100vh!important/,'�
 assert.doesNotMatch(squareScroll,/100vh - 68px/,'精神广场和搭子不能继续预留已删除标题栏的高度');
 assert.match(theme,/\.hero-card[\s\S]*background:linear-gradient\(104deg,#fbf8f5/,'首页主视觉必须使用连续的暖白背景');
 assert.doesNotMatch(html,/hero-office\.webp/,'首页不能继续叠加旧人物场景');
-assert.match(theme,/hero-fufu-office-banner\\.webp/,'首页必须使用已确认的伏伏摸鱼横幅');
-assert.match(theme,/\\.hero-visual\\{display:none!important/,'旧伏伏与便签不能叠在新横幅上');
+assert.match(theme,/hero-fufu-office-banner\.webp/,'首页必须使用已确认的伏伏摸鱼横幅');
+assert.match(theme,/\.hero-visual\{display:none!important/,'旧伏伏与便签不能叠在新横幅上');
 assert.ok(existsSync(resolve(root,'desktop-v11/public/hero-fufu-office-banner.webp')),'首页横幅必须随安装包打包');
 assert.ok(readBinary('desktop-v11/public/hero-fufu-office-banner.webp').length<100*1024,'首页横幅应保持轻量');
 assert.ok(existsSync(resolve(root,'desktop-v11/public/mascot-fufu.webp')),'伏伏形象素材必须随本地客户端打包');
