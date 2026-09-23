@@ -116,8 +116,7 @@
       <section class="view" data-view-panel="square">
         <div class="square-page">
           <section class="square-feed-column">
-            <div class="section-heading square-heading">
-              <div><p>MENTAL SQUARE</p><h1>精神广场</h1><span>最新 100 条研究记录，不在首页后台预取。</span></div>
+            <div class="section-heading compact-toolbar square-heading" role="toolbar" aria-label="精神广场操作">
               <div class="section-actions"><button class="secondary compact" type="button" data-square-refresh>刷新</button><button class="secondary compact square-echo-button" type="button" data-square-echo-toggle aria-pressed="false">回声<i class="notification-dot inline" data-dot="square-echo" aria-label="有新回声" hidden></i></button><button class="primary compact" type="button" data-nav="compose">发牢骚</button></div>
             </div>
             <div class="square-feed" data-square-feed><div class="state-card">进入精神广场后读取帖子。</div></div>
@@ -132,8 +131,7 @@
 
       <section class="view" data-view-panel="rooms">
         <div class="rooms-page">
-          <div class="section-heading">
-            <div><p>POLL RESEARCH</p><h1>学术研讨</h1><span>每个课题观察 7 天；截止前可以改票，也可以补充一个新选项。</span></div>
+          <div class="section-heading compact-toolbar" role="toolbar" aria-label="学术研讨操作">
             <div class="section-actions"><span class="daily-count" data-poll-daily-count>登录后可见</span><button class="secondary compact" type="button" data-poll-refresh>刷新</button><button class="primary compact" type="button" data-poll-create-toggle>发起投票</button></div>
           </div>
           <div class="poll-create-host" data-poll-create-host hidden></div>
@@ -145,7 +143,7 @@
       <section class="view" data-view-panel="bird">
         <div class="bird-page">
           <section class="bird-feed-column">
-            <div class="section-heading bird-heading"><div><p>NEWS DESK</p><h1>新闻专区</h1><span>收录研究所里值得围观的离谱事件与长图文。</span></div><div class="section-actions"><button class="secondary compact" type="button" data-bird-refresh>刷新</button><button class="primary compact" type="button" data-bird-compose-toggle>发布内容</button></div></div>
+            <div class="section-heading compact-toolbar bird-heading" role="toolbar" aria-label="新闻专区操作"><div class="section-actions"><button class="secondary compact" type="button" data-bird-refresh>刷新</button><button class="primary compact" type="button" data-bird-compose-toggle>发布内容</button></div></div>
             <div class="bird-compose-host" data-bird-compose-host hidden></div>
             <div class="bird-feed" data-bird-feed><div class="state-card">进入新闻专区后读取内容。</div></div>
           </section>
@@ -156,8 +154,7 @@
       <section class="view" data-view-panel="play">
         <div class="party-page">
           <section class="party-list-column">
-            <div class="section-heading party-heading">
-              <div><p>AFTER WORK SQUAD</p><h1>下班开黑</h1><span>先认识今晚的队友，确认加入后再交换游戏 ID。</span></div>
+            <div class="section-heading compact-toolbar party-heading" role="toolbar" aria-label="下班开黑操作">
               <div class="section-actions"><button class="secondary compact" type="button" data-party-refresh>刷新</button><button class="primary compact" type="button" data-party-create-toggle>创建组队</button></div>
             </div>
             <div class="party-filters" role="tablist"><button class="active" type="button" data-party-filter="open">可加入</button><button type="button" data-party-filter="all">全部房间</button><button type="button" data-party-filter="mine">我的组队<i class="notification-dot tab" data-party-alert-total aria-label="我的组队有新消息" hidden></i></button></div>
@@ -172,9 +169,6 @@
 
       <section class="view" data-view-panel="games">
         <div class="games-page">
-          <div class="section-heading games-heading">
-            <div><h1>小游戏</h1><span>点开就玩；成绩和进度只保存在这台电脑上。</span></div>
-          </div>
           <div class="game-hall" data-game-hall>
             <div class="game-grid">
               <button class="game-card game-card-nes" type="button" data-game-open="contra"><i>NES</i><b>魂斗罗 1代</b><span>无限人＋散弹枪版本，直接在电脑客户端内运行。</span><em>方向键＋Z / X</em></button>

@@ -81,7 +81,7 @@ test('下班开黑是本地双栏页面并说明游戏 ID 的可见边界',async
   await page.goto('/');
   await page.locator('[data-nav="play"]').click();
   await expect(page.locator('[data-view-panel="play"]')).toHaveClass(/active/);
-  await expect(page.getByRole('heading',{name:'下班开黑'})).toBeVisible();
+  await expect(page.locator('[data-party-refresh]')).toBeVisible();
   await expect(page.locator('[data-party-filter="open"]')).toHaveText('可加入');
   await expect(page.locator('[data-party-list]')).toContainText('还没有可加入的房间');
   await expect(page.locator('[data-party-detail]')).toContainText('游戏 ID 只向队长和已确认队友显示');
@@ -250,7 +250,10 @@ test('发牢骚和精神广场均为本地页面且内容按需读取',async({pa
   expect(page.url()).toBe(original);
   await page.locator('[data-nav="square"].nav-item').click();
   await expect(page.locator('[data-view-panel="square"]')).toHaveClass(/active/);
-  await expect(page.getByRole('heading',{name:'精神广场'})).toBeVisible();
+  const squareButtons=page.locator('.square-heading .section-actions button');
+  await expect(squareButtons).toHaveCount(3);
+  const buttonTops=await squareButtons.evaluateAll(buttons=>buttons.map(button=>Math.round(button.getBoundingClientRect().top)));
+  expect(new Set(buttonTops).size).toBe(1);
   await expect(page.locator('[data-post-detail]')).toContainText('选择一条帖子');
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBeGreaterThan(0);
   expect(page.url()).toBe(original);
@@ -262,7 +265,7 @@ test('学术研讨为本地按需页面并保留投票分类',async({page})=>{
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
   await page.locator('[data-nav="rooms"].nav-item').click();
   await expect(page.locator('[data-view-panel="rooms"]')).toHaveClass(/active/);
-  await expect(page.getByRole('heading',{name:'学术研讨'})).toBeVisible();
+  await expect(page.locator('[data-poll-create-toggle]')).toBeVisible();
   await expect(page.locator('[data-poll-filter="all"]')).toBeVisible();
   await expect(page.locator('[data-poll-filter="official"]')).toBeVisible();
   await expect(page.locator('[data-poll-filter="user"]')).toBeVisible();
@@ -279,7 +282,7 @@ test('新闻专区为本地双栏按需页面',async({page})=>{
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
   await page.locator('[data-nav="bird"].nav-item').click();
   await expect(page.locator('[data-view-panel="bird"]')).toHaveClass(/active/);
-  await expect(page.getByRole('heading',{name:'新闻专区'})).toBeVisible();
+  await expect(page.locator('[data-bird-refresh]')).toBeVisible();
   await expect(page.locator('[data-bird-detail]')).toContainText('选择一条内容');
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBeGreaterThan(0);
   await page.locator('[data-bird-compose-toggle]').click();
@@ -292,6 +295,7 @@ test('小游戏在电脑端内部打开且离开后卸载',async({page})=>{
   const original=page.url();
   await page.locator('[data-nav="games"].nav-item').click();
   await expect(page.locator('[data-view-panel="games"]')).toHaveClass(/active/);
+  await expect(page.locator('.games-heading')).toHaveCount(0);
   await expect(page.locator('[data-game-open]')).toHaveCount(7);
   await expect(page.locator('.game-card-symbol')).toHaveCount(6);
   await page.locator('[data-game-open="reaction"]').click();
