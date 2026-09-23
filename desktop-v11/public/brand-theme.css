@@ -1,4 +1,4 @@
-/* F.w 研究所 Windows 1.3.13 — Figma-aligned desktop visual system. */
+/* F.w 研究所 Windows 1.3.14 — Figma-aligned desktop visual system. */
 
 :root{
   --bg:#f7f7f6!important;
@@ -523,4 +523,11 @@ html body .auth-gate-modal.auth-gate-checking .auth-checking{min-height:330px;pa
   html body .auth-gate-modal [data-auth-content]{padding-top:36px;padding-bottom:36px;}
   html body .auth-brand-copy{padding:30px 0 22px;}
   html body .auth-brand-copy h2{font-size:25px;}
+}
+
+/* Approved desktop homepage banner; the existing left-side copy stays live HTML. */
+html body .hero-card{background:#fbf9f7 url("/hero-fufu-office-banner.webp") no-repeat right center / auto 100%!important;}
+html body .hero-visual{display:none!important;}
+@media(max-width:790px){
+  html body .hero-card{background-image:linear-gradient(90deg,rgba(251,249,247,.98),rgba(251,249,247,.86) 64%,rgba(251,249,247,.54)),url("/hero-fufu-office-banner.webp")!important;background-position:center,right center!important;background-size:cover,auto 100%!important;background-repeat:no-repeat!important;}
 }
