@@ -28,9 +28,9 @@
     var style = document.createElement('style');
     style.id = 'fwAppBuddyStyle';
     style.textContent = [
-      '[data-app-view="buddy"]{padding-top:72px!important}',
+      '[data-app-view="buddy"]{padding-top:70px!important}',
       '[data-app-view="buddy"] > .view-head,[data-app-view="buddy"] > [data-buddy-search],[data-app-view="buddy"] > [data-buddy-search-result]{display:none!important}',
-      '[data-app-view="buddy"] > .tabs{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 72px);z-index:80;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0;padding:8px 0 10px;background:linear-gradient(180deg,rgba(248,244,235,.98),rgba(238,232,220,.94))}',
+      '[data-app-view="buddy"] > .tabs{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:80;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0;padding:8px 0 10px;background:linear-gradient(180deg,rgba(248,244,235,.98),rgba(238,232,220,.94))}',
       '[data-app-view="buddy"] > .tabs button{min-height:48px;border:1px solid rgba(30,30,28,.12);border-radius:16px;background:#fffdf7;color:var(--muted);font-size:15px;font-weight:1000}',
       '[data-app-view="buddy"] > .tabs button.active{background:var(--deep);border-color:var(--deep);color:#fff}',
       '[data-app-view="buddy"].is-chatting{padding-top:0!important}',

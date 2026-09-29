@@ -20,23 +20,15 @@ html,body{background:#171715}
 .app-logo{border-radius:10px;background:#fff;color:#171715}
 .user-avatar{background:#ff8995}
 .app-hero{background:#171715;border-radius:18px;box-shadow:0 14px 34px rgba(0,0,0,.16)}
-.mobile-home-hero{min-height:260px;margin:2px 0 18px;padding:17px 18px 15px;border:1px solid rgba(255,255,255,.08);border-radius:27px;background:linear-gradient(152deg,#0d0d0c 0%,#1d1d1a 68%,#272724 100%);box-shadow:0 20px 48px rgba(0,0,0,.22);isolation:isolate}
-.mobile-home-hero:before{content:'';position:absolute;z-index:-2;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:24px 24px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.75),transparent 78%)}
-.mobile-home-hero:after{right:-48px;top:42px;width:178px;height:178px;border:1px solid rgba(255,137,149,.32);background:transparent;box-shadow:0 0 0 22px rgba(255,137,149,.045),0 0 0 48px rgba(255,255,255,.025)}
-.mobile-home-hero-top{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.mobile-home-live,.mobile-home-hero-top time{color:rgba(255,255,255,.62);font-size:10px;font-weight:900;letter-spacing:.08em}
-.mobile-home-live{display:flex!important;align-items:center;gap:6px;margin:0!important}.mobile-home-live i{width:6px;height:6px;border-radius:50%;background:#ff8995;box-shadow:0 0 0 4px rgba(255,137,149,.12);animation:mobile-home-pulse 2.8s ease-in-out infinite}
-.mobile-home-hero-copy{position:relative;z-index:2;margin-top:34px}
-.mobile-home-hero-copy small{display:block;color:rgba(255,255,255,.48);font-size:11px;font-weight:950;letter-spacing:.12em}
-.mobile-home-hero h1{margin-top:8px;font-size:37px;line-height:1.03;letter-spacing:-.065em}
-.mobile-home-hero h1 em{color:#ff9aa4;font-style:normal}
-.mobile-home-hero-copy p{margin:11px 0 0;max-width:236px;color:rgba(255,255,255,.65);font-size:12px;line-height:1.5;font-weight:800;letter-spacing:0}
-.mobile-home-orbit{position:absolute;z-index:1;right:9px;top:92px;width:116px;height:116px;border:1px solid rgba(255,255,255,.1);border-radius:50%;display:grid;place-items:center;transform:rotate(-12deg)}
-.mobile-home-orbit:before,.mobile-home-orbit:after{content:'';position:absolute;border-radius:50%}.mobile-home-orbit:before{inset:16px;border:1px solid rgba(255,255,255,.08)}.mobile-home-orbit:after{width:7px;height:7px;right:6px;top:29px;background:#ff8995;box-shadow:0 0 18px rgba(255,137,149,.62)}
-.mobile-home-orbit i{color:rgba(255,255,255,.1);font-size:24px;font-style:normal;font-weight:1000;letter-spacing:-.08em}.mobile-home-orbit span{position:absolute;left:11px;bottom:17px;width:20px;height:1px;background:rgba(255,255,255,.26)}
-.mobile-home-hero-foot{position:absolute;z-index:3;left:18px;right:18px;bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid rgba(255,255,255,.11);padding-top:12px}
-.mobile-home-hero-foot span,.mobile-home-hero-foot b{margin:0!important;font-size:10px;line-height:1}.mobile-home-hero-foot span{color:rgba(255,255,255,.4);letter-spacing:.08em}.mobile-home-hero-foot b{color:rgba(255,255,255,.76);font-weight:900}
-@keyframes mobile-home-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.72)}}
+/* The mobile home uses the same banner asset and copy as the desktop home. */
+.mobile-home-hero{min-height:438px;margin:2px 0 18px;padding:20px 18px;border:1px solid #e9e4df;border-radius:20px;background:#fbf9f7 url('../desktop-v11/public/hero-fufu-office-banner.webp') no-repeat center bottom / 100% auto;color:#101513;box-shadow:0 12px 30px rgba(30,26,22,.06)}
+.mobile-home-hero:after{content:none}
+.mobile-home-hero-copy{position:relative;z-index:2;max-width:340px}
+.mobile-home-hero-copy small{display:block;color:#d06c79;font-size:10px;font-weight:900;letter-spacing:.02em}
+.mobile-home-hero h1{margin:15px 0 10px;color:#050706;font-size:32px;line-height:1;font-weight:1000;letter-spacing:-.065em}
+.mobile-home-hero h2{margin:0;color:#0a0d0c;font-size:19px;line-height:1.32;font-weight:950;letter-spacing:-.035em}
+.mobile-home-hero .mobile-home-hero-copy p{margin:10px 0 0;color:#202623;font-size:11px;line-height:1.5;font-weight:850;letter-spacing:0}
+.mobile-home-hero-copy .primary{min-height:38px;margin-top:14px;padding:0 14px;border:0;border-radius:12px;background:#ffe1e4;color:#111514;font-size:12px;font-weight:1000;box-shadow:none}
 .hero-actions-app{display:none}
 
 .mobile-home-section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 3px 10px}.mobile-home-section-head div{min-width:0}.mobile-home-section-head small{display:block;margin:0 0 4px;color:#b94f5d;font-size:9px;font-weight:1000;letter-spacing:.15em}.mobile-home-section-head h2{margin:0;color:#171715;font-size:20px;line-height:1.08;letter-spacing:-.045em}.mobile-home-section-head>span{flex:0 0 auto;color:#8a8a85;font-size:9px;font-weight:850}
@@ -165,4 +157,4 @@ html,body{background:#171715}
 .module-card,.post-card,.publish-card,.profile-detail-card{background:#fff}
 .post-actions{grid-template-columns:repeat(2,1fr)!important}
 .post-actions button[data-app-react="same"],.post-actions button[data-app-react="tissue"]{display:none!important}
-@media(max-width:360px){.mobile-home-hero{min-height:250px;padding-left:16px;padding-right:16px}.mobile-home-hero h1{font-size:33px}.mobile-home-hero-copy p{max-width:210px}.mobile-home-orbit{right:0;width:102px;height:102px}.mobile-home-tool{padding:12px}.mobile-home-tool-time{padding:14px}.mobile-home-tool-time strong{font-size:30px}.mobile-home-tool strong{font-size:20px}.nav-grid.mobile-primary-grid .mobile-destination{padding:12px}.mobile-section-actions{margin:0 0 12px}.mobile-section-head{padding-bottom:7px}}
+@media(max-width:360px){.mobile-home-hero{min-height:428px;padding-left:16px;padding-right:16px}.mobile-home-hero h1{font-size:29px}.mobile-home-hero h2{font-size:17px}.mobile-home-hero .mobile-home-hero-copy p{font-size:10px}.mobile-home-tool{padding:12px}.mobile-home-tool-time{padding:14px}.mobile-home-tool-time strong{font-size:30px}.mobile-home-tool strong{font-size:20px}.nav-grid.mobile-primary-grid .mobile-destination{padding:12px}.mobile-section-actions{margin:0 0 12px}.mobile-section-head{padding-bottom:7px}}

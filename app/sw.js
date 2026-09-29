@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-sync-20260929-1';
+const CACHE_NAME = 'fw-mobile-home-desktop-banner-20260929-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -63,7 +63,8 @@ const APP_SHELL = [
   appPath('mobile-module-cache.js'),
   appPath('mobile-global-fixes.js'),
   appPath('mobile-cache-settings.js'),
-  appPath('manifest.webmanifest')
+  appPath('manifest.webmanifest'),
+  SITE_BASE + 'desktop-v11/public/hero-fufu-office-banner.webp'
 ].concat(Array.from({length:24}, (_, index) => assetPath('emoji/fufu1/' + String(index + 1).padStart(2, '0') + '.webp')));
 
 function isNavigationRequest(request){

@@ -11,27 +11,13 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png?v=fw-lab-icon-20260529-1">
   <link rel="icon" href="../assets/icons/icon-192.png?v=fw-lab-icon-20260529-1" sizes="192x192" type="image/png">
-  <link rel="stylesheet" href="./app.css?v=mobile-release-ready-20260804-1">
+  <link rel="stylesheet" href="./app.css?v=mobile-home-desktop-banner-20260929-1">
   <link rel="stylesheet" href="./rooms.css?v=mobile-app-rooms-layout-20260527-1">
   <link rel="stylesheet" href="./bird.css?v=mobile-app-modules-20260527-1">
-  <link rel="stylesheet" href="./mobile-sync.css?v=mobile-sync-20260929-1">
+  <link rel="stylesheet" href="./mobile-sync.css?v=mobile-home-desktop-banner-20260929-1">
 </head>
 <body>
   <div class="app-shell">
-    <header class="app-header">
-      <div class="app-brand" aria-label="F.w 研究所">
-        <span class="app-logo">F.w</span>
-        <div>
-          <strong>F.w 研究所</strong>
-          <small data-app-status>正在连接</small>
-        </div>
-      </div>
-      <button class="user-pill" type="button" data-app-profile-trigger aria-label="打开我的">
-        <span class="user-avatar" data-app-avatar>F</span>
-        <span data-app-user-label>未登录</span>
-      </button>
-    </header>
-
     <div class="app-network-banner" data-app-network-banner role="status" aria-live="polite" hidden>
       <span><b>当前处于离线状态</b><small>已展示本地缓存；发布、评论和消息暂不可用。</small></span>
       <button type="button" data-app-network-retry>重新连接</button>
@@ -40,24 +26,13 @@
     <main class="app-main" id="appMain">
       <section class="app-view is-active" data-app-view="home" aria-label="首页">
         <div class="app-hero mobile-home-hero">
-          <div class="mobile-home-hero-top">
-            <span class="mobile-home-live"><i aria-hidden="true"></i>低功耗运行中</span>
-            <time data-mobile-home-date>今天</time>
-          </div>
           <div class="mobile-home-hero-copy">
-            <small>F.w 研究所</small>
-            <h1>工作先放一放，<br><em>喘口气。</em></h1>
-            <p>给忙里偷闲的人，一块不必解释的角落。</p>
+            <small>FW LAB / LOW POWER MODE</small>
+            <h1>F.w 研究所</h1>
+            <h2>放下个人素质，享受缺德人生</h2>
+            <p>随时吐槽、随时发泄、随时释放自己、不要攻击他人，<br>可参与投票、围观离谱事件。</p>
+            <button class="app-btn primary" type="button" data-publish-open>开始吐槽!</button>
           </div>
-          <div class="mobile-home-orbit" aria-hidden="true"><i>F.w</i><span></span></div>
-          <div class="mobile-home-hero-foot"><span>今日模式</span><b>保持清醒，拒绝内耗</b></div>
-        </div>
-        <div class="hero-actions-app single-action">
-          <button class="app-btn primary" type="button" data-app-login>加入研究所</button>
-        </div>
-        <div class="mobile-home-section-head">
-          <div><small>每日状态</small><h2>今天过得怎么样</h2></div>
-          <span>点击卡片可设置</span>
         </div>
         <div class="mobile-home-tools" aria-label="首页工具">
           <button class="mobile-home-tool mobile-home-tool-time" type="button" data-mobile-offwork-open><span class="mobile-home-tool-label"><b>下班倒计时</b><i>01</i></span><strong data-mobile-offwork-value>设置时间</strong><span data-mobile-offwork-detail>今天几点下班？</span><small data-mobile-offwork-meta>点击设置下班时间</small></button>
@@ -279,7 +254,7 @@
   <script src="./nav.js?v=mobile-sync-20260929-1"></script>
   <script src="./feed.js?v=mobile-sync-20260929-1"></script>
   <script src="./publish.js?v=mobile-sync-20260929-1"></script>
-  <script src="./buddy.js?v=mobile-sync-20260929-1"></script>
+  <script src="./buddy.js?v=mobile-home-desktop-banner-20260929-1"></script>
   <script src="./echo.js?v=mobile-sync-20260929-1"></script>
   <script src="./echo-enhance.js?v=mobile-echo-enhance-20260529-2"></script>
   <script src="./profile.js?v=mobile-sync-20260929-1"></script>
