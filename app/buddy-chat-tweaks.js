@@ -148,15 +148,14 @@
     });
   }
 
-  function decodeStickerText(text){
-    var raw = String(text || '').replace(/\s+/g, '');
-    var prefix = '[[FW_USER_STICKER:';
-    var start = raw.indexOf(prefix);
-    if(start < 0) return '';
-    start += prefix.length;
-    var end = raw.indexOf(']]', start);
-    if(end < 0) return '';
-    try{ return atob(raw.slice(start, end)); }catch(e){ return ''; }
+  function decodeMediaText(text){
+    var raw = String(text || '').trim();
+    var match = raw.match(/^\[\[(FW_USER_STICKER|FW_MEDIA_IMAGE|FW_MEDIA_VIDEO):([A-Za-z0-9+/=]+)\]\]$/);
+    if(!match) return null;
+    try{
+      var url = window.FWMobileMedia.safeUrl(atob(match[2]));
+      return url ? {url:url,video:match[1]==='FW_MEDIA_VIDEO'} : null;
+    }catch(e){ return null; }
   }
 
   function encodeStickerUrl(url){
@@ -166,11 +165,15 @@
   function renderMediaMessages(){
     $$('.buddy-message-bubble').forEach(function(el){
       if(el.dataset.fwBuddyMediaRendered === '1') return;
-      var url = decodeStickerText(el.textContent);
-      if(!url) return;
+      var token=String(el.textContent||'').trim();
+      var fufu=(window.FWMobileMedia.fufu||[]).find(function(item){return item.token===token;});
+      var media=decodeMediaText(token);
+      if(!fufu && !media) return;
       el.dataset.fwBuddyMediaRendered = '1';
       el.classList.add('is-media');
-      el.innerHTML = '<span class="buddy-image-message"><img src="' + esc(url) + '" alt="图片"></span>';
+      el.innerHTML = fufu ? '<img class="mobile-fufu-chat" src="'+fufu.url+'" alt="'+esc(fufu.label)+'">' :
+        media.video ? '<video class="mobile-chat-video" src="'+esc(media.url)+'" controls playsinline preload="metadata"></video>' :
+        '<span class="buddy-image-message"><img src="'+esc(media.url)+'" alt="图片"></span>';
     });
   }
 
@@ -188,14 +191,14 @@
       btn.type = 'button';
       btn.className = 'buddy-chat-image-btn';
       btn.dataset.buddyChatImage = 'true';
-      btn.setAttribute('aria-label', '发送图片');
+      btn.setAttribute('aria-label', '发送图片或视频');
       btn.textContent = '+';
       form.insertBefore(btn, input || form.firstChild);
     }
     if(!form.querySelector('[data-buddy-chat-file]')){
       var file = document.createElement('input');
       file.type = 'file';
-      file.accept = 'image/jpeg,image/png,image/webp,image/gif';
+      file.accept = 'image/*,video/*';
       file.hidden = true;
       file.dataset.buddyChatFile = 'true';
       form.appendChild(file);
@@ -258,13 +261,24 @@
   async function uploadAndSendImage(file){
     if(imageUploading) return;
     if(!file) return;
-    if(!/^image\/(jpeg|jpg|png|webp|gif)$/i.test(file.type || '')){ toast('只支持 JPG、PNG、WebP、GIF 图片。'); return; }
+    var isVideo=window.FWMobileMedia.isVideo(file);
+    if(!isVideo && !/^image\/(jpeg|jpg|png|webp|gif)$/i.test(file.type || '')){ toast('请选择图片或视频。'); return; }
     imageUploading = true;
-    toast('正在处理图片...');
+    toast(isVideo ? '正在处理视频...' : '正在处理图片...');
     try{
       var user = await getCurrentUser();
       if(!user || !user.id) throw new Error('请先登录。');
       if(!window.fwDb || !window.fwDb.client) throw new Error('数据服务未连接。');
+      if(isVideo){
+        var chat=window.FWAppBuddy;
+        if(!chat || !chat.sendMediaMarker || !chat.getActiveTargetId) throw new Error('私聊暂时不可用。');
+        var targetId=chat.getActiveTargetId();
+        if(!targetId) throw new Error('先选择一个搭子。');
+        var video=await window.FWMobileMedia.uploadVideo(file,user,'private');
+        await chat.sendMediaMarker(video.marker,targetId);
+        toast('视频已发送。');
+        return;
+      }
       var prepared = await compressChatImage(file);
       var path = user.id + '/chat_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8) + '.' + prepared.ext;
       toast('正在上传图片...');

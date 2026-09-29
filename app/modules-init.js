@@ -12,7 +12,7 @@
     if(archiveScriptLoading) return;
     archiveScriptLoading = true;
     var script = document.createElement('script');
-    script.src = './archive.js?v=mobile-archive-20260529-1';
+    script.src = './archive.js?v=mobile-sync-20260929-1';
     script.onload = function(){
       archiveScriptLoading = false;
       if(window.FWAppArchive){
@@ -50,8 +50,6 @@
       profile:true,
       play:true,
       'play-detail':true,
-      games:true,
-      'game-stage':true,
       membership:true
     };
     return allowed[hash] ? hash : '';

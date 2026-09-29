@@ -177,7 +177,7 @@
           '<label for="profileLabCode">实验品编号</label>' +
           '<input id="profileLabCode" value="' + esc(user.lab_code || '未设置') + '" readonly>' +
           '<label for="profileNickname">昵称</label>' +
-          '<input id="profileNickname" name="nickname" maxlength="24" value="' + esc(user.nickname || '') + '" placeholder="给自己取个低功耗昵称">' +
+          '<input id="profileNickname" name="nickname" maxlength="12" value="' + esc(user.nickname || '') + '" placeholder="给自己取个低功耗昵称">' +
           '<label for="profileAvatar">头像</label>' +
           '<input id="profileAvatar" name="avatar" type="file" accept="image/*">' +
           '<button class="app-btn dark" type="submit">保存资料</button>' +
@@ -318,7 +318,8 @@
     try{
       var c = client();
       if(!c) throw new Error('db');
-      var res = await c.from('user_stickers').select('id,image_url,storage_path,file_name,file_size,mime_type,created_at').eq('user_id', user.id).eq('is_deleted', false).order('created_at', {ascending:false}).limit(30);
+      var limit = await window.FWMobileMedia.stickerLimit(user);
+      var res = await c.from('user_stickers').select('id,image_url,storage_path,file_name,file_size,mime_type,created_at').eq('user_id', user.id).eq('is_deleted', false).order('created_at', {ascending:false}).limit(limit);
       if(res.error) throw res.error;
       stickers = res.data || [];
       stickersLoaded = true;
@@ -359,6 +360,10 @@
     validateSticker(file);
     var c = client();
     if(!c || !c.storage) throw new Error('storage');
+    var limit = await window.FWMobileMedia.stickerLimit(user);
+    var count = await c.from('user_stickers').select('id', {count:'exact',head:true}).eq('user_id',user.id).eq('is_deleted',false);
+    if(count.error) throw count.error;
+    if(Number(count.count||0)>=limit) throw new Error('我的表情最多保存 '+limit+' 个。');
     stickerUploading = true;
     app().toast('正在添加表情...');
     try{
@@ -372,7 +377,7 @@
       if(!publicUrl) throw new Error('public-url');
       var saved = await c.from('user_stickers').insert({user_id:user.id,image_url:publicUrl,storage_path:path,file_name:file.name || 'sticker',file_size:file.size || 0,mime_type:file.type || ''}).select('id,image_url,storage_path,file_name,file_size,mime_type,created_at').single();
       if(saved.error) throw saved.error;
-      stickers = [saved.data].concat(stickers).slice(0, 30);
+      stickers = [saved.data].concat(stickers).slice(0, limit);
       stickersLoaded = true;
       refreshStickerList();
       app().toast('表情已添加');

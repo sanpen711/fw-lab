@@ -74,7 +74,7 @@ assert.deepEqual(webEmojiList(postMedia), desktopEmojis, '网页版发帖和评�
 assert.deepEqual(webEmojiList(emojiPanel), desktopEmojis, '网页版聊天小表情应与电脑软件版完全一致');
 assert.match(postMedia, /insertAtCursor\(activeTarget,[\s\S]*?closeEmoji\(\)/, '选择小表情后应自动关闭面板');
 assert.doesNotMatch(postMedia, /伏伏1/, '网页版发帖和评论面板不应增加伏伏发送入口');
-assert.doesNotMatch(emojiPanel, /伏伏1/, '网页版聊天面板不应增加伏伏发送入口');
+assert.match(emojiPanel, /window\.FWMobileMedia \? '<button[^']*伏伏1/, '伏伏发送入口只应在手机应用的聊天面板中出现');
 for(let index = 1; index <= 24; index += 1){
   const number = String(index).padStart(2, '0');
   const asset = resolve(root, 'assets/emoji/fufu1', `${number}.webp`);

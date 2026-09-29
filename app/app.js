@@ -1,3 +1,67 @@
+// Shared formats used by the Windows client and the mobile PWA.
+(function(){
+  if(window.FWMobileMedia) return;
+  var fufu = [
+    '默认微笑','开心大笑','点头收到','点赞好耶','比心感谢','歪头疑惑','震惊','无语摊手',
+    '生气鼓脸','委屈想哭','咖啡续命','笔记本办公','趴桌没电','偷偷摸鱼','开会发呆','文件堆工作',
+    '吃瓜围观','下班冲刺','确认登录','加载中','暂无内容','搜索不到','操作成功','出错维护'
+  ].map(function(label, index){
+    var number=String(index+1).padStart(2,'0');
+    return {token:'[伏伏1:'+number+']',url:'../assets/emoji/fufu1/'+number+'.webp',label:label};
+  });
+  var emoji=('😀 😁 😂 🤣 😄 😅 😆 😊 😉 😌 🥰 😍 🤩 😘 😋 😜 🤪 😎 🤓 🧐 ' +
+    '🤔 😏 😒 🙄 🙃 😬 🤭 🫢 🫣 🤫 😐 😮 😲 😳 😔 😢 😭 🥺 😩 😫 ' +
+    '🥱 😴 😷 😤 😡 🤯 😱 🫠 🫡 🤡 👍 👎 👌 ✌️ 🤞 🤟 🤘 🤙 👈 👉 ' +
+    '👆 👇 👋 👏 🙌 🙏 💪 🤝 🫶 ❤️ 💕 💖 💔 💯 🔥 ✨ ⭐ 🌟 💥 ' +
+    '🎉 🎁 🏆 🚀 ☕ 🍓 🍉 🐶 🐱 🐟').split(' ');
+  function isVideo(file){
+    return !!file && (/^video\//i.test(file.type||'') || /\.(mp4|mov|webm|m4v)$/i.test(file.name||''));
+  }
+  function safeUrl(url){
+    try{var value=new URL(url,location.href);return /^https?:$/.test(value.protocol)?value.href:'';}catch(e){return '';}
+  }
+  function fufuHtml(text, esc){
+    var escaped=esc(text);
+    return escaped.replace(/\[伏伏1:(0[1-9]|1\d|2[0-4])\]/g,function(token){
+      var item=fufu[Number(token.slice(5,7))-1];
+      return '<img class="mobile-fufu-inline" src="'+item.url+'" alt="'+esc(item.label)+'" loading="lazy">';
+    });
+  }
+  async function stickerLimit(user){
+    if(!user || !user.id || !window.fwDb || !window.fwDb.client) return 80;
+    var result=await window.fwDb.client.from('memberships').select('status,expires_at').eq('user_id',user.id).maybeSingle();
+    if(result.error) throw result.error;
+    var row=result.data;
+    return row && row.status==='active' && row.expires_at && new Date(row.expires_at).getTime()>Date.now()?160:80;
+  }
+  async function uploadVideo(file,user,scope){
+    if(!isVideo(file)) throw new Error('请选择视频文件。');
+    if(file.size>20*1024*1024) throw new Error('视频不能超过 20MB。');
+    var localUrl=URL.createObjectURL(file);
+    try{
+      var duration=await new Promise(function(resolve,reject){
+        var video=document.createElement('video');
+        var timer=setTimeout(function(){reject(new Error('视频读取超时，请换一个视频。'));},10000);
+        video.preload='metadata';
+        video.onloadedmetadata=function(){clearTimeout(timer);resolve(Number(video.duration||0));};
+        video.onerror=function(){clearTimeout(timer);reject(new Error('视频读取失败，请换一个视频。'));};
+        video.src=localUrl;
+      });
+      if(duration>31) throw new Error('视频请控制在 30 秒以内。');
+    }finally{URL.revokeObjectURL(localUrl);}
+    var client=window.fwDb&&window.fwDb.client;
+    if(!user || !user.id || !client || !client.storage) throw new Error('请先登录。');
+    var ext=(String(file.name||'').match(/\.(mp4|mov|webm|m4v)$/i)||[])[1]||'mp4';
+    var path=user.id+'/'+scope+'/video/'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8)+'.'+ext.toLowerCase();
+    var uploaded=await client.storage.from('chat-media').upload(path,file,{upsert:false,cacheControl:'31536000',contentType:file.type||'video/mp4'});
+    if(uploaded.error) throw uploaded.error;
+    var url=safeUrl(client.storage.from('chat-media').getPublicUrl(path).data.publicUrl);
+    if(!url) throw new Error('视频地址生成失败。');
+    return {url:url,marker:'[[FW_MEDIA_VIDEO:'+btoa(url)+']]'};
+  }
+  window.FWMobileMedia={fufu:fufu,emoji:emoji,fufuHtml:fufuHtml,isVideo:isVideo,safeUrl:safeUrl,stickerLimit:stickerLimit,uploadVideo:uploadVideo};
+})();
+
 (function(){
   if(window.FWApp) return;
 

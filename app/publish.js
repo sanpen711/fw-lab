@@ -9,6 +9,7 @@
   var stickerCache = null;
   var loadingStickers = false;
   var selectedStickers = [];
+  var stickerTab = 'emoji';
 
   var MAX_IMAGE_SIZE = 800 * 1024;
   var MAX_GIF_SIZE = 3 * 1024 * 1024;
@@ -153,10 +154,11 @@
       return;
     }
     var src = pendingImage.localUrl || pendingImage.url || '';
-    var note = pendingImage.uploading ? '正在上传图片...' : '图片已准备好';
+    var isVideo = pendingImage.kind === 'video';
+    var note = pendingImage.uploading ? '正在上传' + (isVideo ? '视频' : '图片') + '...' : (isVideo ? '视频已准备好' : '图片已准备好');
     if(pendingImage.error) note = pendingImage.error;
     node.innerHTML = '<div class="app-publish-image-card">' +
-      (src ? '<img src="' + esc(src) + '" alt="已选择的图片">' : '') +
+      (src ? (isVideo ? '<video src="' + esc(src) + '" controls playsinline preload="metadata"></video>' : '<img src="' + esc(src) + '" alt="已选择的图片">') : '') +
       '<div class="app-publish-image-meta"><span>' + esc(note) + '</span><button class="app-publish-remove" type="button" data-publish-image-remove>删除</button></div>' +
     '</div>';
   }
@@ -173,16 +175,25 @@
     var panel = stickerPanelNode();
     if(!panel) return;
     panel.hidden = false;
+    var tabs = '<div class="mobile-sticker-tabs"><button type="button" data-publish-sticker-tab="emoji" class="' + (stickerTab==='emoji'?'active':'') + '">小表情</button><button type="button" data-publish-sticker-tab="stickers" class="' + (stickerTab==='stickers'?'active':'') + '">我的表情</button><button type="button" data-publish-sticker-tab="fufu" class="' + (stickerTab==='fufu'?'active':'') + '">伏伏1</button></div>';
+    if(stickerTab === 'emoji'){
+      panel.innerHTML = tabs + '<div class="mobile-emoji-grid">' + window.FWMobileMedia.emoji.map(function(item){return '<button type="button" data-publish-emoji="' + esc(item) + '">' + esc(item) + '</button>';}).join('') + '</div>';
+      return;
+    }
+    if(stickerTab === 'fufu'){
+      panel.innerHTML = tabs + '<div class="mobile-fufu-grid">' + window.FWMobileMedia.fufu.map(function(item){return '<button type="button" data-publish-fufu="' + item.token + '" aria-label="' + esc(item.label) + '"><img src="' + item.url + '" alt="' + esc(item.label) + '"><span>' + esc(item.label) + '</span></button>';}).join('') + '</div>';
+      return;
+    }
     if(message){
-      panel.innerHTML = '<p class="app-publish-panel-note">' + esc(message) + '</p>';
+      panel.innerHTML = tabs + '<p class="app-publish-panel-note">' + esc(message) + '</p>';
       return;
     }
     rows = rows || [];
     if(!rows.length){
-      panel.innerHTML = '<p class="app-publish-panel-note">暂时没有可用表情。</p>';
+      panel.innerHTML = tabs + '<p class="app-publish-panel-note">暂时没有可用表情。</p>';
       return;
     }
-    panel.innerHTML = '<div class="app-publish-sticker-grid">' + rows.map(function(row){
+    panel.innerHTML = tabs + '<div class="app-publish-sticker-grid">' + rows.map(function(row){
       var url = row.image_url || row.url || '';
       return '<button type="button" data-publish-sticker-url="' + esc(url) + '" aria-label="选择表情"><img src="' + esc(url) + '" alt="表情"></button>';
     }).join('') + '</div>';
@@ -197,9 +208,9 @@
     wrapper.dataset.publishMediaControls = 'true';
     wrapper.innerHTML = [
       '<div class="app-publish-tools">',
-        '<button class="app-publish-tool-btn" type="button" data-publish-image>添加图片</button>',
-        '<button class="app-publish-tool-btn" type="button" data-publish-stickers>我的表情</button>',
-        '<input type="file" accept="image/*" data-publish-image-file hidden>',
+        '<button class="app-publish-tool-btn" type="button" data-publish-image>添加图片 / 视频</button>',
+        '<button class="app-publish-tool-btn" type="button" data-publish-stickers>表情</button>',
+        '<input type="file" accept="image/*,video/*" data-publish-image-file hidden>',
       '</div>',
       '<div class="app-publish-image-preview" data-publish-image-preview></div>',
       '<div class="app-publish-selected-stickers" data-publish-selected-stickers></div>',
@@ -383,6 +394,7 @@
   async function uploadImage(file){
     var user = await requireUser();
     if(!user) return null;
+    if(window.FWMobileMedia.isVideo(file)) return window.FWMobileMedia.uploadVideo(file, user, 'post');
     var db = app().db();
     var client = db && db.client;
     if(!client || !client.storage) throw new Error('storage-missing');
@@ -424,7 +436,7 @@
         .eq('user_id', user.id)
         .or('is_deleted.eq.false,is_deleted.is.null')
         .order('created_at', {ascending:false})
-        .limit(30);
+        .limit(await window.FWMobileMedia.stickerLimit(user));
       if(res.error) throw res.error;
       stickerCache = (res.data || []).filter(function(row){ return row && row.image_url; });
       return stickerCache;
@@ -489,12 +501,44 @@
         }
         renderStickerPanel([], '正在读取我的表情...');
         try{
-          var rows = await fetchStickers(false);
+          var rows = await fetchStickers(true);
           renderStickerPanel(rows);
         }catch(err){
           console.warn('[FW mobile app] sticker load failed', err);
           renderStickerPanel([], '表情暂时读取失败，请稍后再试。');
         }
+        return;
+      }
+
+      var stickerTabButton = e.target.closest && e.target.closest('[data-publish-sticker-tab]');
+      if(stickerTabButton){
+        e.preventDefault();
+        stickerTab = stickerTabButton.dataset.publishStickerTab;
+        renderStickerPanel(stickerCache || []);
+        return;
+      }
+      var fufuPick = e.target.closest && e.target.closest('[data-publish-fufu]');
+      var emojiPick = e.target.closest && e.target.closest('[data-publish-emoji]');
+      if(emojiPick){
+        e.preventDefault();
+        var input = $('[data-publish-form] textarea[name="content"]');
+        var emojiText = emojiPick.dataset.publishEmoji;
+        if(!input || input.value.length + emojiText.length > 500) return;
+        var at = typeof input.selectionStart === 'number' ? input.selectionStart : input.value.length;
+        input.value = input.value.slice(0,at) + emojiText + input.value.slice(at);
+        stickerPanelNode().hidden = true;
+        updateCount();
+        return;
+      }
+      if(fufuPick){
+        e.preventDefault();
+        var textBox = $('[data-publish-form] textarea[name="content"]');
+        var token = fufuPick.dataset.publishFufu;
+        if(!textBox || textBox.value.length + token.length > 500) return;
+        var position = typeof textBox.selectionStart === 'number' ? textBox.selectionStart : textBox.value.length;
+        textBox.value = textBox.value.slice(0, position) + token + textBox.value.slice(position);
+        stickerPanelNode().hidden = true;
+        updateCount();
         return;
       }
 
@@ -549,40 +593,45 @@
       var file = fileInput.files && fileInput.files[0];
       fileInput.value = '';
       if(!file) return;
-      if(!/^image\//i.test(file.type || '')){
-        app().toast('请选择图片文件。');
+      var isVideo = window.FWMobileMedia.isVideo(file);
+      if(!isVideo && !/^image\//i.test(file.type || '')){
+        app().toast('请选择图片或视频文件。');
         return;
       }
 
       revokeLocalImage();
       pendingImage = {
-        name:file.name || 'image',
+        name:file.name || 'media',
+        kind:isVideo?'video':'image',
         localUrl:URL.createObjectURL(file),
         url:'',
         marker:'',
         uploading:true,
         error:''
       };
+      var selectedMedia = pendingImage;
       uploadingImage = true;
       renderImagePreview();
       try{
         var uploaded = await uploadImage(file);
         if(!uploaded){
-          if(pendingImage) pendingImage.error = '登录后才能上传图片';
+          if(pendingImage === selectedMedia) selectedMedia.error = '登录后才能上传媒体';
           return;
         }
-        if(!pendingImage) return;
-        pendingImage.url = uploaded.url;
-        pendingImage.marker = uploaded.marker;
-        pendingImage.uploading = false;
-        app().toast('图片已准备好');
+        if(pendingImage !== selectedMedia) return;
+        selectedMedia.url = uploaded.url;
+        selectedMedia.marker = uploaded.marker;
+        selectedMedia.uploading = false;
+        app().toast(isVideo ? '视频已准备好' : '图片已准备好');
       }catch(err){
         console.warn('[FW mobile app] image upload failed', err);
-        if(pendingImage) pendingImage.error = '图片上传失败';
-        app().toast('图片上传失败，请稍后再试。');
+        if(pendingImage === selectedMedia) selectedMedia.error = err.message || '媒体上传失败';
+        app().toast(err.message || '媒体上传失败，请稍后再试。');
       }finally{
-        uploadingImage = false;
-        if(pendingImage) pendingImage.uploading = false;
+        if(pendingImage === selectedMedia){
+          uploadingImage = false;
+          selectedMedia.uploading = false;
+        }
         renderImagePreview();
       }
     });
@@ -595,9 +644,10 @@
       var user = await requireUser();
       if(!user) return;
       if(uploadingImage || (pendingImage && pendingImage.uploading)){
-        app().toast('图片还在上传，请稍后再发布。');
+        app().toast('媒体还在上传，请稍后再发布。');
         return;
       }
+      if(pendingImage && pendingImage.error){app().toast('媒体上传失败，请移除后重试。');return;}
 
       var textarea = form.querySelector('textarea[name="content"]');
       var content = composeContent(textarea.value || '');

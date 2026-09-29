@@ -4,15 +4,8 @@
 
   var loaded = false;
   var loading = false;
-  var currentDailyType = 'like';
-  var dailyRankings = {like:[], same:[], tissue:[]};
-
-  var AWARDS = {
-    like:{title:'点赞之王', en:'LIKE KING', medal:'赞', tab:'点赞榜', quote:'代表废话', unit:'赞'},
-    same:{title:'共鸣王', en:'RESONANCE KING', medal:'鸣', tab:'共鸣榜', quote:'代表共鸣', unit:'鸣'},
-    tissue:{title:'纸巾王', en:'TISSUE KING', medal:'纸', tab:'纸巾榜', quote:'代表破防', unit:'纸'}
-  };
-  var roomName = {'已疲惫':'精神广场','摸鱼现场':'精神广场','精神离岗':'精神广场','今日无效':'精神广场','今日崩溃':'精神广场'};
+  var dailyRankings = [];
+  var AWARD = {title:'点赞之王', en:'LIKE KING', medal:'赞', quote:'代表废话'};
 
   function app(){ return window.FWApp || null; }
   function $(selector, root){ return (root || document).querySelector(selector); }
@@ -142,23 +135,22 @@
     shell.dataset.mobileArchiveShell = 'true';
     shell.innerHTML = [
       '<section class="mobile-archive-hero">',
-        '<div class="mobile-archive-eyebrow">WEEKLY / DAILY LOW POWER RANKING</div>',
+        '<div class="mobile-archive-eyebrow">LOW POWER ARCHIVE</div>',
         '<h2>废话档案</h2>',
-        '<p>自动整理精神广场里的点赞、共鸣和纸巾数据。榜单不是为了竞争，是为了证明大家都在以不同方式坚持上班。</p>',
+        '<p>有人发牢骚，有人点了赞，有些废话就这样被留下。榜单不是为了竞争，只是看看哪些话被大家顺手点亮了。</p>',
         '<div class="mobile-archive-update" data-mobile-archive-update>正在计算下次更新时间...</div>',
       '</section>',
       '<section class="mobile-archive-section">',
-        '<div class="mobile-archive-head"><div><div class="mobile-archive-eyebrow">LAST WEEK HONOR WALL</div><h3>上周低功耗荣誉榜</h3></div><p>前三名</p></div>',
+        '<div class="mobile-archive-head"><div><div class="mobile-archive-eyebrow">LAST WEEK LIKE HONOR WALL</div><h3>上周点赞荣誉榜</h3></div><p>前三名</p></div>',
         '<div class="mobile-archive-grid" data-mobile-weekly-grid><div class="mobile-archive-empty">正在整理上周榜单...</div></div>',
       '</section>',
       '<section class="mobile-archive-section">',
-        '<div class="mobile-archive-head"><div><div class="mobile-archive-eyebrow">YESTERDAY TOP 10</div><h3>昨日情绪残留榜</h3></div><p>0 点更新</p></div>',
-        '<div class="mobile-archive-tabs" data-mobile-archive-tabs><button class="active" type="button" data-mobile-daily-type="like">点赞榜</button><button type="button" data-mobile-daily-type="same">共鸣榜</button><button type="button" data-mobile-daily-type="tissue">纸巾榜</button></div>',
+        '<div class="mobile-archive-head"><div><div class="mobile-archive-eyebrow">YESTERDAY LIKE TOP 10</div><h3>昨日点赞榜</h3></div><p>每日 0 点更新</p></div>',
         '<div class="mobile-daily-list" data-mobile-daily-list><div class="mobile-archive-empty">正在整理昨日榜单...</div></div>',
       '</section>',
-      '<section class="mobile-archive-rule"><b>档案规则</b><span>自己给自己的反应可以显示，但不计入榜单；同一用户对同一条内容同一类型只统计 1 次；删除或被处理的内容不会进入榜单。</span></section>',
+      '<section class="mobile-archive-rule"><b>档案规则</b><span>自己给自己的点赞可以显示，但不计入榜单；同一用户对同一条内容只统计 1 次；删除或被处理的内容不会进入榜单。</span></section>',
       '<section class="mobile-archive-section">',
-        '<div class="mobile-archive-head"><div><div class="mobile-archive-eyebrow">PAST ARCHIVES</div><h3>历代废话档案</h3></div><p>预览</p></div>',
+        '<div class="mobile-archive-head"><div><div class="mobile-archive-eyebrow">PAST ARCHIVES</div><h3>历代废话档案</h3></div><p>最近一周预览</p></div>',
         '<div class="mobile-history-grid" data-mobile-history-grid><div class="mobile-archive-empty">正在整理归档预览...</div></div>',
       '</section>',
       '<div class="mobile-archive-actions"><button type="button" data-mobile-archive-refresh>刷新榜单</button></div>'
@@ -181,7 +173,7 @@
     if(!db) return [];
     var postResult = await db
       .from('posts')
-      .select('id,user_id,content,status_tag,created_at,is_deleted')
+      .select('id,user_id,content,created_at,is_deleted')
       .eq('is_deleted', false)
       .gte('created_at', start.toISOString())
       .lt('created_at', end.toISOString())
@@ -230,15 +222,15 @@
         }
       });
     });
-    return Object.keys(users).map(function(uid){ return users[uid]; }).sort(function(a,b){ return b.score - a.score; }).slice(0, limit);
+    return Object.keys(users).map(function(uid){ return users[uid]; }).sort(function(a,b){ return b.score - a.score || String(a.nickname).localeCompare(String(b.nickname),'zh-CN'); }).slice(0, limit);
   }
 
   function podiumWinner(item, cls, rankNo){
-    item = item || {nickname:'暂无上榜', score:0, topPost:{status_tag:'', content:'暂无'}};
+    item = item || {nickname:'暂无上榜', score:0, topPost:{content:'暂无'}};
     return '<div class="mobile-winner ' + cls + '">' + avatarHtml(item, 'archive-avatar') + '<div class="mobile-winner-name">' + esc(item.nickname || '暂无上榜') + '</div><div class="mobile-winner-score">' + Number(item.score || 0) + '</div><div class="mobile-podium-block">' + rankNo + '</div></div>';
   }
-  function renderAwardCard(type, items){
-    var cfg = AWARDS[type];
+  function renderAwardCard(items){
+    var cfg = AWARD;
     items = items || [];
     if(!items.length){
       return '<article class="mobile-award-card"><div class="mobile-award-title"><div><small>' + cfg.en + '</small><b>' + cfg.title + '</b></div><div class="mobile-medal">' + cfg.medal + '</div></div><div class="mobile-archive-empty">上周还没有产生' + cfg.title + '。多发一点废话，榜单就会动起来。</div><div class="mobile-archive-quote"><b>' + cfg.quote + '：</b>暂无。</div></article>';
@@ -247,22 +239,19 @@
     var second = items[1] || {nickname:'暂无第二名', score:0, topPost:{}};
     var third = items[2] || {nickname:'暂无第三名', score:0, topPost:{}};
     var quote = first.topPost && first.topPost.content || '暂无代表废话。';
-    var label = roomName[first.topPost && first.topPost.status_tag] || (first.topPost && first.topPost.status_tag) || '精神广场';
-    return '<article class="mobile-award-card"><div class="mobile-award-title"><div><small>' + cfg.en + '</small><b>' + cfg.title + '</b></div><div class="mobile-medal">' + cfg.medal + '</div></div><div class="mobile-podium">' + podiumWinner(second, 'second', 2) + podiumWinner(first, 'first', 1) + podiumWinner(third, 'third', 3) + '</div><div class="mobile-archive-quote"><b>' + esc(label) + ' / ' + cfg.quote + '：</b>“' + esc(shortText(quote, 86)) + '”</div></article>';
+    return '<article class="mobile-award-card"><div class="mobile-award-title"><div><small>' + cfg.en + '</small><b>' + cfg.title + '</b></div><div class="mobile-medal">' + cfg.medal + '</div></div><div class="mobile-podium">' + podiumWinner(second, 'second', 2) + podiumWinner(first, 'first', 1) + podiumWinner(third, 'third', 3) + '</div><div class="mobile-archive-quote"><b>精神广场 / ' + cfg.quote + '：</b>“' + esc(shortText(quote, 86)) + '”</div></article>';
   }
   function renderWeekly(rankings){
     var grid = $('[data-mobile-weekly-grid]');
     if(!grid) return;
-    grid.innerHTML = ['like','same','tissue'].map(function(type){ return renderAwardCard(type, rankings[type] || []); }).join('');
+    grid.innerHTML = renderAwardCard(rankings || []);
   }
-  function renderDaily(type){
-    currentDailyType = type || currentDailyType;
-    $$('.mobile-archive-tabs [data-mobile-daily-type]').forEach(function(button){ button.classList.toggle('active', button.dataset.mobileDailyType === currentDailyType); });
+  function renderDaily(){
     var list = $('[data-mobile-daily-list]');
     if(!list) return;
-    var rows = dailyRankings[currentDailyType] || [];
+    var rows = dailyRankings;
     if(!rows.length){
-      list.innerHTML = '<div class="mobile-archive-empty">昨日还没有产生这个榜单。今天先去精神广场点一点。</div>';
+      list.innerHTML = '<div class="mobile-archive-empty">昨日还没有产生点赞榜。今天先去精神广场看看。</div>';
       return;
     }
     list.innerHTML = rows.map(function(row, i){
@@ -272,14 +261,8 @@
   function renderHistory(rankings){
     var box = $('[data-mobile-history-grid]');
     if(!box) return;
-    var cards = ['like','same','tissue'].map(function(type){
-      var cfg = AWARDS[type];
-      var one = (rankings[type] || [])[0];
-      if(!one) return '<article class="mobile-history-card"><small>上周 / ' + cfg.title + '</small><h4>暂无上榜</h4><p>还没有足够数据进入档案。</p></article>';
-      return '<article class="mobile-history-card"><small>上周 / ' + cfg.title + '</small><h4>' + esc(one.nickname) + '</h4><p>' + esc(cfg.title + '：' + shortText(one.topPost && one.topPost.content || '暂无代表废话。', 92)) + '</p></article>';
-    });
-    cards.push('<article class="mobile-history-card"><small>归档说明</small><h4>自动整理中</h4><p>手机端先展示最近一周预览，后续可以继续扩展更多历史周期。</p></article>');
-    box.innerHTML = cards.join('');
+    var one = (rankings || [])[0];
+    box.innerHTML = '<article class="mobile-history-card"><small>上周 / ' + AWARD.title + '</small><h4>' + esc(one ? one.nickname : '暂无上榜') + '</h4><p>' + esc(one ? shortText(one.topPost && one.topPost.content || '暂无代表废话。', 92) : '还没有足够数据进入档案。') + '</p></article>';
   }
 
   async function load(force){
@@ -294,16 +277,12 @@
       var ranges = getRanges();
       var results = await Promise.all([
         fetchRankings(ranges.lastMonday, ranges.thisMonday, 'like', 3),
-        fetchRankings(ranges.lastMonday, ranges.thisMonday, 'same', 3),
-        fetchRankings(ranges.lastMonday, ranges.thisMonday, 'tissue', 3),
-        fetchRankings(ranges.yesterday, ranges.today, 'like', 10),
-        fetchRankings(ranges.yesterday, ranges.today, 'same', 10),
-        fetchRankings(ranges.yesterday, ranges.today, 'tissue', 10)
+        fetchRankings(ranges.yesterday, ranges.today, 'like', 10)
       ]);
-      var weekly = {like:results[0], same:results[1], tissue:results[2]};
-      dailyRankings = {like:results[3], same:results[4], tissue:results[5]};
+      var weekly = results[0];
+      dailyRankings = results[1];
       renderWeekly(weekly);
-      renderDaily(currentDailyType);
+      renderDaily();
       renderHistory(weekly);
       loaded = true;
     }catch(e){
@@ -321,12 +300,6 @@
 
   function bind(){
     document.addEventListener('click', function(e){
-      var tab = e.target.closest && e.target.closest('[data-mobile-daily-type]');
-      if(tab){
-        e.preventDefault();
-        renderDaily(tab.dataset.mobileDailyType || 'like');
-        return;
-      }
       var refresh = e.target.closest && e.target.closest('[data-mobile-archive-refresh]');
       if(refresh){
         e.preventDefault();

@@ -16,8 +16,6 @@
     profile:'#profile',
     play:'#play',
     'play-detail':'#play-detail',
-    games:'#games',
-    'game-stage':'#game-stage',
     membership:'#membership'
   };
 
@@ -167,7 +165,7 @@
   }
 
   function ensureMobileDataCache(){ loadScriptOnce('FWMobileDataCache', 'data-mobile-data-cache', './mobile-data-cache.js?v=mobile-data-cache-20260709-1'); }
-  function ensureMobileDesktopSync(){ loadScriptOnce('__FW_MOBILE_DESKTOP_SYNC__', 'data-mobile-desktop-sync', './mobile-sync.js?v=mobile-home-nav-split-20260915-1'); }
+  function ensureMobileDesktopSync(){ loadScriptOnce('__FW_MOBILE_DESKTOP_SYNC__', 'data-mobile-desktop-sync', './mobile-sync.js?v=mobile-sync-20260929-1'); }
   function ensureReportBridge(){ loadScriptOnce('__FW_MOBILE_REPORT_BRIDGE__', 'data-mobile-report-bridge', './report.js?v=mobile-report-20260609-1'); }
   function ensureBuddyChatReadFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4'); }
   function ensureBuddyReturnStability(){ loadScriptOnce('__FW_BUDDY_RETURN_STABILITY__', 'data-buddy-return-stability', './buddy-return-stability.js?v=buddy-return-stability-20260629-1'); }
@@ -186,7 +184,7 @@
 
   function ensureBirdTweaks(){ loadScriptOnce('__FW_MOBILE_BIRD_TWEAKS_LOADED__', 'data-mobile-bird-tweaks', './bird-tweaks.js?v=mobile-direct-tweaks-20260528-1'); }
   function ensureBuddyReadTweaks(){ loadScriptOnce('__FW_MOBILE_BUDDY_READ_TWEAKS__', 'data-mobile-buddy-read-tweaks', './buddy-read-tweaks.js?v=mobile-performance-20260806-1'); }
-  function ensureBuddyChatTweaks(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_TWEAKS__', 'data-mobile-buddy-chat-tweaks', './buddy-chat-tweaks.js?v=mobile-performance-20260806-1'); }
+  function ensureBuddyChatTweaks(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_TWEAKS__', 'data-mobile-buddy-chat-tweaks', './buddy-chat-tweaks.js?v=mobile-sync-20260929-1'); }
   function ensureBuddyChatPolish(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_POLISH__', 'data-mobile-buddy-chat-polish', './buddy-chat-polish.js?v=mobile-performance-20260806-1'); }
   function ensureBuddyChatBottomFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_BOTTOM_FIX__', 'data-mobile-buddy-chat-bottom-fix', './buddy-chat-bottom-fix.js?v=mobile-performance-20260806-1'); }
   function ensureBuddyChatScrollFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_SCROLL_FIX__', 'data-mobile-buddy-chat-scroll-fix', './buddy-chat-scroll-fix.js?v=mobile-performance-20260806-1'); }

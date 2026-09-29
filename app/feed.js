@@ -60,11 +60,14 @@
 
   function encodeImage(url){ return encodeMarker('FW_MEDIA_IMAGE', url); }
   function encodeSticker(url){ return encodeMarker('FW_USER_STICKER', url); }
+  function mobileMedia(){ return window.FWMobileMedia; }
+  function richText(text){ return mobileMedia() ? mobileMedia().fufuHtml(text, esc) : esc(text); }
 
   function getMarkerInfo(text, index){
     var specs = [
       {prefix:'[[FW_USER_STICKER:', end:']]', kind:'sticker'},
-      {prefix:'[[FW_MEDIA_IMAGE:', end:']]', kind:'image'}
+      {prefix:'[[FW_MEDIA_IMAGE:', end:']]', kind:'image'},
+      {prefix:'[[FW_MEDIA_VIDEO:', end:']]', kind:'video'}
     ];
     for(var i = 0; i < specs.length; i += 1){
       var spec = specs[i];
@@ -88,10 +91,10 @@
     while(i < text.length){
       var next = text.indexOf('[[FW_', i);
       if(next < 0){
-        out += esc(text.slice(i));
+        out += richText(text.slice(i));
         break;
       }
-      out += esc(text.slice(i, next));
+      out += richText(text.slice(i, next));
       var marker = getMarkerInfo(text, next);
       if(!marker){
         out += esc(text.slice(next, next + 5));
@@ -100,6 +103,8 @@
       }
       if(marker.kind === 'sticker'){
         out += '<span class="fw-inline-sticker"><img src="' + esc(marker.url) + '" alt="表情"></span>';
+      }else if(marker.kind === 'video'){
+        out += '<video class="mobile-inline-video" src="' + esc(marker.url) + '" controls playsinline preload="metadata"></video>';
       }else{
         out += '<a class="fw-inline-media" href="' + esc(marker.url) + '" target="_blank" rel="noopener"><img src="' + esc(marker.url) + '" alt="图片"></a>';
       }
@@ -169,6 +174,7 @@
       uploadingImage:false,
       selectedStickers:[],
       stickersOpen:false,
+      stickerTab:'emoji',
       stickerMessage:'',
       stickerRows:null,
       reply:null,
@@ -239,7 +245,10 @@
   }
 
   function renderStickerPanelInner(draft){
-    var head = '<div class="comment-sticker-head"><span>我的表情</span><button class="comment-sticker-add" type="button" data-comment-sticker-add>添加表情</button></div>';
+    var tabs = '<div class="mobile-sticker-tabs"><button type="button" data-comment-sticker-tab="emoji" class="' + (draft.stickerTab==='emoji'?'active':'') + '">小表情</button><button type="button" data-comment-sticker-tab="stickers" class="' + (draft.stickerTab==='stickers'?'active':'') + '">我的表情</button><button type="button" data-comment-sticker-tab="fufu" class="' + (draft.stickerTab==='fufu'?'active':'') + '">伏伏1</button></div>';
+    if(draft.stickerTab === 'emoji') return tabs + '<div class="mobile-emoji-grid">' + mobileMedia().emoji.map(function(item){return '<button type="button" data-comment-emoji="' + esc(item) + '">' + esc(item) + '</button>';}).join('') + '</div>';
+    if(draft.stickerTab === 'fufu') return tabs + '<div class="mobile-fufu-grid">' + mobileMedia().fufu.map(function(item){return '<button type="button" data-comment-fufu="' + item.token + '" aria-label="' + esc(item.label) + '"><img src="' + item.url + '" alt="' + esc(item.label) + '"><span>' + esc(item.label) + '</span></button>';}).join('') + '</div>';
+    var head = tabs + '<div class="comment-sticker-head"><span>我的表情</span><button class="comment-sticker-add" type="button" data-comment-sticker-add>添加表情</button></div>';
     if(draft.stickerMessage){
       return head + '<p class="comment-panel-note">' + esc(draft.stickerMessage) + '</p>';
     }
@@ -271,10 +280,11 @@
     if(preview){
       if(draft.pendingImage){
         var src = draft.pendingImage.localUrl || draft.pendingImage.url || '';
-        var note = draft.pendingImage.uploading ? '正在上传图片...' : '图片已准备好';
+        var isVideo = draft.pendingImage.kind === 'video';
+        var note = draft.pendingImage.uploading ? '正在上传' + (isVideo ? '视频' : '图片') + '...' : (isVideo ? '视频已准备好' : '图片已准备好');
         if(draft.pendingImage.error) note = draft.pendingImage.error;
         preview.innerHTML = '<div class="comment-image-card">' +
-          (src ? '<img src="' + esc(src) + '" alt="已选择的图片">' : '') +
+          (src ? (isVideo ? '<video src="' + esc(src) + '" controls playsinline preload="metadata"></video>' : '<img src="' + esc(src) + '" alt="已选择的图片">') : '') +
           '<span>' + esc(note) + '</span><button class="comment-media-remove" type="button" data-comment-image-remove>删除</button>' +
         '</div>';
       }else{
@@ -432,9 +442,9 @@
       '<div class="comment-reply-state" data-comment-reply-state hidden></div>' +
       '<input name="content" maxlength="180" placeholder="留一句回声">' +
       '<button class="comment-tool" type="button" data-comment-sticker-toggle aria-label="选择表情">' + stickerButtonIcon() + '</button>' +
-      '<button class="comment-tool" type="button" data-comment-image-pick aria-label="添加图片">' + imageButtonIcon() + '</button>' +
+      '<button class="comment-tool" type="button" data-comment-image-pick aria-label="添加图片或视频">' + imageButtonIcon() + '</button>' +
       '<button type="submit"' + disabled + '>发送</button>' +
-      '<input type="file" accept="image/*" data-comment-image-file hidden>' +
+      '<input type="file" accept="image/*,video/*" data-comment-image-file hidden>' +
       '<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-comment-sticker-file hidden>' +
       '<div class="comment-media-preview" data-comment-media-preview></div>' +
       '<div class="comment-selected-stickers" data-comment-selected-stickers></div>' +
@@ -884,6 +894,7 @@
   }
 
   async function uploadCommentImage(file, user){
+    if(mobileMedia() && mobileMedia().isVideo(file)) return mobileMedia().uploadVideo(file, user, 'comment');
     var db = app().db();
     var client = db && db.client;
     if(!client || !client.storage) throw new Error('storage-missing');
@@ -906,6 +917,10 @@
     var db = app().db();
     var client = db && db.client;
     if(!client || !client.storage) throw new Error('storage-missing');
+    var limit = await mobileMedia().stickerLimit(user);
+    var count = await client.from('user_stickers').select('id', {count:'exact',head:true}).eq('user_id',user.id).or('is_deleted.eq.false,is_deleted.is.null');
+    if(count.error) throw count.error;
+    if(Number(count.count||0)>=limit) throw new Error('我的表情最多保存 '+limit+' 个。');
     var prepared = await prepareStickerImage(file);
     var path = makeStickerPath(user.id, prepared.ext);
     var uploaded = await withTimeout(
@@ -949,7 +964,7 @@
         .eq('user_id', user.id)
         .or('is_deleted.eq.false,is_deleted.is.null')
         .order('created_at', {ascending:false})
-        .limit(30);
+        .limit(await mobileMedia().stickerLimit(user));
       if(res.error) throw res.error;
       stickerCache = (res.data || []).filter(function(row){ return row && row.image_url; });
       return stickerCache;
@@ -1173,7 +1188,7 @@
         stickerDraft.stickerRows = null;
         renderDraftAreas(stickerForm);
         try{
-          var rows = await fetchStickers(false);
+          var rows = await fetchStickers(true);
           stickerDraft.stickerRows = rows;
           stickerDraft.stickerMessage = '';
         }catch(err){
@@ -1259,6 +1274,44 @@
         return;
       }
 
+      var stickerTabButton = e.target.closest && e.target.closest('[data-comment-sticker-tab]');
+      if(stickerTabButton){
+        e.preventDefault();
+        var tabForm = stickerTabButton.closest('[data-comment-form]');
+        var tabDraft = getFormDraft(tabForm);
+        tabDraft.stickerTab = stickerTabButton.dataset.commentStickerTab;
+        renderDraftAreas(tabForm);
+        return;
+      }
+      var fufuPick = e.target.closest && e.target.closest('[data-comment-fufu]');
+      var emojiPick = e.target.closest && e.target.closest('[data-comment-emoji]');
+      if(emojiPick){
+        e.preventDefault();
+        var emojiForm = emojiPick.closest('[data-comment-form]');
+        var emojiDraft = getFormDraft(emojiForm);
+        var emojiInput = emojiForm.querySelector('input[name="content"]');
+        var emoji = emojiPick.dataset.commentEmoji;
+        if(!emojiInput || emojiInput.value.length + emoji.length > 180) return;
+        var at = typeof emojiInput.selectionStart === 'number' ? emojiInput.selectionStart : emojiInput.value.length;
+        emojiInput.value = emojiInput.value.slice(0,at) + emoji + emojiInput.value.slice(at);
+        emojiDraft.stickersOpen = false;
+        renderDraftAreas(emojiForm);
+        return;
+      }
+      if(fufuPick){
+        e.preventDefault();
+        var fufuForm = fufuPick.closest('[data-comment-form]');
+        var fufuDraft = getFormDraft(fufuForm);
+        var fufuInput = fufuForm.querySelector('input[name="content"]');
+        var token = fufuPick.dataset.commentFufu;
+        if(!fufuInput || fufuInput.value.length + token.length > 180) return;
+        var position = typeof fufuInput.selectionStart === 'number' ? fufuInput.selectionStart : fufuInput.value.length;
+        fufuInput.value = fufuInput.value.slice(0,position) + token + fufuInput.value.slice(position);
+        fufuDraft.stickersOpen = false;
+        renderDraftAreas(fufuForm);
+        return;
+      }
+
       if(openCommentMenuId && !(e.target.closest && e.target.closest('[data-comment-menu]'))){
         setOpenCommentMenu(null);
       }
@@ -1312,30 +1365,34 @@
       var file = fileInput.files && fileInput.files[0];
       fileInput.value = '';
       if(!file) return;
-      if(!/^image\//i.test(file.type || '')){
-        app().toast('请选择图片文件。');
+      var isVideo = mobileMedia() && mobileMedia().isVideo(file);
+      if(!isVideo && !/^image\//i.test(file.type || '')){
+        app().toast('请选择图片或视频文件。');
         return;
       }
       var user = await requireUser('登录后才能评论。');
       if(!user) return;
       revokeDraftImage(draft);
-      draft.pendingImage = {name:file.name || 'image', localUrl:URL.createObjectURL(file), url:'', marker:'', uploading:true, error:''};
+      draft.pendingImage = {name:file.name || 'media', kind:isVideo?'video':'image', localUrl:URL.createObjectURL(file), url:'', marker:'', uploading:true, error:''};
+      var selectedMedia = draft.pendingImage;
       draft.uploadingImage = true;
       renderDraftAreas(form);
       try{
         var uploaded = await uploadCommentImage(file, user);
-        if(!draft.pendingImage) return;
-        draft.pendingImage.url = uploaded.url;
-        draft.pendingImage.marker = uploaded.marker;
-        draft.pendingImage.uploading = false;
-        app().toast('图片已准备好');
+        if(draft.pendingImage !== selectedMedia) return;
+        selectedMedia.url = uploaded.url;
+        selectedMedia.marker = uploaded.marker;
+        selectedMedia.uploading = false;
+        app().toast(isVideo ? '视频已准备好' : '图片已准备好');
       }catch(err){
         console.warn('[FW mobile app] comment image upload failed', err);
-        if(draft.pendingImage) draft.pendingImage.error = '图片上传失败';
-        app().toast('图片上传失败，请稍后再试。');
+        if(draft.pendingImage === selectedMedia) selectedMedia.error = err.message || '媒体上传失败';
+        app().toast(err.message || '媒体上传失败，请稍后再试。');
       }finally{
-        draft.uploadingImage = false;
-        if(draft.pendingImage) draft.pendingImage.uploading = false;
+        if(draft.pendingImage === selectedMedia){
+          draft.uploadingImage = false;
+          selectedMedia.uploading = false;
+        }
         renderDraftAreas(form);
       }
     });
@@ -1351,9 +1408,10 @@
       var kind = form.dataset.commentKind || 'main';
       var draft = getFormDraft(form);
       if(draft.uploadingImage || (draft.pendingImage && draft.pendingImage.uploading)){
-        app().toast('图片还在上传，请稍后再发送。');
+        app().toast('媒体还在上传，请稍后再发送。');
         return;
       }
+      if(draft.pendingImage && draft.pendingImage.error){app().toast('媒体上传失败，请移除后重试。');return;}
       if(draft.addingSticker){
         app().toast('表情还在添加，请稍后再发送。');
         return;

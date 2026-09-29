@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="./app.css?v=mobile-release-ready-20260804-1">
   <link rel="stylesheet" href="./rooms.css?v=mobile-app-rooms-layout-20260527-1">
   <link rel="stylesheet" href="./bird.css?v=mobile-app-modules-20260527-1">
-  <link rel="stylesheet" href="./mobile-sync.css?v=mobile-home-nav-split-20260915-1">
+  <link rel="stylesheet" href="./mobile-sync.css?v=mobile-sync-20260929-1">
 </head>
 <body>
   <div class="app-shell">
@@ -71,15 +71,14 @@
         <div class="view-head mobile-navigation-head">
           <p>馆内导航</p>
           <h1>现在想去哪里</h1>
-          <span>六个开放区域，随便逛逛。</span>
+          <span>五个开放区域，随便逛逛。</span>
         </div>
         <div class="nav-grid mobile-primary-grid" aria-label="应用导航菜单">
-          <button class="mobile-destination mobile-destination-featured" type="button" data-app-open="square"><span class="mobile-destination-meta">01 · 社区</span><b>精神广场</b><span class="mobile-destination-copy">发一句牢骚，看看大家<br>今天都在研究什么。</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i></button>
+          <button class="mobile-destination mobile-destination-featured" type="button" data-app-open="square"><span class="mobile-destination-meta">01 · 社区</span><b>精神广场</b><span class="mobile-destination-copy">发一句牢骚，看看大家<br>今天都在研究什么。</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i><i class="mobile-nav-dot" data-mobile-square-dot hidden></i></button>
           <button class="mobile-destination" type="button" data-app-open="rooms"><span class="mobile-destination-meta">02 · 投票</span><b>学术研讨</b><span class="mobile-destination-copy">一本正经地研究小事</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i></button>
           <button class="mobile-destination" type="button" data-app-open="bird"><span class="mobile-destination-meta">03 · 围观</span><b>新闻专区</b><span class="mobile-destination-copy">收录值得围观的事件</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i></button>
           <button class="mobile-destination mobile-destination-dark" type="button" data-app-open="play"><span class="mobile-destination-meta">04 · 组队</span><b>下班开黑</b><span class="mobile-destination-copy">找队友，组队开一把</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i><i class="mobile-nav-dot" data-mobile-party-dot hidden></i></button>
-          <button class="mobile-destination" type="button" data-app-open="games"><span class="mobile-destination-meta">05 · 放空</span><b>小游戏</b><span class="mobile-destination-copy">不用登录，点开就玩</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i></button>
-          <button class="mobile-destination mobile-destination-member" type="button" data-app-open="membership"><span class="mobile-destination-meta">06 · 身份</span><b>会员中心</b><span class="mobile-destination-copy">装扮与会员权益</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i></button>
+          <button class="mobile-destination mobile-destination-member" type="button" data-app-open="membership"><span class="mobile-destination-meta">05 · 身份</span><b>会员中心</b><span class="mobile-destination-copy">装扮与会员权益</span><i class="mobile-destination-arrow" aria-hidden="true">↗</i></button>
         </div>
         <div class="mobile-home-section-head mobile-home-more-head"><div><small>更多</small><h2>研究所资料</h2></div></div>
         <div class="mobile-more-grid" aria-label="更多栏目">
@@ -229,25 +228,6 @@
         <div data-mobile-party-detail></div>
       </section>
 
-      <section class="app-view mobile-games-view" data-app-view="games" aria-label="小游戏">
-        <div class="view-head mobile-section-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>小游戏</p><h1>不用登录，点开就玩</h1></div>
-        <div class="mobile-game-grid">
-          <button type="button" data-mobile-game-open="2048"><i>2⁸</i><b>2048</b><span>滑动合并数字</span></button>
-          <button type="button" data-mobile-game-open="minesweeper"><i>✦</i><b>扫雷</b><span>点按排雷，切换插旗</span></button>
-          <button type="button" data-mobile-game-open="snake"><i>〰</i><b>贪吃蛇</b><span>使用屏幕方向按钮</span></button>
-          <button type="button" data-mobile-game-open="sudoku"><i>九</i><b>数独</b><span>从简单到困难</span></button>
-          <button type="button" data-mobile-game-open="reaction"><i>●</i><b>反应测试</b><span>变绿以后尽快点</span></button>
-          <button type="button" data-mobile-game-open="catch"><i>⌄</i><b>接住掉落物</b><span>移动托盘接住文件</span></button>
-        </div>
-        <details class="mobile-game-license"><summary>开源许可</summary><p>2048、扫雷、贪吃蛇和数独基于 MIT 许可的开源项目；完整许可证随项目保留。反应测试和接住掉落物由 F.w 研究所制作。</p></details>
-      </section>
-
-      <section class="app-view mobile-game-stage-view" data-app-view="game-stage" aria-label="正在玩小游戏">
-        <div class="mobile-game-stage-head"><button class="app-btn back-btn" type="button" data-mobile-game-back>‹ 小游戏</button><div><b data-mobile-game-title>小游戏</b><span data-mobile-game-tip></span></div><button class="app-btn" type="button" data-mobile-game-reload>重开</button></div>
-        <iframe data-mobile-game-frame title="小游戏" referrerpolicy="no-referrer"></iframe>
-        <div class="mobile-game-controls" data-mobile-game-controls hidden><button type="button" data-mobile-game-key="ArrowUp">↑</button><span><button type="button" data-mobile-game-key="ArrowLeft">←</button><button type="button" data-mobile-game-key="ArrowDown">↓</button><button type="button" data-mobile-game-key="ArrowRight">→</button></span></div>
-      </section>
-
       <section class="app-view mobile-membership-view" data-app-view="membership" aria-label="会员中心">
         <div class="view-head mobile-section-head"><button class="back-btn" type="button" data-app-open="nav">‹ 导航</button><p>会员中心</p><h1>会员身份与专属装扮</h1></div>
         <div class="mobile-membership-tabs"><button class="active" type="button" data-mobile-membership-tab="benefits">会员权益</button><button type="button" data-mobile-membership-tab="orders">订单记录</button></div>
@@ -295,22 +275,22 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../assets/supabase-config.js"></script>
   <script src="../assets/supabase-db.js?v=critical-relations-account-20260710-1"></script>
-  <script src="./app.js?v=mobile-home-nav-split-20260915-1"></script>
-  <script src="./nav.js?v=mobile-home-nav-split-20260915-1"></script>
-  <script src="./feed.js?v=mobile-performance-20260806-1"></script>
-  <script src="./publish.js?v=no-mental-status-20260713-1"></script>
-  <script src="./buddy.js?v=mobile-performance-20260806-1"></script>
-  <script src="./echo.js?v=mobile-square-inline-echo-20260915-1"></script>
+  <script src="./app.js?v=mobile-sync-20260929-1"></script>
+  <script src="./nav.js?v=mobile-sync-20260929-1"></script>
+  <script src="./feed.js?v=mobile-sync-20260929-1"></script>
+  <script src="./publish.js?v=mobile-sync-20260929-1"></script>
+  <script src="./buddy.js?v=mobile-sync-20260929-1"></script>
+  <script src="./echo.js?v=mobile-sync-20260929-1"></script>
   <script src="./echo-enhance.js?v=mobile-echo-enhance-20260529-2"></script>
-  <script src="./profile.js?v=mobile-home-nav-split-20260915-1"></script>
+  <script src="./profile.js?v=mobile-sync-20260929-1"></script>
   <script src="./profile-login-ui.js?v=mobile-auth-switch-20260720-1"></script>
   <script src="./profile-email-guard.js?v=mobile-email-guard-20260608-1"></script>
   <script src="./rooms.js?v=mobile-performance-20260806-1"></script>
   <script src="./bird.js?v=mobile-app-modules-20260527-1"></script>
-  <script src="./modules-init.js?v=mobile-performance-20260806-1"></script>
+  <script src="./modules-init.js?v=mobile-sync-20260929-1"></script>
   <script src="./admin.js?v=mobile-admin-20260611-2"></script>
-  <script src="../assets/fw-emoji-panel.js?v=mobile-performance-20260806-1"></script>
-  <script src="./mobile-core-fixes.js?v=mobile-home-nav-split-20260915-1"></script>
+  <script src="../assets/fw-emoji-panel.js?v=mobile-sync-20260929-1"></script>
+  <script src="./mobile-core-fixes.js?v=mobile-sync-20260929-1"></script>
   <script src="../assets/fw-download-client.js?v=download-client-20260810-1"></script>
 </body>
 </html>

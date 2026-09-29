@@ -17,7 +17,7 @@
     '🎉','🎁','🏆','🚀','☕','🍓','🍉','🐶','🐱','🐟'
   ];
 
-  var MAX_STICKERS = 30;
+  var MAX_STICKERS = window.FWMobileMedia ? 80 : 30;
   var MAX_GIF_SIZE = 1024 * 1024;
   var MAX_STATIC_SIZE = 200 * 1024;
   var TARGET_SIZE = 300;
@@ -27,6 +27,7 @@
   var activeTab = 'emoji';
   var panelOpen = false;
   var stickerCache = null;
+  var stickerOwnerId = '';
   var loadingStickers = false;
   var uploadingSticker = false;
 
@@ -230,7 +231,8 @@
       .fw-emoji-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;}
       .fw-emoji-logo{color:#b85e5e;font-size:10px;font-weight:1000;letter-spacing:.16em;}
       .fw-emoji-close{border:0;background:transparent;font-size:22px;font-weight:1000;cursor:pointer;color:#1b1b18;line-height:1;}
-      .fw-emoji-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 10px;border-bottom:1px solid rgba(28,28,24,.1);}
+      .fw-emoji-tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:0 12px 10px;border-bottom:1px solid rgba(28,28,24,.1);}
+      .fw-emoji-panel.mobile-fufu-ready .fw-emoji-tabs{grid-template-columns:repeat(3,1fr);}
       .fw-emoji-tab{height:34px;border-radius:999px;border:1px solid rgba(28,28,24,.14);background:#fffdf7;color:#1b1b18;font-size:14px;font-weight:1000;cursor:pointer;}
       .fw-emoji-tab.active{background:#1b1b18;color:#fffdf7;border-color:#1b1b18;}
       .fw-emoji-body{max-height:315px;overflow:auto;padding:12px;}
@@ -262,7 +264,8 @@
     panel = document.createElement('div');
     panel.id = 'fw-emoji-panel';
     panel.className = 'fw-emoji-panel';
-    panel.innerHTML = '<div class="fw-emoji-head"><span class="fw-emoji-logo">FW EMOJI</span><button type="button" class="fw-emoji-close" data-fw-emoji-close>×</button></div><div class="fw-emoji-tabs"><button type="button" class="fw-emoji-tab active" data-fw-emoji-tab="emoji">小表情</button><button type="button" class="fw-emoji-tab" data-fw-emoji-tab="stickers">♥</button></div><div class="fw-emoji-body" data-fw-emoji-body></div><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden data-fw-sticker-file>';
+    if(window.FWMobileMedia) panel.classList.add('mobile-fufu-ready');
+    panel.innerHTML = '<div class="fw-emoji-head"><span class="fw-emoji-logo">FW EMOJI</span><button type="button" class="fw-emoji-close" data-fw-emoji-close>×</button></div><div class="fw-emoji-tabs"><button type="button" class="fw-emoji-tab active" data-fw-emoji-tab="emoji">小表情</button><button type="button" class="fw-emoji-tab" data-fw-emoji-tab="stickers">我的表情</button>' + (window.FWMobileMedia ? '<button type="button" class="fw-emoji-tab" data-fw-emoji-tab="fufu">伏伏1</button>' : '') + '</div><div class="fw-emoji-body" data-fw-emoji-body></div><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden data-fw-sticker-file>';
     document.body.appendChild(panel);
     renderPanelBody('emoji');
     return panel;
@@ -280,8 +283,14 @@
   }
 
   async function fetchMyStickers(force){
-    if(stickerCache && !force) return stickerCache;
     var u = await getMe();
+    if(window.FWMobileMedia){
+      var nextLimit = await window.FWMobileMedia.stickerLimit(u);
+      if(nextLimit !== MAX_STICKERS) stickerCache = null;
+      MAX_STICKERS = nextLimit;
+    }
+    if(stickerOwnerId !== String(u.id)){stickerOwnerId = String(u.id); stickerCache = null;}
+    if(stickerCache && !force) return stickerCache;
     var r = await withTimeout(
       window.fwDb.client.from('user_stickers').select('id,image_url,file_name,file_size,mime_type,storage_path,created_at').eq('user_id', u.id).eq('is_deleted', false).order('created_at', {ascending:false}).limit(MAX_STICKERS),
       10000,
@@ -327,6 +336,9 @@
   function renderPanelBody(tab){
     setTabs(tab || activeTab);
     if(activeTab === 'stickers') renderStickerBody(false);
+    else if(activeTab === 'fufu' && window.FWMobileMedia){
+      $('[data-fw-emoji-body]').innerHTML = '<div class="mobile-fufu-grid">' + window.FWMobileMedia.fufu.map(function(item){return '<button type="button" data-fw-emoji-insert="' + item.token + '" aria-label="' + esc(item.label) + '"><img src="' + item.url + '" alt="' + esc(item.label) + '"><span>' + esc(item.label) + '</span></button>';}).join('') + '</div>';
+    }
     else renderEmojiBody();
   }
 
@@ -396,6 +408,7 @@
     try{
       toast('正在处理表情...', 5000);
       var u = await getMe();
+      if(window.FWMobileMedia) MAX_STICKERS = await window.FWMobileMedia.stickerLimit(u);
       var rows = await fetchMyStickers(false).catch(function(){ return []; });
       if(rows.length >= MAX_STICKERS) throw new Error('最多只能添加 ' + MAX_STICKERS + ' 个表情。');
 
@@ -503,7 +516,7 @@
       var tab = e.target.closest && e.target.closest('[data-fw-emoji-tab]');
       if(tab){ e.preventDefault(); renderPanelBody(tab.dataset.fwEmojiTab || 'emoji'); return; }
       var emoji = e.target.closest && e.target.closest('[data-fw-emoji-insert]');
-      if(emoji){ e.preventDefault(); insertAtCursor(activeInput, emoji.dataset.fwEmojiInsert || ''); return; }
+      if(emoji){ e.preventDefault(); insertAtCursor(activeInput, emoji.dataset.fwEmojiInsert || ''); if(activeTab==='fufu') closePanel(); return; }
       var upload = e.target.closest && e.target.closest('[data-fw-sticker-upload]');
       if(upload){ e.preventDefault(); if(uploadingSticker) return; var input = $('[data-fw-sticker-file]'); if(input) input.click(); return; }
       var del = e.target.closest && e.target.closest('[data-fw-sticker-delete]');

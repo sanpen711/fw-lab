@@ -10,7 +10,7 @@
   var FEED_RETURN_KEY = 'fw_mobile_feed_detail_return_view';
   var PROFILE_CACHE_KEY = 'fw_mobile_echo_profile_cache_v1';
   var PROFILE_CACHE_LIMIT = 260;
-  var ECHO_TYPES = ['like','comment','comment_reply','chat_agree','system'];
+  var ECHO_TYPES = ['like','comment','comment_reply'];
   var replyEcho = createReplyEchoFallback();
 
   function createReplyEchoFallback(){
@@ -230,10 +230,12 @@
 
   function setEchoBadge(count){
     var button = document.querySelector('[data-mobile-square-mode="echo"]');
+    var navDot = document.querySelector('[data-mobile-square-dot]');
+    var n = Number(count || 0);
+    if(navDot) navDot.hidden = n <= 0;
     if(!button) return;
     var badge = button.querySelector('.mobile-echo-badge');
     if(!badge){ badge = document.createElement('span'); badge.className = 'mobile-echo-badge'; button.appendChild(badge); }
-    var n = Number(count || 0);
     if(n > 0){
       badge.textContent = '';
       badge.setAttribute('aria-hidden', 'true');

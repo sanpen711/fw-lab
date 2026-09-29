@@ -343,6 +343,22 @@
     }catch(e){ console.warn('[FW mobile app] buddy send failed', e); toast(e.message || '发送失败。'); }
     finally{ if(button) button.disabled = false; }
   }
+  async function sendMediaMarker(marker, expectedTargetId){
+    var targetId = String(expectedTargetId || '');
+    if(!targetId || String(activeTargetId) !== targetId) throw new Error('会话已切换，请重新选择视频。');
+    if(!/^\[\[FW_MEDIA_VIDEO:[A-Za-z0-9+/=]+\]\]$/.test(marker)) throw new Error('视频格式不正确。');
+    var conversationId = activeConversationId || await getConversationId(targetId);
+    if(String(activeTargetId) !== targetId) throw new Error('会话已切换，请重新选择视频。');
+    try{
+      var convId=Number(await rpc('fw_send_private_message_to_user',{target_user_id:targetId,message_text:marker},'发送失败'));
+      if(Number.isFinite(convId)&&convId>0) conversationId=convId;
+    }catch(primaryError){ await rpc('fw_send_private_message',{target_conversation_id:conversationId,message_text:marker},'发送失败'); }
+    if(String(activeTargetId)===targetId){
+      activeConversationId=conversationId;
+      await loadMessages();
+      if(activeTab==='messages') renderMessages();
+    }
+  }
 
   function bind(){
     if(bound) return; bound = true;
@@ -376,5 +392,5 @@
   function init(){ injectStyle(); ensureTabs(); ensureChatPanel(); bind(); }
   function ensureLoaded(){ load(false); }
   function openProfile(targetId){ openChat(targetId); }
-  window.FWAppBuddy = {init:init, load:load, ensureLoaded:ensureLoaded, openChat:openChat, closeChat:closeChat, openProfile:openProfile, renderMessages:renderMessages};
+  window.FWAppBuddy = {init:init, load:load, ensureLoaded:ensureLoaded, openChat:openChat, closeChat:closeChat, openProfile:openProfile, renderMessages:renderMessages, sendMediaMarker:sendMediaMarker, getActiveTargetId:function(){return activeTargetId;}};
 })();

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-app-pwa-windows-download-20260810-1-home-nav-split-20260915-1';
+const CACHE_NAME = 'fw-mobile-app-sync-20260929-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -64,7 +64,7 @@ const APP_SHELL = [
   appPath('mobile-global-fixes.js'),
   appPath('mobile-cache-settings.js'),
   appPath('manifest.webmanifest')
-];
+].concat(Array.from({length:24}, (_, index) => assetPath('emoji/fufu1/' + String(index + 1).padStart(2, '0') + '.webp')));
 
 function isNavigationRequest(request){
   if(request.mode === 'navigate') return true;
