@@ -11,64 +11,13 @@
   var PROFILE_CACHE_KEY = 'fw_mobile_echo_profile_cache_v1';
   var PROFILE_CACHE_LIMIT = 260;
   var ECHO_TYPES = ['like','comment','comment_reply'];
-  var replyEcho = createReplyEchoFallback();
-
-  function createReplyEchoFallback(){
-    var prefix = 'reply-comment:';
-    var cache = {};
-    function value(v){ return String(v == null ? '' : v); }
-    function commentId(id){ var match = /^reply-comment:(\d+)$/.exec(value(id)); return match ? match[1] : ''; }
-    function key(uid){ return 'fw_comment_reply_echo_read_v1_' + value(uid); }
-    function read(uid){
-      try{ var rows = JSON.parse(localStorage.getItem(key(uid)) || '[]'); return new Set(Array.isArray(rows) ? rows.map(value) : []); }
-      catch(e){ return new Set(); }
-    }
-    function save(uid, rows){ try{ localStorage.setItem(key(uid), JSON.stringify(Array.from(rows).slice(-600))); }catch(e){} }
-    function markRead(uid, ids){
-      if(!uid) return;
-      var rows = read(uid);
-      (ids || []).forEach(function(id){ var cid = commentId(id); if(cid) rows.add(cid); });
-      save(uid, rows);
-    }
-    function databaseNoticeIds(ids){
-      return Array.from(new Set((ids || []).map(value).filter(function(id){ return id && !commentId(id); })));
-    }
-    async function commentsFor(clientValue, uid, force){
-      var saved = cache[uid];
-      if(!force && saved && Date.now() - saved.at < 15000) return saved.rows;
-      try{
-        var own = await clientValue.from('comments').select('id').eq('user_id', uid).or('is_deleted.eq.false,is_deleted.is.null').order('created_at', {ascending:false}).limit(220);
-        if(own.error) throw own.error;
-        var ownIds = (own.data || []).map(function(row){ return row.id; }).filter(Boolean);
-        var filter = 'reply_to_user_id.eq.' + uid + (ownIds.length ? ',parent_comment_id.in.(' + ownIds.join(',') + ')' : '');
-        var replies = await clientValue.from('comments').select('id,post_id,user_id,parent_comment_id,reply_to_user_id,content,is_deleted,created_at').or(filter).neq('user_id', uid).or('is_deleted.eq.false,is_deleted.is.null').order('created_at', {ascending:false}).limit(160);
-        if(replies.error) throw replies.error;
-        var ownSet = new Set(ownIds.map(value));
-        var rows = (replies.data || []).filter(function(row){
-          return row && row.is_deleted !== true && value(row.user_id) !== value(uid)
-            && (value(row.reply_to_user_id) === value(uid) || (!row.reply_to_user_id && ownSet.has(value(row.parent_comment_id))));
-        });
-        cache[uid] = {at:Date.now(), rows:rows};
-        return rows;
-      }catch(e){ console.warn('[FW mobile app] reply echo fallback failed', e); return saved ? saved.rows : []; }
-    }
-    async function merge(clientValue, uid, notices, options){
-      options = options || {};
-      var formal = (notices || []).slice();
-      var targets = new Set(formal.filter(function(row){ return row.type === 'comment_reply' && row.target_id != null; }).map(function(row){ return value(row.target_id); }));
-      var seen = read(uid);
-      var comments = await commentsFor(clientValue, uid, !!options.force);
-      comments.forEach(function(row){
-        var id = value(row.id);
-        if(!id || targets.has(id)) return;
-        var created = new Date(row.created_at || 0).getTime();
-        formal.push({id:prefix + id,actor_id:row.user_id,type:'comment_reply',target_type:'comment',target_id:row.id,content:row.content || '回复了你的评论',is_read:seen.has(id) || !created || Date.now() - created > 259200000,created_at:row.created_at,__post_id:row.post_id,__reply_fallback:true});
-      });
-      formal.sort(function(a,b){ return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime(); });
-      return formal.slice(0, Number(options.limit || 100));
-    }
-    return {merge:merge,markRead:markRead,databaseNoticeIds:databaseNoticeIds,invalidate:function(uid){ if(uid) delete cache[uid]; else cache = {}; }};
-  }
+  var PAGE_SIZE = 100;
+  var echoRows = [];
+  var hasMore = false;
+  var pageLoading = false;
+  var loadGeneration = 0;
+  var badgeGeneration = 0;
+  var globalUnread = false;
 
   function app(){ return window.FWApp; }
   function $(selector, root){ return app().$(selector, root); }
@@ -269,8 +218,22 @@
 
   function isSquareMode(mode){ return squareMode === mode; }
 
-  function visibleUnreadCount(){ return document.querySelectorAll('[data-echo-list] .mobile-echo-item.unread').length; }
-  function updateBadgeFromVisibleItems(){ setEchoBadge(visibleUnreadCount()); }
+  function echoVisible(){
+    return !document.hidden && squareMode === 'echo' && app().state && app().state.view === 'square';
+  }
+  function sameUser(uid){ return app().state && app().state.user && app().state.user.id === uid; }
+  function syncReadUi(ids){
+    var seen = new Set(ids.map(String));
+    echoRows.forEach(function(row){ if(seen.has(String(row.id))) row.is_read = true; });
+    ids.forEach(function(id){
+      var item = document.querySelector('[data-mobile-echo-item="' + String(id).replace(/"/g, '') + '"]');
+      if(item) item.classList.remove('unread');
+    });
+  }
+  function syncMarkAllButton(){
+    var button = document.querySelector('[data-mobile-echo-mark-all]');
+    if(button) button.hidden = !globalUnread;
+  }
 
   async function currentUser(){
     if(app().state && app().state.user) return app().state.user;
@@ -278,33 +241,61 @@
   }
 
   async function refreshBadges(){
-    if(!(await app().waitForDb())){ setEchoBadge(0); return; }
+    var generation = ++badgeGeneration;
+    if(!(await app().waitForDb())) return;
     var me = await currentUser();
-    if(!me || !me.id){ setEchoBadge(0); return; }
+    if(generation !== badgeGeneration) return;
+    if(!me || !me.id){ globalUnread = false; setEchoBadge(0); syncMarkAllButton(); return; }
     try{
-      var rows = fail(await client().from('notifications').select('id,type,target_id,is_read,created_at').eq('user_id', me.id).in('type', ECHO_TYPES).order('created_at', {ascending:false}).limit(300), '回声角标读取失败') || [];
-      rows = await replyEcho.merge(client(), me.id, rows, {limit:300});
-      setEchoBadge(rows.filter(function(row){ return isEchoType(row.type) && !row.is_read; }).length);
+      // Query unread records directly: old unread notifications must not disappear beyond a page limit.
+      var rows = fail(await client().from('notifications').select('id').eq('user_id', me.id).in('type', ECHO_TYPES).eq('is_read', false).limit(1), '回声角标读取失败') || [];
+      if(generation !== badgeGeneration || !sameUser(me.id)) return;
+      globalUnread = rows.length > 0;
+      setEchoBadge(globalUnread ? 1 : 0);
+      syncMarkAllButton();
     }catch(e){ console.warn('[FW mobile app] echo badge refresh failed', e); }
   }
 
   async function markRead(ids){
-    ids = Array.from(new Set((ids || []).map(function(id){ return String(id || '').trim(); }).filter(Boolean)));
-    if(!ids.length) return;
-    ids.forEach(function(id){ var item = document.querySelector('[data-mobile-echo-item="' + id.replace(/"/g, '') + '"]'); if(item) item.classList.remove('unread'); });
-    updateBadgeFromVisibleItems();
-    if(!visibleUnreadCount()){
-      var markAll = document.querySelector('[data-echo-list] [data-mobile-echo-mark-all]');
-      if(markAll) markAll.remove();
-    }
+    ids = Array.from(new Set((ids || []).map(function(id){ return String(id || '').trim(); }).filter(function(id){ return /^\d+$/.test(id); })));
+    if(!ids.length) return false;
     var me = await currentUser();
-    replyEcho.markRead(me && me.id, ids);
-    var databaseIds = replyEcho.databaseNoticeIds(ids);
+    if(!me || !me.id) return false;
     try{
-      if(!(await app().waitForDb())) return;
-      if(databaseIds.length) await client().from('notifications').update({is_read:true}).in('id', databaseIds);
+      if(!(await app().waitForDb()) || !sameUser(me.id)) return false;
+      var result = await client().from('notifications').update({is_read:true}).eq('user_id', me.id).in('type', ECHO_TYPES).in('id', ids).select('id');
+      var updated = fail(result, '已读状态保存失败') || [];
+      if(!sameUser(me.id)) return false;
+      var savedIds = updated.map(function(row){ return String(row.id); });
+      syncReadUi(savedIds);
+      await refreshBadges();
+      if(ids.some(function(id){ return savedIds.indexOf(id) < 0; })) throw new Error('部分已读状态未保存');
+      return true;
+    }catch(e){
+      console.warn('[FW mobile app] echo mark read failed', e);
+      if(sameUser(me.id)) app().toast('已读状态未能保存，请稍后重试。');
       refreshBadges();
-    }catch(e){ console.warn('[FW mobile app] echo mark read failed', e); refreshBadges(); }
+      return false;
+    }
+  }
+
+  async function markAllRead(button){
+    var me = await currentUser();
+    if(!me || !me.id) return;
+    var cutoff = new Date().toISOString();
+    if(button) button.disabled = true;
+    try{
+      if(!(await app().waitForDb()) || !sameUser(me.id)) return;
+      fail(await client().from('notifications').update({is_read:true}).eq('user_id', me.id).in('type', ECHO_TYPES).eq('is_read', false).lte('created_at', cutoff), '已读状态保存失败');
+      var remaining = fail(await client().from('notifications').select('id').eq('user_id', me.id).in('type', ECHO_TYPES).eq('is_read', false).lte('created_at', cutoff).limit(1), '已读状态核对失败') || [];
+      if(remaining.length) throw new Error('已读状态未保存');
+      if(!sameUser(me.id)) return;
+      syncReadUi(echoRows.filter(function(row){ return row.created_at <= cutoff; }).map(function(row){ return row.id; }));
+      await refreshBadges();
+    }catch(e){
+      console.warn('[FW mobile app] echo mark all failed', e);
+      if(sameUser(me.id)) app().toast('已读状态未能保存，请稍后重试。');
+    }finally{ if(button) button.disabled = false; }
   }
 
   function noticeHtml(notice, profile){
@@ -320,29 +311,52 @@
     return '<article class="notice-item mobile-echo-item ' + (notice.is_read ? '' : 'unread') + '" data-mobile-echo-item="' + esc(notice.id) + '">' + actorAvatar + '<div class="list-main"><b>' + esc((profile && profile.nickname || '某位研究员') + ' ' + action) + '</b><span>' + esc(content) + '</span><small>' + esc(timeText(notice.created_at)) + '</small>' + (actions ? '<div class="notice-actions">' + actions + '</div>' : '') + '</div></article>';
   }
 
-  async function load(force){
+  async function load(force, append){
     var list = $('[data-echo-list]');
-    if(!list) return;
-    if(!force && loaded && Date.now() - lastLoadAt < 15000){ refreshBadges(); scanMediaSoon(); return; }
-    list.innerHTML = '<div class="loading">正在读取回声...</div>';
+    if(!list || (append && (pageLoading || !hasMore))) return;
+    if(!force && !append && loaded && Date.now() - lastLoadAt < 15000){ refreshBadges(); scanMediaSoon(); return; }
+    var generation = append ? loadGeneration : ++loadGeneration;
+    pageLoading = true;
+    var moreButton = list.querySelector('[data-mobile-echo-more]');
+    if(append){ if(moreButton) moreButton.disabled = true; }
+    else list.innerHTML = '<div class="loading">正在读取回声...</div>';
     try{
       if(!(await app().waitForDb())) throw new Error('暂时无法连接数据服务。');
       var me = await currentUser();
-      if(!me || !me.id){ list.innerHTML = '<div class="empty">请先登录后查看回声。</div>'; loaded = true; lastLoadAt = Date.now(); refreshBadges(); return; }
-      var rows = fail(await client().from('notifications').select('id,actor_id,type,target_type,target_id,content,is_read,created_at').eq('user_id', me.id).in('type', ECHO_TYPES).order('created_at', {ascending:false}).limit(100), '回声读取失败') || [];
-      rows = rows.filter(function(row){ return isEchoType(row.type); });
-      rows = await resolveReplyPostIds(rows);
-      rows = await replyEcho.merge(client(), me.id, rows, {limit:100});
-      var unreadIds = rows.filter(function(row){ return !row.is_read; }).map(function(row){ return row.id; });
+      if(generation !== loadGeneration) return;
+      if(!me || !me.id){ echoRows = []; hasMore = false; list.innerHTML = '<div class="empty">请先登录后查看回声。</div>'; loaded = true; lastLoadAt = Date.now(); refreshBadges(); return; }
+      var query = client().from('notifications').select('id,actor_id,type,target_type,target_id,content,is_read,created_at').eq('user_id', me.id).in('type', ECHO_TYPES).order('created_at', {ascending:false}).order('id', {ascending:false});
+      var cursor = append && echoRows[echoRows.length - 1];
+      if(cursor) query = query.or('created_at.lt.' + cursor.created_at + ',and(created_at.eq.' + cursor.created_at + ',id.lt.' + cursor.id + ')');
+      var rows = fail(await query.limit(PAGE_SIZE + 1), '回声读取失败') || [];
+      var nextHasMore = rows.length > PAGE_SIZE;
+      rows = await resolveReplyPostIds(rows.slice(0, PAGE_SIZE));
       var profiles = await fetchProfiles(rows.map(function(row){ return row.actor_id; }));
-      var toolbar = '<div class="mobile-echo-toolbar"><b>回声通知</b><div class="mobile-echo-actions">' + (unreadIds.length ? '<button class="mobile-echo-mark-all" type="button" data-mobile-echo-mark-all>全部已读</button>' : '') + '<button class="mobile-echo-refresh" type="button" data-mobile-echo-refresh>刷新</button></div></div>';
-      list.innerHTML = toolbar + (rows.length ? rows.map(function(row){ return noticeHtml(row, profiles[row.actor_id] || {}); }).join('') : '<div class="empty">暂时没有新的回声。安静也是一种运行状态。</div>');
+      if(generation !== loadGeneration || !sameUser(me.id)) return;
+      hasMore = nextHasMore;
+      echoRows = append ? echoRows.concat(rows) : rows;
+      var toolbar = '<div class="mobile-echo-toolbar"><b>回声通知</b><div class="mobile-echo-actions"><button class="mobile-echo-mark-all" type="button" data-mobile-echo-mark-all hidden>全部已读</button><button class="mobile-echo-refresh" type="button" data-mobile-echo-refresh>刷新</button></div></div>';
+      if(append){
+        if(moreButton) moreButton.remove();
+        list.insertAdjacentHTML('beforeend', rows.map(function(row){ return noticeHtml(row, profiles[row.actor_id] || {}); }).join(''));
+      }else list.innerHTML = toolbar + (rows.length ? rows.map(function(row){ return noticeHtml(row, profiles[row.actor_id] || {}); }).join('') : '<div class="empty">暂时没有新的回声。安静也是一种运行状态。</div>');
+      if(hasMore) list.insertAdjacentHTML('beforeend', '<button class="mobile-echo-refresh" type="button" data-mobile-echo-more>查看更早回声</button>');
       scanMediaSoon();
       loaded = true;
       lastLoadAt = Date.now();
-      if(unreadIds.length) await markRead(unreadIds);
-      else{ setEchoBadge(0); refreshBadges(); }
-    }catch(e){ console.warn('[FW mobile app] echo load failed', e); list.innerHTML = '<div class="error">回声暂时读取失败，请稍后再试。</div>'; }
+      var unreadIds = rows.filter(function(row){ return !row.is_read; }).map(function(row){ return row.id; });
+      // Only acknowledge the displayed snapshot while the user is still viewing echo.
+      if(echoVisible() && unreadIds.length) await markRead(unreadIds);
+      else await refreshBadges();
+    }catch(e){
+      console.warn('[FW mobile app] echo load failed', e);
+      if(generation !== loadGeneration) return;
+      if(append) app().toast('历史回声读取失败，请重试。');
+      else list.innerHTML = '<div class="error">回声暂时读取失败，请稍后再试。</div>';
+    }finally{
+      if(generation === loadGeneration) pageLoading = false;
+      if(moreButton) moreButton.disabled = false;
+    }
   }
 
   function flattenComments(rows){
@@ -412,15 +426,11 @@
         return;
       }
       var refresh = e.target.closest && e.target.closest('[data-mobile-echo-refresh]');
-      if(refresh){ e.preventDefault(); loaded = false; replyEcho.invalidate(); load(true); return; }
+      if(refresh){ e.preventDefault(); loaded = false; load(true); return; }
+      var more = e.target.closest && e.target.closest('[data-mobile-echo-more]');
+      if(more){ e.preventDefault(); load(true, true); return; }
       var markAll = e.target.closest && e.target.closest('[data-mobile-echo-mark-all]');
-      if(markAll){
-        e.preventDefault();
-        var ids = Array.prototype.slice.call(document.querySelectorAll('[data-echo-list] .mobile-echo-item.unread')).map(function(item){ return item.dataset.mobileEchoItem; });
-        markRead(ids);
-        markAll.remove();
-        return;
-      }
+      if(markAll){ e.preventDefault(); markAllRead(markAll); return; }
       var post = e.target.closest && e.target.closest('[data-mobile-echo-post]');
       if(post){
         e.preventDefault();
@@ -433,8 +443,8 @@
       var item = e.target.closest && e.target.closest('[data-mobile-echo-item]');
       if(item && item.classList.contains('unread')) markRead([item.dataset.mobileEchoItem]);
     });
-    window.addEventListener('focus', function(){ refreshBadges(); scanMediaSoon(); });
-    document.addEventListener('visibilitychange', function(){ if(!document.hidden){ refreshBadges(); scanMediaSoon(); } });
+    window.addEventListener('focus', function(){ if(echoVisible()) load(true); else refreshBadges(); scanMediaSoon(); });
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden){ if(echoVisible()) load(true); else refreshBadges(); scanMediaSoon(); } });
   }
 
   function stopBadgeTimer(){ clearTimeout(badgeTimer); badgeTimer = null; }
@@ -446,6 +456,11 @@
   function init(){
     injectStyle();
     bind();
+    document.addEventListener('fw:app-userchange', function(){
+      ++loadGeneration; ++badgeGeneration; loaded = false; pageLoading = false; echoRows = []; hasMore = false; globalUnread = false;
+      var list = $('[data-echo-list]'); if(list) list.innerHTML = '';
+      setEchoBadge(0); if(echoVisible()) load(true); else refreshBadges();
+    });
     setSquareMode('feed');
     refreshBadges();
     scheduleBadgeTimer();
