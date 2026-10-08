@@ -263,18 +263,23 @@
     if(!file) return;
     var isVideo=window.FWMobileMedia.isVideo(file);
     if(!isVideo && !/^image\/(jpeg|jpg|png|webp|gif)$/i.test(file.type || '')){ toast('请选择图片或视频。'); return; }
+    var chat=window.FWAppBuddy;
+    var targetId=chat && chat.getActiveTargetId(),token=chat && chat.getChatGeneration();
+    var owner=window.FWApp && window.FWApp.state.user && window.FWApp.state.user.id;
+    function sameChat(){return chat && chat.getActiveTargetId()===targetId && chat.getChatGeneration()===token && window.FWApp.state.user && window.FWApp.state.user.id===owner;}
+    if(!targetId){toast('先选择一个搭子。');return;}
     imageUploading = true;
     toast(isVideo ? '正在处理视频...' : '正在处理图片...');
     try{
       var user = await getCurrentUser();
+      if(!sameChat())throw new Error('会话已切换，请重新选择图片或视频。');
       if(!user || !user.id) throw new Error('请先登录。');
       if(!window.fwDb || !window.fwDb.client) throw new Error('数据服务未连接。');
       if(isVideo){
-        var chat=window.FWAppBuddy;
         if(!chat || !chat.sendMediaMarker || !chat.getActiveTargetId) throw new Error('私聊暂时不可用。');
-        var targetId=chat.getActiveTargetId();
         if(!targetId) throw new Error('先选择一个搭子。');
         var video=await window.FWMobileMedia.uploadVideo(file,user,'private');
+        if(!sameChat())throw new Error('会话已切换，请重新选择视频。');
         await chat.sendMediaMarker(video.marker,targetId);
         toast('视频已发送。');
         return;
@@ -287,6 +292,7 @@
       var publicData = window.fwDb.client.storage.from('stickers').getPublicUrl(path).data || {};
       var url = publicData.publicUrl || '';
       if(!url) throw new Error('图片地址生成失败。');
+      if(!sameChat())throw new Error('会话已切换，请重新选择图片。');
       var form = $('[data-buddy-chat-form]');
       var input = form && form.querySelector('input[name="message"]');
       if(!form || !input) throw new Error('聊天输入框未加载。');

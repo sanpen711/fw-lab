@@ -37,7 +37,6 @@
     var view = $('[data-app-view="buddy"]');
     if(view) view.classList.remove('is-chatting');
     if(document.body && document.body.classList) document.body.classList.remove('fw-buddy-chatting');
-    forceBuddyView();
     if(window.FWAppBuddy && typeof window.FWAppBuddy.renderMessages === 'function'){
       try{ window.FWAppBuddy.renderMessages(); }catch(e){}
     }
@@ -46,16 +45,17 @@
   function stableClose(clearTarget){
     var buddyWasChatting = isBuddyChatting();
     clearFeedReturnSource();
-    forceBuddyView();
     var api = window.FWAppBuddy;
     if(api && api.__fwOriginalCloseChat){
       try{ api.__fwOriginalCloseChat(clearTarget !== false); }catch(e){}
     }
-    enforceBuddyList();
-    if(buddyWasChatting){
-      setTimeout(enforceBuddyList, 80);
-      setTimeout(enforceBuddyList, 260);
+    var token=api && api.getChatGeneration && api.getChatGeneration();
+    function enforceCurrentList(){
+      if(!api || !api.getChatGeneration || api.getChatGeneration()!==token || api.getActiveTargetId() || !app() || app().state.view!=='buddy')return;
+      enforceBuddyList();
     }
+    enforceCurrentList();
+    if(buddyWasChatting){setTimeout(enforceCurrentList,80);setTimeout(enforceCurrentList,260);}
     return true;
   }
 

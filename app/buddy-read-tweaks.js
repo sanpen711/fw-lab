@@ -1,154 +1,53 @@
-// F.w 研究所：手机端搭子消息已读/红点修正
-// 搭子未读、搭子申请和搭子底部红点由本文件自己管理；不再依赖回声模块。
+// Server notifications are authoritative; never mark unread messages from local signatures.
 (function(){
   if(window.__FW_MOBILE_BUDDY_READ_TWEAKS__) return;
   window.__FW_MOBILE_BUDDY_READ_TWEAKS__ = true;
-
-  var badgeRefreshTimer = 0;
-  var badgeLoopTimer = 0;
-
-  function app(){ return window.FWApp || null; }
-  function $(selector, root){ return (root || document).querySelector(selector); }
-  function $$(selector, root){ return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
-  function client(){ return window.fwDb && window.fwDb.client; }
-  function currentUser(){ var fw = app(); return fw && fw.state && fw.state.user || null; }
-  function fail(result, message){ if(result && result.error) throw new Error(message || result.error.message || '读取失败'); return result ? result.data : null; }
-
-  function userKey(){ var user = currentUser(); return 'fw_mobile_buddy_read:' + (user && user.id || 'guest'); }
-  function readMap(){ try{ return JSON.parse(localStorage.getItem(userKey()) || '{}') || {}; }catch(e){ return {}; } }
-  function saveReadMap(map){ try{ localStorage.setItem(userKey(), JSON.stringify(map || {})); }catch(e){} }
-
+  var generation=0, timer=0, refreshTimer=0, inbox=[], owner='';
+  function app(){return window.FWApp;}
+  function client(){return window.fwDb && window.fwDb.client;}
+  function currentUser(){return app() && app().state && app().state.user;}
+  function $(selector,root){return (root||document).querySelector(selector);}
+  function $$(selector,root){return Array.prototype.slice.call((root||document).querySelectorAll(selector));}
+  function fail(result){if(result && result.error)throw result.error;return result && result.data || [];}
   function setBuddyBadge(count){
-    var button = $('[data-app-nav="buddy"]');
-    if(!button) return;
-    var badge = button.querySelector('.mobile-buddy-badge');
-    if(!badge){
-      badge = document.createElement('span');
-      badge.className = 'mobile-buddy-badge';
-      badge.setAttribute('aria-hidden', 'true');
-      button.appendChild(badge);
-    }
-    if(Number(count || 0) > 0){
-      badge.classList.add('show');
-      button.classList.add('has-mobile-buddy-badge');
-    }else{
-      badge.classList.remove('show');
-      button.classList.remove('has-mobile-buddy-badge');
-    }
+    var button=$('[data-app-nav="buddy"]');if(!button)return;
+    var badge=button.querySelector('.mobile-buddy-badge');
+    if(!badge){badge=document.createElement('span');badge.className='mobile-buddy-badge';badge.setAttribute('aria-hidden','true');button.appendChild(badge);}
+    badge.classList.toggle('show',!!count);button.classList.toggle('has-mobile-buddy-badge',!!count);
   }
-
-  async function refreshBuddyBadge(){
-    var me = currentUser();
-    var c = client();
-    if(!me || !me.id || !c){ setBuddyBadge(0); return false; }
-    var hasDomUnread = $$('.buddy-message-row .buddy-dot:not([hidden])').length > 0;
-    try{
-      var rows = fail(await c.from('notifications').select('id,type').eq('user_id', me.id).eq('is_read', false).in('type', ['private_message','friend_request','friend_accept']).limit(100), '搭子通知读取失败') || [];
-      var pending = await c.from('friendships').select('id', {count:'exact', head:true}).eq('receiver_id', me.id).eq('status', 'pending');
-      var pendingCount = pending && !pending.error ? (pending.count || 0) : 0;
-      var hasBadge = hasDomUnread || rows.length > 0 || pendingCount > 0;
-      setBuddyBadge(hasBadge ? 1 : 0);
-      return hasBadge;
-    }catch(e){
-      console.warn('[FW mobile app] buddy badge refresh failed', e);
-      setBuddyBadge(hasDomUnread ? 1 : 0);
-      return hasDomUnread;
-    }
-  }
-
-  function requestBadgeRefresh(delay){
-    clearTimeout(badgeRefreshTimer);
-    badgeRefreshTimer = setTimeout(function(){
-      try{ document.dispatchEvent(new CustomEvent('fw:buddy-unread-changed')); }catch(e){}
-      refreshBuddyBadge();
-    }, delay == null ? 120 : delay);
-  }
-
-  function messageSignature(row){
-    if(!row) return '';
-    return row.getAttribute('data-buddy-last-message-id') || row.getAttribute('data-buddy-last-message-at') || '';
-  }
-
-  async function markLatestMessageReadForUser(userId){
-    var me = currentUser();
-    var c = client();
-    if(!me || !me.id || !userId || !c) return;
-    try{
-      var conv = await c.rpc('fw_get_or_create_conversation', {target_user_id:userId});
-      if(conv && conv.error) throw conv.error;
-      var convId = Number(conv && conv.data);
-      if(!Number.isFinite(convId) || convId <= 0) return;
-      var rows = fail(await c.from('private_messages').select('id,conversation_id,sender_id,is_deleted,created_at').eq('conversation_id', convId).eq('is_deleted', false).order('created_at', {ascending:false}).limit(1), '消息读取失败') || [];
-      var latest = rows[0];
-      if(latest){
-        var map = readMap();
-        map[userId] = String(latest.id || latest.created_at || '');
-        saveReadMap(map);
-      }
-    }catch(e){ console.warn('[FW mobile app] mark latest buddy message read failed', e); }
-  }
-
-  async function markPrivateNoticeRead(userId){
-    var me = currentUser();
-    var c = client();
-    if(!userId || !me || !me.id || !c) return;
-    try{
-      var result = await c.from('notifications').update({is_read:true}).eq('user_id', me.id).eq('actor_id', userId).eq('type', 'private_message').eq('is_read', false);
-      if(result && result.error) throw result.error;
-      requestBadgeRefresh(150);
-    }catch(e){ console.warn('[FW mobile app] mark private notice read failed', e); }
-  }
-
-  function markReadByRow(row){
-    if(!row) return;
-    var userId = row.getAttribute('data-buddy-open-chat') || '';
-    var sig = messageSignature(row);
-    if(!userId) return;
-    if(sig){ var map = readMap(); map[userId] = sig; saveReadMap(map); }
-    var dot = $('.buddy-dot', row);
-    if(dot) dot.hidden = true;
-    markPrivateNoticeRead(userId);
-    requestBadgeRefresh(180);
-  }
-
-  async function markReadByUserId(userId){
-    if(!userId) return;
-    var row = $('[data-buddy-open-chat="' + String(userId).replace(/"/g, '\\"') + '"].buddy-message-row');
-    if(row) markReadByRow(row);
-    else{
-      await markLatestMessageReadForUser(userId);
-      await markPrivateNoticeRead(userId);
-      requestBadgeRefresh(180);
-    }
-  }
-
   function applyUnreadDots(){
-    var me = currentUser();
-    var meId = me && me.id;
-    var map = readMap();
-    var hasUnread = false;
+    var me=currentUser(), map={};
+    if(me && owner===me.id)inbox.forEach(function(row){map[row.user_id]=!!row.unread;});
     $$('.buddy-message-row[data-buddy-open-chat]').forEach(function(row){
-      var userId = row.getAttribute('data-buddy-open-chat') || '';
-      var dot = $('.buddy-dot', row);
-      if(!dot || !userId) return;
-      var sig = messageSignature(row);
-      var sender = row.getAttribute('data-buddy-last-sender') || '';
-      var unread = !!(sig && sender !== meId && map[userId] !== sig);
-      dot.hidden = !unread;
-      if(unread) hasUnread = true;
+      var dot=$('.buddy-dot',row);if(dot)dot.hidden=!map[row.dataset.buddyOpenChat];
     });
-    if(hasUnread) requestBadgeRefresh(80);
-    else requestBadgeRefresh(220);
   }
-
-  async function hasUnreadPrivateMessage(){
-    var me = currentUser();
-    if(!me || !me.id || !client()) return false;
-    applyUnreadDots();
-    if($$('.buddy-message-row .buddy-dot:not([hidden])').length > 0) return true;
-    return await refreshBuddyBadge();
+  function setInbox(rows,uid){
+    if(!currentUser() || currentUser().id!==uid)return;
+    owner=uid;inbox=rows||[];applyUnreadDots();
   }
-
+  async function refreshBuddyBadge(){
+    var me=currentUser(), c=client(), token=++generation;
+    if(!me || !c){owner='';inbox=[];setBuddyBadge(0);applyUnreadDots();return false;}
+    try{
+      var results=await Promise.all([
+        c.rpc('fw_mobile_buddy_inbox'),
+        c.from('friendships').select('id,requester_id,receiver_id,status').or('requester_id.eq.'+me.id+',receiver_id.eq.'+me.id)
+      ]);
+      var rows=fail(results[0]), relations=fail(results[1]);
+      var received=relations.filter(function(row){return row.receiver_id===me.id && row.status==='pending';}).map(function(row){return String(row.id);});
+      var accepted=relations.filter(function(row){return row.requester_id===me.id && row.status==='accepted';}).map(function(row){return String(row.id);});
+      var notices=await Promise.all([
+        received.length?c.from('notifications').select('id').eq('user_id',me.id).eq('type','friend_request').eq('is_read',false).in('target_id',received).limit(1):Promise.resolve({data:[]}),
+        accepted.length?c.from('notifications').select('id').eq('user_id',me.id).eq('type','friend_accept').eq('is_read',false).in('target_id',accepted).limit(1):Promise.resolve({data:[]})
+      ]);
+      var hasBadge=rows.some(function(row){return row.unread;})||fail(notices[0]).length>0||fail(notices[1]).length>0;
+      if(token!==generation || !currentUser() || currentUser().id!==me.id)return false;
+      setInbox(rows,me.id);setBuddyBadge(hasBadge);
+      return hasBadge;
+    }catch(e){console.warn('[FW mobile app] buddy badge refresh failed',e);return false;}
+  }
+  function requestBadgeRefresh(delay){clearTimeout(refreshTimer);refreshTimer=setTimeout(refreshBuddyBadge,delay==null?100:delay);}
   function injectStyle(){
     if(document.getElementById('fwMobileBuddyReadTweaksStyle')) return;
     var style = document.createElement('style');
@@ -158,48 +57,30 @@
       '[data-app-view="buddy"] > .tabs:before,[data-app-view="buddy"] > .tabs:after{display:none!important;content:none!important}',
       '.buddy-dot[hidden]{display:none!important}',
       '.app-tabbar button{position:relative}',
-      '[data-app-nav="buddy"] .mobile-buddy-badge{position:absolute;right:22px;top:6px;width:13px;min-width:13px;height:13px;padding:0;border-radius:999px;background:#d95353;border:2px solid #10170f;display:none;box-shadow:0 4px 12px rgba(0,0,0,.22);box-sizing:border-box}',
+      '[data-app-nav="buddy"] .mobile-buddy-badge{position:absolute;right:22px;top:6px;width:13px;min-width:13px;height:13px;padding:0;border-radius:999px;background:#d95353;border:2px solid #fff;display:none;box-shadow:0 4px 12px rgba(0,0,0,.22);box-sizing:border-box}',
       '[data-app-nav="buddy"] .mobile-buddy-badge.show{display:block}'
     ].join('\n');
     document.head.appendChild(style);
   }
 
-  function stopBadgeLoop(){ clearTimeout(badgeLoopTimer); badgeLoopTimer = 0; }
-  function scheduleBadgeLoop(delay){
-    stopBadgeLoop();
-    if(document.hidden) return;
-    badgeLoopTimer = setTimeout(function(){
-      applyUnreadDots();
-      refreshBuddyBadge().finally(function(){ scheduleBadgeLoop(30000); });
-    }, delay == null ? 30000 : delay);
-  }
 
-  function boot(){
-    injectStyle();
-    document.addEventListener('click', function(e){
-      var chat = e.target.closest && e.target.closest('[data-buddy-open-chat]');
-      if(chat){
-        var userId = chat.getAttribute('data-buddy-open-chat') || '';
-        setTimeout(function(){ var view = $('[data-app-view="buddy"]'); if(view && view.classList.contains('is-chatting')) markReadByUserId(userId); }, 850);
-        setTimeout(applyUnreadDots, 120);
-        return;
-      }
-      var tab = e.target.closest && e.target.closest('[data-buddy-tab]');
-      if(tab && tab.dataset.buddyTab === 'messages') setTimeout(applyUnreadDots, 220);
-    }, true);
-    window.addEventListener('focus', function(){ setTimeout(function(){ applyUnreadDots(); requestBadgeRefresh(220); }, 150); });
-    document.addEventListener('fw:app-visibility', function(event){
-      if(!(event && event.detail && event.detail.visible)){ stopBadgeLoop(); return; }
-      setTimeout(applyUnreadDots, 150);
-      requestBadgeRefresh(260);
+  function scheduleBadgeLoop(){
+    clearTimeout(timer);if(document.hidden)return;
+    timer=setTimeout(async function(){
+      await refreshBuddyBadge();
+      var fw=app(), buddy=window.FWAppBuddy;
+      if(fw && fw.state.view==='buddy' && buddy && !buddy.getActiveTargetId())await buddy.load(true);
       scheduleBadgeLoop();
-    });
-    document.addEventListener('fw:app-userchange', function(){ requestBadgeRefresh(0); scheduleBadgeLoop(); });
-    refreshBuddyBadge();
-    scheduleBadgeLoop();
+    },30000);
   }
-
-  window.FWAppBuddyUnread = {apply:applyUnreadDots, refresh:applyUnreadDots, refreshBadge:refreshBuddyBadge, markRead:markReadByUserId, hasUnread:hasUnreadPrivateMessage, requestBadgeRefresh:requestBadgeRefresh};
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
+  function boot(){
+    injectStyle();refreshBuddyBadge();scheduleBadgeLoop();
+    window.addEventListener('focus',function(){requestBadgeRefresh(0);});
+    document.addEventListener('fw:app-visibility',function(event){if(!event.detail.visible){clearTimeout(timer);return;}requestBadgeRefresh(0);scheduleBadgeLoop();});
+    document.addEventListener('fw:app-userchange',function(){++generation;owner='';inbox=[];setBuddyBadge(0);applyUnreadDots();requestBadgeRefresh(0);scheduleBadgeLoop();});
+    document.addEventListener('fw:buddy-unread-changed',function(){requestBadgeRefresh(0);});
+  }
+  window.FWAppBuddyUnread={apply:applyUnreadDots,refresh:refreshBuddyBadge,refreshBadge:refreshBuddyBadge,setInbox:setInbox,requestBadgeRefresh:requestBadgeRefresh,hasUnread:refreshBuddyBadge,
+    markRead:function(){return window.FWAppBuddy && window.FWAppBuddy.acknowledgeDisplayed();}};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();

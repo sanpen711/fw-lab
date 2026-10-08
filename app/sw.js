@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-echo-20261008-2';
+const CACHE_NAME = 'fw-mobile-buddy-20261008-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -95,7 +95,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => Promise.all(
-      keys.filter(key => key !== CACHE_NAME && /^fw-mobile-(app|home|echo)-/.test(key)).map(key => caches.delete(key))
+      keys.filter(key => key !== CACHE_NAME && /^fw-mobile-(app|home|echo|buddy)-/.test(key)).map(key => caches.delete(key))
     )).then(() => self.clients.claim())
   );
 });

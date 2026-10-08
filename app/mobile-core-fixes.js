@@ -167,8 +167,8 @@
   function ensureMobileDataCache(){ loadScriptOnce('FWMobileDataCache', 'data-mobile-data-cache', './mobile-data-cache.js?v=mobile-data-cache-20260709-1'); }
   function ensureMobileDesktopSync(){ loadScriptOnce('__FW_MOBILE_DESKTOP_SYNC__', 'data-mobile-desktop-sync', './mobile-sync.js?v=mobile-sync-20260929-1'); }
   function ensureReportBridge(){ loadScriptOnce('__FW_MOBILE_REPORT_BRIDGE__', 'data-mobile-report-bridge', './report.js?v=mobile-report-20260609-1'); }
-  function ensureBuddyChatReadFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-chat-read-20260609-4'); }
-  function ensureBuddyReturnStability(){ loadScriptOnce('__FW_BUDDY_RETURN_STABILITY__', 'data-buddy-return-stability', './buddy-return-stability.js?v=buddy-return-stability-20260629-1'); }
+  function ensureBuddyChatReadFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_READ_FIX__', 'data-mobile-buddy-chat-read-fix', './buddy-chat-read-fix.js?v=mobile-buddy-20261008-1'); }
+  function ensureBuddyReturnStability(){ loadScriptOnce('__FW_BUDDY_RETURN_STABILITY__', 'data-buddy-return-stability', './buddy-return-stability.js?v=mobile-buddy-20261008-1'); }
   function ensureFeedDetailReturnBridge(){ loadScriptOnce('__FW_MOBILE_FEED_DETAIL_RETURN__', 'data-mobile-feed-detail-return', './feed-detail-return.js?v=mobile-feed-detail-return-20260614-1'); }
   function ensureMobileSwipeBack(){ loadScriptOnce('__FW_MOBILE_SWIPE_BACK__', 'data-mobile-swipe-back', './mobile-swipe-back.js?v=mobile-home-nav-split-20260915-1'); }
   function ensureMobileTransitions(){ loadScriptOnce('__FW_MOBILE_TRANSITIONS__', 'data-mobile-transitions', './mobile-transitions.js?v=mobile-home-nav-split-20260915-1'); }
@@ -176,15 +176,15 @@
   function ensureMediaCache(){ loadScriptOnce('__FW_MOBILE_MEDIA_CACHE__', 'data-mobile-media-cache', './mobile-media-cache.js?v=mobile-media-cache-20260629-avatar-repair-1'); }
   function ensureFeedCache(){ loadScriptOnce('__FW_MOBILE_FEED_CACHE__', 'data-mobile-feed-cache', './mobile-feed-cache.js?v=mobile-feed-cache-20260618-speed-2'); }
   function ensureFeedIDBBridge(){ loadScriptOnce('__FW_MOBILE_FEED_IDB_BRIDGE__', 'data-mobile-feed-idb-bridge', './mobile-feed-idb-bridge.js?v=mobile-feed-idb-bridge-20260709-1'); }
-  function ensureChatIDBBridge(){ loadScriptOnce('__FW_MOBILE_CHAT_IDB_BRIDGE__', 'data-mobile-chat-idb-bridge', './mobile-chat-idb-bridge.js?v=mobile-chat-idb-bridge-20260709-1'); }
+  function ensureChatIDBBridge(){ loadScriptOnce('__FW_MOBILE_CHAT_IDB_BRIDGE__', 'data-mobile-chat-idb-bridge', './mobile-chat-idb-bridge.js?v=mobile-buddy-20261008-1'); }
   function ensureImagePreview(){ loadScriptOnce('__FW_MOBILE_IMAGE_PREVIEW__', 'data-mobile-image-preview', './mobile-image-preview.js?v=mobile-image-preview-20260629-sticker-1'); }
   function ensureModuleCache(){ loadScriptOnce('__FW_MOBILE_MODULE_CACHE__', 'data-mobile-module-cache', './mobile-module-cache.js?v=mobile-module-cache-20260629-social-off-1'); }
   function ensureGlobalFixes(){ loadScriptOnce('__FW_MOBILE_GLOBAL_FIXES_20260617__', 'data-mobile-global-fixes', './mobile-global-fixes.js?v=mobile-global-fixes-20260617-1'); }
   function ensureCacheSettings(){ loadScriptOnce('__FW_MOBILE_CACHE_SETTINGS__', 'data-mobile-cache-settings', './mobile-cache-settings.js?v=mobile-cache-settings-20260709-1'); }
 
   function ensureBirdTweaks(){ loadScriptOnce('__FW_MOBILE_BIRD_TWEAKS_LOADED__', 'data-mobile-bird-tweaks', './bird-tweaks.js?v=mobile-direct-tweaks-20260528-1'); }
-  function ensureBuddyReadTweaks(){ loadScriptOnce('__FW_MOBILE_BUDDY_READ_TWEAKS__', 'data-mobile-buddy-read-tweaks', './buddy-read-tweaks.js?v=mobile-performance-20260806-1'); }
-  function ensureBuddyChatTweaks(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_TWEAKS__', 'data-mobile-buddy-chat-tweaks', './buddy-chat-tweaks.js?v=mobile-sync-20260929-1'); }
+  function ensureBuddyReadTweaks(){ loadScriptOnce('__FW_MOBILE_BUDDY_READ_TWEAKS__', 'data-mobile-buddy-read-tweaks', './buddy-read-tweaks.js?v=mobile-buddy-20261008-1'); }
+  function ensureBuddyChatTweaks(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_TWEAKS__', 'data-mobile-buddy-chat-tweaks', './buddy-chat-tweaks.js?v=mobile-buddy-20261008-1'); }
   function ensureBuddyChatPolish(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_POLISH__', 'data-mobile-buddy-chat-polish', './buddy-chat-polish.js?v=mobile-performance-20260806-1'); }
   function ensureBuddyChatBottomFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_BOTTOM_FIX__', 'data-mobile-buddy-chat-bottom-fix', './buddy-chat-bottom-fix.js?v=mobile-performance-20260806-1'); }
   function ensureBuddyChatScrollFix(){ loadScriptOnce('__FW_MOBILE_BUDDY_CHAT_SCROLL_FIX__', 'data-mobile-buddy-chat-scroll-fix', './buddy-chat-scroll-fix.js?v=mobile-performance-20260806-1'); }

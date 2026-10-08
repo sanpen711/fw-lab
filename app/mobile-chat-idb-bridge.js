@@ -62,106 +62,32 @@
     syncTimer = setTimeout(syncLegacyChats, SYNC_DELAY);
   }
 
-  function ensureChatPanel(){
-    var view = $('[data-app-view="buddy"]');
-    if(!view) return null;
-    var panel = $('[data-buddy-chat-panel]', view);
-    if(panel) return panel;
-    panel = document.createElement('section');
-    panel.className = 'buddy-chat-panel';
-    panel.dataset.buddyChatPanel = 'true';
-    panel.innerHTML = '<div class="view-head compact buddy-chat-title-wrap"><button class="back-btn" type="button" data-buddy-chat-back>‹ 消息</button><p>低功耗私聊</p><h1 data-buddy-chat-title>选择一个搭子</h1><span data-buddy-chat-sub>先从搭子列表打开一个私聊。</span></div><div class="buddy-chat-messages" data-buddy-chat-messages><div class="buddy-empty-tip">还没有选择聊天对象。</div></div><form class="buddy-chat-form" data-buddy-chat-form><input name="message" autocomplete="off" maxlength="300" placeholder="低功耗输入..."><button type="submit">发送</button></form>';
-    view.appendChild(panel);
-    return panel;
-  }
-
-  function contactName(targetId){
-    var card = $('[data-buddy-open-chat="' + String(targetId).replace(/"/g, '\\"') + '"]');
-    if(!card) return '摸鱼搭子';
-    var name = $('.buddy-contact-name', card) || $('.list-main b', card) || card;
-    return String(name.textContent || '').trim() || '摸鱼搭子';
-  }
-
-  function messageHtml(message){
-    var mine = String(message.sender_id || '') === currentUserId();
-    var name = mine ? '你' : '搭子';
-    return '<div class="buddy-message' + (mine ? ' mine' : '') + '"><div class="buddy-message-name">' + esc(name) + '</div><div class="buddy-message-bubble">' + esc(messageText(message.content || '')) + '</div></div>';
-  }
-
-  function openCachedShell(targetId, rows, source){
-    if(!targetId || !Array.isArray(rows) || !rows.length) return false;
-    var view = $('[data-app-view="buddy"]');
-    var panel = ensureChatPanel();
-    if(!view || !panel) return false;
-    view.classList.add('is-chatting');
-    document.body.classList.add('fw-buddy-chatting');
-    var title = $('[data-buddy-chat-title]', panel);
-    var sub = $('[data-buddy-chat-sub]', panel);
-    var box = $('[data-buddy-chat-messages]', panel);
-    if(title) title.textContent = '和 ' + contactName(targetId) + ' 私聊';
-    if(sub) sub.textContent = source === 'idb' ? '离线缓存：正在展示最近聊天' : '本地缓存：正在展示最近聊天';
-    if(box){
-      box.innerHTML = '<div class="buddy-empty-tip">' + esc(source === 'idb' ? '离线模式：正在显示最近缓存聊天。恢复网络后会自动刷新。' : '正在显示本地聊天缓存，稍后自动刷新。') + '</div>' + rows.map(messageHtml).join('');
-      if(typeof window.fwRenderStickerMessages === 'function') window.fwRenderStickerMessages();
-      box.scrollTop = box.scrollHeight;
-    }
-    return true;
-  }
-
+  // Core owns the chat shell. An asynchronous cache may only fill the same
+  // open session, before its first server snapshot has arrived.
   function showCached(targetId){
-    targetId = String(targetId || '');
-    if(!targetId) return;
-    var localRows = readLegacy(targetId);
-    if(localRows.length) openCachedShell(targetId, localRows, 'local');
-    var api = cache();
-    if(api && typeof api.getChat === 'function'){
-      api.getChat(currentUserId(), targetId).then(function(data){
-        if(data && Array.isArray(data.rows) && data.rows.length) openCachedShell(targetId, data.rows, 'idb');
-      }).catch(function(){});
-    }
+    var buddy=window.FWAppBuddy,api=cache(),uid=currentUserId();
+    if(!buddy || !api || !api.getChat || uid==='guest' || readLegacy(targetId).length)return;
+    var token=buddy.getChatGeneration();
+    api.getChat(uid,targetId).then(function(data){
+      var fw=app(),box=$('[data-buddy-chat-messages]'),view=$('[data-app-view="buddy"]');
+      if(currentUserId()!==uid || buddy.getChatGeneration()!==token || buddy.getActiveTargetId()!==targetId
+        || !fw || fw.state.view!=='buddy' || !view || !view.classList.contains('is-chatting')
+        || !box || box.dataset.buddyServerGeneration===String(token) || !data || !Array.isArray(data.rows) || !data.rows.length)return;
+      box.innerHTML=data.rows.map(function(row){
+        var mine=String(row.sender_id)===uid;
+        return '<div class="buddy-message'+(mine?' mine':'')+'"><div class="buddy-message-name">'+(mine?'你':'搭子')+'</div><div class="buddy-message-bubble">'+esc(row.content||'')+'</div></div>';
+      }).join('');
+      if(typeof window.fwRenderStickerMessages==='function')window.fwRenderStickerMessages();
+      box.scrollTop=box.scrollHeight;
+    }).catch(function(){});
   }
-
-  function patchBuddy(){
-    if(patched || !window.FWAppBuddy || typeof window.FWAppBuddy.openChat !== 'function') return !!patched;
-    var originalOpenChat = window.FWAppBuddy.openChat;
-    window.FWAppBuddy.openChat = function(targetId){
-      showCached(targetId);
-      return originalOpenChat.apply(window.FWAppBuddy, arguments);
-    };
-    window.FWAppBuddy.__idbChatBridgePatched = true;
-    patched = true;
-    return true;
-  }
-
-  function schedulePatch(){
-    if(patchBuddy()) return;
-    [80, 240, 700, 1500, 3000].forEach(function(delay){ setTimeout(patchBuddy, delay); });
-  }
-
-  function bindEvents(){
-    document.addEventListener('click', function(event){
-      var target = event.target;
-      if(!target || !target.closest) return;
-      var chat = target.closest('[data-buddy-open-chat]');
-      if(chat){
-        var id = chat.getAttribute('data-buddy-open-chat') || chat.dataset.buddyOpenChat || '';
-        setTimeout(function(){ showCached(id); }, 0);
-        setTimeout(syncSoon, 1500);
-      }
-    }, true);
-    document.addEventListener('visibilitychange', function(){ if(document.hidden) syncLegacyChats(); else syncSoon(); }, {passive:true});
-    window.addEventListener('pagehide', syncLegacyChats, {passive:true});
-    window.addEventListener('pageshow', syncSoon, {passive:true});
-    window.addEventListener('focus', syncSoon, {passive:true});
-  }
-
   function start(){
-    schedulePatch();
-    bindEvents();
-    setTimeout(syncLegacyChats, 1200);
-    window.FWMobileChatIDBBridge = {sync:syncLegacyChats, showCached:showCached};
+    document.addEventListener('fw:buddy-chat-opened',function(event){showCached(event.detail.targetId);syncSoon();});
+    document.addEventListener('visibilitychange',function(){if(document.hidden)syncLegacyChats();else syncSoon();});
+    window.addEventListener('pagehide',syncLegacyChats);
+    window.addEventListener('focus',syncSoon);
+    setTimeout(syncLegacyChats,1200);
+    window.FWMobileChatIDBBridge={sync:syncLegacyChats,showCached:showCached};
   }
-
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
-  else start();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();

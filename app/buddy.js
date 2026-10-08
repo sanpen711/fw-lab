@@ -14,6 +14,14 @@
   var messageLoading = false;
   var chatOpening = false;
   var CHAT_REFRESH_DELAY = 12000;
+  var chatGeneration = 0, messageGeneration = 0, listGeneration = 0, relationGeneration = 0;
+  var olderRows=[],hasOlder=false,olderLoading=false;
+  var displayedRows = [], readPending = null, readFailureSignature = '';
+  function sameUser(uid){return app().state.user && app().state.user.id === uid;}
+  function currentChat(token,targetId,conversationId,uid){return token===chatGeneration && sameUser(uid) && activeTargetId===targetId && activeConversationId===conversationId;}
+  function buddyChanged(){document.dispatchEvent(new CustomEvent('fw:buddy-unread-changed'));}
+  function visibleChat(){return !document.hidden && app().state.view==='buddy' && !!activeTargetId && !chatOpening;}
+
 
   function app(){ return window.FWApp; }
   function $(selector, root){ return app().$(selector, root); }
@@ -102,10 +110,11 @@
   async function fetchProfiles(ids){
     ids = Array.from(new Set((ids || []).filter(Boolean)));
     if(!ids.length) return {};
+    var owner=app().state.user && app().state.user.id;
     try{
       var data = fail(await client().from('profiles').select('id,nickname,lab_code,avatar_url').in('id', ids), '资料读取失败') || [];
       var map = {};
-      data.forEach(function(row){ map[row.id] = row; profileMap[row.id] = row; });
+      data.forEach(function(row){ map[row.id] = row; if(sameUser(owner)) profileMap[row.id] = row; });
       return map;
     }catch(e){ console.warn('[FW mobile app] profile fetch failed', e); return {}; }
   }
@@ -132,46 +141,41 @@
     var meId = me && me.id;
     var profile = item.profile || {};
     var snippet = (item.sender_id === meId ? '我：' : '') + messagePreview(item.content || '');
-    var unread = item.sender_id && item.sender_id !== meId;
+    var unread = !!item.unread;
     return '<article class="list-item buddy-row buddy-message-row is-clickable" data-buddy-open-chat="' + esc(item.userId) + '" data-buddy-last-message-id="' + esc(item.id) + '" data-buddy-last-message-at="' + esc(item.created_at) + '" data-buddy-last-sender="' + esc(item.sender_id || '') + '"><span class="buddy-avatar-wrap">' + avatar(profile) + '<i class="buddy-dot" ' + (unread ? '' : 'hidden') + ' aria-hidden="true"></i></span><div class="list-main"><b>' + esc(profile.nickname || '低功耗搭子') + '</b><span class="buddy-message-snippet">' + esc(snippet) + '</span><span class="buddy-message-time">' + esc(timeText(item.created_at)) + '</span></div></article>';
   }
 
   async function renderMessages(){
-    var list = $('[data-buddy-list]');
-    if(!list || messageLoading) return;
-    var rows = acceptedRows();
-    if(!rows.length){ messageListCacheHtml = ''; list.innerHTML = '<div class="empty">暂时还没有搭子消息。先去“新的搭子”加一个搭子吧。</div>'; return; }
-    var me = app().state.user;
-    var buddyIds = rows.map(function(row){ return otherId(row, me.id); }).filter(Boolean);
-    var hasRenderedRows = !!list.querySelector('.buddy-message-row');
-    if(!hasRenderedRows && messageListCacheHtml){ list.innerHTML = messageListCacheHtml; hasRenderedRows = true; }
-    messageLoading = true;
-    if(!hasRenderedRows) list.innerHTML = '<div class="loading">正在读取搭子消息...</div>';
+    var list=$('[data-buddy-list]'),me=app().state.user;
+    if(!list || !me || activeTab!=='messages')return;
+    var generation=++listGeneration;
+    if(!list.querySelector('.buddy-message-row') && !messageListCacheHtml)list.innerHTML='<div class="loading">正在读取搭子消息...</div>';
     try{
-      var allowed = {};
-      buddyIds.forEach(function(id){ allowed[String(id)] = true; });
-      var conversations = fail(await client().from('conversations').select('id,user_one_id,user_two_id,updated_at').or('user_one_id.eq.' + me.id + ',user_two_id.eq.' + me.id).order('updated_at', {ascending:false}), '会话读取失败') || [];
-      var convMap = {};
-      conversations.forEach(function(row){
-        var other = String(row.user_one_id) === String(me.id) ? row.user_two_id : row.user_one_id;
-        if(allowed[String(other)]) convMap[row.id] = other;
-      });
-      var convIds = Object.keys(convMap).map(Number).filter(function(id){ return Number.isFinite(id) && id > 0; });
-      if(!convIds.length){ messageListCacheHtml = ''; list.innerHTML = '<div class="empty">暂时没有搭子消息。</div>'; return; }
-      var messages = fail(await client().from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').in('conversation_id', convIds).eq('is_deleted', false).order('created_at', {ascending:false}).limit(Math.max(160, convIds.length * 8)), '消息读取失败') || [];
-      var latestByBuddy = {};
-      messages.forEach(function(msg){
-        var userId = convMap[msg.conversation_id];
-        if(!userId || latestByBuddy[userId]) return;
-        latestByBuddy[userId] = {id:msg.id,userId:userId,sender_id:msg.sender_id,content:msg.content || '',created_at:msg.created_at,profile:profileMap[userId] || {}};
-      });
-      var latest = Object.keys(latestByBuddy).map(function(id){ return latestByBuddy[id]; }).sort(function(a,b){ return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); });
-      if(!latest.length){ messageListCacheHtml = ''; list.innerHTML = '<div class="empty">暂时没有搭子消息。</div>'; return; }
-      messageListCacheHtml = latest.map(messageRowHtml).join('');
-      list.innerHTML = messageListCacheHtml;
-      if(window.FWAppBuddyUnread && typeof window.FWAppBuddyUnread.apply === 'function') window.FWAppBuddyUnread.apply();
-    }catch(e){ console.warn('[FW mobile app] buddy messages tab failed', e); if(!hasRenderedRows && !messageListCacheHtml) list.innerHTML = '<div class="error">搭子消息暂时读取失败，请稍后再试。</div>'; }
-    finally{ messageLoading = false; }
+      var inbox=await rpc('fw_mobile_buddy_inbox',{},'消息读取失败');
+      if(generation!==listGeneration || !sameUser(me.id) || activeTab!=='messages')return;
+      var latest=(inbox||[]).filter(function(row){return row.message;}).map(function(row){
+        return Object.assign({},row.message,{userId:row.user_id,unread:row.unread,profile:profileMap[row.user_id]||{}});
+      }).sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);});
+      messageListCacheHtml=latest.map(messageRowHtml).join('');
+      list.innerHTML=messageListCacheHtml||'<div class="empty">暂时没有搭子消息。先去“新的搭子”加一个搭子吧。</div>';
+      if(window.FWAppBuddyUnread && window.FWAppBuddyUnread.setInbox)window.FWAppBuddyUnread.setInbox(inbox,me.id);
+      acknowledgeFriendNotices('friend_accept',acceptedRows().map(function(row){return String(row.id);}));
+    }catch(e){console.warn('[FW mobile app] buddy messages tab failed',e);if(generation===listGeneration && sameUser(me.id) && activeTab==='messages' && !messageListCacheHtml)list.innerHTML='<div class="error">搭子消息暂时读取失败，请稍后再试。</div>';}
+  }
+
+  async function acknowledgeFriendNotices(type,targets){
+    var me=app().state.user,tab=activeTab;
+    if(!me || !targets.length || document.hidden || app().state.view!=='buddy' || activeTargetId)return;
+    try{
+      var rows=fail(await client().from('notifications').select('id').eq('user_id',me.id).eq('type',type).eq('target_type','friendship').in('target_id',targets).eq('is_read',false),'提醒读取失败')||[];
+      if(!sameUser(me.id) || activeTab!==tab || activeTargetId || document.hidden || app().state.view!=='buddy')return;
+      if(rows.length){
+        var ids=rows.map(function(row){return String(row.id);});
+        var saved=fail(await client().from('notifications').update({is_read:true}).eq('user_id',me.id).eq('type',type).in('id',ids).select('id'),'提醒已读失败')||[];
+        if(saved.length!==ids.length)throw new Error('提醒已读未保存');
+      }
+      buddyChanged();
+    }catch(e){console.warn('[FW mobile app] friend notice read failed',e);}
   }
 
   function requestRowHtml(row){
@@ -196,26 +200,29 @@
     $$('[data-buddy-tab]').forEach(function(tab){ tab.classList.toggle('active', tab.dataset.buddyTab === activeTab); });
     if(!app().state.user){ list.innerHTML = '<div class="empty">请先登录后查看搭子中心。</div>'; return; }
     if(activeTab === 'messages') return renderMessages();
-    if(activeTab === 'new') return renderNewBuddies();
-    renderFriendGroups();
+    if(activeTab === 'new'){ renderNewBuddies(); acknowledgeFriendNotices('friend_request',incomingRows().map(function(row){return String(row.id);})); return; }
+    renderFriendGroups(); acknowledgeFriendNotices('friend_accept',acceptedRows().map(function(row){return String(row.id);}));
   }
 
   async function load(force){
-    if(loaded && !force){ render(); return; }
+    if(loaded && !force){ await render(); return; }
+    var generation=++relationGeneration;
     var list = $('[data-buddy-list]');
     if(list && !(activeTab === 'messages' && messageListCacheHtml)) list.innerHTML = '<div class="loading">正在读取搭子列表...</div>';
     try{
       await app().refreshUser();
       var me = app().state.user;
+      if(generation!==relationGeneration)return;
       if(!me){ loaded = true; render(); return; }
       if(!(await app().waitForDb())) throw new Error('暂时无法连接数据服务。');
-      friendshipRows = fail(await client().from('friendships').select('id,requester_id,receiver_id,status,created_at,updated_at').or('requester_id.eq.' + me.id + ',receiver_id.eq.' + me.id).order('updated_at', {ascending:false}), '搭子列表读取失败') || [];
+      var nextRelations = fail(await client().from('friendships').select('id,requester_id,receiver_id,status,created_at,updated_at').or('requester_id.eq.' + me.id + ',receiver_id.eq.' + me.id).order('updated_at', {ascending:false}), '搭子列表读取失败') || [];
       var ids = [];
-      friendshipRows.forEach(function(row){ ids.push(row.requester_id, row.receiver_id); });
-      profileMap = await fetchProfiles(ids);
-      loaded = true;
-      render();
-    }catch(e){ console.warn('[FW mobile app] buddy load failed', e); if(list && !(activeTab === 'messages' && messageListCacheHtml)) list.innerHTML = '<div class="error">搭子列表暂时读取失败，请稍后再试。</div>'; }
+      nextRelations.forEach(function(row){ ids.push(row.requester_id, row.receiver_id); });
+      var nextProfiles=await fetchProfiles(ids);
+      if(generation!==relationGeneration || !sameUser(me.id))return;
+      friendshipRows=nextRelations; profileMap=nextProfiles; loaded=true;
+      await render();
+    }catch(e){ console.warn('[FW mobile app] buddy load failed', e); if(generation===relationGeneration && list && !(activeTab === 'messages' && messageListCacheHtml)) list.innerHTML = '<div class="error">搭子列表暂时读取失败，请稍后再试。</div>'; }
   }
 
   function activeSearchResult(){ var nodes = $$('[data-buddy-search-result]'); return nodes.length ? nodes[nodes.length - 1] : null; }
@@ -247,14 +254,15 @@
     }catch(e){ console.warn('[FW mobile app] buddy search failed', e); result.innerHTML = '<div class="error">搜索暂时失败，请稍后再试。</div>'; }
   }
 
-  async function rpc(name, args, message){ var result = await client().rpc(name, args || {}); if(result && result.error) throw new Error(message || result.error.message || '操作失败'); return result ? result.data : null; }
+  async function rpc(name, args, message){ var result = await client().rpc(name, args || {}); if(result && result.error){var error=new Error((message ? message+'：' : '')+(result.error.message || '操作失败'));error.code=result.error.code;throw error;} return result ? result.data : null; }
   async function handleAction(button, action){
     if(!button) return;
     await app().refreshUser();
     if(!app().state.user){ toast('请先登录。'); app().setView('profile'); return; }
     if(!(await app().waitForDb())){ toast('暂时无法连接数据服务。'); return; }
+    var owner=app().state.user.id;
     var old = button.textContent; button.disabled = true; button.textContent = '处理中...';
-    try{ await action(); loaded = false; await load(true); }catch(e){ console.warn('[FW mobile app] buddy action failed', e); toast(e.message || '操作失败，请稍后再试。'); }finally{ button.disabled = false; button.textContent = old; }
+    try{ await action(); if(!sameUser(owner))return; loaded = false; await load(true); buddyChanged(); }catch(e){ console.warn('[FW mobile app] buddy action failed', e); toast(e.message || '操作失败，请稍后再试。'); }finally{ button.disabled = false; button.textContent = old; }
   }
   function addBuddy(button){ return handleAction(button, async function(){ await rpc('fw_send_friend_request', {target_user_id:button.dataset.buddyAdd || ''}, '发送申请失败'); toast('搭子申请已发出。'); activeTab = 'new'; clearSearch(); }); }
   function acceptBuddy(button){ return handleAction(button, async function(){ await rpc('fw_respond_friendship', {target_friendship_id:Number(button.dataset.buddyAccept), accept_request:true}, '处理失败'); toast('已同意搭子申请。'); activeTab = 'friends'; clearSearch(); }); }
@@ -284,48 +292,133 @@
       scheduleChatPolling(CHAT_REFRESH_DELAY);
     }, delay == null ? CHAT_REFRESH_DELAY : delay);
   }
-  function closeChat(clearTarget){ stopChatPolling(); activeConversationId = null; chatOpening = false; if(clearTarget !== false){ activeTargetId = ''; } var view = $('[data-app-view="buddy"]'); if(view) view.classList.remove('is-chatting'); document.body.classList.remove('fw-buddy-chatting'); if(activeTab === 'messages') renderMessages(); }
-  async function getConversationId(targetId){ if(conversationCache[targetId]) return conversationCache[targetId]; var convId = Number(await rpc('fw_get_or_create_conversation', {target_user_id:targetId}, '私聊会话创建失败')); if(Number.isFinite(convId) && convId > 0){ conversationCache[targetId] = convId; return convId; } throw new Error('私聊会话创建失败。'); }
+  function closeChat(clearTarget){ ++chatGeneration; ++messageGeneration; displayedRows=[]; olderRows=[]; hasOlder=false; olderLoading=false; readPending=null; stopChatPolling(); activeConversationId = null; chatOpening = false; activeTargetId = ''; var view = $('[data-app-view="buddy"]'); if(view) view.classList.remove('is-chatting'); document.body.classList.remove('fw-buddy-chatting'); if(activeTab === 'messages') renderMessages(); }
+  async function getConversationId(targetId){ if(conversationCache[targetId]) return conversationCache[targetId]; var owner=app().state.user && app().state.user.id; var convId = Number(await rpc('fw_get_or_create_conversation', {target_user_id:targetId}, '私聊会话创建失败')); if(Number.isFinite(convId) && convId > 0){ if(sameUser(owner))conversationCache[targetId] = convId; return convId; } throw new Error('私聊会话创建失败。'); }
 
   async function openChat(targetId){
     targetId = String(targetId || '');
     if(!targetId || (chatOpening && activeTargetId === targetId)) return;
+    var token=++chatGeneration; ++messageGeneration; stopChatPolling();
+    activeTargetId=targetId; activeConversationId=null; displayedRows=[]; olderRows=[]; hasOlder=false; olderLoading=false; readPending=null; chatOpening=true;
     await app().refreshUser();
-    if(!app().state.user){ toast('请先登录后再私聊。'); app().setView('profile'); return; }
-    if(!(await app().waitForDb())){ toast('暂时无法连接数据服务。'); return; }
+    if(token!==chatGeneration)return;
+    if(!app().state.user){ closeChat(true); toast('请先登录后再私聊。'); app().setView('profile'); return; }
+    var uid=app().state.user.id;
+    if(!(await app().waitForDb())){ if(token===chatGeneration){closeChat(true);toast('暂时无法连接数据服务。');} return; }
     if(!loaded) await load(true);
+    if(token!==chatGeneration || !sameUser(uid))return;
     activeTargetId = targetId;
     openChatShell();
     var profile = profileMap[targetId] || {};
     var title = $('[data-buddy-chat-title]'), sub = $('[data-buddy-chat-sub]'), box = $('[data-buddy-chat-messages]');
     if(title) title.textContent = '和 ' + (profile.nickname || '摸鱼搭子') + ' 私聊';
     if(sub) sub.textContent = profile.lab_code ? '实验品编号：' + profile.lab_code : '低功耗私聊';
+    if(box){box.dataset.messageSignature='';box.dataset.buddyServerGeneration='';}
+    var input=$('[data-buddy-chat-form] input');if(input)input.value='';
     if(!renderCachedMessages(targetId) && box) box.innerHTML = '<div class="buddy-empty-tip">正在读取私聊...</div>';
+    document.dispatchEvent(new CustomEvent('fw:buddy-chat-opened',{detail:{targetId:targetId,generation:token}}));
     chatOpening = true;
     try{
-      activeConversationId = await getConversationId(targetId);
+      var conversationId=await getConversationId(targetId);
+      if(token!==chatGeneration || !sameUser(uid))return;
+      activeConversationId=conversationId; chatOpening=false;
       await loadMessages(true);
-      scheduleChatPolling();
-    }catch(e){ console.warn('[FW mobile app] buddy chat open failed', e); if(box) box.innerHTML = '<div class="buddy-empty-tip">私聊打开失败：' + esc(e.message || '请稍后重试。') + '</div>'; }
-    finally{ chatOpening = false; }
+      if(token===chatGeneration)scheduleChatPolling();
+    }catch(e){ console.warn('[FW mobile app] buddy chat open failed', e); if(token===chatGeneration && sameUser(uid) && box) box.innerHTML = '<div class="buddy-empty-tip">私聊打开失败：' + esc(e.message || '请稍后重试。') + '</div>'; }
+    finally{ if(token===chatGeneration)chatOpening = false; }
   }
   function messageHtml(message, profiles){ var me = app().state.user; var mine = !!(me && message.sender_id === me.id); var p = profiles[message.sender_id] || {}; var name = mine ? '你' : (p.nickname || '搭子'); return '<div class="buddy-message' + (mine ? ' mine' : '') + '"><div class="buddy-message-name">' + esc(name) + '</div><div class="buddy-message-bubble">' + esc(message.content || '') + '</div></div>'; }
   function messageSignature(rows){ return (rows || []).map(function(row){ return [row.id || '', row.sender_id || '', row.content || '', row.created_at || ''].join(':'); }).join('|'); }
+  async function acknowledgeDisplayed(){
+    if(!visibleChat() || !activeConversationId || !displayedRows.length)return false;
+    if(readPending)return readPending;
+    var token=chatGeneration,targetId=activeTargetId,conversationId=activeConversationId,me=app().state.user;
+    if(!me)return false;
+    var rows=displayedRows.slice(), ids=rows.filter(function(row){return row.sender_id!==me.id && /^\d+$/.test(String(row.id));}).map(function(row){return String(row.id);});
+    var systemIds=rows.map(function(row){var match=/^notice:(\d+)$/.exec(String(row.id));return match && match[1];}).filter(Boolean);
+    var signature=messageSignature(rows);
+    if(!ids.length && !systemIds.length)return true;
+    var promise=(async function(){await Promise.resolve();try{
+      var matches=ids.length?fail(await client().from('notifications').select('id').eq('user_id',me.id).eq('actor_id',targetId).eq('type','private_message').eq('target_type','private_message').eq('is_read',false).in('target_id',ids),'未读消息读取失败')||[]:[];
+      var noticeIds=Array.from(new Set(matches.map(function(row){return String(row.id);}).concat(systemIds)));
+      if(!currentChat(token,targetId,conversationId,me.id) || !visibleChat())return false;
+      if(noticeIds.length){
+        var updated=fail(await client().from('notifications').update({is_read:true}).eq('user_id',me.id).eq('actor_id',targetId).eq('type','private_message').in('id',noticeIds).select('id'),'已读状态保存失败')||[];
+        if(updated.length!==noticeIds.length)throw new Error('已读状态未保存');
+      }
+      if(!sameUser(me.id))return false;
+      readFailureSignature='';buddyChanged();return true;
+    }catch(e){
+      console.warn('[FW mobile app] displayed chat read failed',e);
+      if(currentChat(token,targetId,conversationId,me.id) && readFailureSignature!==signature){toast('消息已显示，但已读状态未保存，请稍后重试。');readFailureSignature=signature;}
+      buddyChanged();return false;
+    }finally{if(readPending===promise)readPending=null;}})();
+    readPending=promise;return promise;
+  }
   async function loadMessages(quiet){
-    var box = $('[data-buddy-chat-messages]'); if(!box || !activeConversationId) return;
+    var box=$('[data-buddy-chat-messages]'),me=app().state.user;
+    if(!box || !activeConversationId || !me || olderLoading)return;
+    var token=chatGeneration,targetId=activeTargetId,conversationId=activeConversationId,generation=++messageGeneration;
     try{
-      var rows = fail(await client().from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id', activeConversationId).eq('is_deleted', false).order('created_at', {ascending:true}).limit(200), '私聊读取失败') || [];
-      if(!rows.length){ if(box.dataset.messageSignature !== 'empty') box.innerHTML = '<div class="buddy-empty-tip">还没有私聊消息。可以先低功耗地打个招呼。</div>'; box.dataset.messageSignature = 'empty'; return; }
-      await fetchProfiles(rows.map(function(row){ return row.sender_id; }));
-      var signature = messageSignature(rows);
-      if(box.dataset.messageSignature === signature) return;
-      var nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 72;
-      box.innerHTML = rows.map(function(row){ return messageHtml(row, profileMap); }).join('');
-      box.dataset.messageSignature = signature;
-      saveChatCache(activeTargetId, rows);
-      if(typeof window.fwRenderStickerMessages === 'function') window.fwRenderStickerMessages();
-      if(nearBottom) box.scrollTop = box.scrollHeight;
-    }catch(e){ console.warn('[FW mobile app] buddy messages load failed', e); if(!quiet) box.innerHTML = '<div class="buddy-empty-tip">私聊读取失败，请稍后重试。</div>'; }
+      var results=await Promise.all([
+        client().from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id',conversationId).eq('is_deleted',false).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(200),
+        client().from('notifications').select('id,actor_id,content,created_at').eq('user_id',me.id).eq('actor_id',targetId).eq('type','private_message').eq('target_type','system').order('created_at',{ascending:false}).limit(100)
+      ]);
+      var rows=fail(results[0],'私聊读取失败')||[];
+      if(!olderRows.length)hasOlder=rows.length===200;
+      var seen=new Set(rows.map(function(row){return String(row.id);}));
+      rows=rows.concat(olderRows.filter(function(row){return !seen.has(String(row.id));}));
+      var info=fail(results[1],'搭子通知读取失败')||[];
+      rows=rows.concat(info.map(function(row){return {id:'notice:'+row.id,sender_id:row.actor_id,content:row.content,created_at:row.created_at};})).sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at)||String(a.id).localeCompare(String(b.id),undefined,{numeric:true});});
+      await fetchProfiles(rows.map(function(row){return row.sender_id;}));
+      if(generation!==messageGeneration || !currentChat(token,targetId,conversationId,me.id))return;
+      var signature=rows.length?messageSignature(rows):'empty';
+      displayedRows=rows; box.dataset.buddyServerGeneration=String(token);
+      if(box.dataset.messageSignature!==signature){
+        var nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<72;
+        box.innerHTML=(hasOlder?'<button type="button" class="buddy-mini-btn" data-buddy-older>查看更早消息</button>':'')+(rows.length?rows.map(function(row){return messageHtml(row,profileMap);}).join(''):'<div class="buddy-empty-tip">还没有私聊消息。可以先低功耗地打个招呼。</div>');
+        box.dataset.messageSignature=signature; box.dataset.buddyTargetId=targetId;
+        saveChatCache(targetId,rows);
+        if(typeof window.fwRenderStickerMessages==='function')window.fwRenderStickerMessages();
+        if(nearBottom)box.scrollTop=box.scrollHeight;
+      }
+      await acknowledgeDisplayed();
+    }catch(e){console.warn('[FW mobile app] buddy messages load failed',e);if(!quiet && generation===messageGeneration && currentChat(token,targetId,conversationId,me.id))box.innerHTML='<div class="buddy-empty-tip">私聊读取失败，请稍后重试。</div>';}
+  }
+  async function loadOlderMessages(){
+    var me=app().state.user,box=$('[data-buddy-chat-messages]');
+    var messages=displayedRows.filter(function(row){return /^\d+$/.test(String(row.id));});
+    if(!me || !box || !messages.length || !hasOlder || olderLoading)return;
+    var first=messages[0],token=chatGeneration,targetId=activeTargetId,conversationId=activeConversationId,generation=++messageGeneration;
+    olderLoading=true;
+    var button=box.querySelector && box.querySelector('[data-buddy-older]');if(button)button.disabled=true;
+    try{
+      var rows=fail(await client().from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at')
+        .eq('conversation_id',conversationId).eq('is_deleted',false)
+        .or('created_at.lt.'+first.created_at+',and(created_at.eq.'+first.created_at+',id.lt.'+first.id+')')
+        .order('created_at',{ascending:false}).order('id',{ascending:false}).limit(200),'历史消息读取失败')||[];
+      await fetchProfiles(rows.map(function(row){return row.sender_id;}));
+      if(generation!==messageGeneration || !currentChat(token,targetId,conversationId,me.id))return;
+      hasOlder=rows.length===200;
+      var seen=new Set(displayedRows.map(function(row){return String(row.id);}));
+      displayedRows=displayedRows.concat(rows.filter(function(row){return !seen.has(String(row.id));})).sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at)||String(a.id).localeCompare(String(b.id),undefined,{numeric:true});});
+      olderRows=displayedRows.filter(function(row){return /^\d+$/.test(String(row.id));});
+      var top=box.scrollTop,height=box.scrollHeight;
+      box.innerHTML=(hasOlder?'<button type="button" class="buddy-mini-btn" data-buddy-older>查看更早消息</button>':'')+displayedRows.map(function(row){return messageHtml(row,profileMap);}).join('');
+      box.dataset.messageSignature=messageSignature(displayedRows);
+      if(typeof window.fwRenderStickerMessages==='function')window.fwRenderStickerMessages();
+      box.scrollTop=top+box.scrollHeight-height;
+      await acknowledgeDisplayed();
+    }catch(e){if(currentChat(token,targetId,conversationId,me.id))toast(e.message||'历史消息读取失败，请重试。');}
+    finally{if(token===chatGeneration){olderLoading=false;if(button)button.disabled=false;}}
+  }
+  async function sendToTarget(targetId,text,conversationId){
+    try{return Number(await rpc('fw_send_private_message_to_user',{target_user_id:targetId,message_text:text},'发送失败'))||conversationId;}
+    catch(error){
+      // A timeout can mean the first send succeeded: never send again automatically.
+      if(error.code!=='PGRST202' && error.code!=='42883')throw error;
+      await rpc('fw_send_private_message',{target_conversation_id:conversationId,message_text:text},'发送失败');return conversationId;
+    }
   }
   async function sendMessage(form){
     if(!activeTargetId){ toast('先选择一个搭子。'); return; }
@@ -333,13 +426,15 @@
     if(!text){ if(input) input.focus(); return; }
     if(!/^\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]$/.test(text) && text.length > 300){ toast('私聊最多 300 字。'); return; }
     if(!/^\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]$/.test(text) && /(https?:\/\/|www\.)/i.test(text)){ toast('私聊暂不支持链接。'); return; }
+    var targetId=activeTargetId,token=chatGeneration,uid=app().state.user && app().state.user.id,conversationId=activeConversationId;
     var button = form.querySelector('button');
     if(button) button.disabled = true;
     try{
-      if(!activeConversationId) activeConversationId = await getConversationId(activeTargetId);
-      try{ var convId = Number(await rpc('fw_send_private_message_to_user', {target_user_id:activeTargetId, message_text:text}, '发送失败')); if(Number.isFinite(convId) && convId > 0){ activeConversationId = convId; conversationCache[activeTargetId] = convId; } }
-      catch(primaryError){ await rpc('fw_send_private_message', {target_conversation_id:activeConversationId, message_text:text}, '发送失败'); }
-      input.value = ''; await loadMessages(); if(activeTab === 'messages') renderMessages();
+      if(!conversationId)conversationId=await getConversationId(targetId);
+      if(token!==chatGeneration || activeTargetId!==targetId || !sameUser(uid))throw new Error('会话已切换，请重新发送。');
+      var convId=await sendToTarget(targetId,text,conversationId);
+      if(currentChat(token,targetId,activeConversationId,uid)){activeConversationId=convId;conversationCache[targetId]=convId;if(input.value===text)input.value='';await loadMessages();}
+      buddyChanged();
     }catch(e){ console.warn('[FW mobile app] buddy send failed', e); toast(e.message || '发送失败。'); }
     finally{ if(button) button.disabled = false; }
   }
@@ -347,17 +442,17 @@
     var targetId = String(expectedTargetId || '');
     if(!targetId || String(activeTargetId) !== targetId) throw new Error('会话已切换，请重新选择视频。');
     if(!/^\[\[FW_MEDIA_VIDEO:[A-Za-z0-9+/=]+\]\]$/.test(marker)) throw new Error('视频格式不正确。');
+    var token=chatGeneration,uid=app().state.user && app().state.user.id;
     var conversationId = activeConversationId || await getConversationId(targetId);
     if(String(activeTargetId) !== targetId) throw new Error('会话已切换，请重新选择视频。');
-    try{
-      var convId=Number(await rpc('fw_send_private_message_to_user',{target_user_id:targetId,message_text:marker},'发送失败'));
-      if(Number.isFinite(convId)&&convId>0) conversationId=convId;
-    }catch(primaryError){ await rpc('fw_send_private_message',{target_conversation_id:conversationId,message_text:marker},'发送失败'); }
-    if(String(activeTargetId)===targetId){
+    if(token!==chatGeneration || !sameUser(uid))throw new Error('会话已切换，请重新选择视频。');
+    conversationId=await sendToTarget(targetId,marker,conversationId);
+    if(token===chatGeneration && sameUser(uid) && String(activeTargetId)===targetId){
       activeConversationId=conversationId;
       await loadMessages();
       if(activeTab==='messages') renderMessages();
     }
+    buddyChanged();
   }
 
   function bind(){
@@ -365,6 +460,7 @@
     document.addEventListener('click', function(e){
       var nav = e.target.closest && e.target.closest('[data-app-nav]'); if(nav && nav.dataset.appNav !== 'buddy') closeChat(true);
       var clear = e.target.closest && e.target.closest('[data-buddy-clear-search]'); if(clear){ e.preventDefault(); clearSearch(); return; }
+      var older=e.target.closest && e.target.closest('[data-buddy-older]');if(older){e.preventDefault();loadOlderMessages();return;}
       var back = e.target.closest && e.target.closest('[data-buddy-chat-back]'); if(back){ e.preventDefault(); closeChat(true); return; }
       var tab = e.target.closest && e.target.closest('[data-buddy-tab]'); if(tab){ e.preventDefault(); activeTab = tab.dataset.buddyTab || 'messages'; closeChat(true); render(); return; }
       var add = e.target.closest && e.target.closest('[data-buddy-add]'); if(add){ e.preventDefault(); addBuddy(add); return; }
@@ -382,6 +478,11 @@
         setTimeout(function(){ load(true); if(activeConversationId){ loadMessages(true); scheduleChatPolling(); } }, 120);
       }
     });
+    document.addEventListener('fw:app-userchange',function(){
+      closeChat(true); ++listGeneration; ++relationGeneration; friendshipRows=[]; profileMap={}; conversationCache={}; messageListCacheHtml=''; loaded=false;
+      var list=$('[data-buddy-list]'),box=$('[data-buddy-chat-messages]');if(list)list.innerHTML='';if(box){box.innerHTML='';box.dataset.messageSignature='';}
+      if(app().state.view==='buddy')load(true);
+    });
     document.addEventListener('fw:app-viewchange', function(event){
       var view = event && event.detail && event.detail.view;
       if(view !== 'buddy' && activeConversationId) closeChat(true);
@@ -392,5 +493,5 @@
   function init(){ injectStyle(); ensureTabs(); ensureChatPanel(); bind(); }
   function ensureLoaded(){ load(false); }
   function openProfile(targetId){ openChat(targetId); }
-  window.FWAppBuddy = {init:init, load:load, ensureLoaded:ensureLoaded, openChat:openChat, closeChat:closeChat, openProfile:openProfile, renderMessages:renderMessages, sendMediaMarker:sendMediaMarker, getActiveTargetId:function(){return activeTargetId;}};
+  window.FWAppBuddy = {init:init, load:load, ensureLoaded:ensureLoaded, openChat:openChat, closeChat:closeChat, openProfile:openProfile, renderMessages:renderMessages, sendMediaMarker:sendMediaMarker, getActiveTargetId:function(){return activeTargetId;},loadMessages:loadMessages,loadOlderMessages:loadOlderMessages,acknowledgeDisplayed:acknowledgeDisplayed,getChatGeneration:function(){return chatGeneration;}};
 })();
