@@ -1,11 +1,11 @@
 {
-  "version": "1.3.15",
-  "pub_date": "2026-09-23T08:34:25.3618365Z",
   "notes": "Windows 1.3.15：精简栏目重复标题与说明，优化精神广场操作栏。",
   "platforms": {
     "windows-x86_64": {
       "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.15-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlo2VEdzQTc1MkEyaitDRUxaem9pZmVKZExsUk9vaDIrcnBPVGlDTEhtUlRnNE1VcFNSSUtQTmFvV0ViSlZtQTNidUJTN0NDMUhGeitxU2dtWGplM2dVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwMTUyNDY0CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMTVfeDY0LXNldHVwLmV4ZQpTbVkwcXpTTTNyczFuVGtneG9nSHZYdEpndStkUkx6WkNuVTRabittV281by9RZTlsL2w5MU41bmlYb0dTNkhaRkUvVVFRVnV2UWtueTFOcTlienJDdz09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmNtNE9lMjk3OE0wSnZTTFA5eHN2TGJLWjkzKzg5Wlk2SDVKNWVjMFVxUlV3Mm56UnN5Rm9SMFFRMlZiWktTc3YxSnB5N3pGbm9KS2dmbXpCZnlrNVFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNDI0MDMxCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMTVfeDY0LXNldHVwLmV4ZQpxbzdLVjR5OFJPT0Zma1REYnRDYW9NbVlyT0lKWTJzR2tPNDBEcHVBYTlneVErRnB1Y2NjUTdqTVQwQmdzb2FWcTV6SUJHNm0wSG1HdkpFRktETGFDZz09Cg=="
     }
-  }
+  },
+  "version": "1.3.15",
+  "pub_date": "2026-10-08T01:47:12.0372555Z"
 }
