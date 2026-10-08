@@ -27,7 +27,7 @@ html,body{background:#fff}
 .mobile-home-hero-copy small{display:block;color:#d06c79;font-size:9px;font-weight:900;letter-spacing:0;white-space:nowrap}
 .mobile-home-hero h1{margin:14px 0 12px;color:#050706;font-size:28px;line-height:1.08;font-weight:1000;letter-spacing:-.045em;white-space:nowrap}
 .mobile-home-hero h2{margin:0;color:#0a0d0c;font-size:16px;line-height:1.4;font-weight:950;letter-spacing:0}
-.mobile-home-hero h2 span{display:block;white-space:nowrap}
+.mobile-home-hero h2 span{display:block;margin:0;color:inherit;font:inherit;white-space:nowrap}
 .mobile-home-hero .mobile-home-hero-copy p{margin:12px 0 0;color:#202623;font-size:11px;line-height:1.65;font-weight:850;letter-spacing:0;overflow-wrap:break-word}
 .mobile-home-hero-copy .primary{min-height:40px;margin-top:14px;padding:0 16px;border:0;border-radius:12px;background:#ffe1e4;color:#111514;font-size:12px;font-weight:1000;box-shadow:none}
 .hero-actions-app{display:none}
@@ -53,7 +53,7 @@ html,body{background:#fff}
 .nav-grid.mobile-primary-grid .mobile-destination-featured{grid-column:1/-1;min-height:148px;background:linear-gradient(120deg,#fff 0%,#f7f7f5 100%)}
 .mobile-destination-featured:after{content:'';position:absolute;right:-8px;bottom:-49px;width:142px;height:142px;border:22px solid rgba(255,137,149,.16);border-radius:50%;box-shadow:0 0 0 1px rgba(255,137,149,.12)}
 .nav-grid.mobile-primary-grid .mobile-destination-dark{grid-column:auto;min-height:130px;border-color:#171715;background:linear-gradient(135deg,#111 0%,#242421 100%)}
-.nav-grid.mobile-primary-grid .mobile-destination-member{grid-column:auto}
+.nav-grid.mobile-primary-grid .mobile-destination-member:last-child:nth-child(odd){grid-column:auto}
 .nav-grid.mobile-primary-grid .mobile-destination-member:after{content:'';position:absolute;right:13px;bottom:13px;width:8px;height:8px;border-radius:50%;background:#ff8995;box-shadow:0 0 0 5px rgba(255,137,149,.12)}
 .nav-grid.mobile-primary-grid .mobile-destination-meta{display:block;margin:0 34px 18px 0;color:#9a9a95;font-size:9px;font-weight:950;line-height:1.2;letter-spacing:.04em}
 .nav-grid.mobile-primary-grid .mobile-destination b{position:relative;z-index:1;display:block;color:var(--text);font-size:18px;line-height:1.2;letter-spacing:-.02em}

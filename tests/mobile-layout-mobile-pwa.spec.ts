@@ -8,6 +8,14 @@ for(const width of [320,360,390,430]){
     const hero=page.locator('.mobile-home-hero');
     await expect(hero.locator('h2')).toHaveText('放下个人素质，享受缺德人生');
     await expect(hero.getByRole('button',{name:'开始吐槽!'})).toBeVisible();
+    const slogan=await hero.locator('h2 span').evaluateAll(elements=>elements.map(e=>{const style=getComputedStyle(e);return {color:style.color,margin:style.marginTop,fontSize:style.fontSize,parentSize:getComputedStyle(e.parentElement!).fontSize};}));
+    for(const line of slogan){
+      // The slogan must stay readable on the light hero, without legacy span spacing.
+      const channels=line.color.match(/[\d.]+/g)!.map(Number).slice(0,3).map(c=>{const v=c/255;return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);});
+      const luminance=channels[0]*0.2126+channels[1]*0.7152+channels[2]*0.0722;
+      expect(1.05/(luminance+0.05)).toBeGreaterThan(4.5);
+      expect(line.fontSize).toBe(line.parentSize);expect(line.margin).toBe('0px');
+    }
     const checkShell=async()=>{
       const metrics=await page.evaluate(()=>{
         const rect=(selector:string)=>document.querySelector(selector)!.getBoundingClientRect();
