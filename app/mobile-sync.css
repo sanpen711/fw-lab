@@ -29,6 +29,7 @@ html,body{background:#fff}
 .mobile-home-hero h2{margin:0;color:#0a0d0c;font-size:16px;line-height:1.4;font-weight:950;letter-spacing:0}
 .mobile-home-hero h2 span{display:block;margin:0;color:inherit;font:inherit;white-space:nowrap}
 .mobile-home-hero .mobile-home-hero-copy p{margin:12px 0 0;color:#202623;font-size:11px;line-height:1.65;font-weight:850;letter-spacing:0;overflow-wrap:break-word}
+.mobile-home-hero .mobile-home-hero-copy p span{display:inline-block;margin:0;color:inherit;font:inherit;letter-spacing:inherit;white-space:nowrap}
 .mobile-home-hero-copy .primary{min-height:40px;margin-top:14px;padding:0 16px;border:0;border-radius:12px;background:#ffe1e4;color:#111514;font-size:12px;font-weight:1000;box-shadow:none}
 .hero-actions-app{display:none}
 

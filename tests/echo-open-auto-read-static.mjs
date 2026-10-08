@@ -35,6 +35,6 @@ assert.doesNotMatch(appIndex, /data-app-nav="echo"/, '回声不应继续占用�
 assert.match(appIndex, /data-mobile-square-mode="echo"/, '精神广场应内嵌回声切换入口');
 assert.match(appIndex, /data-mobile-square-panel="echo"[\s\S]*data-echo-list/, '回声列表应位于精神广场内部');
 assert.match(mobile, /function setSquareMode\(mode\)/, '手机精神广场应支持广场与回声原位切换');
-assert.match(serviceWorker, /fw-mobile-home-20261008-2/, 'PWA 缓存名应刷新');
+assert.match(serviceWorker, /fw-mobile-home-20261008-3/, 'PWA 缓存名应刷新');
 
 console.log('echo open auto-read checks passed');

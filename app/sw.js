@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-home-20261008-2';
+const CACHE_NAME = 'fw-mobile-home-20261008-3';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
