@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-echo-20261008-1';
+const CACHE_NAME = 'fw-mobile-echo-20261008-2';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -82,10 +82,10 @@ function cacheAppShell(cache){
 }
 
 function matchCachedRequest(request, url){
-  return caches.match(request).then(cached => {
+  return caches.open(CACHE_NAME).then(cache => cache.match(request).then(cached => {
     if(cached) return cached;
-    return caches.match(url.origin + url.pathname);
-  });
+    return cache.match(url.origin + url.pathname);
+  }));
 }
 
 self.addEventListener('install', event => {
@@ -95,7 +95,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => Promise.all(
-      keys.filter(key => key !== CACHE_NAME && key.indexOf('fw-mobile-app-') === 0).map(key => caches.delete(key))
+      keys.filter(key => key !== CACHE_NAME && /^fw-mobile-(app|home|echo)-/.test(key)).map(key => caches.delete(key))
     )).then(() => self.clients.claim())
   );
 });
@@ -114,7 +114,7 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(cache => cache.put(appPath('index.html'), copy));
         }
         return response;
-      }).catch(() => caches.match(appPath('index.html')))
+      }).catch(() => caches.open(CACHE_NAME).then(cache => cache.match(appPath('index.html'))))
     );
     return;
   }
