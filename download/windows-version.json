@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.3.15：精简栏目重复标题与说明，优化精神广场操作栏。",
-  "available": true,
-  "publishedAt": "2026-10-08T01:47:12.0372555Z",
-  "platform": "Windows 10/11 64 位",
-  "sha256": "f7e86a5389790f63b8cbb93c2e77e42151fb0c8ce671a2a332e3ebe2f47017d9",
-  "version": "1.3.15",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.15-setup.exe",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "rollbackVersion": "1.0.5"
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.15-setup.exe",
+  "rollbackVersion": "1.0.5",
+  "version": "1.3.15",
+  "platform": "Windows 10/11 64 位",
+  "sha256": "b0f8f5ab6a9e502ecdc3d0d6c57cc52c73a0c1f20931d920283a9d5c15c5c33c",
+  "publishedAt": "2026-10-08T03:58:19.6310347Z",
+  "available": true,
+  "notes": "Windows 1.3.15：精简栏目重复标题与说明，优化精神广场操作栏。"
 }
