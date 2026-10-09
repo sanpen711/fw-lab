@@ -13,7 +13,7 @@ async function setup(page:Page,active=true,following=true){
   await page.route('https://**.supabase.co/**',async route=>{
     const url=new URL(route.request().url());const path=url.pathname;let data:any=[];
     const body=route.request().postDataJSON?.()||{};
-    requests.push({path,body});
+    requests.push({path,body,method:route.request().method()});
     if(path.endsWith('/auth/v1/user'))data=user;
     else if(path.endsWith('/fw_get_current_profile'))data=[{id:me,nickname:'会员测试',role:'user',lab_code:'FWTEST2',is_banned:false}];
     else if(path.endsWith('/memberships'))data={user_id:me,status:'active',starts_at:'2026-01-01T00:00:00Z',expires_at:active?expires:'2026-01-02T00:00:00Z',plan_id:'monthly'};
@@ -50,12 +50,6 @@ test('会员身份先预览再保存，组合同步到资料卡并保持静态',
   await expect(page.locator('[data-account-avatar]')).toHaveCSS('animation-name','none');
   await expect(page.locator('[data-membership-content]')).not.toContainText('优先体验');
   await expect(page.locator('[data-membership-content]')).not.toContainText('云存档');
-  await page.locator('.membership-purchase summary').click();
-  await page.locator('[data-membership-plan="monthly"]').click();
-  await expect(page.locator('.membership-purchase')).toHaveAttribute('open','');
-  await expect(page.locator('.membership-checkout')).toContainText('支付接口待接入');
-  await page.locator('[data-membership-payment="alipay"]').click();
-  await expect(page.locator('.membership-checkout')).toBeVisible();
   await page.screenshot({path:'/tmp/fw-member-center.png',fullPage:true});
   for(const width of [1000,760]){
     await page.setViewportSize({width,height:820});
@@ -67,6 +61,50 @@ test('会员身份先预览再保存，组合同步到资料卡并保持静态',
   await page.screenshot({path:'/tmp/fw-member-narrow.png',fullPage:true});
 });
 
+for(const active of [false,true])test(`${active?'会员续费':'普通用户开通'}入口首屏可见，套餐金额同步且未开放支付不可扣款`,async({page})=>{
+  const {requests}=await setup(page,active);await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  const entry=page.getByRole('button',{name:active?'续费会员':'开通会员'});
+  await expect(entry).toBeInViewport();
+  if(!active)await page.screenshot({path:'/tmp/fw-member-entry-desktop.png'});
+  await entry.click();
+  await expect(page.getByRole('heading',{name:active?'续费研究所会员':'开通研究所会员'})).toBeFocused();
+  await expect(page.locator('.membership-pay-total')).toContainText('¥2');
+  await expect(page.locator('[data-membership-payment="alipay"]')).toHaveAttribute('aria-pressed','true');
+  await page.locator('[data-membership-plan="quarterly"]').click();
+  await expect(page.locator('.membership-checkout')).toContainText('季度会员');
+  await expect(page.locator('.membership-pay-total strong')).toHaveText('¥25');
+  await page.locator('[data-membership-payment="wechat"]').click();
+  await expect(page.locator('.membership-qr-placeholder')).toContainText('微信扫码');
+  await expect(page.locator('[data-membership-plan="quarterly"]')).toHaveAttribute('aria-pressed','true');
+  await page.locator('[data-membership-plan="yearly"]').click();
+  await expect(page.locator('.membership-pay-total strong')).toHaveText('¥88');
+  await expect(page.locator('.membership-pay-disabled')).toBeDisabled();
+  await page.locator('[data-membership-plan="monthly"]').click();
+  await page.locator('[data-membership-payment="alipay"]').click();
+  if(active)await expect(page.locator('.membership-purchase-heading')).toContainText('当前会员有效至');
+  if(!active)await page.screenshot({path:'/tmp/fw-member-purchase-desktop.png'});
+  for(const width of [1066,760]){
+    await page.setViewportSize({width,height:width===1066?728:820});
+    await expect(page.locator('[data-membership-plan="monthly"]')).toBeVisible();
+    expect(await page.locator('.membership-purchase-page').evaluate(node=>node.scrollWidth-node.clientWidth)).toBeLessThanOrEqual(1);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(1);
+    await expect(page.locator('.membership-pay-total strong')).toHaveText('¥2');
+    if(width===1066&&!active)await page.screenshot({path:'/tmp/fw-member-purchase-1066.png'});
+    if(width===760){
+      await page.locator('[data-membership-payment="wechat"]').scrollIntoViewIfNeeded();
+      const scroll=page.locator('[data-membership-content] .membership-page-scroll');const position=await scroll.evaluate(node=>node.scrollTop);
+      expect(position).toBeGreaterThan(0);
+      await page.locator('[data-membership-payment="wechat"]').click();
+      expect(Math.abs(await scroll.evaluate(node=>node.scrollTop)-position)).toBeLessThanOrEqual(1);
+      await expect(page.locator('[data-membership-plan="monthly"]')).toHaveAttribute('aria-pressed','true');
+    }
+  }
+  await page.locator('[data-membership-return]').click();
+  await expect(entry).toBeFocused();
+  await expect(page.locator('[data-member-identity-preview]')).toBeVisible();
+  expect(requests.filter(row=>['POST','PATCH','DELETE'].includes(row.method)&&/\/(membership_orders|memberships)$/.test(row.path))).toHaveLength(0);
+});
+
 test('到期会员保留身份与追更列表，不能保存身份或创建组队，仍可加入',async({page})=>{
   const {requests}=await setup(page,false);await page.goto('/');await page.locator('[data-nav="membership"]').click();
   await expect(page.locator('[data-member-identity-form] input[name="title"]')).toHaveValue('摸鱼研究员');
@@ -76,7 +114,9 @@ test('到期会员保留身份与追更列表，不能保存身份或创建组�
   await expect(page.locator('.reading-library')).toContainText('到期后暂停自动追更');
   await page.locator('.nav-item[data-nav="play"]').click();await page.locator('[data-party-create-toggle]').click();
   await expect(page.locator('[data-party-create-form]')).toHaveCount(0);await expect(page.locator('[data-party-create-host]')).toContainText('会员才能创建组队');
-  await page.locator('[data-party-create-host] [data-party-create-toggle]').click();await page.locator('[data-party-open="51"]').click();
+  await page.locator('[data-party-create-host] [data-party-create-toggle]').click();
+  const detailLoaded=page.waitForResponse(response=>new URL(response.url()).pathname.endsWith('/profiles'));
+  await page.locator('[data-party-open="51"]').click();await detailLoaded;
   await page.locator('[data-party-join-form] button[type="submit"]').click();await expect(page.locator('[data-party-chat-form]')).toBeVisible();
   expect(requests.some(row=>row.path.endsWith('/fw_create_game_party'))).toBe(false);
   expect(requests.some(row=>row.path.endsWith('/fw_apply_game_party'))).toBe(true);

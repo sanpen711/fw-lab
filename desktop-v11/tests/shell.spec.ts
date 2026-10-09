@@ -170,7 +170,7 @@ test('搭子和私聊使用本地左右分栏且没有定时轮询',async({page}
 
 test('头像菜单只显示退出登录，个人资料与电脑端选项集中到设置',async({page})=>{
   await page.goto('/');
-  await page.locator('[data-open-account]').click();
+  await page.locator('.account-button[data-open-account]').click();
   await expect(page.locator('[data-account-menu]')).toBeVisible();
   await expect(page.locator('[data-account-menu] button')).toHaveCount(1);
   await expect(page.locator('[data-account-menu] button')).toHaveText('退出登录');

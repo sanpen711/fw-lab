@@ -132,7 +132,7 @@ assert.match(styles,/\.membership-page-grid\{[^}]*grid-template-columns:/,'会�
 assert.doesNotMatch(html,/data-membership-modal|account-membership-card|data-open-membership/,'会员中心不能继续藏在弹层或个人资料里');
 assert.match(app,/固定期限会员，不会自动续费|不会自动扣费/,'会员页面必须明确不自动续费');
 assert.match(app,/微信支付[\s\S]*支付宝/,'会员支付占位必须预留微信和支付宝扫码入口');
-assert.match(app,/当前页面不会创建订单，也不会产生扣款/,'未接支付接口时不能伪造付款流程');
+assert.match(app,/class="membership-pay-disabled"[^>]*disabled/,'未接支付接口时必须禁用付款按钮');
 assert.match(app,/String\(item\.id\)==='monthly'\?'<em>限时<\/em>'/,'月度会员必须标注限时价格');
 assert.match(membershipStore,/from\('membership_plans'\)/,'会员中心必须从 Supabase 读取套餐');
 assert.match(membershipStore,/id:'monthly'[\s\S]*price_cents:200[\s\S]*compare_at_price_cents:990/,'月度会员本地兜底价格必须为限时 2 元');
