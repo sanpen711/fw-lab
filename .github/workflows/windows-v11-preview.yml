@@ -28,6 +28,7 @@ jobs:
       - name: Install Windows 1.1 frontend dependencies
         run: npm --prefix desktop-v11 ci
       - name: Install Chromium
+        working-directory: desktop-v11
         run: npx playwright install --with-deps chromium
       - name: Test local Windows frontend
         run: npm --prefix desktop-v11 test
