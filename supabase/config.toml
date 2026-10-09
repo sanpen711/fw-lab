@@ -5,3 +5,10 @@ verify_jwt = false
 
 [functions.sync-windows-release]
 verify_jwt = false
+
+[functions.membership-alipay]
+verify_jwt = true
+
+[functions.alipay-notify]
+# Authenticated by the provider RSA2 signature in the function body.
+verify_jwt = false

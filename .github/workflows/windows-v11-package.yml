@@ -1,10 +1,11 @@
-name: Build Windows 1.1 Release Candidate
+name: Build Windows Release Candidate
 
 on:
   pull_request:
     paths:
       - 'desktop-v11/**'
       - 'src-tauri/tauri.v11.conf.json'
+      - 'src-tauri/src/**'
       - '.github/workflows/windows-v11-package.yml'
   workflow_dispatch:
 
@@ -38,26 +39,34 @@ jobs:
           npm --prefix desktop-v11 ci
       - name: Verify local frontend
         run: npm --prefix desktop-v11 run test:static
-      - name: Build Windows 1.1 NSIS candidate
+      - name: Build Windows NSIS candidate
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: npx tauri build --config src-tauri/tauri.v11.conf.json --bundles nsis
+      - name: Test native Alipay URL restrictions
+        env:
+          TAURI_CONFIG: '{"build":{"frontendDist":"../desktop-v11/dist"}}'
+        run: cargo test --manifest-path src-tauri/Cargo.toml alipay_checkout::tests
       - name: Verify candidate metadata
+        id: candidate
         shell: pwsh
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
-          if (-not $installer) { throw 'Windows 1.1 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.1\.0') { throw "Unexpected candidate name: $($installer.Name)" }
+          if (-not $installer) { throw 'Windows NSIS installer was not generated.' }
+          $version = (Get-Content 'src-tauri/tauri.v11.conf.json' -Raw | ConvertFrom-Json).version
+          if ($installer.Name -notmatch [regex]::Escape($version)) { throw "Unexpected candidate name: $($installer.Name)" }
+          $packageName = "fw-lab-windows-$version-setup.exe"
           $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           New-Item -ItemType Directory -Force 'windows-v11-candidate' | Out-Null
-          Copy-Item $installer.FullName 'windows-v11-candidate/fw-lab-windows-1.1.0-setup.exe'
-          Set-Content 'windows-v11-candidate/sha256.txt' "$hash  fw-lab-windows-1.1.0-setup.exe" -Encoding utf8
+          Copy-Item $installer.FullName "windows-v11-candidate/$packageName"
+          Set-Content 'windows-v11-candidate/sha256.txt' "$hash  $packageName" -Encoding utf8
           $signature = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
-          if ($signature) { Copy-Item $signature.FullName 'windows-v11-candidate/fw-lab-windows-1.1.0-setup.exe.sig' }
+          if ($signature) { Copy-Item $signature.FullName "windows-v11-candidate/$packageName.sig" }
+          "version=$version" >> $env:GITHUB_OUTPUT
       - name: Upload unpublished candidate
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.1.0-release-candidate
+          name: fw-lab-windows-${{ steps.candidate.outputs.version }}-release-candidate
           path: windows-v11-candidate/*
           if-no-files-found: error
           retention-days: 14
