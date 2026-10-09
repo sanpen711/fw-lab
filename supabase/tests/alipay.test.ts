@@ -90,6 +90,9 @@ Deno.test("configuration stays closed until valid seller and PKCS8 signing key e
     "ALIPAY_APP_PRIVATE_KEY",
   ]);
   equal(settings.enabled, true);
+  const publicLines = settings.publicKey.trim().split("\n").slice(1, -1);
+  ok(publicLines.every((line) => line.length <= 64));
+  ok(publicLines.slice(0, -1).every((line) => line.length === 64));
   const invalid = readPaymentSettings((name) =>
     name === "ALIPAY_MAX_AMOUNT_CENTS" ? "5000.5" : envValues[name]
   );
@@ -233,8 +236,9 @@ Deno.test("query signature validates raw provider JSON, with optional identity f
   // SDK is a cross-check in tests; production has no Node HTTP dependency.
   const sdk = new AlipaySdk({
     appId: settings.appId,
-    privateKey: settings.privateKey,
-    alipayPublicKey: settings.publicKey,
+    // The SDK formatter expects the footer to be the final split line.
+    privateKey: settings.privateKey.trim(),
+    alipayPublicKey: settings.publicKey.trim(),
     keyType: "PKCS8",
   });
   const rawPayload =

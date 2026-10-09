@@ -27,7 +27,28 @@ export type PaymentSettings = {
 function pem(value: string, label: string) {
   const normalized = value.replaceAll("\\n", "\n").trim();
   const body = normalized.replace(/-----[^\n]+-----/g, "").replace(/\s/g, "");
-  return `-----BEGIN ${label}-----\n${body}\n-----END ${label}-----`;
+  const wrapped = body.match(/.{1,64}/g)?.join("\n") || "";
+  return `-----BEGIN ${label}-----\n${wrapped}\n-----END ${label}-----\n`;
+}
+
+// Import DER explicitly. Edge Runtime's Node compatibility layer rejects some
+// unwrapped PEM strings that newer Node/Deno versions accept.
+function publicKeyObject(value: string) {
+  const body = value.replace(/-----[^\n]+-----/g, "").replace(/\s/g, "");
+  return createPublicKey({
+    key: Buffer.from(body, "base64"),
+    format: "der",
+    type: "spki",
+  });
+}
+
+function privateKeyObject(value: string) {
+  const body = value.replace(/-----[^\n]+-----/g, "").replace(/\s/g, "");
+  return createPrivateKey({
+    key: Buffer.from(body, "base64"),
+    format: "der",
+    type: "pkcs8",
+  });
 }
 
 export function readPaymentSettings(
@@ -47,7 +68,7 @@ export function readPaymentSettings(
   if (!/^\d{16}$/.test(appId)) missing.push("ALIPAY_APP_ID");
   if (!/^2088\d{12}$/.test(sellerId)) missing.push("ALIPAY_SELLER_ID");
   try {
-    const key = createPublicKey(publicKey);
+    const key = publicKeyObject(publicKey);
     if (
       key.asymmetricKeyType !== "rsa" ||
       (key.asymmetricKeyDetails?.modulusLength || 0) < 2048
@@ -62,11 +83,7 @@ export function readPaymentSettings(
       /-----[^\n]+-----/g,
       "",
     ).replace(/\s/g, "");
-    const key = createPrivateKey({
-      key: Buffer.from(body, "base64"),
-      format: "der",
-      type: "pkcs8",
-    });
+    const key = privateKeyObject(body);
     if (
       key.asymmetricKeyType !== "rsa" ||
       (key.asymmetricKeyDetails?.modulusLength || 0) < 2048
@@ -123,7 +140,7 @@ function signedParameters(
   parameters.sign = sign(
     "RSA-SHA256",
     Buffer.from(canonical, "utf8"),
-    client.settings.privateKey,
+    privateKeyObject(client.settings.privateKey),
   ).toString("base64");
   return new URLSearchParams(parameters);
 }
@@ -302,7 +319,7 @@ export async function queryAlipay(
       !verify(
         "RSA-SHA256",
         Buffer.from(signedBytes, "utf8"),
-        client.settings.publicKey,
+        publicKeyObject(client.settings.publicKey),
         Buffer.from(envelope.sign, "base64"),
       )
     ) throw new Error();
@@ -345,7 +362,7 @@ export function verifyNotification(
     return verify(
       "RSA-SHA256",
       Buffer.from(canonical, "utf8"),
-      publicKey,
+      publicKeyObject(publicKey),
       Buffer.from(fields.sign, "base64"),
     );
   } catch {
