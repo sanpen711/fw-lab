@@ -1,11 +1,11 @@
 {
-  "version": "1.3.15",
+  "notes": "Windows 1.3.16：会员身份自由组合、帖子自动追更，开黑房间改为会员专属创建。",
+  "version": "1.3.16",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.15-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmNCdjY2UlBzYkp1KzZSb1BsS2pNTzgxcEF4WGhHSlcwNmFNTnF1cjJxaU5RRUsxc1BQUytjMUJmWFJaM0dpdDdoMkhMTEZEYW5QQzYyWVV2QUpqZVFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNDMxODk5CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMTVfeDY0LXNldHVwLmV4ZQpXYXc5dmN4OEltcUJzMjlGMlF3L1hTaXZQL01WdUJJQTNyOEJsZjJ1U1ByaTRSRkhkakZkSEt4RDkzMGtZa0RMT01pcGZGY2xsWWswUnZnQlRPcTlCZz09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmE0VzhmUTF5YlVSUHFZd2E0ZmpreXJCNW13K0tTTS9najBhWnFBKytjZWVwZ1hhM2ZKWGtVR09BekVYdjV5ckF2M3RMeS8ra0lJeWNrVXRXejM0OUFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNTEwNzc4CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMTZfeDY0LXNldHVwLmV4ZQo4b2dHcG1vb3hXUmVrQXlCcnUwREZQd2pmeDAya3Vxb3BlNE5sbTZlR3RTMmJtWmNnQlhZbUhXaHpiSVc5aVJFSDdJT2pWSlRoWGYyN21XME4xZVREQT09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.16-setup.exe"
     }
   },
-  "pub_date": "2026-10-08T03:58:19.6310347Z",
-  "notes": "Windows 1.3.15：精简栏目重复标题与说明，优化精神广场操作栏。"
+  "pub_date": "2026-10-09T01:52:59.6057280Z"
 }
