@@ -45,6 +45,7 @@ const order: CheckoutOrder = {
   user_id: crypto.randomUUID(),
   plan_id: "monthly",
   plan_name: "月度会员",
+  duration_months: 1,
   order_no: "FW0123456789abcdef0123456789abcdef",
   amount_cents: 200,
   status: "pending",

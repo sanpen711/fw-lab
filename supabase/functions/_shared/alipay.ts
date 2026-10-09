@@ -376,6 +376,7 @@ export type CheckoutOrder = {
   user_id: string;
   plan_id: string;
   plan_name: string;
+  duration_months: number;
   amount_cents: number;
   status: string;
   payment_method: string;
@@ -439,6 +440,9 @@ export function publicOrder(order: CheckoutOrder) {
     id: order.id,
     order_no: order.order_no,
     plan_id: order.plan_id,
+    plan_name: order.plan_name,
+    duration_months: order.duration_months,
+    payment_method: "alipay",
     amount_cents: order.amount_cents,
     status: order.status,
     payment_expires_at: order.payment_expires_at,

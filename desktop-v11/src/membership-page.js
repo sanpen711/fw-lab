@@ -1,0 +1,58 @@
+import {authStore} from './auth-store.js';
+import {membershipStore} from './membership-store.js';
+import {membershipPayment} from './membership-payment.js';
+import {escapeHtml as esc} from './member-identity.js';
+import {LEVEL_DAYS,LEVEL_REWARDS,projectedExpiry} from './membership-levels.js';
+
+export const memberMoney=cents=>`¥${(Number(cents||0)/100).toFixed(Number(cents||0)%100?2:0)}`;
+export function memberTime(value,time=false){if(!value)return'—';const date=new Date(value);return Number.isNaN(date.getTime())?'—':date.toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit',...(time?{hour:'2-digit',minute:'2-digit'}:{})});}
+const statusText=order=>({pending:new Date(order.payment_expires_at)<=new Date()?'付款时限已过':'待支付',paid:'已支付',closed:'已关闭',refunded:'已退款',failed:'支付失败'})[order.status]||'处理中';
+let noticeUser='',noticeLevel=0;
+function levelNotice(growth){
+  const userId=membershipStore.state.userId;
+  if(noticeUser!==userId){noticeUser=userId;noticeLevel=0;}
+  const key=`fw-member-level-seen:${userId}`;
+  try{const previous=localStorage.getItem(key);if(previous!==null&&Number(growth.level)>Number(previous))noticeLevel=Number(growth.level);localStorage.setItem(key,String(growth.level));}catch{}
+  return noticeLevel?`<div class="membership-level-notice" role="status"><img src="/emoji/fufu1/04.webp" alt="伏伏点赞"><div><b>V${noticeLevel} 已解锁</b><p>${LEVEL_REWARDS[noticeLevel-1]}已解锁，会员有效期内可使用。</p></div><button type="button" class="secondary compact" data-member-level-dismiss>知道了</button></div>`:'';
+}
+export function dismissMembershipLevelNotice(){noticeLevel=0;}
+export function membershipGrowthContent(){
+  const {growth}=membershipStore.state;
+  if(!growth)return'';
+  const level=Number(growth.level)||0,days=Number(growth.active_days)||0;
+  const base=LEVEL_DAYS[Math.max(0,level-1)],next=LEVEL_DAYS[level];
+  const progress=level===9?100:level?Math.min(100,Math.max(0,(days-base)/(next-base)*100)):0;
+  return `${levelNotice(growth)}<section class="membership-growth"><header><div><h3>会员等级 ${level?`<span class="vip-badge member-level-badge vip-level-${level}">V${level}</span>`:''}</h3><p>${level?`累计有效会员 ${days} 天${growth.active?'':' · 已暂停累计'}`:'开通会员即获得 V1'}</p></div><button class="secondary compact" type="button" data-membership-refresh>刷新等级</button></header><div class="membership-growth-track" role="progressbar" aria-label="会员等级进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.floor(progress)}"><i style="width:${progress}%"></i></div><p class="membership-growth-next">${level===9?'已达到 V9，全部等级装扮已解锁。':level?`再累计 ${Math.max(0,next-days)} 天达到 V${level+1}，解锁${LEVEL_REWARDS[level]}。`:'所有会员功能从 V1 开始使用，等级逐步解锁静态装扮。'}</p><div class="membership-level-steps">${LEVEL_DAYS.map((threshold,index)=>`<article class="${level===index+1?'current':level>index+1?'unlocked':'locked'}"><b>V${index+1}</b><small>${threshold?`${threshold} 天`:'开通即达'}</small><span>${LEVEL_REWARDS[index]}</span><em>${level>=index+1?'已解锁':'待解锁'}</em></article>`).join('')}</div><p class="membership-growth-rules">按实际有效会员时间累计，购买的未来时长不会提前计入。到期后暂停，续费后继续，已达到的等级保留；徽章和装扮在会员有效期内展示。</p></section>`;
+}
+function purchasePreview(){
+  const user=authStore.state.user||{};
+  return `<section class="membership-unlock-preview"><div class="member-preview-avatar vip-frame-double">${user.avatarUrl?`<img src="${esc(user.avatarUrl)}" alt="我的头像">`:esc((user.nickname||'研究员').slice(0,2))}</div><div><small>开通后身份预览</small><b>${esc(user.nickname||'研究员')} <span class="vip-badge member-level-badge vip-level-${Math.max(1,membershipStore.state.growth?.level||0)}">V${Math.max(1,membershipStore.state.growth?.level||0)}</span></b><p>选择头像框、昵称配色和资料卡，保存后展示。</p></div></section>`;
+}
+function checkoutContent(selected,active){
+  const payment=membershipPayment.state,order=payment.order;
+  const pending=order?.status==='pending',expired=pending&&new Date(order.payment_expires_at)<=new Date();
+  const enabled=payment.config?.enabled===true,cap=payment.config?.max_amount_cents??5000;
+  if(order?.status==='paid'){
+    const membership=membershipStore.state.membership,synced=membershipStore.isActive();
+    return `<section class="membership-checkout membership-payment-success" role="status"><img src="/emoji/fufu1/23.webp" alt="伏伏庆祝"><h3>付款成功</h3><p>${synced?'会员已自动生效。':'正在同步会员状态，请刷新确认。'}</p>${synced?`<b>有效至 ${memberTime(membership.expires_at,true)}</b>`:'<button type="button" class="secondary" data-membership-refresh>刷新会员状态</button>'}<small>订单 ${esc(order.order_no)}</small><button type="button" class="primary" data-membership-return>装扮我的身份</button><button type="button" class="secondary" data-membership-tab="reading">去追更帖子</button><button type="button" class="secondary compact" data-payment-new>继续选购</button></section>`;
+  }
+  const closed=order&&['closed','failed','refunded'].includes(order.status);
+  const total=order?order.amount_cents:selected.price_cents;
+  const title=order?order.plan_name||'研究所会员':selected.name;
+  const months=order?.duration_months||selected.duration_months;
+  const expiry=projectedExpiry(membershipStore.state.membership,months);
+  const action=pending?`<button type="button" class="primary" data-payment-resume="${esc(order.order_no)}" ${!enabled||payment.busy||expired?'disabled':''}>${expired?'付款时限已过':'继续支付宝付款'}</button>${payment.url&&!expired?'<button type="button" class="secondary" data-payment-open>打开支付宝付款页</button>':''}<button type="button" class="secondary" data-payment-query="${esc(order.order_no)}" ${payment.busy?'disabled':''}>${payment.busy?'正在确认…':'我已付款，查询结果'}</button>`:closed?`<button type="button" class="primary" data-payment-new ${payment.busy?'disabled':''}>重新选择套餐</button><button type="button" class="secondary" data-payment-query="${esc(order.order_no)}" ${payment.busy?'disabled':''}>查询订单结果</button>`:`<button type="button" class="primary ${enabled?'':'membership-pay-disabled'}" data-payment-create="${esc(selected.id)}" ${!enabled||payment.busy||selected.price_cents>cap?'disabled':''}>${payment.busy?'正在创建订单…':payment.configLoading?'正在确认支付状态…':enabled?'支付宝付款':'暂未开放支付'}</button>`;
+  return `<section class="membership-checkout" aria-label="会员付款"><header><div><small>${active?'续费套餐':'开通套餐'}</small><h3>${esc(title)}</h3></div><span>${Number(months)} 个月</span></header><div class="membership-pay-total"><span>应付金额</span><strong>${memberMoney(total)}</strong></div><div class="membership-alipay-only"><span aria-hidden="true">支</span><b>支付宝</b><small>官方收银台</small></div><div class="membership-payment-status" role="status"><b>${order?statusText(order):enabled?'确认套餐后前往付款':'支付宝支付暂未开放'}</b><p>${pending?(expired?'请查询订单结果。确认未支付并关闭后，可以重新下单。':'付款页已准备好。付款完成后返回软件，系统会自动确认。'):closed?'以查询返回的订单状态为准，付款成功会自动开通。':enabled?'将打开浏览器中的支付宝收银台。':'当前可查看套餐与权益，支付开放后付款将自动开通。'}</p>${order?`<small class="membership-order-number">${esc(order.order_no)}</small>${pending?`<small>付款截止 ${memberTime(order.payment_expires_at,true)}</small>`:''}`:''}</div><div class="membership-checkout-actions">${action}${!enabled?'<button type="button" class="secondary compact" data-payment-config>刷新支付状态</button>':''}</div>${payment.error?`<p class="membership-payment-error" role="alert">${esc(payment.error)}</p>`:''}<p class="membership-renewal-note">${active?'从当前到期时间顺延':'付款成功后开始计时'}，预计有效至 <b>${memberTime(expiry,true)}</b>。实际到期时间以付款后的会员状态为准。</p><p class="membership-payment-note">固定时长，不自动扣费。付款结果由支付宝回调或服务端查询确认。</p></section>`;
+}
+export function membershipPurchasePage(active,selectedId,benefits){
+  const state=membershipStore.state,payment=membershipPayment.state;
+  const cap=payment.config?.max_amount_cents??5000;
+  const selected=state.plans.find(row=>row.id===selectedId)||state.plans.find(row=>row.id==='monthly')||state.plans[0];
+  if(!selected)return'<div class="state-card">暂无可用会员套餐，请刷新。</div>';
+  const locked=payment.busy||payment.order?.status==='pending';
+  return `<section class="membership-purchase-page"><button class="membership-purchase-back" type="button" data-membership-return><span aria-hidden="true">←</span> 返回我的会员</button><header class="membership-purchase-heading"><div><h2 tabindex="-1" data-membership-purchase-title>${active?'续费研究所会员':'开通研究所会员'}</h2><p>${active?`当前会员有效至 ${memberTime(active.expires_at)}。`:'装扮研究员身份，追更喜欢的帖子，发起开黑组队。'}</p></div><span>固定期限 · 不自动续费</span></header><div class="membership-purchase-grid"><div class="membership-purchase-main">${purchasePreview()}<section class="membership-purchase"><header><h3>选择会员时长</h3><span>所有套餐享有相同权益</span></header><div class="membership-plans">${state.plans.map(row=>{const unavailable=row.price_cents>cap;return `<article class="membership-plan ${row.id===selected.id?'selected':''} ${unavailable?'unavailable':''}"><small>${Number(row.duration_months)} 个月</small><h4>${esc(row.name)}</h4><div><strong>${memberMoney(row.price_cents)}</strong>${row.compare_at_price_cents?`<del>${memberMoney(row.compare_at_price_cents)}</del>`:''}</div><button type="button" class="${row.id===selected.id?'primary':'secondary'} compact" data-membership-plan="${esc(row.id)}" aria-pressed="${row.id===selected.id}" ${unavailable||locked?'disabled':''}>${unavailable?'暂不支持支付宝':row.id===selected.id?'已选择':'选择套餐'}</button>${unavailable?'<small>超过当前单笔支付额度</small>':''}</article>`;}).join('')}</div><p class="membership-term-note">一次购买固定时长，不会自动扣费。续费按上海时间增加日历月，月底日期不足时顺延至该月最后一天。</p></section><section class="membership-purchase-benefits"><header><h3>开通后可以做什么</h3></header><div>${benefits.map(([title,copy],index)=>`<article><i>${String(index+1).padStart(2,'0')}</i><div><b>${esc(title)}</b><p>${esc(copy)}</p></div></article>`).join('')}</div></section><details class="membership-faq"><summary>开通、续费和等级说明</summary><p>付款成功后自动开通；已有有效会员时，时长从当前到期时间顺延。未确认付款时请查询原订单，避免重复下单。</p><p>会员等级按实际有效时间增长，预付一年不会直接提升等级。到期后保留等级，续费继续累计。</p></details></div>${checkoutContent(selected,active)}</div>${state.error?`<p class="membership-sync-note">${esc(state.error)}</p>`:''}</section>`;
+}
+export function membershipOrdersContent(){
+  const state=membershipStore.state,payment=membershipPayment.state;
+  return `<section class="membership-orders-panel"><div class="membership-order-head"><div><h3>订单记录</h3><p>显示当前账号最近 20 笔会员订单，金额和时长以订单创建时为准。</p></div><button type="button" class="secondary compact" data-membership-refresh>刷新订单</button></div><div class="membership-order-list">${state.orders.length?state.orders.map(order=>{const alipay=order.payment_method==='alipay',pending=order.status==='pending'&&new Date(order.payment_expires_at)>new Date();return `<article class="membership-order"><div><b>${esc(order.plan_name||'研究所会员')} · ${Number(order.duration_months)||'—'} 个月</b><span class="membership-order-number">${esc(order.order_no)}</span><span>创建 ${memberTime(order.created_at,true)}${order.paid_at?` · 付款 ${memberTime(order.paid_at,true)}`:''}</span><small>${alipay?'支付宝':'历史订单'}${pending?` · 付款截止 ${memberTime(order.payment_expires_at,true)}`:''}</small></div><div><strong>${memberMoney(order.amount_cents)}</strong><span>${statusText(order)}</span><div class="membership-order-actions"><button type="button" data-payment-copy="${esc(order.order_no)}">复制订单号</button>${alipay?`<button type="button" data-payment-query="${esc(order.order_no)}" ${payment.busy?'disabled':''}>查询结果</button>${pending?`<button type="button" data-payment-resume="${esc(order.order_no)}" ${payment.busy?'disabled':''}>继续支付</button>`:''}`:''}</div></div></article>`;}).join(''):'<div class="membership-empty"><b>暂无会员订单</b><span>支付宝付款订单会自动保存在这里。</span><button type="button" class="secondary compact" data-membership-purchase>查看会员套餐</button></div>'}</div>${payment.error?`<p class="membership-payment-error" role="alert">${esc(payment.error)}</p>`:''}${state.error?`<p class="membership-sync-note">${esc(state.error)}</p>`:''}</section>`;
+}

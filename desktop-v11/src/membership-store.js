@@ -9,7 +9,7 @@ const DEFAULT_PLANS=[
 ];
 const THEMES=new Set(['rose_gold','black_gold','pink_starlight']);
 export const DEFAULT_APPEARANCE={theme:'rose_gold',frame:'double',nickname_color:'default',title:'',card_layout:'classic',intro:'',featured_post_id:null};
-const state={userId:'',loaded:false,loading:false,error:'',plans:[...DEFAULT_PLANS],membership:null,orders:[],theme:'rose_gold',appearance:{...DEFAULT_APPEARANCE},publicStyles:{},publicAppearances:{}};
+const state={userId:'',loaded:false,loading:false,error:'',plans:[...DEFAULT_PLANS],membership:null,orders:[],growth:null,levels:{},theme:'rose_gold',appearance:{...DEFAULT_APPEARANCE},publicStyles:{},publicAppearances:{}};
 let started=false;
 let loadPromise=null;
 const resolvedProfiles=new Set();
@@ -17,7 +17,7 @@ const queuedProfiles=new Set();
 let profileFlushPromise=null;
 let generation=0;
 
-function snapshot(){return {...state,plans:[...state.plans],membership:state.membership?{...state.membership}:null,orders:[...state.orders],appearance:{...state.appearance},publicStyles:{...state.publicStyles},publicAppearances:{...state.publicAppearances}};}
+function snapshot(){return {...state,plans:[...state.plans],membership:state.membership?{...state.membership}:null,orders:[...state.orders],growth:state.growth?{...state.growth}:null,levels:{...state.levels},appearance:{...state.appearance},publicStyles:{...state.publicStyles},publicAppearances:{...state.publicAppearances}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
 function currentUser(){const user=authStore.state.user;return user&&!user.cached?user:null;}
 function fail(result,label){if(result?.error)throw new Error(`${label}：${result.error.message}`);return result?.data;}
@@ -38,18 +38,21 @@ async function load(force=false){
   const token=generation;
   loadPromise=(async()=>{
     try{
-      const [plansResult,membershipResult,ordersResult,appearanceResult,ownAppearanceResult]=await Promise.all([
+      const [plansResult,membershipResult,ordersResult,appearanceResult,ownAppearanceResult,growthResult]=await Promise.all([
         client.from('membership_plans').select('id,name,duration_months,price_cents,compare_at_price_cents,is_recommended,sort_order').eq('is_active',true).order('sort_order',{ascending:true}),
         client.from('memberships').select('user_id,plan_id,status,starts_at,expires_at,source,updated_at').eq('user_id',user.id).maybeSingle(),
-        client.from('membership_orders').select('id,order_no,plan_id,amount_cents,payment_method,status,created_at,paid_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(20),
+        client.from('membership_orders').select('id,order_no,plan_id,plan_name,duration_months,amount_cents,payment_method,status,created_at,paid_at,payment_expires_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(20),
         client.rpc('fw_get_membership_appearances',{p_user_ids:[user.id]}),
-        client.rpc('fw_get_own_membership_appearance')
+        client.rpc('fw_get_own_membership_appearance'),
+        client.rpc('fw_get_own_membership_growth')
       ]);
       if(token!==generation)return snapshot();
       const plans=fail(plansResult,'读取会员套餐失败')||[];
       state.plans=plans.length?plans:[...DEFAULT_PLANS];
       state.membership=fail(membershipResult,'读取会员状态失败')||null;
       state.orders=fail(ordersResult,'读取会员订单失败')||[];
+      state.growth=fail(growthResult,'读取会员等级失败');
+      state.levels[String(user.id)]=Number(state.growth?.level)||0;
       const appearance=fail(appearanceResult,'读取会员装扮失败')||[];
       const own=fail(ownAppearanceResult,'读取身份设置失败')||[];
       state.appearance={...DEFAULT_APPEARANCE,...(own[0]||appearance[0]||{})};
@@ -67,7 +70,7 @@ async function load(force=false){
 
 function reset(userId=''){
   generation++;loadPromise=null;queuedProfiles.clear();resolvedProfiles.clear();
-  Object.assign(state,{userId,loaded:!userId,loading:false,error:'',membership:null,orders:[],theme:'rose_gold',appearance:{...DEFAULT_APPEARANCE},publicStyles:{},publicAppearances:{}});emit();
+  Object.assign(state,{userId,loaded:!userId,loading:false,error:'',membership:null,orders:[],growth:null,levels:{},theme:'rose_gold',appearance:{...DEFAULT_APPEARANCE},publicStyles:{},publicAppearances:{}});emit();
 }
 function start(){
   if(started)return;started=true;
@@ -87,12 +90,13 @@ async function flushProfiles(){
   if(!currentUser()?.id){queuedProfiles.clear();return snapshot();}
   ids.forEach(id=>resolvedProfiles.add(id));
   const token=generation;
-  const result=await client.rpc('fw_get_membership_appearances',{p_user_ids:ids});
+  const [result,levels]=await Promise.all([client.rpc('fw_get_membership_appearances',{p_user_ids:ids}),client.rpc('fw_get_membership_levels',{p_user_ids:ids})]);
   if(token!==generation)return snapshot();
-  if(result.error){ids.forEach(id=>resolvedProfiles.delete(id));throw new Error(`读取会员标识失败：${result.error.message}`);}
+  if(result.error||levels.error){ids.forEach(id=>resolvedProfiles.delete(id));throw new Error('读取会员标识失败。');}
+  const levelMap=new Map((levels.data||[]).map(row=>[String(row.user_id),Number(row.level)||0]));
   const found=new Map((result.data||[]).map(row=>[String(row.user_id),row]));
   let changed=false;
-  ids.forEach(id=>{const appearance=found.get(id)||null;const next=appearance?.theme||'';if(JSON.stringify(state.publicAppearances[id])!==JSON.stringify(appearance)){state.publicStyles[id]=next;state.publicAppearances[id]=appearance;changed=true;}});
+  ids.forEach(id=>{const appearance=found.get(id)||null;const next=appearance?.theme||'';const level=levelMap.get(id)||0;if(JSON.stringify(state.publicAppearances[id])!==JSON.stringify(appearance)||state.levels[id]!==level){state.publicStyles[id]=next;state.publicAppearances[id]=appearance;state.levels[id]=level;changed=true;}});
   if(changed)emit();
   if(queuedProfiles.size)queueProfileFlush();
   return snapshot();
@@ -137,6 +141,7 @@ export const membershipStore={
   setTheme,
   setAppearance,
   appearanceFor,
+  levelFor(userId){return Math.max(0,Math.min(9,Number(state.levels[String(userId)])||0));},
   isActive,
   themeFor(userId){return appearanceFor(userId)?.theme||'';},
   stickerLimit(){return isActive()?160:80;},

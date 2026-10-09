@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod desktop_identity;
+mod alipay_checkout;
 mod persistent_cache;
 
 use serde::Serialize;
@@ -640,6 +641,7 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            alipay_checkout::desktop_open_alipay,
             desktop_cache_read,
             desktop_cache_write,
             desktop_cache_remove,

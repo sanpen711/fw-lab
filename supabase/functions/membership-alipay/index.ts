@@ -114,6 +114,9 @@ Deno.serve(async (request: Request) => {
       );
       if (error) databaseError(error.message);
       const order = data as CheckoutOrder;
+      if (order.status !== "pending" || new Date(order.payment_expires_at).getTime() <= Date.now()) {
+        return reply(200, { order: publicOrder(order) });
+      }
       return reply(200, {
         order: publicOrder(order),
         payment_url: checkoutUrl(
@@ -124,7 +127,7 @@ Deno.serve(async (request: Request) => {
       });
     }
     if (
-      payload.action !== "query" || typeof payload.order_no !== "string" ||
+      !["query", "resume"].includes(payload.action) || typeof payload.order_no !== "string" ||
       !/^FW[0-9a-f]{32}$/.test(payload.order_no)
     ) {
       throw new PaymentError("INVALID_REQUEST");
@@ -144,6 +147,20 @@ Deno.serve(async (request: Request) => {
       if (error) throw new PaymentError("PAYMENT_DATABASE_ERROR", 503);
       return data;
     };
+    if (payload.action === "resume") {
+      if (order.status === "paid") {
+        return reply(200, { order: publicOrder(order), membership: await membership() });
+      }
+      if (!settings.enabled) throw new PaymentError("PAYMENT_NOT_OPEN", 503);
+      if (order.payment_app_id !== settings.appId || order.payment_seller_id !== settings.sellerId) {
+        throw new PaymentError("PAYMENT_ACCOUNT_MISMATCH");
+      }
+      if (order.amount_cents > settings.maxAmountCents) throw new PaymentError("PLAN_OVER_PAYMENT_LIMIT");
+      return reply(200, {
+        order: publicOrder(order),
+        payment_url: checkoutUrl(makeAlipayClient(settings), order, `${url}/functions/v1/alipay-notify`),
+      });
+    }
     if (!["paid", "refunded"].includes(order.status)) {
       const client = makeAlipayClient(settings);
       if (
@@ -168,6 +185,11 @@ Deno.serve(async (request: Request) => {
         if (result.code !== "10000") {
           if (result.sub_code !== "ACQ.TRADE_NOT_EXIST") {
             throw new PaymentError("PAYMENT_QUERY_UNAVAILABLE", 503);
+          }
+          if (order.status === "pending" && new Date(order.payment_expires_at).getTime() <= Date.now()) {
+            const { error: closeError } = await service.from("membership_orders")
+              .update({ status: "closed" }).eq("id", order.id).eq("user_id", user.id).eq("status", "pending");
+            if (closeError) throw new PaymentError("PAYMENT_DATABASE_ERROR", 503);
           }
         } else {
           const cents = validateTrade(result, order, settings, false);

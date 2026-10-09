@@ -7,6 +7,8 @@ import {archiveStore} from './archive-store.js';
 import {gamePartyUi} from './game-party-ui.js';
 import {homeWidgets} from './home-widgets.js';
 import {membershipStore} from './membership-store.js';
+import {membershipPayment} from './membership-payment.js';
+import {membershipGrowthContent,membershipPurchasePage,membershipOrdersContent,dismissMembershipLevelNotice} from './membership-page.js';
 import {identityClass,memberName,memberBadge} from './member-identity.js';
 import {postReadingStore} from './post-reading-store.js';
 import {membershipExperience,identityEditor,readingList,readingActions,isNewComment,prepareReadingDetail,bindReadingDetail,closeReadingDetail} from './membership-experience.js';
@@ -49,7 +51,7 @@ let currentAuthView='login';
 let currentView='home';
 let membershipTab='benefits';
 let membershipPlanId='';
-let membershipPaymentMethod='alipay';
+
 let membershipStyleSignature='';
 let squareMode='feed';
 let emojiTab='emoji';
@@ -125,7 +127,6 @@ function richContent(value){
   return `${clean?`<div class="rich-text${standaloneFufu?' fufu-only':''}">${emojiText(clean)}</div>`:''}${media.length?`<div class="rich-media">${media.join('')}</div>`:''}`||'<div class="rich-text">（空白记录）</div>';
 }
 
-function money(cents){return `¥${(Number(cents||0)/100).toFixed(Number(cents||0)%100?1:0)}`;}
 function memberDate(value){if(!value)return'';const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});}
 function activeMembership(){return membershipStore.isActive(membershipState.membership)?membershipState.membership:null;}
 function renderMembershipEntry(){
@@ -139,33 +140,25 @@ function membershipBenefits(){return [
   ['发起开黑组队','会员可以创建房间，普通用户可以加入，进队申请由队长决定'],
   ['我的表情扩容','沿用现有表情收藏：普通用户 80 个，会员 160 个']
 ];}
-function orderStatus(value){return({pending:'待支付',paid:'已支付',closed:'已关闭',refunded:'已退款',failed:'支付失败'})[value]||'处理中';}
 function membershipPurchaseContent(active){
-  const selected=membershipState.plans.find(item=>String(item.id)===String(membershipPlanId))||membershipState.plans.find(item=>String(item.id)==='monthly')||membershipState.plans[0];
-  membershipPlanId=selected?.id||'';
-  const plans=`<section class="membership-purchase"><header><h3>选择会员时长</h3><span>所有套餐享有相同权益</span></header><div class="membership-plans">${membershipState.plans.map(item=>`<article class="membership-plan ${item.is_recommended?'recommended':''} ${String(item.id)===String(membershipPlanId)?'selected':''}">${String(item.id)==='monthly'?'<em>限时</em>':item.is_recommended?'<em>推荐</em>':''}<small>${Number(item.duration_months)} 个月</small><h4>${esc(item.name)}</h4><div><strong>${money(item.price_cents)}</strong>${item.compare_at_price_cents?`<del>${money(item.compare_at_price_cents)}</del>`:''}</div><button class="${String(item.id)===String(membershipPlanId)?'primary':'secondary'} compact" type="button" data-membership-plan="${esc(item.id)}" aria-pressed="${String(item.id)===String(membershipPlanId)}">${String(item.id)===String(membershipPlanId)?'已选择':'选择套餐'}</button></article>`).join('')}</div><p class="membership-term-note">一次购买固定时长，不会自动扣费。</p></section>`;
-  const benefits=`<section class="membership-purchase-benefits"><header><h3>开通后可以做什么</h3></header><div>${membershipBenefits().map(([title,copy],index)=>`<article><i>${String(index+1).padStart(2,'0')}</i><div><b>${esc(title)}</b><p>${esc(copy)}</p></div></article>`).join('')}</div></section>`;
-  const checkout=selected?`<section class="membership-checkout" aria-label="会员付款"><header><div><small>${active?'续费套餐':'开通套餐'}</small><h3>${esc(selected.name)}</h3></div><span>${Number(selected.duration_months)} 个月</span></header><div class="membership-pay-total"><span>应付金额</span><strong>${money(selected.price_cents)}</strong></div><div class="membership-payment-methods" aria-label="选择支付方式"><button type="button" class="${membershipPaymentMethod==='wechat'?'active':''}" data-membership-payment="wechat" aria-pressed="${membershipPaymentMethod==='wechat'}">微信支付</button><button type="button" class="${membershipPaymentMethod==='alipay'?'active':''}" data-membership-payment="alipay" aria-pressed="${membershipPaymentMethod==='alipay'}">支付宝</button></div><div class="membership-qr-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M7 12h10"/></svg><b>支付功能暂未开放</b><p>开放后可使用${membershipPaymentMethod==='wechat'?'微信':'支付宝'}扫码付款。</p></div><button class="membership-pay-disabled" type="button" disabled>暂未开放支付</button><p class="membership-payment-note">支付开放后，付款成功将自动开通会员。</p></section>`:'';
-  return `<section class="membership-purchase-page"><button class="membership-purchase-back" type="button" data-membership-return><span aria-hidden="true">←</span> 返回我的会员</button><header class="membership-purchase-heading"><div><h2 tabindex="-1" data-membership-purchase-title>${active?'续费研究所会员':'开通研究所会员'}</h2><p>${active?`当前会员有效至 ${esc(memberDate(active.expires_at))}。`:'装扮自己的研究员身份，追更喜欢的帖子，发起开黑组队。'}</p></div><span>固定期限 · 不自动续费</span></header><div class="membership-purchase-grid"><div class="membership-purchase-main">${plans}${benefits}</div>${checkout}</div>${membershipState.error?`<p class="membership-sync-note">${esc(membershipState.error)}</p>`:''}</section>`;
+  const selected=membershipState.plans.find(row=>row.id===membershipPlanId)||membershipState.plans.find(row=>row.id==='monthly')||membershipState.plans[0];
+  membershipPlanId=selected?.id||'';return membershipPurchasePage(active,membershipPlanId,membershipBenefits());
 }
 function renderMembershipContent(){
-  const host=$('[data-membership-content]');if(!host)return;renderMembershipEntry();
+  const host=$('[data-membership-content]');if(!host)return;const focused=host.contains(document.activeElement)?document.activeElement:null;const focusAttribute=focused?Array.from(focused.attributes).find(attribute=>/^data-(membership|payment)-/.test(attribute.name)):null;membershipPayment.setVisible(currentView==='membership'&&['purchase','orders'].includes(membershipTab));renderMembershipEntry();
   const tabs=`<nav class="membership-tabs" aria-label="会员中心栏目">${[['benefits','我的会员'],['reading','我追的帖子'],['saved','我的收藏'],['orders','订单记录']].map(([value,label])=>`<button type="button" class="${membershipTab===value||membershipTab==='purchase'&&value==='benefits'?'active':''}" data-membership-tab="${value}">${label}${value==='reading'&&postReadingStore.unreadTotal()?`<i class="reading-count">${postReadingStore.unreadTotal()}</i>`:''}</button>`).join('')}</nav>`;
   if(membershipState.loading&&!membershipState.loaded){host.innerHTML=`${tabs}<div class="membership-page-scroll"><div class="state-card">正在读取会员信息...</div></div>`;return;}
   const active=activeMembership();const plan=membershipState.plans.find(item=>String(item.id)===String(active?.plan_id));
-  if(membershipTab==='purchase'){const scrollTop=host.querySelector('.membership-purchase-page')?host.querySelector('.membership-page-scroll')?.scrollTop||0:0;host.innerHTML=`${tabs}<div class="membership-page-scroll">${membershipPurchaseContent(active)}</div>`;host.querySelector('.membership-page-scroll').scrollTop=scrollTop;return;}
+  if(membershipTab==='purchase'){const scrollTop=host.querySelector('.membership-purchase-page')?host.querySelector('.membership-page-scroll')?.scrollTop||0:0;host.innerHTML=`${tabs}<div class="membership-page-scroll">${membershipPurchaseContent(active)}</div>`;host.querySelector('.membership-page-scroll').scrollTop=scrollTop;if(focusAttribute)host.querySelector(`[${focusAttribute.name}="${CSS.escape(focusAttribute.value)}"]`)?.focus({preventScroll:true});return;}
   if(['reading','saved'].includes(membershipTab)){host.innerHTML=`${tabs}<div class="membership-page-scroll">${readingList(membershipTab==='saved'?'saved':'following')}</div>`;return;}
-  if(membershipTab==='orders'){
-    const rows=membershipState.orders.length?membershipState.orders.map(order=>{const item=membershipState.plans.find(planItem=>String(planItem.id)===String(order.plan_id));return `<article class="membership-order"><div><b>${esc(item?.name||'研究所会员')}</b><span>${esc(order.order_no||'订单号生成中')}</span></div><div><strong>${money(order.amount_cents)}</strong><span>${esc(orderStatus(order.status))} · ${esc(memberDate(order.created_at))}</span></div></article>`;}).join(''):`<div class="membership-empty"><b>${accountState.user?'暂无会员订单':'登录后查看订单'}</b><span>${accountState.user?'接入微信、支付宝扫码支付后，订单会保存在这里。':'登录账号后，可在这里查看会员状态和订单记录。'}</span>${accountState.user?'':'<button class="primary compact" type="button" data-open-account>登录账号</button>'}</div>`;
-    host.innerHTML=`${tabs}<div class="membership-page-scroll"><section class="membership-orders-panel"><div class="membership-order-head"><div><h3>订单记录</h3><p>只显示当前账号的会员订单。</p></div></div><div class="membership-order-list">${rows}</div>${membershipState.error?`<p class="membership-sync-note">${esc(membershipState.error)}</p>`:''}</section></div>`;return;
-  }
-  const status=active?`<section class="membership-vip-card vip-theme-${esc(membershipState.theme)}"><div class="membership-vip-glow" aria-hidden="true"></div><div class="membership-vip-head">${avatarHtml(accountState.user,'membership-vip-avatar',{userId:accountState.user?.id})}<div><small>FW RESEARCH VIP</small><h2>${esc(accountState.user?.nickname||'研究所会员')} ${vipBadgeHtml(accountState.user?.id)}</h2><p>${esc(plan?.name||'会员')} · ${esc(memberDate(active.expires_at))} 到期</p></div><button class="membership-upgrade" type="button" data-membership-purchase>续费会员 <span aria-hidden="true">→</span></button></div><div class="membership-vip-foot"><span>自由组合身份</span><span>帖子自动追更</span><span>可以发起开黑</span></div></section>`:`<section class="membership-status"><div><small>当前状态</small><h3>${!accountState.user?'尚未登录':'普通研究员'}</h3><p>${!accountState.user?'登录后查看会员状态和订单记录。':'可以发帖、评论、收藏与加入组队。'}</p></div>${accountState.user?'<button class="membership-upgrade" type="button" data-membership-purchase>开通会员 <span aria-hidden="true">→</span></button>':'<button class="membership-login" type="button" data-open-account>登录账号</button>'}</section>`;
+  if(membershipTab==='orders'){const scrollTop=host.querySelector('.membership-page-scroll')?.scrollTop||0;host.innerHTML=`${tabs}<div class="membership-page-scroll">${membershipOrdersContent()}</div>`;host.querySelector('.membership-page-scroll').scrollTop=scrollTop;return;}
+  const status=active?`<section class="membership-vip-card vip-theme-${esc(membershipState.theme)}"><div class="membership-vip-glow" aria-hidden="true"></div><div class="membership-vip-head">${avatarHtml(accountState.user,'membership-vip-avatar',{userId:accountState.user?.id})}<div><small>我的会员</small><h2>${esc(accountState.user?.nickname||'研究所会员')} ${vipBadgeHtml(accountState.user?.id)}</h2><p>${esc(plan?.name||'会员')} · ${esc(memberDate(active.expires_at))} 到期</p></div><button class="membership-upgrade" type="button" data-membership-purchase>续费会员 <span aria-hidden="true">→</span></button></div><div class="membership-vip-foot"><span>自由组合身份</span><span>帖子自动追更</span><span>可以发起开黑</span></div></section>`:`<section class="membership-status"><div><small>当前状态</small><h3>${!accountState.user?'尚未登录':'普通研究员'}</h3><p>${!accountState.user?'登录后查看会员状态和订单记录。':'可以发帖、评论、收藏与加入组队。'}</p></div>${accountState.user?'<button class="membership-upgrade" type="button" data-membership-purchase>开通会员 <span aria-hidden="true">→</span></button>':'<button class="membership-login" type="button" data-open-account>登录账号</button>'}</section>`;
   const themes=identityEditor(!!active);
   const benefits=`<section class="membership-section"><header><h3>会员权益</h3><span>发帖、评论、加入组队继续开放</span></header><div class="membership-benefits">${membershipBenefits().map(([title,copy],index)=>`<article><i>${String(index+1).padStart(2,'0')}</i><div><b>${esc(title)}</b><span>${esc(copy)}</span></div></article>`).join('')}</div></section>`;
-  host.innerHTML=`${tabs}<div class="membership-page-scroll"><div class="membership-page-grid"><main class="membership-main-stack">${status}${themes}<section class="membership-shortcuts"><button type="button" data-membership-tab="reading">我追的帖子 <b>${postReadingStore.unreadTotal()?`${postReadingStore.unreadTotal()} 条新评论`:`${postReadingStore.state.rows.filter(row=>row.following).length} 条追更`}</b></button><button type="button" data-nav="play">发起开黑组队 <b>${active?"前往创建":"会员可创建"}</b></button></section>${membershipState.error?`<p class="membership-sync-note">${esc(membershipState.error)}</p>`:''}</main><aside class="membership-benefit-aside">${benefits}</aside></div></div>`;
+  host.innerHTML=`${tabs}<div class="membership-page-scroll"><div class="membership-page-grid"><main class="membership-main-stack">${status}${membershipGrowthContent()}${themes}<section class="membership-shortcuts"><button type="button" data-membership-tab="reading">我追的帖子 <b>${postReadingStore.unreadTotal()?`${postReadingStore.unreadTotal()} 条新评论`:`${postReadingStore.state.rows.filter(row=>row.following).length} 条追更`}</b></button><button type="button" data-nav="play">发起开黑组队 <b>${active?"前往创建":"会员可创建"}</b></button></section>${membershipState.error?`<p class="membership-sync-note">${esc(membershipState.error)}</p>`:''}</main><aside class="membership-benefit-aside">${benefits}</aside></div></div>`;
 }
 function renderMembership(next=membershipState){
-  const nextSignature=JSON.stringify(next.publicAppearances||{});const stylesChanged=membershipStyleSignature!==nextSignature;membershipStyleSignature=nextSignature;membershipState=next;renderMembershipContent();renderMembershipEntry();
+  const nextSignature=JSON.stringify([next.publicAppearances||{},next.levels||{}]);const stylesChanged=membershipStyleSignature!==nextSignature;membershipStyleSignature=nextSignature;membershipState=next;renderMembershipContent();renderMembershipEntry();
   if(stylesChanged){socialRenderMemo=null;lastChatRenderSignature='';renderFeed();renderSocial();renderBird();renderArchive();}
 }
 function authenticatedUser(next=accountState){
@@ -179,6 +172,8 @@ function startProtectedApp(){
   homeWidgets.init({toast,openAccount});
   gamePartyUi.init({toast});
   membershipStore.start();
+  membershipPayment.start();
+  membershipPayment.subscribe(()=>renderMembershipContent());
   membershipExperience.init({toast,navigate,refreshMembership:renderMembershipContent,refreshReader:renderPostDetail,openReadingTab(){membershipTab='reading';renderMembershipContent();}});
   postReadingStore.subscribe(()=>{renderMembershipContent();const dot=$('[data-reading-dot]');if(dot){dot.hidden=postReadingStore.unreadTotal()===0;dot.textContent=postReadingStore.unreadTotal()>99?'99+':String(postReadingStore.unreadTotal());}});
 }
@@ -240,7 +235,7 @@ function navigate(view){
   closeSidebarMore();
   if(view==='echo'){view='square';squareMode='echo';}
   else if(view==='square')squareMode='feed';
-  const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;
+  const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;membershipPayment.setVisible(view==='membership'&&['purchase','orders'].includes(membershipTab));
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
   const localViews=['home','compose','square','rooms','bird','play','games','buddy','membership','archive','settings'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
@@ -479,7 +474,14 @@ function bindNavigation(){
     if(event.target.closest('[data-membership-return]')){membershipTab='benefits';membershipPlanId='';renderMembershipContent();$('[data-membership-purchase]')?.focus({preventScroll:true});return;}
     const membershipThemeButton=event.target.closest('[data-membership-theme]');if(membershipThemeButton){membershipThemeButton.disabled=true;membershipStore.setTheme(membershipThemeButton.dataset.membershipTheme).then(()=>toast('会员装扮已切换。')).catch(error=>toast(error.message||'装扮切换失败。')).finally(()=>{membershipThemeButton.disabled=false;});return;}
     const membershipPlanButton=event.target.closest('[data-membership-plan]');if(membershipPlanButton){if(!accountState.user){openAccount();return;}membershipPlanId=membershipPlanButton.dataset.membershipPlan;renderMembershipContent();$(`[data-membership-plan="${CSS.escape(membershipPlanId)}"]`)?.focus({preventScroll:true});return;}
-    const membershipPaymentButton=event.target.closest('[data-membership-payment]');if(membershipPaymentButton){membershipPaymentMethod=membershipPaymentButton.dataset.membershipPayment;renderMembershipContent();$(`[data-membership-payment="${CSS.escape(membershipPaymentMethod)}"]`)?.focus({preventScroll:true});return;}
+    const paymentCreate=event.target.closest('[data-payment-create]');if(paymentCreate){await membershipPayment.create(paymentCreate.dataset.paymentCreate);return;}
+    const paymentResume=event.target.closest('[data-payment-resume]');if(paymentResume){membershipTab='purchase';renderMembershipContent();await membershipPayment.resume(paymentResume.dataset.paymentResume);return;}
+    const paymentQuery=event.target.closest('[data-payment-query]');if(paymentQuery){await membershipPayment.query(paymentQuery.dataset.paymentQuery);if(membershipPayment.state.order?.status==='paid'){membershipTab='purchase';renderMembershipContent();}await membershipStore.load(true);return;}
+    const paymentCopy=event.target.closest('[data-payment-copy]');if(paymentCopy){try{await navigator.clipboard.writeText(paymentCopy.dataset.paymentCopy);toast('订单号已复制。');}catch{toast('复制失败，请手动复制订单号。');}return;}
+    if(event.target.closest('[data-payment-open]')){await membershipPayment.openCheckout();return;}
+    if(event.target.closest('[data-payment-config]')){await membershipPayment.loadConfig(true);return;}
+    if(event.target.closest('[data-payment-new]')){membershipPayment.newOrder();return;}
+    if(event.target.closest('[data-member-level-dismiss]')){dismissMembershipLevelNotice();renderMembershipContent();return;}
     if(event.target.closest('[data-membership-refresh]')){membershipStore.load(true).catch(()=>{});return;}
     const switcher=event.target.closest('[data-show-auth]');if(switcher){showAuth(switcher.dataset.showAuth);return;}
     if(event.target.closest('[data-archive-refresh]')){archiveStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
