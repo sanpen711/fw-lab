@@ -79,7 +79,7 @@ test('主导航上移、下班开黑位于小游戏上方，次要栏目收进�
 
 test('下班开黑是本地双栏页面并说明游戏 ID 的可见边界',async({page})=>{
   await page.goto('/');
-  await page.locator('[data-nav="play"]').click();
+  await page.locator('.nav-item[data-nav="play"]').click();
   await expect(page.locator('[data-view-panel="play"]')).toHaveClass(/active/);
   await expect(page.locator('[data-party-refresh]')).toBeVisible();
   await expect(page.locator('[data-party-filter="open"]')).toHaveText('可加入');
@@ -90,7 +90,8 @@ test('下班开黑是本地双栏页面并说明游戏 ID 的可见边界',async
   await page.locator('[data-party-create-toggle]').click();
   await expect(page.locator('[data-party-detail]')).toBeHidden();
   await expect(page.locator('[data-party-create-host]')).toBeVisible();
-  await expect(page.locator('[data-party-create-form]')).toBeVisible();
+  await expect(page.locator('[data-party-create-form]')).toHaveCount(0);
+  await expect(page.locator('[data-party-create-host]')).toContainText('会员才能创建组队');
 });
 
 test('复制的图片可以直接粘贴到发布输入框',async({page})=>{
@@ -210,6 +211,7 @@ test('所有头像左键打开统一资料卡且不显示加入时间',async({pa
   await expect(page.locator('[data-align-profile-body]')).not.toContainText('公开资料只展示昵称');
   await expect(page.locator('[data-profile-public]')).toHaveCount(0);
   const triggerBox=await trigger.boundingBox();
+  await expect.poll(async()=>((await page.locator('.align-profile-card').boundingBox())?.x||0)).toBeGreaterThan((triggerBox?.x||0)+(triggerBox?.width||0));
   const cardBox=await page.locator('.align-profile-card').boundingBox();
   expect(cardBox?.width).toBeLessThanOrEqual(322);
   expect(cardBox?.x||0).toBeGreaterThan((triggerBox?.x||0)+(triggerBox?.width||0));
@@ -251,7 +253,7 @@ test('发牢骚和精神广场均为本地页面且内容按需读取',async({pa
   await page.locator('[data-nav="square"].nav-item').click();
   await expect(page.locator('[data-view-panel="square"]')).toHaveClass(/active/);
   const squareButtons=page.locator('.square-heading .section-actions button');
-  await expect(squareButtons).toHaveCount(3);
+  await expect(squareButtons).toHaveCount(4);
   const buttonTops=await squareButtons.evaluateAll(buttons=>buttons.map(button=>Math.round(button.getBoundingClientRect().top)));
   expect(new Set(buttonTops).size).toBe(1);
   await expect(page.locator('[data-post-detail]')).toContainText('选择一条帖子');

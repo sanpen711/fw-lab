@@ -1,5 +1,6 @@
 import {authStore} from './auth-store.js';
 import {socialStore} from './social-store.js';
+import {membershipStore} from './membership-store.js';
 
 const client=authStore.client;
 const listeners=new Set();
@@ -42,7 +43,7 @@ async function markApplicationAlertsRead(partyId){const user=currentUser();if(!u
 async function openParty(id){state.openPartyId=String(id||'');state.messages=[];emit();if(!state.openPartyId)return;await load(true);await markApplicationAlertsRead(state.openPartyId);}
 function closePartyDetail(){state.openPartyId='';state.messages=[];emit();}
 async function mutate(action){requireUser();if(state.busy)throw new Error('正在处理，请稍候。');state.busy=true;state.error='';emit();try{const result=await action();await load(true);return result;}finally{state.busy=false;emit();}}
-async function createParty(data){return mutate(async()=>{const capacity=String(data.capacity??'').trim();const id=fail(await client.rpc('fw_create_game_party',{p_game_name:String(data.gameName||'').trim(),p_platform:'',p_server_name:String(data.serverName||'').trim(),p_mode:String(data.mode||'').trim(),p_starts_at:null,p_capacity:capacity?Number(capacity):null,p_note:String(data.note||'').trim(),p_game_id:String(data.gameId||'').trim(),p_requires_approval:Boolean(data.requiresApproval),p_starts_at_text:String(data.startsAt||'').trim()}),'创建组队失败');state.openPartyId=String(id||'');return id;});}
+async function createParty(data){if(!membershipStore.canCreateParty())throw new Error('只有会员能创建组队，普通用户可以加入。');return mutate(async()=>{const capacity=String(data.capacity??'').trim();const id=fail(await client.rpc('fw_create_game_party',{p_game_name:String(data.gameName||'').trim(),p_platform:'',p_server_name:String(data.serverName||'').trim(),p_mode:String(data.mode||'').trim(),p_starts_at:null,p_capacity:capacity?Number(capacity):null,p_note:String(data.note||'').trim(),p_game_id:String(data.gameId||'').trim(),p_requires_approval:Boolean(data.requiresApproval),p_starts_at_text:String(data.startsAt||'').trim()}),'创建组队失败');state.openPartyId=String(id||'');return id;});}
 async function applyToParty(partyId,{gameId,message}){return mutate(async()=>fail(await client.rpc('fw_apply_game_party',{p_party_id:Number(partyId),p_game_id:String(gameId||'').trim(),p_message:String(message||'').trim()}),'申请加入失败'));}
 async function decideApplication(partyId,userId,accept){return mutate(async()=>fail(await client.rpc('fw_decide_game_party',{p_party_id:Number(partyId),p_user_id:userId,p_accept:Boolean(accept)}),'处理申请失败'));}
 async function leaveParty(partyId){return mutate(async()=>fail(await client.rpc('fw_leave_game_party',{p_party_id:Number(partyId)}),'退出组队失败'));}
