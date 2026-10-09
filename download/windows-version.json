@@ -1,11 +1,11 @@
 {
-  "publishedAt": "2026-10-09T01:52:59.6057280Z",
-  "sha256": "d908280df56fabc64ba5081fe321c3211f10799ce17cdc320b2bf32066233000",
-  "platform": "Windows 10/11 64 位",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.17-setup.exe",
   "rollbackVersion": "1.0.5",
-  "version": "1.3.16",
-  "notes": "Windows 1.3.16：会员身份自由组合、帖子自动追更，开黑房间改为会员专属创建。",
+  "publishedAt": "2026-10-09T04:04:48.6306062Z",
+  "notes": "Windows 1.3.17：新增会员开通、续费入口和独立套餐界面，支付功能暂未开放。",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.16-setup.exe",
-  "available": true
+  "platform": "Windows 10/11 64 位",
+  "sha256": "d5ddb945dd52adf1ee8e62e0e98f4210e348a8e1969b2d54624b895d329eb411",
+  "available": true,
+  "version": "1.3.17"
 }
