@@ -225,9 +225,12 @@ test('退出登录清除付款缓存，停止原订单轮询',async({page})=>{
 });
 
 test('等级提升显示静态伏伏提示，可关闭',async({page})=>{
+  page.on('pageerror',error=>console.log('LEVEL_NOTICE_PAGE_ERROR',error.message));
+  page.on('console',message=>{if(message.text().startsWith('LEVEL_NOTICE_'))console.log(message.text());});
   await setup(page);await page.addInitScript(id=>localStorage.setItem(`fw-member-level-seen:${id}`,'1'),me);await page.goto('/');await page.locator('[data-nav="membership"]').click();
   await expect(page.locator('.membership-level-notice')).toContainText('V2 已解锁');
   await expect(page.locator('.membership-level-notice img')).toHaveCSS('animation-name','none');
+  await page.evaluate(id=>{console.log('LEVEL_NOTICE_STATE',localStorage.getItem(`fw-member-level-seen:${id}`));document.addEventListener('click',event=>console.log('LEVEL_NOTICE_CLICK',(event.target as HTMLElement).outerHTML),true);},me);
   await page.locator('[data-member-level-dismiss]').click();await expect(page.locator('.membership-level-notice')).toHaveCount(0);
 });
 

@@ -253,7 +253,7 @@ test('发牢骚和精神广场均为本地页面且内容按需读取',async({pa
   await page.locator('[data-nav="square"].nav-item').click();
   await expect(page.locator('[data-view-panel="square"]')).toHaveClass(/active/);
   const squareButtons=page.locator('.square-heading .section-actions button');
-  await expect(squareButtons).toHaveCount(4);
+  await expect(squareButtons).toHaveCount(3);
   const buttonTops=await squareButtons.evaluateAll(buttons=>buttons.map(button=>Math.round(button.getBoundingClientRect().top)));
   expect(new Set(buttonTops).size).toBe(1);
   await expect(page.locator('[data-post-detail]')).toContainText('选择一条帖子');
