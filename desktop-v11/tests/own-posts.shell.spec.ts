@@ -42,6 +42,7 @@ test('我的按账号读取旧帖，分页后能发表评论和删除并切回�
   await expect(feed.locator('.square-post')).toHaveCount(100);
   await page.locator('[data-square-mine-toggle]').click();
   await expect(feed.locator('.square-post')).toHaveCount(30);
+  await expect(page.locator('[data-square-mine-toggle]')).toHaveCSS('background-color','rgb(21, 43, 37)');
   expect(requests[0].searchParams.get('user_id')).toBe(`eq.${me}`);
   await expect(feed).not.toContainText('其他研究员的新帖');
   await page.screenshot({path:'/tmp/fw-member-square-my.png'});
