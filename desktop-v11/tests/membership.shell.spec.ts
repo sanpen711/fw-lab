@@ -227,6 +227,7 @@ test('后台查单不显示忙碌按钮，暂不支付立即中止查询且重�
   const {requests}=await setup(page,false,false,'pending',options);
   await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
   await expect(page.locator('[data-payment-query]')).toBeVisible();
+  await expect(page.locator('[data-payment-resume]')).toBeEnabled();
   await page.clock.install();await page.clock.runFor(5100);
   await expect.poll(()=>requests.filter(row=>row.body.action==='query').length).toBe(1);
   await expect(page.locator('[data-payment-query]')).toHaveText('查询付款结果');
@@ -250,7 +251,7 @@ test('后台查单不显示忙碌按钮，暂不支付立即中止查询且重�
 test('未付款自动查单三次后暂停，不伪造失败或无限轮询',async({page})=>{
   const {requests}=await setup(page,false,false,'pending');
   await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
-  await expect(page.locator('[data-payment-query]')).toBeVisible();await page.clock.install();
+  await expect(page.locator('[data-payment-resume]')).toBeEnabled();await page.clock.install();
   for(let i=1;i<=3;i++){
     await page.clock.runFor(5100);
     await expect.poll(()=>requests.filter(row=>row.body.action==='query').length).toBe(i);
