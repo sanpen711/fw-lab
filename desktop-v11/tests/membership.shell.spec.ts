@@ -203,14 +203,14 @@ test('客户端付款使用受限原生命令，付款后自动查询到账',asy
 });
 
 test('退出登录清除付款缓存，停止原订单轮询',async({page})=>{
-  const {requests}=await setup(page,false,false,'pending');await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
+  const {requests}=await setup(page,false,false,'pending');await page.clock.install();await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
   await expect(page.locator('[data-payment-query]')).toBeVisible();
   expect(await page.evaluate(id=>localStorage.getItem(`fw-membership-checkout:${id}`),me)).toContain('order_no');
   page.once('dialog',dialog=>dialog.accept());
   await page.locator('.account-button[data-open-account]').click();await page.getByRole('button',{name:'退出登录',exact:true}).click();await expect(page.locator('#app')).toBeHidden();
   expect(await page.evaluate(id=>localStorage.getItem(`fw-membership-checkout:${id}`),me)).toBeNull();
   const count=requests.filter(row=>row.body.action==='query').length;
-  await page.clock.install();await page.clock.runFor(6000);
+  await page.clock.runFor(6000);
   expect(requests.filter(row=>row.body.action==='query')).toHaveLength(count);
 });
 
@@ -225,10 +225,10 @@ test('等级提升显示静态伏伏提示，可关闭',async({page})=>{
 test('后台查单不显示忙碌按钮，暂不支付立即中止查询且重启保留订单',async({page})=>{
   const options={deadlineMs:600000,hangQuery:true};
   const {requests}=await setup(page,false,false,'pending',options);
-  await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
+  await page.clock.install();await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
   await expect(page.locator('[data-payment-query]')).toBeVisible();
   await expect(page.locator('[data-payment-resume]')).toBeEnabled();
-  await page.clock.install();await page.clock.runFor(5100);
+  await page.clock.runFor(5100);
   await expect.poll(()=>requests.filter(row=>row.body.action==='query').length).toBe(1);
   await expect(page.locator('[data-payment-query]')).toHaveText('查询付款结果');
   await expect(page.locator('[data-payment-resume]')).toBeEnabled();
@@ -250,8 +250,8 @@ test('后台查单不显示忙碌按钮，暂不支付立即中止查询且重�
 
 test('未付款自动查单三次后暂停，不伪造失败或无限轮询',async({page})=>{
   const {requests}=await setup(page,false,false,'pending');
-  await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
-  await expect(page.locator('[data-payment-resume]')).toBeEnabled();await page.clock.install();
+  await page.clock.install();await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
+  await expect(page.locator('[data-payment-resume]')).toBeEnabled();
   for(let i=1;i<=3;i++){
     await page.clock.runFor(5100);
     await expect.poll(()=>requests.filter(row=>row.body.action==='query').length).toBe(i);
@@ -268,8 +268,8 @@ test('未付款自动查单三次后暂停，不伪造失败或无限轮询',asy
 
 test('查单连接卡住十五秒会解除等待，原订单仍可查询',async({page})=>{
   await setup(page,false,false,'pending',{deadlineMs:600000,hangQuery:true});
-  await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
-  await expect(page.locator('[data-payment-query]')).toBeVisible();await page.clock.install();
+  await page.clock.install();await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
+  await expect(page.locator('[data-payment-query]')).toBeVisible();
   await page.locator('[data-payment-query]').click();
   await expect(page.locator('[data-payment-query]')).toHaveText('正在查询…');
   await page.clock.runFor(15100);
@@ -281,9 +281,9 @@ test('查单连接卡住十五秒会解除等待，原订单仍可查询',async(
 });
 
 for(const mode of ['expired','success'] as const)test(`订单到期最终核验${mode==='expired'?'关闭未付款订单':'仍接受真实到账'}`,async({page})=>{
-  const {requests}=await setup(page,false,false,mode,{deadlineMs:1000,hangQuery:false});
-  await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
-  await expect(page.locator('[data-payment-query]')).toBeVisible();await page.locator('[data-payment-pause]').click();await page.clock.install();await page.clock.runFor(5100);
+  const {requests}=await setup(page,false,false,mode,{deadlineMs:5000,hangQuery:false});
+  await page.clock.install();await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
+  await expect(page.locator('[data-payment-query]')).toBeVisible();await page.locator('[data-payment-pause]').click();await page.clock.runFor(5100);
   if(mode==='success')await expect(page.locator('.membership-payment-success')).toContainText('会员已自动生效');
   else{
     await expect(page.locator('.membership-payment-status b')).toHaveText('已关闭');
