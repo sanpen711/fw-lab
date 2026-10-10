@@ -61,19 +61,20 @@ test('本地首页保留桌面视觉和完整导航框架',async({page})=>{
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
 });
 
-test('主导航上移、下班开黑位于小游戏上方，次要栏目收进更多',async({page})=>{
+test('档案独立放在会员上方，入馆须知和处理公告保留在更多',async({page})=>{
   await page.goto('/');
   const mainLabels=await page.locator('.nav-primary-group .nav-item b').allTextContents();
   expect(mainLabels).toEqual(['首页','精神广场','学术研讨','新闻专区','下班开黑','小游戏']);
   await expect(page.locator('.nav-primary-group [data-nav="play"] + [data-nav="games"]')).toBeVisible();
-  await expect(page.locator('.nav-list > [data-nav="archive"]')).toHaveCount(0);
+  await expect(page.locator('.nav-lower-group [data-nav="archive"] + [data-nav="membership"]')).toBeVisible();
+  await page.locator('.nav-lower-group [data-nav="archive"]').click();
+  await expect(page.locator('[data-view-panel="archive"]')).toHaveClass(/active/);
   await page.locator('[data-sidebar-more-toggle]').click();
   await expect(page.locator('[data-sidebar-more-wrap]')).toHaveClass(/open/);
-  await expect(page.locator('.sidebar-more-menu [data-nav="archive"]')).toContainText('档案');
+  await expect(page.locator('.sidebar-more-menu [data-nav="archive"]')).toHaveCount(0);
   await expect(page.locator('.sidebar-more-menu [data-align-nav="rules"]')).toContainText('入馆须知');
   await expect(page.locator('.sidebar-more-menu [data-align-nav="moderation"]')).toContainText('处理公告');
-  await page.locator('.sidebar-more-menu [data-nav="archive"]').click();
-  await expect(page.locator('[data-view-panel="archive"]')).toHaveClass(/active/);
+  await page.locator('[data-nav="square"].nav-item').click();
   await expect(page.locator('[data-sidebar-more-wrap]')).not.toHaveClass(/open/);
 });
 
@@ -353,8 +354,7 @@ test('废话档案为本地按需榜单页面',async({page})=>{
   const original=page.url();
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
   await page.locator('[data-sidebar-more-toggle]').click();
-  await page.locator('.sidebar-more-menu [data-nav="archive"]').click();
-  await expect(page.locator('[data-view-panel="archive"]')).toHaveClass(/active/);
+  await page.locator('[data-nav="square"].nav-item').click();
   await expect(page.getByRole('heading',{name:'废话档案',exact:true})).toBeVisible();
   await expect(page.getByText('上周点赞荣誉榜')).toBeVisible();
   await expect(page.getByText('昨日点赞榜')).toBeVisible();

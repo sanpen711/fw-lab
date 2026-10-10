@@ -3,7 +3,9 @@ import {desktopCache} from './desktop-persistent-cache.js';
 
 const listeners=new Set();
 const client=authStore.client;
-const state={loaded:false,loading:false,busy:false,error:'',posts:[],profiles:{},openPostId:'',reply:null};
+function emptyMine(){return {userId:'',loaded:false,loading:false,error:'',posts:[],offset:0,hasMore:false,retryMore:false};}
+const state={loaded:false,loading:false,busy:false,error:'',posts:[],profiles:{},openPostId:'',reply:null,mine:emptyMine()};
+const MY_POSTS_PAGE_SIZE=30;
 const SQUARE_CACHE_FRESH_MS=60*1000;
 const POST_TEXT_LIMIT=500;
 const COMMENT_TEXT_LIMIT=180;
@@ -18,8 +20,12 @@ let profileRefreshPromise=null;
 let refreshQueued=false;
 let lastAuthUserId='';
 let profileGeneration=0;
+let mineRequest=null;
 
-function snapshot(){return {...state,posts:state.posts.map(post=>({...post,comments:[...(post.comments||[])],reactions:[...(post.reactions||[])]})),profiles:{...state.profiles},reply:state.reply&&{...state.reply}};}
+function copyPosts(posts){return posts.map(post=>({...post,comments:[...(post.comments||[])],reactions:[...(post.reactions||[])]}));}
+function snapshot(){return {...state,posts:copyPosts(state.posts),mine:{...state.mine,posts:copyPosts(state.mine.posts)},profiles:{...state.profiles},reply:state.reply&&{...state.reply}};}
+function getPost(postId){const id=String(postId||'');return state.posts.find(post=>String(post.id)===id)||state.mine.posts.find(post=>String(post.id)===id);}
+function mapPostLists(update){state.posts=state.posts.map(update);state.mine.posts=state.mine.posts.map(update);}
 function emit(scope='all'){const next=snapshot();listeners.forEach(listener=>listener(next,scope));}
 function fail(result,label){if(result?.error)throw new Error(`${label}：${result.error.message}`);return result?.data;}
 function countContent(){if(window.__FW_DESKTOP_V11__)window.__FW_DESKTOP_V11__.contentRequests=(window.__FW_DESKTOP_V11__.contentRequests||0)+1;}
@@ -62,7 +68,7 @@ async function fetchProfiles(ids,refresh=false){
   const profiles={...state.profiles};rows.forEach(row=>{profiles[String(row.id)]=row;});state.profiles=profiles;return profiles;
 }
 
-function visibleProfileIds(){return unique(state.posts.flatMap(post=>[post.user_id,...(post.comments||[]).flatMap(comment=>[comment.user_id,comment.reply_to_user_id])]));}
+function visibleProfileIds(){return unique([...state.posts,...state.mine.posts].flatMap(post=>[post.user_id,...(post.comments||[]).flatMap(comment=>[comment.user_id,comment.reply_to_user_id])]));}
 function refreshVisibleProfiles(){
   if(profileRefreshPromise)return profileRefreshPromise;
   const generation=profileGeneration;const ids=visibleProfileIds();if(!ids.length)return Promise.resolve(state.profiles);
@@ -99,31 +105,64 @@ async function load(force=false){
     const reactionsByPost={};reactions.forEach(reaction=>(reactionsByPost[String(reaction.post_id)]??=[]).push(reaction));
     const nextPosts=posts.map(post=>({...post,comments:commentsByPost[String(post.id)]||[],reactions:reactionsByPost[String(post.id)]||[]}));
     const changed=previousSignature!==contentSignature(nextPosts,state.profiles);
-    state.posts=nextPosts;state.loaded=true;state.loading=false;state.error='';lastSyncedAt=Date.now();await persistSquareCache();if(changed||showInitial)emit(showInitial?'all':'content');return state.posts;
+    state.posts=nextPosts;const byId=new Map(nextPosts.map(post=>[String(post.id),post]));state.mine.posts=state.mine.posts.map(post=>byId.get(String(post.id))||post);state.loaded=true;state.loading=false;state.error='';lastSyncedAt=Date.now();await persistSquareCache();if(changed||showInitial)emit(showInitial?'all':'content');return state.posts;
   }catch(error){state.loading=false;state.loaded=true;state.error=error.message||'精神广场读取失败。';if(showInitial||!state.posts.length)emit();throw error;}
   finally{loadPromise=null;if(refreshQueued&&active){refreshQueued=false;queueMicrotask(()=>load(true).catch(()=>{}));}}})();
   return loadPromise;
 }
 
+async function loadMine(force=false,more=false){
+  const current=requireUser();const userId=String(current.id);
+  if(state.mine.userId!==userId)state.mine={...emptyMine(),userId};
+  if(mineRequest)return mineRequest.promise;
+  if(!force&&state.mine.loaded&&!more)return state.mine.posts;
+  if(more&&state.mine.loaded&&!state.mine.hasMore&&!state.mine.error)return state.mine.posts;
+  const generation=profileGeneration;const offset=more?state.mine.offset:0;const request={promise:null};mineRequest=request;
+  const isCurrent=()=>mineRequest===request&&generation===profileGeneration&&String(user()?.id||'')===userId;
+  state.mine.loading=true;state.mine.error='';state.mine.retryMore=more;emit('content');
+  request.promise=(async()=>{try{
+    countContent();const rows=fail(await client.from('posts').select('id,user_id,content,created_at').eq('user_id',userId).or('is_deleted.eq.false,is_deleted.is.null').order('created_at',{ascending:false}).order('id',{ascending:false}).range(offset,offset+MY_POSTS_PAGE_SIZE-1),'读取我的牢骚失败')||[];
+    if(!isCurrent())return [];
+    const posts=rows.filter(post=>String(post.user_id)===userId);const ids=posts.map(post=>post.id);
+    const [comments,reactionResult]=await Promise.all([readComments(ids),ids.length?(countContent(),client.from('reactions').select('id,post_id,user_id,type,created_at').in('post_id',ids).eq('type','like')):Promise.resolve({data:[],error:null})]);
+    const reactions=fail(reactionResult,'读取互动失败')||[];
+    await fetchProfiles([userId,...comments.flatMap(comment=>[comment.user_id,comment.reply_to_user_id])],true);
+    if(!isCurrent())return [];
+    const commentsByPost={};comments.forEach(row=>(commentsByPost[String(row.post_id)]??=[]).push(row));
+    const reactionsByPost={};reactions.forEach(row=>(reactionsByPost[String(row.post_id)]??=[]).push(row));
+    const hydrated=posts.map(post=>({...post,comments:commentsByPost[String(post.id)]||[],reactions:reactionsByPost[String(post.id)]||[]}));
+    const merged=new Map((more?state.mine.posts:[]).map(post=>[String(post.id),post]));hydrated.forEach(post=>merged.set(String(post.id),post));
+    state.mine.posts=Array.from(merged.values()).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)||Number(b.id)-Number(a.id));
+    const byId=new Map(hydrated.map(post=>[String(post.id),post]));state.posts=state.posts.map(post=>byId.get(String(post.id))||post);
+    state.mine.offset=offset+rows.length;state.mine.hasMore=rows.length===MY_POSTS_PAGE_SIZE;state.mine.loaded=true;
+    if(state.openPostId&&!getPost(state.openPostId)){state.openPostId='';state.reply=null;}
+    return state.mine.posts;
+  }catch(error){if(isCurrent())state.mine.error=error.message||'我的牢骚读取失败。';throw error;}
+  finally{if(isCurrent()){state.mine.loading=false;mineRequest=null;emit('content');}}})();
+  return request.promise;
+}
+
 function upsertPost(row){
-  if(!row?.id)return false;const id=String(row.id);const current=state.posts.find(post=>String(post.id)===id);
+  if(!row?.id)return false;const id=String(row.id);const current=getPost(id);
   const next={...(current||{comments:[],reactions:[]}),id:row.id,user_id:row.user_id??current?.user_id,content:row.content??current?.content,created_at:row.created_at??current?.created_at};
   if(current&&current.user_id===next.user_id&&current.content===next.content&&current.created_at===next.created_at)return false;
-  state.posts=[next,...state.posts.filter(post=>String(post.id)!==id)].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,100);return true;
+  state.posts=[next,...state.posts.filter(post=>String(post.id)!==id)].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,100);
+  if(state.mine.loaded&&String(next.user_id)===state.mine.userId){if(!state.mine.posts.some(post=>String(post.id)===id))state.mine.offset+=1;state.mine.posts=[next,...state.mine.posts.filter(post=>String(post.id)!==id)].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));}
+  return true;
 }
-function removePostLocal(postId){const id=String(postId||'');const before=state.posts.length;state.posts=state.posts.filter(post=>String(post.id)!==id);if(state.openPostId===id){state.openPostId='';state.reply=null;}return state.posts.length!==before;}
+function removePostLocal(postId){const id=String(postId||'');const before=state.posts.length+state.mine.posts.length;if(state.mine.posts.some(post=>String(post.id)===id))state.mine.offset=Math.max(0,state.mine.offset-1);state.posts=state.posts.filter(post=>String(post.id)!==id);state.mine.posts=state.mine.posts.filter(post=>String(post.id)!==id);if(state.openPostId===id){state.openPostId='';state.reply=null;}return state.posts.length+state.mine.posts.length!==before;}
 function upsertComment(row){
   if(!row?.id||!row.post_id)return false;let changed=false;const id=String(row.id);
   const next={id:row.id,post_id:row.post_id,user_id:row.user_id,parent_comment_id:row.parent_comment_id||null,reply_to_comment_id:row.reply_to_comment_id||null,reply_to_user_id:row.reply_to_user_id||null,content:row.content,created_at:row.created_at};
-  state.posts=state.posts.map(post=>{if(String(post.id)!==String(row.post_id))return post;const current=(post.comments||[]).find(comment=>String(comment.id)===id);if(current&&contentSignature([current],{})===contentSignature([next],{}))return post;const comments=[...(post.comments||[]).filter(comment=>String(comment.id)!==id),next].sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));changed=true;return{...post,comments};});return changed;
+  mapPostLists(post=>{if(String(post.id)!==String(row.post_id))return post;const current=(post.comments||[]).find(comment=>String(comment.id)===id);if(current&&contentSignature([current],{})===contentSignature([next],{}))return post;const comments=[...(post.comments||[]).filter(comment=>String(comment.id)!==id),next].sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));changed=true;return{...post,comments};});return changed;
 }
-function removeCommentLocal(commentId){const id=String(commentId||'');let changed=false;state.posts=state.posts.map(post=>{const comments=(post.comments||[]).filter(comment=>String(comment.id)!==id);if(comments.length===(post.comments||[]).length)return post;changed=true;return{...post,comments};});if(state.reply?.targetCommentId===id)state.reply=null;return changed;}
+function removeCommentLocal(commentId){const id=String(commentId||'');let changed=false;mapPostLists(post=>{const comments=(post.comments||[]).filter(comment=>String(comment.id)!==id);if(comments.length===(post.comments||[]).length)return post;changed=true;return{...post,comments};});if(state.reply?.targetCommentId===id)state.reply=null;return changed;}
 function upsertReaction(row){
   if(!row?.id||!row.post_id||row.type!=='like')return false;let changed=false;const id=String(row.id);
   const next={id:row.id,post_id:row.post_id,user_id:row.user_id,type:row.type,created_at:row.created_at};
-  state.posts=state.posts.map(post=>{if(String(post.id)!==String(row.post_id))return post;const current=(post.reactions||[]).find(reaction=>String(reaction.id)===id);if(current&&contentSignature([current],{})===contentSignature([next],{}))return post;const reactions=[...(post.reactions||[]).filter(reaction=>String(reaction.id)!==id),next];changed=true;return{...post,reactions};});return changed;
+  mapPostLists(post=>{if(String(post.id)!==String(row.post_id))return post;const current=(post.reactions||[]).find(reaction=>String(reaction.id)===id);if(current&&contentSignature([current],{})===contentSignature([next],{}))return post;const reactions=[...(post.reactions||[]).filter(reaction=>String(reaction.id)!==id),next];changed=true;return{...post,reactions};});return changed;
 }
-function removeReactionLocal(reactionId){const id=String(reactionId||'');let changed=false;state.posts=state.posts.map(post=>{const reactions=(post.reactions||[]).filter(reaction=>String(reaction.id)!==id);if(reactions.length===(post.reactions||[]).length)return post;changed=true;return{...post,reactions};});return changed;}
+function removeReactionLocal(reactionId){const id=String(reactionId||'');let changed=false;mapPostLists(post=>{const reactions=(post.reactions||[]).filter(reaction=>String(reaction.id)!==id);if(reactions.length===(post.reactions||[]).length)return post;changed=true;return{...post,reactions};});return changed;}
 async function commitContent(){lastSyncedAt=Date.now();await persistSquareCache();emit('content');}
 function scheduleRefresh(){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(active)load(true).catch(()=>{});},220);}
 async function applyRealtime(table,payload){
@@ -157,7 +196,7 @@ function deactivate(){active=false;refreshQueued=false;clearTimeout(refreshTimer
 function openPost(postId){state.openPostId=String(postId||'');state.reply=null;emit('detail');}
 async function openPostById(postId){
   const id=String(postId||'').trim();if(!id)throw new Error('帖子已经不存在。');
-  if(state.posts.some(row=>String(row.id)===id)){openPost(id);return state.posts.find(row=>String(row.id)===id);}
+  if(getPost(id)){openPost(id);return getPost(id);}
   countContent();const result=await client.from('posts').select('id,user_id,content,created_at').eq('id',id).or('is_deleted.eq.false,is_deleted.is.null').limit(1);const rows=fail(result,'读取帖子失败')||[];const post=rows[0];if(!post)throw new Error('帖子已经删除或不可查看。');
   const [comments,reactionResult]=await Promise.all([readComments([post.id]),(countContent(),client.from('reactions').select('id,post_id,user_id,type,created_at').eq('post_id',post.id).eq('type','like'))]);
   const reactions=fail(reactionResult,'读取互动失败')||[];await fetchProfiles([post.user_id,...comments.flatMap(row=>[row.user_id,row.reply_to_user_id])],true);
@@ -206,7 +245,7 @@ async function createPost({text,imageFile=null,stickerUrls=[]}){
 }
 
 async function createComment({postId,text,imageFile=null,stickerUrls=[]}){
-  const current=requireUser();const post=state.posts.find(row=>String(row.id)===String(postId));if(!post)throw new Error('帖子已经不存在。');
+  const current=requireUser();const post=getPost(postId);if(!post)throw new Error('帖子已经不存在。');
   const clean=checkedText(text,COMMENT_TEXT_LIMIT,'评论文字');if(state.busy)throw new Error('正在处理，请稍候。');state.busy=true;emit('detail');
   try{
     const media=imageFile?.size?await uploadMedia(imageFile,'comment'):{url:'',kind:''};let content=composeContent(clean,{mediaUrl:media.url,mediaKind:media.kind,stickerUrls});
@@ -221,7 +260,7 @@ async function createComment({postId,text,imageFile=null,stickerUrls=[]}){
 
 async function toggleReaction(postId,type){
   const current=requireUser();const allowed=['like'];if(!allowed.includes(type))throw new Error('未知互动类型。');
-  const post=state.posts.find(row=>String(row.id)===String(postId));if(!post)throw new Error('帖子已经不存在。');
+  const post=getPost(postId);if(!post)throw new Error('帖子已经不存在。');
   const existing=(post.reactions||[]).find(row=>String(row.user_id)===String(current.id)&&row.type===type);
   let changed=false;
   if(existing){fail(await client.from('reactions').delete().eq('id',existing.id).eq('user_id',current.id),'撤回互动失败');changed=removeReactionLocal(existing.id);}
@@ -235,9 +274,9 @@ async function report(targetType,targetId,reason){requireUser();const text=Strin
 
 authStore.subscribe(auth=>{
   const nextUserId=String(auth.user?.id||'');const switched=Boolean(nextUserId&&((lastAuthUserId&&nextUserId!==lastAuthUserId)||(hydratedCacheKey&&hydratedCacheKey!==nextUserId)));lastAuthUserId=nextUserId;
-  if(switched){profileGeneration+=1;state.loaded=false;state.loading=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();if(active)load(false).catch(()=>{});}
+  if(switched){profileGeneration+=1;state.mine=emptyMine();mineRequest=null;state.loaded=false;state.loading=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();if(active)load(false).catch(()=>{});}
   if(!auth.ready)return;
-  if(!auth.user){profileGeneration+=1;deactivate();state.loaded=false;state.loading=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();}
+  if(!auth.user){profileGeneration+=1;state.mine=emptyMine();mineRequest=null;deactivate();state.loaded=false;state.loading=false;state.posts=[];state.profiles={};state.openPostId='';state.reply=null;hydratedCacheKey='';lastSyncedAt=0;emit();}
 });
 
-export const feedStore={state,activate,deactivate,load,openPost,openPostById,closePost,setReply,clearReply,createPost,createComment,toggleReaction,deletePost,deleteComment,report,uploadImage,uploadMedia,composeContent,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};
+export const feedStore={state,activate,deactivate,load,loadMine,getPost,openPost,openPostById,closePost,setReply,clearReply,createPost,createComment,toggleReaction,deletePost,deleteComment,report,uploadImage,uploadMedia,composeContent,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};

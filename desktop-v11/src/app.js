@@ -285,6 +285,7 @@ function echoPostId(row){if(row.__post_id)return String(row.__post_id);if(row.ta
 function renderSquareMode(){
   const feed=$('[data-square-feed]');const echo=$('[data-square-echo-panel]');const button=$('[data-square-echo-toggle]');if(!feed||!echo||!button)return;
   const showingEcho=squareMode==='echo';feed.hidden=showingEcho;echo.hidden=!showingEcho;button.classList.toggle('active',showingEcho);button.setAttribute('aria-pressed',String(showingEcho));
+  const mineButton=$('[data-square-mine-toggle]');mineButton?.classList.toggle('active',squareMode==='mine');mineButton?.setAttribute('aria-pressed',String(squareMode==='mine'));renderSquareFeed();syncSquarePostSelection();
 }
 
 function currentProfile(userId){return feedState.profiles[String(userId)]||{};}
@@ -333,6 +334,15 @@ function postCard(post){
 }
 function renderSquareFeed(){
   const host=$('[data-square-feed]');if(!host)return;
+  if(squareMode==='mine'){
+    const scrollTop=host.dataset.feedMode==='mine'?host.scrollTop:0;host.dataset.feedMode='mine';
+    const mine=feedState.mine;const posts=mine.userId===String(accountState.user?.id||'')?mine.posts:[];
+    if(mine.loading&&!posts.length){host.innerHTML=mascotStateHtml({title:'正在读取我的牢骚',copy:'伏伏正在整理你发过的记录。',tone:'loading'});return;}
+    if(mine.error&&!posts.length){host.innerHTML=mascotStateHtml({title:'我的牢骚暂时读取失败',copy:mine.error,tone:'error',action:'<button class="secondary compact" type="button" data-square-refresh>重试</button>'});return;}
+    const footer=mine.error?`<div class="square-mine-footer" role="status"><span>${esc(mine.error)}</span><button class="secondary compact" type="button" data-square-mine-retry ${mine.loading?'disabled':''}>重试</button></div>`:mine.hasMore?`<div class="square-mine-footer"><button class="secondary compact" type="button" data-square-mine-more ${mine.loading?'disabled':''}>${mine.loading?'正在加载…':'加载更早的牢骚'}</button></div>`:'';
+    host.innerHTML=posts.length?posts.map(postCard).join('')+footer:mascotStateHtml({title:'你还没有发过牢骚',copy:'想说的话，可以从第一条开始。',tone:'empty',action:'<button class="primary compact" type="button" data-nav="compose">发牢骚</button>'});host.scrollTop=scrollTop;return;
+  }
+  host.dataset.feedMode='feed';
   if(feedState.loading&&!feedState.loaded){host.innerHTML=mascotStateHtml({title:'正在读取精神广场',copy:'伏伏正在同步今天的研究记录。',tone:'loading'});return;}
   if(feedState.error&&!feedState.posts.length){host.innerHTML=mascotStateHtml({title:'精神广场暂时读取失败',copy:feedState.error,tone:'error',action:'<button class="secondary compact" type="button" data-square-refresh>重试</button>'});return;}
   host.innerHTML=feedState.posts.length?feedState.posts.map(postCard).join(''):mascotStateHtml({title:'广场还很安静',copy:'可以留下第一条低功耗记录。',tone:'empty',action:'<button class="primary compact" type="button" data-nav="compose">发牢骚</button>'});
@@ -354,7 +364,7 @@ function commentHtml(comment,{reply=false}={}){
   return `<article class="post-comment ${reply?'reply':''} " data-comment-id="${esc(comment.id)}">${avatarHtml(profile,'social-avatar mini',{userId:comment.user_id})}<div><div class="comment-meta"><b>${memberName(profile.nickname||'匿名用户',comment.user_id)}${reply&&target.nickname?` 回复 ${esc(target.nickname)}`:''}</b>${vipBadgeHtml(comment.user_id)}<time>${esc(timeText(comment.created_at))}</time></div>${richContent(comment.content)}<div class="comment-actions"><button type="button" data-reply-comment="${esc(comment.id)}">回复</button>${mine?`<button class="danger" type="button" data-delete-comment="${esc(comment.id)}">删除</button>`:''}</div></div></article>`;
 }
 function renderPostDetail(){
-  const host=$('[data-post-detail]');if(!host)return;const previousPostId=host.dataset.renderedPostId||'';const previousScrollTop=host.querySelector('.detail-content-scroll')?.scrollTop||0;const post=feedState.posts.find(row=>String(row.id)===String(feedState.openPostId));
+  const host=$('[data-post-detail]');if(!host)return;const previousPostId=host.dataset.renderedPostId||'';const previousScrollTop=host.querySelector('.detail-content-scroll')?.scrollTop||0;const post=feedStore.getPost(feedState.openPostId);
   if(!post){delete host.dataset.renderedPostId;host.innerHTML='<div class="post-detail-empty mascot-detail-empty"><img src="/mascot-fufu.webp" alt="伏伏"><b>选择一条帖子</b><span>伏伏会在这里陪你查看评论和互动。</span></div>';return;}
   const profile=currentProfile(post.user_id);const reaction=reactionInfo(post);const mine=String(post.user_id)===String(accountState.user?.id);const tree=commentTree(post.comments);const draft=draftFor(post.id);const reply=feedState.reply&&String(feedState.reply.postId)===String(post.id)?feedState.reply:null;
   const comments=tree.roots.length?tree.roots.map(root=>`<div class="comment-thread">${commentHtml(root)}${(tree.replies.get(String(root.id))||[]).map(item=>commentHtml(item,{reply:true})).join('')}</div>`).join(''):'<div class="comment-empty">还没有评论，来说两句吧。</div>';
@@ -510,8 +520,11 @@ function bindNavigation(){
     const pollVote=event.target.closest('[data-poll-vote]');if(pollVote){try{await pollStore.vote(pollVote.dataset.pollVote,pollVote.dataset.optionId);toast('投票已记录，截止前可以改票。');}catch(error){toast(error.message||'投票失败。');}return;}
     const pollDelete=event.target.closest('[data-poll-delete-option]');if(pollDelete){if(!window.confirm('确定删除这个补充选项吗？已有投票的选项不能删除。'))return;try{await pollStore.deleteOption(pollDelete.dataset.pollDeleteOption);toast('补充选项已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
     const promote=event.target.closest('[data-poll-promote]');if(promote){if(!window.confirm('确定将这个课题设为官方课题并置顶吗？'))return;try{await pollStore.promote(promote.dataset.pollPromote);pollFilter='official';toast('已设为官方课题并置顶。');}catch(error){toast(error.message||'设置失败。');}return;}
-    if(event.target.closest('[data-square-echo-toggle]')){squareMode=squareMode==='echo'?'feed':'echo';renderSquareMode();if(squareMode==='echo')socialStore.loadEcho().catch(error=>toast(error.message||'回声读取失败。'));return;}
-    if(event.target.closest('[data-square-refresh]')){if(squareMode==='echo')socialStore.loadEcho(true).catch(error=>toast(error.message||'回声刷新失败。'));else feedStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
+    if(event.target.closest('[data-square-echo-toggle]')){squareMode=squareMode==='echo'?'feed':'echo';feedStore.closePost();renderSquareMode();if(squareMode==='echo')socialStore.loadEcho().catch(error=>toast(error.message||'回声读取失败。'));return;}
+    if(event.target.closest('[data-square-mine-toggle]')){squareMode=squareMode==='mine'?'feed':'mine';feedStore.closePost();renderSquareMode();if(squareMode==='mine')feedStore.loadMine().catch(error=>toast(error.message||'我的牢骚读取失败。'));return;}
+    if(event.target.closest('[data-square-mine-more]')){feedStore.loadMine(false,true).catch(error=>toast(error.message||'加载失败。'));return;}
+    if(event.target.closest('[data-square-mine-retry]')){feedStore.loadMine(true,feedState.mine.retryMore).catch(error=>toast(error.message||'加载失败。'));return;}
+    if(event.target.closest('[data-square-refresh]')){if(squareMode==='echo')socialStore.loadEcho(true).catch(error=>toast(error.message||'回声刷新失败。'));else if(squareMode==='mine')feedStore.loadMine(true).catch(error=>toast(error.message||'我的牢骚刷新失败。'));else feedStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
     const composePickerTab=event.target.closest('[data-compose-picker-tab]');if(composePickerTab){composeDraft.pickerTab=composePickerTab.dataset.composePickerTab;if(composeDraft.pickerTab==='stickers')socialStore.loadStickers().catch(error=>toast(error.message));renderCompose();return;}
     const composeEmoji=event.target.closest('[data-compose-emoji]');if(composeEmoji){if(composeDraft.text.length+composeEmoji.dataset.composeEmoji.length<=500)composeDraft.text+=composeEmoji.dataset.composeEmoji;renderCompose();requestAnimationFrame(()=>$('[data-compose-form] textarea')?.focus());return;}
     const composeSticker=event.target.closest('[data-compose-sticker]');if(composeSticker){const url=composeSticker.dataset.composeSticker;if(composeDraft.stickers.has(url))composeDraft.stickers.clear();else{composeDraft.stickers.clear();composeDraft.stickers.add(url);rememberSticker(url);}renderCompose();return;}
@@ -523,7 +536,7 @@ function bindNavigation(){
     const removeCommentSticker=event.target.closest('[data-comment-sticker-remove]');if(removeCommentSticker){draftFor(removeCommentSticker.dataset.commentStickerRemove).stickers.clear();renderPostDetail();return;}
     const removeCommentImage=event.target.closest('[data-comment-image-remove]');if(removeCommentImage){releasePreview(draftFor(removeCommentImage.dataset.commentImageRemove));renderPostDetail();return;}
     const react=event.target.closest('[data-react]');if(react){try{const added=await feedStore.toggleReaction(react.dataset.postId,react.dataset.react);toast(added?'已收到。':'已撤回。');}catch(error){toast(error.message||'互动失败。');}return;}
-    const reply=event.target.closest('[data-reply-comment]');if(reply){const post=feedState.posts.find(row=>String(row.id)===String(feedState.openPostId));const comment=post?.comments.find(row=>String(row.id)===String(reply.dataset.replyComment));if(comment){feedStore.setReply(comment);requestAnimationFrame(()=>$('[data-comment-form] textarea')?.focus());}return;}
+    const reply=event.target.closest('[data-reply-comment]');if(reply){const post=feedStore.getPost(feedState.openPostId);const comment=post?.comments.find(row=>String(row.id)===String(reply.dataset.replyComment));if(comment){feedStore.setReply(comment);requestAnimationFrame(()=>$('[data-comment-form] textarea')?.focus());}return;}
     if(event.target.closest('[data-clear-reply]')){feedStore.clearReply();return;}
     const deletePost=event.target.closest('[data-delete-post]');if(deletePost){if(!window.confirm('确定删除这条帖子吗？'))return;try{await feedStore.deletePost(deletePost.dataset.deletePost);toast('帖子已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
     const deleteComment=event.target.closest('[data-delete-comment]');if(deleteComment){if(!window.confirm('确定删除这条评论吗？'))return;try{await feedStore.deleteComment(deleteComment.dataset.deleteComment);toast('评论已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
