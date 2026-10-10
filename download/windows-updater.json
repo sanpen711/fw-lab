@@ -1,11 +1,11 @@
 {
+  "notes": "Windows 1.3.19：修复退出支付宝收银台后反复显示正在确认的问题，增加暂不支付、查询超时和订单到期核验。",
+  "version": "1.3.19",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWldxT3ZEMDAwTzhYbkJaa0NENzd0L2VnblBQeVZuMkNLSzAxQ01sT2ZwTnFrMmYvb0lEWVYwSFRNeVFGR2huZDhKTmMzRXBSSnBUVmdWZnZ0anB1blFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNTM5ODk3CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMThfeDY0LXNldHVwLmV4ZQptdkpMb0huL0Z1WUJ4YTExSW8wNENsMGd3RzVZUkRUbnM3cGpJWFJCcDU3WkgyQUlEZm8vL043NkhUbytWTjZ6dHlCVFR5ZGsrblhwOWJrSWhPOGdDZz09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.18-setup.exe"
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.19-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmFXV0J0b2JVcHNuQmlMKzZYVEtPNHRGS3Rqc2FyTUcyUjF2LzlBMFZxdEhKUVoyZ3lUUFNnK1labVRrakdUcjJDdUw4ei9FU29TbStMN09ENnNVR2dJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNTk1NDA3CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMTlfeDY0LXNldHVwLmV4ZQpyUmR0N3l3UExzT3drS0x1bkRQVEtxdUQvTE5WY2k4QkFIZGR2VWFYTFQyd3JyS0hpUzRXdlQ4K2dtUERsdFFaaVpzajdHL1JHN2ZzUU9ic0VPSnhCdz09Cg=="
     }
   },
-  "version": "1.3.18",
-  "pub_date": "2026-10-09T10:01:00.0750030Z",
-  "notes": "Windows 1.3.18：完善 V1～V9 会员等级、成长进度、静态装扮解锁和支付宝开通、续费、订单页面，支付功能暂未开放。"
+  "pub_date": "2026-10-10T01:26:08.1613387Z"
 }
