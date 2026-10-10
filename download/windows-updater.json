@@ -1,11 +1,11 @@
 {
+  "version": "1.3.22",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWldxYVpFMWFTa0lJcWNBM2dQZG4xMkdtRFZQL0dhQzBPWkN3Nzl1TGw3ZUpyUEhQUUdkam5tTDNaYk1UN3ZjcS8zK256OVdRV0gwbDZRc0ZnMXljcXdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNjE3MzMwCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMjFfeDY0LXNldHVwLmV4ZQp4VjFFUEswTWJ5dnFhaWI3akFBUUhrTkorM21xVnArZ1ZFRUxpUDdINmk4TGpubFFSVUVpc0xGUWltY3pQZ095VmhjQ1VITnFkUEJqblpCMmYzdmJBUT09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.21-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlY5aFRvcUxZdmhYd0srM0JZRTZ0bWxsWVljUlNyaUVkM1BXTGRCWG54a09aSFJPL2VSdCtFcEw2ZGViL0o2bm5ycUQ3cUZWbVpNQjZ4aTc5YjMzYkFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNjI3MTM2CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMjJfeDY0LXNldHVwLmV4ZQpUL3hNNGtTckNZZ3BUNkRtZWh0QjkwOGIvVldYNnV4UGJLejdPM1ExQnBwdUhYN0hNa0sza0U4WG80MUorNFlrOGhrU1d0R1FZS2dBaXZWN3lad1RCZz09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.22-setup.exe"
     }
   },
-  "pub_date": "2026-10-10T07:31:48.9075402Z",
-  "notes": "Windows 1.3.21：会员装扮移至独立栏目，新增周边商城和售价10元的伏伏表情包贴纸展示。",
-  "version": "1.3.21"
+  "notes": "Windows 1.3.22：档案移至主导航会员上方，精神广场新增我的牢骚，支持查看更早的帖子、评论和互动。",
+  "pub_date": "2026-10-10T10:15:16.8254884Z"
 }
