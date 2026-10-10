@@ -4,11 +4,11 @@ const me='00000000-0000-4000-8000-000000000031';
 const other='00000000-0000-4000-8000-000000000032';
 const user={id:me,aud:'authenticated',role:'authenticated',email:'member-test@example.com',app_metadata:{provider:'email',providers:['email']},user_metadata:{nickname:'会员测试',lab_code:'FWTEST2'},created_at:'2026-09-18T00:00:00Z'};
 const expires=new Date(Date.now()+86400000).toISOString();
-async function setup(page:Page,active=true,following=true,paymentMode=false as false|'success'|'failure'|'pending'){
+async function setup(page:Page,active=true,following=true,paymentMode=false as false|'success'|'failure'|'pending'|'expired',paymentOptions={deadlineMs:600000,hangQuery:false}){
   const requests:any[]=[];
   let appearance:any={user_id:me,theme:'black_gold',frame:'ticket',nickname_color:'rose_gold',title:'摸鱼研究员',card_layout:'pass',intro:'下班后上线',featured_post_id:null,expires_at:expires};
   let reading:any[]=following?[{post_id:101,following:true,last_seen_comment_id:201,anchor_comment_id:204,anchor_offset:0,scroll_top:300,content:'今晚有人一起玩吗',available:true,unread_count:11}]:[];
-  let joined=false,paid=false;
+  let joined=false,paid=false,orderCount=0;
   let order:any=null;
   await page.addInitScript(()=>{(window as any).checkoutUrls=[];window.open=((url:any)=>{(window as any).checkoutUrls.push(String(url));return {};}) as any;});
   await page.addInitScript(user=>localStorage.setItem('fw-lab-auth-token',JSON.stringify({access_token:'test-token',refresh_token:'test-refresh',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,token_type:'bearer',user})),user);
@@ -20,10 +20,12 @@ async function setup(page:Page,active=true,following=true,paymentMode=false as f
       if(body.action==='config')data={enabled:!!paymentMode,configured:true,max_amount_cents:5000};
       else if(body.action==='create'){
         await new Promise(resolve=>setTimeout(resolve,150));
-        order=order||{id:'test-order',order_no:'FW'+'1'.repeat(32),plan_id:body.plan_id,plan_name:body.plan_id==='quarterly'?'季度会员':'月度会员',duration_months:body.plan_id==='quarterly'?3:1,amount_cents:body.plan_id==='quarterly'?2500:200,status:'pending',payment_method:'alipay',payment_expires_at:new Date(Date.now()+600000).toISOString(),created_at:new Date().toISOString(),paid_at:null};
+        order=order?.status==='pending'?order:{id:'test-order',order_no:'FW'+String(++orderCount).repeat(32),plan_id:body.plan_id,plan_name:body.plan_id==='quarterly'?'季度会员':'月度会员',duration_months:body.plan_id==='quarterly'?3:1,amount_cents:body.plan_id==='quarterly'?2500:200,status:'pending',payment_method:'alipay',payment_expires_at:new Date(Date.now()+paymentOptions.deadlineMs).toISOString(),created_at:new Date().toISOString(),paid_at:null};
         data={order,payment_url:'https://openapi.alipay.com/gateway.do?app_id=2021007104686921&method=alipay.trade.page.pay&sign=synthetic'};
       }else if(body.action==='resume')data={order,payment_url:'https://openapi.alipay.com/gateway.do?app_id=2021007104686921&method=alipay.trade.page.pay&sign=synthetic'};
       else if(body.action==='query'){
+        if(paymentOptions.hangQuery)return;
+        if(paymentMode==='expired')order={...order,status:'closed'};
         if(paymentMode==='failure')return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'PAYMENT_QUERY_UNAVAILABLE'})});
         if(paymentMode==='success'){paid=true;order={...order,status:'paid',paid_at:new Date().toISOString()};}
         data={order};
@@ -217,4 +219,76 @@ test('等级提升显示静态伏伏提示，可关闭',async({page})=>{
   await expect(page.locator('.membership-level-notice')).toContainText('V2 已解锁');
   await expect(page.locator('.membership-level-notice img')).toHaveCSS('animation-name','none');
   await page.locator('[data-member-level-dismiss]').click();await expect(page.locator('.membership-level-notice')).toHaveCount(0);
+});
+
+
+test('后台查单不显示忙碌按钮，暂不支付立即中止查询且重启保留订单',async({page})=>{
+  const options={deadlineMs:600000,hangQuery:true};
+  const {requests}=await setup(page,false,false,'pending',options);
+  await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
+  await expect(page.locator('[data-payment-query]')).toBeVisible();
+  await page.clock.install();await page.clock.runFor(5100);
+  await expect.poll(()=>requests.filter(row=>row.body.action==='query').length).toBe(1);
+  await expect(page.locator('[data-payment-query]')).toHaveText('查询付款结果');
+  await expect(page.locator('[data-payment-resume]')).toBeEnabled();
+  await page.locator('[data-payment-pause]').click();
+  await expect(page.locator('.membership-payment-status')).toContainText('已停止自动查询');
+  await expect(page.locator('[data-payment-pause]')).toHaveText('已暂不支付');
+  await page.clock.runFor(30000);
+  expect(requests.filter(row=>row.body.action==='query')).toHaveLength(1);
+  const cached=await page.evaluate(id=>JSON.parse(localStorage.getItem(`fw-membership-checkout:${id}`)||'null'),me);
+  expect(cached).toEqual({order_no:'FW'+'1'.repeat(32),paused:true,pause_reason:'user'});
+  await expect(page.locator('.membership-payment-success')).toHaveCount(0);
+  options.hangQuery=false;await page.reload();
+  await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();
+  await expect(page.locator('[data-payment-pause]')).toHaveText('已暂不支付');
+  await expect.poll(()=>requests.filter(row=>row.body.action==='query').length).toBe(2);
+  await page.clock.runFor(6000);expect(requests.filter(row=>row.body.action==='query')).toHaveLength(2);
+  await page.screenshot({path:'/tmp/fw-member-payment-paused.png'});
+});
+
+test('未付款自动查单三次后暂停，不伪造失败或无限轮询',async({page})=>{
+  const {requests}=await setup(page,false,false,'pending');
+  await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
+  await expect(page.locator('[data-payment-query]')).toBeVisible();await page.clock.install();
+  for(let i=1;i<=3;i++){
+    await page.clock.runFor(5100);
+    await expect.poll(()=>requests.filter(row=>row.body.action==='query').length).toBe(i);
+    await expect(page.locator('.membership-payment-status')).not.toContainText('正在后台查询');
+  }
+  await expect(page.locator('.membership-payment-status')).toContainText('尚未收到付款，已停止自动查询');
+  await expect(page.locator('.membership-payment-status b')).toHaveText('等待付款');
+  await page.clock.runFor(30000);expect(requests.filter(row=>row.body.action==='query')).toHaveLength(3);
+  await expect(page.locator('.membership-payment-success')).toHaveCount(0);
+  await page.locator('[data-payment-resume]').click();
+  await expect.poll(()=>requests.filter(row=>row.body.action==='resume').length).toBe(1);
+  await expect(page.locator('.membership-payment-status')).not.toContainText('已停止自动查询');
+});
+
+test('查单连接卡住十五秒会解除等待，原订单仍可查询',async({page})=>{
+  await setup(page,false,false,'pending',{deadlineMs:600000,hangQuery:true});
+  await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
+  await expect(page.locator('[data-payment-query]')).toBeVisible();await page.clock.install();
+  await page.locator('[data-payment-query]').click();
+  await expect(page.locator('[data-payment-query]')).toHaveText('正在查询…');
+  await page.clock.runFor(15100);
+  await expect(page.locator('.membership-payment-error')).toContainText('查询超时');
+  await expect(page.locator('[data-payment-query]')).toBeEnabled();
+  await expect(page.locator('[data-payment-resume]')).toBeEnabled();
+  await expect(page.locator('.membership-payment-success')).toHaveCount(0);
+  await expect(page.locator('.membership-payment-status b')).toHaveText('等待付款');
+});
+
+for(const mode of ['expired','success'] as const)test(`订单到期最终核验${mode==='expired'?'关闭未付款订单':'仍接受真实到账'}`,async({page})=>{
+  const {requests}=await setup(page,false,false,mode,{deadlineMs:1000,hangQuery:false});
+  await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
+  await expect(page.locator('[data-payment-query]')).toBeVisible();await page.locator('[data-payment-pause]').click();await page.clock.install();await page.clock.runFor(5100);
+  if(mode==='success')await expect(page.locator('.membership-payment-success')).toContainText('会员已自动生效');
+  else{
+    await expect(page.locator('.membership-payment-status b')).toHaveText('已关闭');
+    await page.locator('[data-payment-new]').click();await expect(page.locator('[data-payment-create]')).toBeEnabled();
+    await expect(page.locator('[data-membership-plan="quarterly"]')).toBeEnabled();
+  }
+  await page.clock.runFor(30000);
+  expect(requests.filter(row=>row.body.action==='query')).toHaveLength(1);
 });

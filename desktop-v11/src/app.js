@@ -478,6 +478,7 @@ function bindNavigation(){
     const paymentResume=event.target.closest('[data-payment-resume]');if(paymentResume){membershipTab='purchase';renderMembershipContent();await membershipPayment.resume(paymentResume.dataset.paymentResume);return;}
     const paymentQuery=event.target.closest('[data-payment-query]');if(paymentQuery){await membershipPayment.query(paymentQuery.dataset.paymentQuery);if(membershipPayment.state.order?.status==='paid'){membershipTab='purchase';renderMembershipContent();}await membershipStore.load(true);return;}
     const paymentCopy=event.target.closest('[data-payment-copy]');if(paymentCopy){try{await navigator.clipboard.writeText(paymentCopy.dataset.paymentCopy);toast('订单号已复制。');}catch{toast('复制失败，请手动复制订单号。');}return;}
+    if(event.target.closest('[data-payment-pause]')){membershipPayment.pause();return;}
     if(event.target.closest('[data-payment-open]')){await membershipPayment.openCheckout();return;}
     if(event.target.closest('[data-payment-config]')){await membershipPayment.loadConfig(true);return;}
     if(event.target.closest('[data-payment-new]')){membershipPayment.newOrder();return;}
