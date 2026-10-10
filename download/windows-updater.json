@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-10-10T02:15:15.1085368Z",
-  "notes": "Windows 1.3.20：修复会员装扮点击后跳回顶部，默认折叠 V1～V9 等级详情，移除追帖与帖子收藏，并将导航入口改为会员。",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.20-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlF2UjBmQjVLa1FEVDBkR21jb0xVbmNWaDZua1hzQVFaRlNoV3J4R2JWdW1sV1h3cXB4ZG5qb1BxcCtDWW1udjdwZEVvRm4yd3JlajM2cW1kcDgvSXc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNTk4MzU3CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMjBfeDY0LXNldHVwLmV4ZQpxN2lWQkZjOHR3ejQ1R0xFOTdEblRZNDgyU0Z6RHRLemlkNUNrRktXWXQva0lvVTRDUDgvWk5VSUFQK1ZtdzZqR0pYM2tPY3o0Tm8yNnlqT3FjZHpDdz09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWldxYVpFMWFTa0lJcWNBM2dQZG4xMkdtRFZQL0dhQzBPWkN3Nzl1TGw3ZUpyUEhQUUdkam5tTDNaYk1UN3ZjcS8zK256OVdRV0gwbDZRc0ZnMXljcXdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNjE3MzMwCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMjFfeDY0LXNldHVwLmV4ZQp4VjFFUEswTWJ5dnFhaWI3akFBUUhrTkorM21xVnArZ1ZFRUxpUDdINmk4TGpubFFSVUVpc0xGUWltY3pQZ095VmhjQ1VITnFkUEJqblpCMmYzdmJBUT09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.21-setup.exe"
     }
   },
-  "version": "1.3.20"
+  "pub_date": "2026-10-10T07:31:48.9075402Z",
+  "notes": "Windows 1.3.21：会员装扮移至独立栏目，新增周边商城和售价10元的伏伏表情包贴纸展示。",
+  "version": "1.3.21"
 }

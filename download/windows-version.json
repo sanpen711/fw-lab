@@ -1,11 +1,11 @@
 {
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "publishedAt": "2026-10-10T07:31:48.9075402Z",
   "platform": "Windows 10/11 64 位",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.20-setup.exe",
-  "publishedAt": "2026-10-10T02:15:15.1085368Z",
-  "sha256": "725790e987e420f0d6952a07f05bae12b6b7b3ccb6100f811be3da766bc13c77",
-  "rollbackVersion": "1.0.5",
-  "version": "1.3.20",
   "available": true,
-  "notes": "Windows 1.3.20：修复会员装扮点击后跳回顶部，默认折叠 V1～V9 等级详情，移除追帖与帖子收藏，并将导航入口改为会员。",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
+  "notes": "Windows 1.3.21：会员装扮移至独立栏目，新增周边商城和售价10元的伏伏表情包贴纸展示。",
+  "sha256": "cee5941e7c9a91483dfb1ac5c250898f8f0c964867b33f4b31423f6e738aa257",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.21-setup.exe",
+  "rollbackVersion": "1.0.5",
+  "version": "1.3.21"
 }
