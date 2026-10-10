@@ -76,7 +76,7 @@ test('我的按账号读取旧帖，分页后能发表评论和删除并切回�
 test('我的读取失败可重试，空列表有提示，最小窗口四个操作在同一排',async({page})=>{
   const {own,recover}=await setup(page,{failure:true});await page.setViewportSize({width:760,height:560});await page.goto('/');await page.locator('.nav-item[data-nav="square"]').click();await page.locator('[data-square-mine-toggle]').click();
   await expect(page.locator('[data-square-feed]')).toContainText('我的牢骚暂时读取失败');
-  own.splice(0);recover();await page.locator('[data-square-refresh]').click();
+  own.splice(0);recover();await page.locator('[data-square-feed] [data-square-refresh]').click();
   await expect(page.locator('[data-square-feed]')).toContainText('你还没有发过牢骚');
   const toolbar=page.locator('[data-view-panel="square"] .section-actions');
   const boxes=await toolbar.locator('button').evaluateAll(nodes=>nodes.map(node=>({y:node.getBoundingClientRect().y,right:node.getBoundingClientRect().right})));
