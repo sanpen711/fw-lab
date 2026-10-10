@@ -115,3 +115,5 @@ body.auth-required{overflow:hidden;background:#f6f6f4}
 .compose-compact-picker .fufu-pack-item button{width:100%;height:auto;aspect-ratio:1;padding:4px;border-color:#e7ded2;border-radius:10px;box-shadow:0 1px 2px rgba(31,51,45,.035)}
 .compose-compact-picker .fufu-pack-item span{overflow:hidden;color:#7f776e;font-size:11px;font-weight:650;line-height:1.25;text-overflow:ellipsis;white-space:nowrap}
 @media (max-height:680px){.has-comment-composer .detail-content-scroll{padding-bottom:136px}.post-detail-column .comment-compose-card{min-height:136px;padding-top:5px}.post-detail-column .comment-compose-card .compose-compact-picker{bottom:128px;height:210px;min-height:180px}.post-detail-column .comment-compose-card .image-preview{bottom:128px;max-height:210px}}
+
+.square-mine-button.active{border-color:var(--deep);background:var(--deep);color:#fff}.square-mine-footer{display:grid;justify-items:center;gap:9px;padding:12px 0 22px;color:var(--muted);font-size:12px}.square-mine-footer span{overflow-wrap:anywhere}
