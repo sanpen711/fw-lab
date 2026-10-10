@@ -20,7 +20,7 @@ async function setup(page:Page,options:{failure?:boolean,hold?:boolean}={}){
       if(url.searchParams.has('user_id')){
         requests.push(url);
         if(options.hold)await pending;
-        if(failing)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'暂时无法读取'})});
+        if(failing)return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({message:'暂时无法读取'})});
         const offset=Number(url.searchParams.get('offset')||0);const limit=Number(url.searchParams.get('limit')||30);
         data=own.slice(offset,offset+limit);
       }else data=recent;
@@ -44,6 +44,7 @@ test('我的按账号读取旧帖，分页后能发表评论和删除并切回�
   await expect(feed.locator('.square-post')).toHaveCount(30);
   expect(requests[0].searchParams.get('user_id')).toBe(`eq.${me}`);
   await expect(feed).not.toContainText('其他研究员的新帖');
+  await page.screenshot({path:'/tmp/fw-member-square-my.png'});
   await feed.locator('.square-post').first().click();
   await expect(page.locator('[data-post-detail]')).toContainText('旧帖评论');
   await page.locator('[data-comment-form] textarea').fill('我的旧帖仍可评论');
@@ -82,6 +83,7 @@ test('我的读取失败可重试，空列表有提示，最小窗口四个操�
   expect(Math.max(...boxes.map(box=>box.y))-Math.min(...boxes.map(box=>box.y))).toBeLessThanOrEqual(1);
   expect(Math.max(...boxes.map(box=>box.right))).toBeLessThanOrEqual(760);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({path:'/tmp/fw-member-square-my-narrow.png'});
 });
 
 test('退出登录时清空我的记录，延迟返回的数据不能恢复旧账号帖子',async({page})=>{
