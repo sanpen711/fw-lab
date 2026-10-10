@@ -32,3 +32,11 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Test local Windows frontend
         run: npm --prefix desktop-v11 test
+      - name: Upload membership UI previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-membership-previews
+          path: /tmp/fw-member-*.png
+          if-no-files-found: ignore
+          retention-days: 7

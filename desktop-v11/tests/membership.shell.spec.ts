@@ -4,10 +4,9 @@ const me='00000000-0000-4000-8000-000000000031';
 const other='00000000-0000-4000-8000-000000000032';
 const user={id:me,aud:'authenticated',role:'authenticated',email:'member-test@example.com',app_metadata:{provider:'email',providers:['email']},user_metadata:{nickname:'会员测试',lab_code:'FWTEST2'},created_at:'2026-09-18T00:00:00Z'};
 const expires=new Date(Date.now()+86400000).toISOString();
-async function setup(page:Page,active=true,following=true,paymentMode=false as false|'success'|'failure'|'pending'|'expired',paymentOptions={deadlineMs:600000,hangQuery:false}){
+async function setup(page:Page,active=true,paymentMode=false as false|'success'|'failure'|'pending'|'expired',paymentOptions={deadlineMs:600000,hangQuery:false}){
   const requests:any[]=[];
   let appearance:any={user_id:me,theme:'black_gold',frame:'ticket',nickname_color:'rose_gold',title:'摸鱼研究员',card_layout:'pass',intro:'下班后上线',featured_post_id:null,expires_at:expires};
-  let reading:any[]=following?[{post_id:101,following:true,last_seen_comment_id:201,anchor_comment_id:204,anchor_offset:0,scroll_top:300,content:'今晚有人一起玩吗',available:true,unread_count:11}]:[];
   let joined=false,paid=false,orderCount=0;
   let order:any=null;
   await page.addInitScript(()=>{(window as any).checkoutUrls=[];window.open=((url:any)=>{(window as any).checkoutUrls.push(String(url));return {};}) as any;});
@@ -40,10 +39,6 @@ async function setup(page:Page,active=true,following=true,paymentMode=false as f
     else if(path.endsWith('/fw_get_membership_appearances'))data=active||paid?[appearance]:[];
     else if(path.endsWith('/fw_get_own_membership_appearance'))data=[appearance];
     else if(path.endsWith('/fw_set_membership_appearance')){appearance={...appearance,theme:body.p_theme,frame:body.p_frame,nickname_color:body.p_nickname_color,title:body.p_title,card_layout:body.p_card_layout,intro:body.p_intro,featured_post_id:body.p_featured_post_id};data=null;}
-    else if(path.endsWith('/fw_get_post_reading'))data=reading.map(row=>({...row,unread_count:active?row.unread_count:0}));
-    else if(path.endsWith('/fw_update_post_reading')){const row=reading.find(row=>row.post_id===body.p_post_id);if(row){Object.assign(row,{last_seen_comment_id:body.p_seen_comment_id,anchor_comment_id:body.p_anchor_comment_id,anchor_offset:body.p_anchor_offset,scroll_top:body.p_scroll_top});row.unread_count=Math.max(0,212-row.last_seen_comment_id);}data=null;}
-    else if(path.endsWith('/fw_save_post_reading')){const row=reading.find(row=>row.post_id===body.p_post_id);if(row)row.following=body.p_following;else reading.push({post_id:body.p_post_id,following:body.p_following,last_seen_comment_id:212,scroll_top:0,content:'今晚有人一起玩吗',available:true,unread_count:0});data=null;}
-    else if(path.endsWith('/post_reading')&&route.request().method()==='DELETE'){reading=[];data=null;}
     else if(path.endsWith('/posts'))data=url.searchParams.has('user_id')?[]:[{id:101,user_id:other,content:'今晚有人一起玩吗',created_at:'2026-10-01T00:00:00Z'}];
     else if(path.endsWith('/comments'))data=Array.from({length:12},(_,i)=>({id:201+i,post_id:101,user_id:other,content:`评论 ${i+1}：一起玩，阅读位置测试。`,created_at:`2026-10-01T01:${String(i).padStart(2,'0')}:00Z`}));
     else if(path.endsWith('/profiles'))data=[{id:other,nickname:'队友',lab_code:'FWTEAM1'}];
@@ -53,18 +48,33 @@ async function setup(page:Page,active=true,following=true,paymentMode=false as f
     else if(path.endsWith('/fw_create_game_party'))data=52;
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
   });
-  return {requests,getReading:()=>reading};
+  return {requests};
 }
 
 test('会员身份先预览再保存，组合同步到资料卡并保持静态',async({page})=>{
-  const {requests}=await setup(page);await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  const {requests}=await setup(page);await page.setViewportSize({width:1066,height:728});await page.goto('/');await page.locator('[data-nav="membership"]').click();
   await expect(page.locator('[data-member-identity-form] input[name="title"]')).toHaveValue('摸鱼研究员');
+  await page.locator('.membership-growth-summary').click();
+  const scroll=page.locator('.membership-page-scroll');
+  for(const [field,value] of [['theme','pink_starlight'],['frame','ticket'],['nickname_color','rose_gold'],['card_layout','classic']]){
+    const choice=page.locator(`[data-member-identity-choice="${field}"][data-value="${value}"]`);await choice.scrollIntoViewIfNeeded();
+    const before=await scroll.evaluate(node=>node.scrollTop);expect(before).toBeGreaterThan(100);
+    await choice.click();await expect(choice).toHaveAttribute('aria-pressed','true');await expect(choice).toBeFocused();
+    expect(Math.abs(await scroll.evaluate(node=>node.scrollTop)-before)).toBeLessThanOrEqual(1);
+  }
+  const reset=page.locator('[data-member-identity-reset]');await reset.scrollIntoViewIfNeeded();
+  const beforeReset=await scroll.evaluate(node=>node.scrollTop);await reset.click();
+  expect(Math.abs(await scroll.evaluate(node=>node.scrollTop)-beforeReset)).toBeLessThanOrEqual(1);
+  await expect(page.locator('[data-membership-growth]')).toHaveAttribute('open','');
   await page.locator('[data-member-identity-choice="frame"][data-value="corners"]').click();
   await page.locator('[data-member-identity-form] input[name="title"]').fill('准点下班');
   await expect(page.locator('[data-member-identity-preview]')).toContainText('准点下班');
   expect(requests.filter(row=>row.path.endsWith('/fw_set_membership_appearance'))).toHaveLength(0);
-  await page.getByRole('button',{name:'保存身份',exact:true}).click();
+  const save=page.getByRole('button',{name:'保存身份',exact:true});await save.scrollIntoViewIfNeeded();
+  const beforeSave=await scroll.evaluate(node=>node.scrollTop);await save.click();
   await expect(page.locator('[data-member-identity-status]')).toHaveText('当前设置已同步');
+  expect(Math.abs(await scroll.evaluate(node=>node.scrollTop)-beforeSave)).toBeLessThanOrEqual(1);
+  await page.locator('.membership-growth-summary').click();
   expect(requests.find(row=>row.path.endsWith('/fw_set_membership_appearance')).body).toMatchObject({p_frame:'corners',p_title:'准点下班',p_card_layout:'pass',p_intro:'下班后上线'});
   await expect(page.locator('[data-account-avatar]')).toHaveClass(/vip-frame-corners/);
   await expect(page.locator('[data-account-avatar]')).toHaveCSS('animation-name','none');
@@ -117,13 +127,11 @@ for(const active of [false,true])test(`${active?'会员续费':'普通用户开�
   expect(requests.filter(row=>row.path.endsWith('/membership-alipay')&&row.body.action==='create')).toHaveLength(0);
 });
 
-test('到期会员保留身份与追更列表，不能保存身份或创建组队，仍可加入',async({page})=>{
+test('到期会员保留身份，不能保存身份或创建组队，仍可加入',async({page})=>{
   const {requests}=await setup(page,false);await page.goto('/');await page.locator('[data-nav="membership"]').click();
   await expect(page.locator('[data-member-identity-form] input[name="title"]')).toHaveValue('摸鱼研究员');
   await expect(page.getByRole('button',{name:'保存身份',exact:true})).toBeDisabled();
   await expect(page.locator('[data-account-avatar]')).not.toHaveClass(/vip-identity/);
-  await page.locator('[data-membership-tab="reading"]').first().click();await expect(page.locator('.reading-list')).toContainText('今晚有人一起玩吗');
-  await expect(page.locator('.reading-library')).toContainText('到期后暂停自动追更');
   await page.locator('.nav-item[data-nav="play"]').click();await page.locator('[data-party-create-toggle]').click();
   await expect(page.locator('[data-party-create-form]')).toHaveCount(0);await expect(page.locator('[data-party-create-host]')).toContainText('会员才能创建组队');
   await page.locator('[data-party-create-host] [data-party-create-toggle]').click();
@@ -134,31 +142,33 @@ test('到期会员保留身份与追更列表，不能保存身份或创建组�
   expect(requests.some(row=>row.path.endsWith('/fw_apply_game_party'))).toBe(true);
 });
 
-test('追更恢复位置、标记新评论，开帖不会自动清空未读，停止后保留收藏',async({page})=>{
-  const {requests}=await setup(page);await page.goto('/');await page.locator('.nav-item[data-nav="square"]').click();
-  await page.locator('[data-square-feed] [data-open-post="101"]').first().click();
-  await expect(page.locator('.post-comment.is-new')).toHaveCount(11);
-  await expect.poll(()=>page.locator('.detail-content-scroll').evaluate(node=>node.scrollTop)).toBeGreaterThan(100);
-  expect(requests.filter(row=>row.path.endsWith('/fw_update_post_reading')&&row.body.p_seen_comment_id>201)).toHaveLength(0);
-  await page.locator('[data-reading-seen]').click();await expect.poll(()=>requests.filter(row=>row.path.endsWith('/fw_update_post_reading')&&row.body.p_seen_comment_id===212).length).toBeGreaterThan(0);
-  await expect(page.locator('.post-comment.is-new')).toHaveCount(0);
-  await page.locator('[data-reading-stop="101"]').click();await expect(page.locator('[data-reading-follow="101"]')).toBeVisible();
-  await page.locator('[data-reading-library]').click();await page.locator('[data-membership-tab="saved"]').click();await expect(page.locator('.reading-list')).toContainText('已收藏');
-  await page.locator('.reading-list [data-reading-remove="101"]').click();await expect(page.locator('.reading-list')).toHaveCount(0);
+for(const active of [false,true])test(`${active?'会员':'普通用户'}没有追帖收藏入口，也不读取或写入相关记录`,async({page})=>{
+  const {requests}=await setup(page,active);await page.goto('/');
+  await expect(page.locator('.nav-item[data-nav="membership"] b')).toHaveText('会员');
+  await page.locator('[data-nav="membership"]').click();
+  await expect(page.locator('.membership-tabs button')).toHaveText(['我的会员','订单记录']);
+  await expect(page.locator('[data-membership-content]')).not.toContainText('帖子自动追更');
+  await page.locator('.nav-item[data-nav="square"]').click();await page.locator('[data-square-feed] [data-open-post="101"]').first().click();
+  await expect(page.locator('.post-comment')).toHaveCount(12);
+  await expect(page.locator('[data-reading-library],.post-reading-actions,.reading-list,.new-comment-label')).toHaveCount(0);
+  await expect(page.locator('[data-post-detail]')).not.toContainText('收藏');
+  await expect(page.locator('[data-post-detail]')).not.toContainText('追更');
+  expect(requests.filter(row=>/post_reading/.test(row.path))).toHaveLength(0);
 });
 
-test('普通用户收藏免费，追更入口引导会员且不提交写入',async({page})=>{
-  const {requests}=await setup(page,false,false);await page.goto('/');await page.locator('.nav-item[data-nav="square"]').click();await page.locator('[data-square-feed] [data-open-post="101"]').first().click();
-  await page.locator('[data-reading-save="101"]').click();await expect(page.locator('[data-reading-remove="101"]')).toBeVisible();
-  await page.locator('[data-reading-follow="101"]').click();await expect(page.locator('[data-view-panel="membership"]')).toHaveClass(/active/);
-  expect(requests.filter(row=>row.path.endsWith('/fw_save_post_reading'))).toHaveLength(1);
-  expect(requests.find(row=>row.path.endsWith('/fw_save_post_reading')).body.p_following).toBe(false);
-});
-
-
-test('V1～V9 进度、锁定装扮与到期保留等级',async({page})=>{
+test('V1～V9 默认折叠，展开和刷新保留等级与锁定装扮',async({page})=>{
   await setup(page,false);await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  await expect(page.locator('.membership-growth-content')).toBeHidden();
+  await expect(page.locator('[data-membership-growth]')).not.toHaveAttribute('open','');
+  await page.locator('.membership-growth-summary').click();
   await expect(page.locator('.membership-level-steps article')).toHaveCount(9);
+  await expect(page.locator('.membership-growth-content')).toBeVisible();
+  await page.locator('.membership-growth-tools [data-membership-refresh]').click();
+  await expect(page.locator('[data-membership-growth]')).toHaveAttribute('open','');
+  await expect(page.locator('.membership-growth-content')).toBeVisible();
+  await page.screenshot({path:'/tmp/fw-member-levels-expanded.png'});
+  await page.locator('.membership-growth-summary').click();
+  await expect(page.locator('.membership-growth-content')).toBeHidden();
   await expect(page.locator('.membership-growth h3')).toContainText('V2');
   await expect(page.locator('.membership-growth')).toContainText('已暂停累计');
   await expect(page.locator('[data-member-identity-choice="frame"][data-value="crown"]')).toBeDisabled();
@@ -167,7 +177,7 @@ test('V1～V9 进度、锁定装扮与到期保留等级',async({page})=>{
 });
 
 test('支付宝下单防重复，官方付款页和自动开通结果同步',async({page})=>{
-  const {requests}=await setup(page,false,false,'success');await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();
+  const {requests}=await setup(page,false,'success');await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();
   await expect(page.locator('[data-payment-create]')).toBeEnabled();
   await page.locator('[data-payment-create]').dblclick();
   await expect(page.locator('[data-payment-query]')).toBeVisible();
@@ -183,7 +193,7 @@ test('支付宝下单防重复，官方付款页和自动开通结果同步',asy
 });
 
 test('查询失败不伪造开通，可继续原订单付款',async({page})=>{
-  const {requests}=await setup(page,false,false,'failure');await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
+  const {requests}=await setup(page,false,'failure');await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
   await expect(page.locator('[data-payment-query]')).toBeVisible();await page.locator('[data-payment-query]').click();
   await expect(page.locator('.membership-payment-error')).toContainText('暂时无法确认付款结果');
   await expect(page.locator('.membership-payment-success')).toHaveCount(0);
@@ -194,7 +204,7 @@ test('查询失败不伪造开通，可继续原订单付款',async({page})=>{
 });
 
 test('客户端付款使用受限原生命令，付款后自动查询到账',async({page})=>{
-  await setup(page,false,false,'success');await page.goto('/');
+  await setup(page,false,'success');await page.goto('/');
   await page.evaluate(()=>{(window as any).nativeCheckout=[];(window as any).__TAURI__={core:{invoke:async(command:string,args:any)=>{if(command==='desktop_open_alipay')(window as any).nativeCheckout.push(args.url);return null;}}};});
   await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
   await expect.poll(()=>page.evaluate(()=>(window as any).nativeCheckout.length)).toBe(1);
@@ -203,7 +213,7 @@ test('客户端付款使用受限原生命令，付款后自动查询到账',asy
 });
 
 test('退出登录清除付款缓存，停止原订单轮询',async({page})=>{
-  const {requests}=await setup(page,false,false,'pending');await page.clock.install();await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
+  const {requests}=await setup(page,false,'pending');await page.clock.install();await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
   await expect(page.locator('[data-payment-query]')).toBeVisible();
   expect(await page.evaluate(id=>localStorage.getItem(`fw-membership-checkout:${id}`),me)).toContain('order_no');
   page.once('dialog',dialog=>dialog.accept());
@@ -224,7 +234,7 @@ test('等级提升显示静态伏伏提示，可关闭',async({page})=>{
 
 test('后台查单不显示忙碌按钮，暂不支付立即中止查询且重启保留订单',async({page})=>{
   const options={deadlineMs:600000,hangQuery:true};
-  const {requests}=await setup(page,false,false,'pending',options);
+  const {requests}=await setup(page,false,'pending',options);
   await page.clock.install();await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
   await expect(page.locator('[data-payment-query]')).toBeVisible();
   await expect(page.locator('[data-payment-resume]')).toBeEnabled();
@@ -249,7 +259,7 @@ test('后台查单不显示忙碌按钮，暂不支付立即中止查询且重�
 });
 
 test('未付款自动查单三次后暂停，不伪造失败或无限轮询',async({page})=>{
-  const {requests}=await setup(page,false,false,'pending');
+  const {requests}=await setup(page,false,'pending');
   await page.clock.install();await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
   await expect(page.locator('[data-payment-resume]')).toBeEnabled();
   for(let i=1;i<=3;i++){
@@ -267,7 +277,7 @@ test('未付款自动查单三次后暂停，不伪造失败或无限轮询',asy
 });
 
 test('查单连接卡住十五秒会解除等待，原订单仍可查询',async({page})=>{
-  await setup(page,false,false,'pending',{deadlineMs:600000,hangQuery:true});
+  await setup(page,false,'pending',{deadlineMs:600000,hangQuery:true});
   await page.clock.install();await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
   await expect(page.locator('[data-payment-query]')).toBeVisible();
   await page.locator('[data-payment-query]').click();
@@ -281,7 +291,7 @@ test('查单连接卡住十五秒会解除等待，原订单仍可查询',async(
 });
 
 for(const mode of ['expired','success'] as const)test(`订单到期最终核验${mode==='expired'?'关闭未付款订单':'仍接受真实到账'}`,async({page})=>{
-  const {requests}=await setup(page,false,false,mode,{deadlineMs:5000,hangQuery:false});
+  const {requests}=await setup(page,false,mode,{deadlineMs:5000,hangQuery:false});
   await page.clock.install();await page.goto('/');await page.locator('[data-nav="membership"]').click();await page.locator('[data-membership-purchase]').click();await page.locator('[data-payment-create]').click();
   await expect(page.locator('[data-payment-query]')).toBeVisible();await page.locator('[data-payment-pause]').click();await page.clock.runFor(5100);
   if(mode==='success')await expect(page.locator('.membership-payment-success')).toContainText('会员已自动生效');
