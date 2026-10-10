@@ -9,6 +9,7 @@ import {homeWidgets} from './home-widgets.js';
 import {membershipStore} from './membership-store.js';
 import {membershipPayment} from './membership-payment.js';
 import {membershipGrowthContent,membershipPurchasePage,membershipOrdersContent,dismissMembershipLevelNotice} from './membership-page.js';
+import {membershipShopContent} from './membership-shop.js';
 import {identityClass,memberName,memberBadge} from './member-identity.js';
 import {membershipExperience,identityEditor} from './membership-experience.js';
 import {desktopSettings} from './desktop-settings.js';
@@ -134,7 +135,7 @@ function renderMembershipEntry(){
   setAvatar($('[data-account-avatar]'),accountState.user);setAvatar($('[data-profile-avatar]'),accountState.user);
 }
 function membershipBenefits(){return [
-  ['自己的研究员身份','头像框、昵称配色、短称号和资料卡自由组合，展示一句话介绍与代表作'],
+  ['会员装扮','头像框、昵称配色、短称号和资料卡自由组合，展示一句话介绍与代表作'],
   ['发起开黑组队','会员可以创建房间，普通用户可以加入，进队申请由队长决定'],
   ['我的表情扩容','沿用现有表情收藏：普通用户 80 个，会员 160 个']
 ];}
@@ -152,20 +153,21 @@ function renderMembershipContent(){
   const focusSelector=focused?.matches('[data-member-identity-choice]')?`[data-member-identity-choice="${CSS.escape(focused.dataset.memberIdentityChoice)}"][data-value="${CSS.escape(focused.dataset.value)}"]`:focused?.closest('[data-member-identity-form]')&&focused.name?`[data-member-identity-form] [name="${CSS.escape(focused.name)}"]`:focusAttribute?`[${focusAttribute.name}="${CSS.escape(focusAttribute.value)}"]`:'';
   const selection=typeof focused?.selectionStart==='number'?[focused.selectionStart,focused.selectionEnd]:null;
   membershipPayment.setVisible(currentView==='membership'&&['purchase','orders'].includes(membershipTab));renderMembershipEntry();
-  const tabs=`<nav class="membership-tabs" aria-label="会员栏目">${[['benefits','我的会员'],['orders','订单记录']].map(([value,label])=>`<button type="button" class="${membershipTab===value||membershipTab==='purchase'&&value==='benefits'?'active':''}" data-membership-tab="${value}">${label}</button>`).join('')}</nav>`;
+  const tabs=`<nav class="membership-tabs" aria-label="会员栏目">${[['benefits','我的会员'],['appearance','会员装扮'],['orders','订单记录'],['shop','周边商城']].map(([value,label])=>`<button type="button" class="${membershipTab===value||membershipTab==='purchase'&&value==='benefits'?'active':''}" data-membership-tab="${value}">${label}</button>`).join('')}</nav>`;
   const paint=content=>{
     host.innerHTML=`${tabs}<div class="membership-page-scroll">${content}</div>`;host.dataset.membershipRenderedTab=membershipTab;
     host.querySelector('.membership-page-scroll').scrollTop=scrollTop;
     const target=focusSelector?host.querySelector(focusSelector):null;target?.focus({preventScroll:true});if(selection&&target?.setSelectionRange)target.setSelectionRange(...selection);
   };
+  if(membershipTab==='shop'){paint(membershipShopContent());return;}
   if(membershipState.loading&&!membershipState.loaded){paint('<div class="state-card">正在读取会员信息...</div>');return;}
   const active=activeMembership();const plan=membershipState.plans.find(item=>String(item.id)===String(active?.plan_id));
   if(membershipTab==='purchase'){paint(membershipPurchaseContent(active));return;}
   if(membershipTab==='orders'){paint(membershipOrdersContent());return;}
+  if(membershipTab==='appearance'){paint(`<section class="membership-appearance-page" aria-label="会员装扮">${identityEditor(!!active)}<footer class="membership-appearance-footer"><p>保存后，装扮会展示在头像、帖子、评论和资料卡中。</p><button type="button" class="secondary compact" data-membership-tab="benefits">返回我的会员</button>${!active?'<button type="button" class="primary compact" data-membership-purchase>开通会员</button>':''}</footer></section>`);return;}
   const status=active?`<section class="membership-vip-card vip-theme-${esc(membershipState.theme)}"><div class="membership-vip-glow" aria-hidden="true"></div><div class="membership-vip-head">${avatarHtml(accountState.user,'membership-vip-avatar',{userId:accountState.user?.id})}<div><small>我的会员</small><h2>${esc(accountState.user?.nickname||'研究所会员')} ${vipBadgeHtml(accountState.user?.id)}</h2><p>${esc(plan?.name||'会员')} · ${esc(memberDate(active.expires_at))} 到期</p></div><button class="membership-upgrade" type="button" data-membership-purchase>续费会员 <span aria-hidden="true">→</span></button></div><div class="membership-vip-foot"><span>自由组合身份</span><span>可以发起开黑</span><span>表情空间扩容</span></div></section>`:`<section class="membership-status"><div><small>当前状态</small><h3>${!accountState.user?'尚未登录':'普通研究员'}</h3><p>${!accountState.user?'登录后查看会员状态和订单记录。':'可以发帖、评论与加入组队。'}</p></div>${accountState.user?'<button class="membership-upgrade" type="button" data-membership-purchase>开通会员 <span aria-hidden="true">→</span></button>':'<button class="membership-login" type="button" data-open-account>登录账号</button>'}</section>`;
-  const themes=identityEditor(!!active);
   const benefits=`<section class="membership-section"><header><h3>会员权益</h3><span>发帖、评论、加入组队继续开放</span></header><div class="membership-benefits">${membershipBenefits().map(([title,copy],index)=>`<article><i>${String(index+1).padStart(2,'0')}</i><div><b>${esc(title)}</b><span>${esc(copy)}</span></div></article>`).join('')}</div></section>`;
-  paint(`<div class="membership-page-grid"><main class="membership-main-stack">${status}${membershipGrowthContent(growthExpanded)}${themes}<section class="membership-shortcuts"><button type="button" data-nav="play">发起开黑组队 <b>${active?'前往创建':'会员可创建'}</b></button></section>${membershipState.error?`<p class="membership-sync-note">${esc(membershipState.error)}</p>`:''}</main><aside class="membership-benefit-aside">${benefits}</aside></div>`);
+  paint(`<div class="membership-page-grid"><main class="membership-main-stack">${status}${membershipGrowthContent(growthExpanded)}<section class="membership-shortcuts"><button type="button" data-membership-tab="appearance">会员装扮 <b>搭配头像框与资料卡 →</b></button><button type="button" data-nav="play">发起开黑组队 <b>${active?'前往创建':'会员可创建'}</b></button></section>${membershipState.error?`<p class="membership-sync-note">${esc(membershipState.error)}</p>`:''}</main><aside class="membership-benefit-aside">${benefits}</aside></div>`);
 }
 
 function renderMembership(next=membershipState){

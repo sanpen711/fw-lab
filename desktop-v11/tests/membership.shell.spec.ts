@@ -51,36 +51,40 @@ async function setup(page:Page,active=true,paymentMode=false as false|'success'|
   return {requests};
 }
 
-test('会员身份先预览再保存，组合同步到资料卡并保持静态',async({page})=>{
+test('会员装扮独立预览保存，切换栏目保留草稿和阅读位置',async({page})=>{
   const {requests}=await setup(page);await page.setViewportSize({width:1066,height:728});await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  await expect(page.locator('[data-member-identity-form]')).toHaveCount(0);
+  await page.locator('.membership-tabs [data-membership-tab="appearance"]').click();
   await expect(page.locator('[data-member-identity-form] input[name="title"]')).toHaveValue('摸鱼研究员');
-  await page.locator('.membership-growth-summary').click();
   const scroll=page.locator('.membership-page-scroll');
+  await scroll.evaluate(node=>{node.scrollTop=40;});
   for(const [field,value] of [['theme','pink_starlight'],['frame','ticket'],['nickname_color','rose_gold'],['card_layout','classic']]){
     const choice=page.locator(`[data-member-identity-choice="${field}"][data-value="${value}"]`);await choice.scrollIntoViewIfNeeded();
-    const before=await scroll.evaluate(node=>node.scrollTop);expect(before).toBeGreaterThan(100);
+    const before=await scroll.evaluate(node=>node.scrollTop);expect(before).toBeGreaterThan(0);
     await choice.click();await expect(choice).toHaveAttribute('aria-pressed','true');await expect(choice).toBeFocused();
     expect(Math.abs(await scroll.evaluate(node=>node.scrollTop)-before)).toBeLessThanOrEqual(1);
   }
   const reset=page.locator('[data-member-identity-reset]');await reset.scrollIntoViewIfNeeded();
   const beforeReset=await scroll.evaluate(node=>node.scrollTop);await reset.click();
   expect(Math.abs(await scroll.evaluate(node=>node.scrollTop)-beforeReset)).toBeLessThanOrEqual(1);
-  await expect(page.locator('[data-membership-growth]')).toHaveAttribute('open','');
   await page.locator('[data-member-identity-choice="frame"][data-value="corners"]').click();
   await page.locator('[data-member-identity-form] input[name="title"]').fill('准点下班');
   await expect(page.locator('[data-member-identity-preview]')).toContainText('准点下班');
   expect(requests.filter(row=>row.path.endsWith('/fw_set_membership_appearance'))).toHaveLength(0);
-  const save=page.getByRole('button',{name:'保存身份',exact:true});await save.scrollIntoViewIfNeeded();
+  await page.locator('.membership-tabs [data-membership-tab="orders"]').click();
+  await page.locator('.membership-tabs [data-membership-tab="appearance"]').click();
+  await expect(page.locator('[data-member-identity-form] input[name="title"]')).toHaveValue('准点下班');
+  await expect(page.locator('[data-member-identity-choice="frame"][data-value="corners"]')).toHaveAttribute('aria-pressed','true');
+  const save=page.getByRole('button',{name:'保存装扮',exact:true});await save.scrollIntoViewIfNeeded();
   const beforeSave=await scroll.evaluate(node=>node.scrollTop);await save.click();
   await expect(page.locator('[data-member-identity-status]')).toHaveText('当前设置已同步');
   expect(Math.abs(await scroll.evaluate(node=>node.scrollTop)-beforeSave)).toBeLessThanOrEqual(1);
-  await page.locator('.membership-growth-summary').click();
   expect(requests.find(row=>row.path.endsWith('/fw_set_membership_appearance')).body).toMatchObject({p_frame:'corners',p_title:'准点下班',p_card_layout:'pass',p_intro:'下班后上线'});
   await expect(page.locator('[data-account-avatar]')).toHaveClass(/vip-frame-corners/);
   await expect(page.locator('[data-account-avatar]')).toHaveCSS('animation-name','none');
   await expect(page.locator('[data-membership-content]')).not.toContainText('优先体验');
   await expect(page.locator('[data-membership-content]')).not.toContainText('云存档');
-  await page.screenshot({path:'/tmp/fw-member-center.png',fullPage:true});
+  await page.screenshot({path:'/tmp/fw-member-appearance.png',fullPage:true});
   for(const width of [1000,760]){
     await page.setViewportSize({width,height:820});
     const preview=page.locator('[data-member-identity-preview]');
@@ -122,15 +126,43 @@ for(const active of [false,true])test(`${active?'会员续费':'普通用户开�
   }
   await page.locator('[data-membership-return]').click();
   await expect(entry).toBeFocused();
-  await expect(page.locator('[data-member-identity-preview]')).toBeVisible();
+  await expect(page.locator('[data-member-identity-form]')).toHaveCount(0);
+  await expect(page.locator('[data-membership-growth]')).toBeVisible();
   expect(requests.filter(row=>['POST','PATCH','DELETE'].includes(row.method)&&/\/(membership_orders|memberships)$/.test(row.path))).toHaveLength(0);
   expect(requests.filter(row=>row.path.endsWith('/membership-alipay')&&row.body.action==='create')).toHaveLength(0);
 });
 
-test('到期会员保留身份，不能保存身份或创建组队，仍可加入',async({page})=>{
+
+test('周边商城展示10元伏伏贴纸，未开售不创建付款订单',async({page})=>{
+  const {requests}=await setup(page,false,'success');await page.setViewportSize({width:1066,height:728});await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  await expect(page.locator('.membership-tabs button')).toHaveText(['我的会员','会员装扮','订单记录','周边商城']);
+  await expect(page.locator('[data-member-identity-form]')).toHaveCount(0);
+  await page.screenshot({path:'/tmp/fw-member-overview.png'});
+  await page.locator('.membership-tabs [data-membership-tab="shop"]').click();
+  const product=page.locator('[data-shop-product="fufu-stickers"]');
+  await expect(product.getByRole('heading',{name:'伏伏表情包贴纸'})).toBeVisible();
+  await expect(product.locator('.membership-shop-price strong')).toHaveText('¥10 / 份');
+  await expect(product.locator('[data-shop-purchase]')).toBeDisabled();
+  await expect(product).toContainText('展示商品 · 暂未开售');
+  await expect(product.locator('.membership-sticker-grid img')).toHaveCount(9);
+  await expect.poll(()=>product.locator('img').evaluateAll(images=>images.every(img=>(img as HTMLImageElement).complete&&(img as HTMLImageElement).naturalWidth>0))).toBe(true);
+  for(const width of [1066,760]){
+    await page.setViewportSize({width,height:width===1066?728:820});
+    expect(await product.evaluate(node=>node.scrollWidth-node.clientWidth)).toBeLessThanOrEqual(1);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({path:`/tmp/fw-member-shop-${width}.png`});
+  }
+  await page.locator('.membership-tabs [data-membership-tab="orders"]').click();
+  await expect(page.locator('.membership-order-head')).toBeVisible();
+  expect(requests.filter(row=>row.path.endsWith('/membership-alipay')&&row.body.action==='create')).toHaveLength(0);
+  expect(requests.filter(row=>['POST','PATCH','DELETE'].includes(row.method)&&/\/(membership_orders|memberships)$/.test(row.path))).toHaveLength(0);
+});
+
+test('到期会员保留装扮，不能保存装扮或创建组队，仍可加入',async({page})=>{
   const {requests}=await setup(page,false);await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  await page.locator('.membership-tabs [data-membership-tab="appearance"]').click();
   await expect(page.locator('[data-member-identity-form] input[name="title"]')).toHaveValue('摸鱼研究员');
-  await expect(page.getByRole('button',{name:'保存身份',exact:true})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'保存装扮',exact:true})).toBeDisabled();
   await expect(page.locator('[data-account-avatar]')).not.toHaveClass(/vip-identity/);
   await page.locator('.nav-item[data-nav="play"]').click();await page.locator('[data-party-create-toggle]').click();
   await expect(page.locator('[data-party-create-form]')).toHaveCount(0);await expect(page.locator('[data-party-create-host]')).toContainText('会员才能创建组队');
@@ -146,7 +178,7 @@ for(const active of [false,true])test(`${active?'会员':'普通用户'}没有�
   const {requests}=await setup(page,active);await page.goto('/');
   await expect(page.locator('.nav-item[data-nav="membership"] b')).toHaveText('会员');
   await page.locator('[data-nav="membership"]').click();
-  await expect(page.locator('.membership-tabs button')).toHaveText(['我的会员','订单记录']);
+  await expect(page.locator('.membership-tabs button')).toHaveText(['我的会员','会员装扮','订单记录','周边商城']);
   await expect(page.locator('[data-membership-content]')).not.toContainText('帖子自动追更');
   await page.locator('.nav-item[data-nav="square"]').click();await page.locator('[data-square-feed] [data-open-post="101"]').first().click();
   await expect(page.locator('.post-comment')).toHaveCount(12);
@@ -171,6 +203,7 @@ test('V1～V9 默认折叠，展开和刷新保留等级与锁定装扮',async({
   await expect(page.locator('.membership-growth-content')).toBeHidden();
   await expect(page.locator('.membership-growth h3')).toContainText('V2');
   await expect(page.locator('.membership-growth')).toContainText('已暂停累计');
+  await page.locator('.membership-tabs [data-membership-tab="appearance"]').click();
   await expect(page.locator('[data-member-identity-choice="frame"][data-value="crown"]')).toBeDisabled();
   await expect(page.locator('[data-member-identity-choice="card_layout"][data-value="honor"]')).toBeDisabled();
   await expect(page.locator('[data-account-avatar]')).not.toHaveClass(/vip-identity/);
@@ -189,7 +222,7 @@ test('支付宝下单防重复，官方付款页和自动开通结果同步',asy
   await expect(page.locator('.membership-payment-success')).toContainText('有效至');
   expect(requests.filter(row=>['POST','PATCH','DELETE'].includes(row.method)&&/\/(membership_orders|memberships)$/.test(row.path))).toHaveLength(0);
   await page.screenshot({path:'/tmp/fw-member-payment-success.png'});
-  await page.getByRole('button',{name:'装扮我的身份',exact:true}).click();await expect(page.getByRole('button',{name:'保存身份',exact:true})).toBeEnabled();
+  await page.getByRole('button',{name:'去装扮',exact:true}).click();await expect(page.getByRole('button',{name:'保存装扮',exact:true})).toBeEnabled();
 });
 
 test('查询失败不伪造开通，可继续原订单付款',async({page})=>{

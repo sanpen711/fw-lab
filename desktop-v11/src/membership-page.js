@@ -34,7 +34,7 @@ function checkoutContent(selected,active){
   const enabled=payment.config?.enabled===true,cap=payment.config?.max_amount_cents??5000;
   if(order?.status==='paid'){
     const membership=membershipStore.state.membership,synced=membershipStore.isActive();
-    return `<section class="membership-checkout membership-payment-success" role="status"><img src="/emoji/fufu1/23.webp" alt="伏伏庆祝"><h3>付款成功</h3><p>${synced?'会员已自动生效。':'正在同步会员状态，请刷新确认。'}</p>${synced?`<b>有效至 ${memberTime(membership.expires_at,true)}</b>`:'<button type="button" class="secondary" data-membership-refresh>刷新会员状态</button>'}<small>订单 ${esc(order.order_no)}</small><button type="button" class="primary" data-membership-return>装扮我的身份</button><button type="button" class="secondary compact" data-payment-new>继续选购</button></section>`;
+    return `<section class="membership-checkout membership-payment-success" role="status"><img src="/emoji/fufu1/23.webp" alt="伏伏庆祝"><h3>付款成功</h3><p>${synced?'会员已自动生效。':'正在同步会员状态，请刷新确认。'}</p>${synced?`<b>有效至 ${memberTime(membership.expires_at,true)}</b>`:'<button type="button" class="secondary" data-membership-refresh>刷新会员状态</button>'}<small>订单 ${esc(order.order_no)}</small><button type="button" class="primary" data-membership-tab="appearance">去装扮</button><button type="button" class="secondary compact" data-payment-new>继续选购</button></section>`;
   }
   const closed=order&&['closed','failed','refunded'].includes(order.status);
   const total=order?order.amount_cents:selected.price_cents;
