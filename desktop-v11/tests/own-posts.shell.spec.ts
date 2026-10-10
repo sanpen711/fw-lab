@@ -79,6 +79,8 @@ test('我的读取失败可重试，空列表有提示，最小窗口四个操�
   await expect(page.locator('[data-square-feed]')).toContainText('我的牢骚暂时读取失败');
   own.splice(0);recover();await page.locator('[data-square-feed] [data-square-refresh]').click();
   await expect(page.locator('[data-square-feed]')).toContainText('你还没有发过牢骚');
+  await expect(page.locator('.nav-item[data-nav="archive"]')).toBeInViewport({ratio:1});
+  await expect(page.locator('.account-button[data-open-account]')).toBeInViewport({ratio:1});
   const toolbar=page.locator('[data-view-panel="square"] .section-actions');
   const boxes=await toolbar.locator('button').evaluateAll(nodes=>nodes.map(node=>({y:node.getBoundingClientRect().y,right:node.getBoundingClientRect().right})));
   expect(Math.max(...boxes.map(box=>box.y))-Math.min(...boxes.map(box=>box.y))).toBeLessThanOrEqual(1);
