@@ -1,11 +1,11 @@
 {
-  "notes": "Windows 1.3.19：修复退出支付宝收银台后反复显示正在确认的问题，增加暂不支付、查询超时和订单到期核验。",
-  "version": "1.3.19",
+  "pub_date": "2026-10-10T02:15:15.1085368Z",
+  "notes": "Windows 1.3.20：修复会员装扮点击后跳回顶部，默认折叠 V1～V9 等级详情，移除追帖与帖子收藏，并将导航入口改为会员。",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.19-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmFXV0J0b2JVcHNuQmlMKzZYVEtPNHRGS3Rqc2FyTUcyUjF2LzlBMFZxdEhKUVoyZ3lUUFNnK1labVRrakdUcjJDdUw4ei9FU29TbStMN09ENnNVR2dJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNTk1NDA3CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMTlfeDY0LXNldHVwLmV4ZQpyUmR0N3l3UExzT3drS0x1bkRQVEtxdUQvTE5WY2k4QkFIZGR2VWFYTFQyd3JyS0hpUzRXdlQ4K2dtUERsdFFaaVpzajdHL1JHN2ZzUU9ic0VPSnhCdz09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.20-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlF2UjBmQjVLa1FEVDBkR21jb0xVbmNWaDZua1hzQVFaRlNoV3J4R2JWdW1sV1h3cXB4ZG5qb1BxcCtDWW1udjdwZEVvRm4yd3JlajM2cW1kcDgvSXc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNTk4MzU3CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMjBfeDY0LXNldHVwLmV4ZQpxN2lWQkZjOHR3ejQ1R0xFOTdEblRZNDgyU0Z6RHRLemlkNUNrRktXWXQva0lvVTRDUDgvWk5VSUFQK1ZtdzZqR0pYM2tPY3o0Tm8yNnlqT3FjZHpDdz09Cg=="
     }
   },
-  "pub_date": "2026-10-10T01:26:08.1613387Z"
+  "version": "1.3.20"
 }
