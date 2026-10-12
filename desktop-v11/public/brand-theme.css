@@ -544,3 +544,5 @@ html body .section-heading.compact-toolbar .section-actions button{flex:none!imp
   html body .nav-item{min-height:36px!important;}
   html body .account-button{min-height:42px!important;margin-top:8px!important;}
 }
+
+html body .nav-icon-chatrooms{-webkit-mask-image:url('/nav-icons/chatrooms.svg')!important;mask-image:url('/nav-icons/chatrooms.svg')!important;}

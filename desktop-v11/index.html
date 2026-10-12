@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/membership-shop.css">
   <link rel="stylesheet" href="/game-center.css">
   <link rel="stylesheet" href="/game-party.css">
+  <link rel="stylesheet" href="/chat-rooms.css">
 </head>
 <body class="auth-required">
   <div id="app" class="app-shell" data-view="home" hidden inert aria-hidden="true">
@@ -26,7 +27,7 @@
           <button class="nav-item active" type="button" data-nav="home"><span class="nav-icon nav-icon-home" aria-hidden="true"></span><b>首页</b></button>
           <button class="nav-item" type="button" data-nav="square"><span class="nav-icon nav-icon-brain" aria-hidden="true"></span><b>精神广场</b><i class="notification-dot" data-dot="square" aria-label="精神广场有新消息" hidden></i></button>
           <button class="nav-item" type="button" data-nav="rooms"><span class="nav-icon nav-icon-discussion" aria-hidden="true"></span><b>学术研讨</b></button>
-          <button class="nav-item" type="button" data-nav="bird"><span class="nav-icon nav-icon-news" aria-hidden="true"></span><b>新闻专区</b></button>
+          <button class="nav-item" type="button" data-nav="chatrooms"><span class="nav-icon nav-icon-chatrooms" aria-hidden="true"></span><b>闲聊房间</b></button>
           <button class="nav-item" type="button" data-nav="play"><span class="nav-icon nav-icon-buddy" aria-hidden="true"></span><b>下班开黑</b><i class="notification-dot" data-dot="play" aria-label="下班开黑有新消息" hidden></i></button>
           <button class="nav-item" type="button" data-nav="games"><span class="nav-icon nav-icon-game" aria-hidden="true"></span><b>小游戏</b></button>
         </div>
@@ -142,14 +143,14 @@
         </div>
       </section>
 
-      <section class="view" data-view-panel="bird">
-        <div class="bird-page">
-          <section class="bird-feed-column">
-            <div class="section-heading compact-toolbar bird-heading" role="toolbar" aria-label="新闻专区操作"><div class="section-actions"><button class="secondary compact" type="button" data-bird-refresh>刷新</button><button class="primary compact" type="button" data-bird-compose-toggle>发布内容</button></div></div>
-            <div class="bird-compose-host" data-bird-compose-host hidden></div>
-            <div class="bird-feed" data-bird-feed><div class="state-card">进入新闻专区后读取内容。</div></div>
+      <section class="view" data-view-panel="chatrooms">
+        <div class="chat-rooms-page">
+          <section class="room-list-column">
+            <div class="room-toolbar" role="toolbar" aria-label="闲聊房间操作"><button class="secondary compact" type="button" data-room-refresh>刷新</button><button class="secondary compact" type="button" data-room-mine-toggle aria-pressed="false">我的房间</button><button class="primary compact" type="button" data-room-create>创建房间</button></div>
+            <div class="room-mine-filters" data-room-mine-filters hidden><button type="button" data-room-filter="mine" aria-pressed="true">全部</button><button type="button" data-room-filter="owned" aria-pressed="false">我创建的</button><button type="button" data-room-filter="joined" aria-pressed="false">我加入的</button><button type="button" data-room-filter="pending" aria-pressed="false">申请中</button></div>
+            <div class="room-list" data-room-list><div class="state-card">进入后读取闲聊房间。</div></div>
           </section>
-          <aside class="bird-detail-column" data-bird-detail><div class="post-detail-empty"><b>选择一条内容</b><span>查看完整正文、图片、评论和互动。</span></div></aside>
+          <aside class="room-detail-column" data-room-detail></aside>
         </div>
       </section>
 

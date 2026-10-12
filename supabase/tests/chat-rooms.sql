@@ -1,0 +1,64 @@
+-- Execute as postgres. Temporary test identities/rooms roll back together.
+begin;
+do $$declare a uuid:=gen_random_uuid();b uuid:=gen_random_uuid();c uuid:=gen_random_uuid();begin
+ perform set_config('fw.test.owner',a::text,true);perform set_config('fw.test.member',b::text,true);perform set_config('fw.test.outsider',c::text,true);
+ insert into auth.users(id,aud,role,email,raw_user_meta_data,raw_app_meta_data,created_at,updated_at) select u,'authenticated','authenticated','room-test-'||u::text||'@example.invalid',jsonb_build_object('nickname','测试'||left(replace(u::text,'-',''),6)),'{}'::jsonb,now(),now() from unnest(array[a,b,c])u;
+end;$$;
+set local role authenticated;
+do $$declare a uuid:=current_setting('fw.test.owner')::uuid;b uuid:=current_setting('fw.test.member')::uuid;c uuid:=current_setting('fw.test.outsider')::uuid;r uuid;d jsonb;m bigint;allowed boolean;begin
+ perform set_config('request.jwt.claim.sub',a::text,true);
+ d:=public.fw_chat_room_action('create',null,'{"name":"权限测试房间","join_mode":"approval","password":"123456","retention_days":7}');r:=(d->>'room_id')::uuid;perform set_config('fw.test.room',r::text,true);
+ if jsonb_array_length(public.fw_chat_room_list('owned',0)->'rooms')<>1 then raise exception 'Owned room list failed';end if;
+ if not private.chat_room_path_member(a::text||'/rooms/'||r::text||'/image.webp') then raise exception 'Member storage policy failed';end if;
+ d:=public.fw_chat_room_read(r,null);if not (d->'room'->>'joined')::boolean or (d->'room'->>'member_count')::integer<>1 then raise exception 'Owner membership failed';end if;
+ if d::text like '%password_hash%' then raise exception 'Password leak';end if;
+ m:=(public.fw_chat_room_action('send',r,'{"content":"成员可读的消息"}')->>'message_id')::bigint;
+ perform set_config('request.jwt.claim.sub',b::text,true);
+ d:=public.fw_chat_room_read(r,null);if jsonb_array_length(d->'messages')<>0 then raise exception 'Unjoined user sees messages';end if;
+ d:=public.fw_chat_room_action('join',r,'{"password":"bad"}');if not d?'error' then raise exception 'Wrong password accepted';end if;
+ d:=public.fw_chat_room_action('join',r,'{"password":"123456"}');if d->>'status'<>'pending' then raise exception 'Approval gate bypassed';end if;
+ if jsonb_array_length(public.fw_chat_room_read(r,null)->'messages')<>0 then raise exception 'Pending applicant sees messages';end if;
+ allowed:=false;begin perform public.fw_chat_room_action('dissolve',r);allowed:=true;exception when others then null;end;if allowed then raise exception 'Non-owner dissolved room';end if;
+ allowed:=false;begin insert into public.chat_room_members(room_id,user_id) values(r,b);allowed:=true;exception when insufficient_privilege then null;end;if allowed then raise exception 'Direct membership insert bypassed';end if;
+ allowed:=false;begin perform * from private.chat_room_passwords;allowed:=true;exception when insufficient_privilege then null;end;if allowed then raise exception 'Private password table readable';end if;
+ perform set_config('request.jwt.claim.sub',a::text,true);
+ if jsonb_array_length(public.fw_chat_room_read(r,null)->'requests')<>1 then raise exception 'Owner request list failed';end if;
+ perform public.fw_chat_room_action('accept',r,jsonb_build_object('user_id',b));
+ perform set_config('request.jwt.claim.sub',b::text,true);
+ if jsonb_array_length(public.fw_chat_room_read(r,null)->'messages')<>1 then raise exception 'Approved member cannot read';end if;
+ if (select count(*) from public.chat_room_messages where room_id=r)<>1 then raise exception 'Member RLS failed';end if;
+ m:=(public.fw_chat_room_action('send',r,'{"content":"成员发言"}')->>'message_id')::bigint;
+ perform set_config('request.jwt.claim.sub',c::text,true);
+ if (select count(*) from public.chat_room_messages where room_id=r)<>0 then raise exception 'Outsider RLS failed';end if;
+ if private.chat_room_path_member(a::text||'/rooms/'||r::text||'/image.webp') then raise exception 'Outsider storage policy failed';end if;
+ allowed:=false;begin perform public.fw_chat_room_action('send',r,'{"content":"绕过加入"}');allowed:=true;exception when others then null;end;if allowed then raise exception 'Outsider sent message';end if;
+ perform set_config('request.jwt.claim.sub',a::text,true);perform public.fw_chat_room_action('delete_message',r,jsonb_build_object('message_id',m));perform public.fw_chat_room_action('kick',r,jsonb_build_object('user_id',b));
+ perform set_config('request.jwt.claim.sub',b::text,true);
+ if jsonb_array_length(public.fw_chat_room_read(r,null)->'messages')<>0 or (select count(*) from public.chat_room_messages where room_id=r)<>0 then raise exception 'Kicked member retains access';end if;
+ perform set_config('request.jwt.claim.sub',a::text,true);perform public.fw_chat_room_action('settings',r,'{"password_mode":"clear","join_mode":"direct","extend_days":3}');
+ d:=public.fw_chat_room_read(r,null);if (d->'room'->>'has_password')::boolean or (d->'room'->>'expires_at')::timestamptz<>now()+interval '10 days' then raise exception 'Settings/extension failed';end if;
+ perform set_config('request.jwt.claim.sub',b::text,true);if public.fw_chat_room_action('join',r)->>'status'<>'joined' then raise exception 'Open direct join failed';end if;perform public.fw_chat_room_action('leave',r);
+ perform set_config('request.jwt.claim.sub',a::text,true);d:=public.fw_chat_room_action('create',null,'{"name":"永久密码房间","join_mode":"direct","password":"123456","retention_days":0}');r:=(d->>'room_id')::uuid;perform set_config('fw.test.permanent',r::text,true);
+ if public.fw_chat_room_read(r,null)->'room'->>'expires_at' is not null then raise exception 'Permanent room expires';end if;
+ perform set_config('request.jwt.claim.sub',b::text,true);if public.fw_chat_room_action('join',r,'{"password":"123456"}')->>'status'<>'joined' then raise exception 'Password direct join failed';end if;
+ perform set_config('request.jwt.claim.sub',a::text,true);d:=public.fw_chat_room_action('create',null,'{"name":"公开申请房间","join_mode":"approval","retention_days":3}');r:=(d->>'room_id')::uuid;
+ perform set_config('request.jwt.claim.sub',c::text,true);if public.fw_chat_room_action('join',r)->>'status'<>'pending' then raise exception 'Open approval join failed';end if;perform public.fw_chat_room_action('cancel_request',r);
+ if public.fw_chat_room_read(r,null)->'room'->>'request_status' is not null then raise exception 'Cancel request failed';end if;
+ perform set_config('request.jwt.claim.sub',a::text,true);perform public.fw_chat_room_action('dissolve',current_setting('fw.test.permanent')::uuid);
+ if exists(select 1 from public.chat_rooms where id=current_setting('fw.test.permanent')::uuid) then raise exception 'Dissolution failed';end if;
+end;$$;
+reset role;
+update public.chat_rooms set expires_at=now()-interval '1 second' where id=current_setting('fw.test.room')::uuid;
+set local role authenticated;
+do $$declare allowed boolean:=false;r uuid:=current_setting('fw.test.room')::uuid;begin
+ perform set_config('request.jwt.claim.sub',current_setting('fw.test.owner'),true);
+ begin perform public.fw_chat_room_read(r,null);allowed:=true;exception when others then null;end;if allowed then raise exception 'Expired room readable';end if;
+ if exists(select 1 from public.chat_room_messages where room_id=r) then raise exception 'Expired message RLS failed';end if;
+end;$$;
+reset role;
+select private.chat_room_expire();
+do $$begin if exists(select 1 from public.chat_rooms where id=current_setting('fw.test.room')::uuid) or exists(select 1 from public.chat_room_messages where room_id=current_setting('fw.test.room')::uuid) then raise exception 'Expiry did not cascade';end if;end;$$;
+-- Removing an account must also dissolve its rooms without foreign-key errors.
+delete from auth.users where id=current_setting('fw.test.owner')::uuid;
+rollback;
+select 'Chat room joining, permissions, password privacy, expiry, moderation and account deletion passed; fixtures rolled back' as verified;

@@ -64,7 +64,7 @@ test('本地首页保留桌面视觉和完整导航框架',async({page})=>{
 test('档案独立放在会员上方，入馆须知和处理公告保留在更多',async({page})=>{
   await page.goto('/');
   const mainLabels=await page.locator('.nav-primary-group .nav-item b').allTextContents();
-  expect(mainLabels).toEqual(['首页','精神广场','学术研讨','新闻专区','下班开黑','小游戏']);
+  expect(mainLabels).toEqual(['首页','精神广场','学术研讨','闲聊房间','下班开黑','小游戏']);
   await expect(page.locator('.nav-primary-group [data-nav="play"] + [data-nav="games"]')).toBeVisible();
   await expect(page.locator('.nav-lower-group [data-nav="archive"] + [data-nav="membership"]')).toBeVisible();
   await page.locator('.nav-lower-group [data-nav="archive"]').click();
@@ -279,18 +279,16 @@ test('学术研讨为本地按需页面并保留投票分类',async({page})=>{
   expect(page.url()).toBe(original);
 });
 
-test('新闻专区为本地双栏按需页面',async({page})=>{
-  await page.goto('/');
-  const original=page.url();
+test('闲聊房间替换新闻专区并按需读取',async({page})=>{
+  await page.route('**/rest/v1/rpc/fw_chat_room_list',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({rooms:[],has_more:false,server_time:new Date().toISOString()})}));
+  await page.goto('/');const original=page.url();
   await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBe(0);
-  await page.locator('[data-nav="bird"].nav-item').click();
-  await expect(page.locator('[data-view-panel="bird"]')).toHaveClass(/active/);
-  await expect(page.locator('[data-bird-refresh]')).toBeVisible();
-  await expect(page.locator('[data-bird-detail]')).toContainText('选择一条内容');
-  await expect.poll(()=>page.evaluate(()=>window.__FW_DESKTOP_V11__?.contentRequests)).toBeGreaterThan(0);
-  await page.locator('[data-bird-compose-toggle]').click();
-  await expect(page.locator('[data-bird-compose-form]')).toBeVisible();
-  expect(page.url()).toBe(original);
+  await page.locator('[data-nav="chatrooms"].nav-item').click();
+  await expect(page.locator('[data-view-panel="chatrooms"]')).toHaveClass(/active/);
+  await expect(page.locator('[data-room-list]')).toContainText('还没有闲聊房间');
+  await expect(page.locator('[data-nav="bird"]')).toHaveCount(0);
+  await page.locator('[data-room-create]').click();
+  await expect(page.locator('[data-room-editor-form]')).toBeVisible();expect(page.url()).toBe(original);
 });
 
 test('小游戏在电脑端内部打开且离开后卸载',async({page})=>{
