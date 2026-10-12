@@ -387,6 +387,7 @@ function renderPolls(next=pollState){
 }
 
 function safeDirectUrl(value){try{const url=new URL(String(value||''));return['http:','https:'].includes(url.protocol)?url.href:'';}catch{return'';}}
+const ARCHIVE_AWARD={title:'点赞之王',en:'LIKE KING',medal:'赞',quote:'代表废话'};
 function archiveAvatar(row,className='archive-avatar'){return avatarHtml(row,className);}
 function archiveWinner(row,rank){const item=row||{nickname:`暂无第${rank}名`,score:0};return `<div class="archive-winner rank-${rank}">${archiveAvatar(item)}<b>${esc(item.nickname||'暂无上榜')}</b><strong>${Number(item.score||0)}</strong><i>${rank}</i></div>`;}
 function archiveAward(rows){const config=ARCHIVE_AWARD;if(!rows.length)return`<article class="archive-award"><header><div><small>${config.en}</small><h3>${config.title}</h3></div><i>${config.medal}</i></header><div class="state-card small">上周还没有产生${config.title}。</div><blockquote><b>${config.quote}：</b>暂无。</blockquote></article>`;const first=rows[0];return`<article class="archive-award"><header><div><small>${config.en}</small><h3>${config.title}</h3></div><i>${config.medal}</i></header><div class="archive-podium">${archiveWinner(rows[1],2)}${archiveWinner(first,1)}${archiveWinner(rows[2],3)}</div><blockquote><b>${config.quote}：</b>“${esc(previewText(first.topPost?.content||'暂无代表废话。').slice(0,100))}”</blockquote></article>`;}

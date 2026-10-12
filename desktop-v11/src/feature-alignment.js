@@ -214,6 +214,7 @@ function bind(){
     const target=event.target;const images=clipboardImages(event);if(!images.length||!target?.closest)return;
     const compose=target.closest('[data-compose-form]');if(compose&&target.matches('textarea')){event.preventDefault();if(handoffClipboardFiles($('[data-compose-image]',compose),images.slice(0,1)))toast('已粘贴图片，可预览后发布。');return;}
     const comment=target.closest('[data-comment-form]');if(comment&&target.matches('textarea')){event.preventDefault();if(handoffClipboardFiles($('[data-comment-image]',comment),images.slice(0,1)))toast('已粘贴图片，可预览后发送。');return;}
+    const room=target.closest('[data-room-send-form]');if(room&&target.matches('textarea')){event.preventDefault();handoffClipboardFiles($('[data-room-image]',room),images.slice(0,1));return;}
     const chat=target.closest('[data-chat-compose]');if(chat&&target.matches('input[name="message"]')){event.preventDefault();sendChatMedia(images[0]).catch(error=>toast(error.message||'发送失败。'));}
   },true);
   document.addEventListener('change',event=>{
