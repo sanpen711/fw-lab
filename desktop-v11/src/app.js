@@ -2,7 +2,7 @@ import {authStore} from './auth-store.js';
 import {socialStore} from './social-store.js';
 import {feedStore} from './feed-store.js';
 import {pollStore} from './poll-store.js';
-import {birdStore} from './bird-store.js';
+import {chatRoomUi} from './chat-room-ui.js';
 import {archiveStore} from './archive-store.js';
 import {gamePartyUi} from './game-party-ui.js';
 import {homeWidgets} from './home-widgets.js';
@@ -18,7 +18,7 @@ import {APP_VERSION} from './config.js';
 const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
 const routes={
-  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],bird:['新闻专区','看看研究所里此刻发生了什么'],play:['下班开黑','找到今晚一起玩的队友'],games:['小游戏','不用跳出软件，点开直接玩'],buddy:['搭子','左边选人，右边直接聊天'],membership:['会员','查看会员权益、套餐和订单'],archive:['档案','翻一翻被留下来的研究记录'],settings:['设置','管理个人资料、应用显示和本机缓存']
+  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],chatrooms:['闲聊房间','找一个房间，坐下来聊聊'],play:['下班开黑','找到今晚一起玩的队友'],games:['小游戏','不用跳出软件，点开直接玩'],buddy:['搭子','左边选人，右边直接聊天'],membership:['会员','查看会员权益、套餐和订单'],archive:['档案','翻一翻被留下来的研究记录'],settings:['设置','管理个人资料、应用显示和本机缓存']
 };
 const EMOJIS=[
   ['😀','1f600'],['😁','1f601'],['😂','1f602'],['🤣','1f923'],['😄','1f604'],['😅','1f605'],['😆','1f606'],['😊','1f60a'],['😉','1f609'],['😌','1f60c'],
@@ -44,7 +44,6 @@ let accountState={ready:false,busy:false,user:null};
 let socialState=socialStore.state;
 let feedState=feedStore.state;
 let pollState=pollStore.state;
-let birdState=birdStore.state;
 let archiveState=archiveStore.state;
 let membershipState=membershipStore.state;
 let currentAuthView='login';
@@ -59,11 +58,9 @@ let lastChatRenderSignature='';
 let socialRenderMemo=null;
 let pollFilter='all';
 let pollCreateOpen=false;
-let birdComposeOpen=false;
 let avatarPreviewUrl='';
 let authGateLocked=true;
 let protectedAppStarted=false;
-const birdDraft={title:'',content:'',displayMode:'profile',penName:'',files:[],previews:[]};
 const composeDraft={text:'',imageFile:null,imagePreview:'',stickers:new Set(),pickerTab:'emoji'};
 const commentDrafts=new Map();
 
@@ -172,7 +169,7 @@ function renderMembershipContent(){
 
 function renderMembership(next=membershipState){
   const nextSignature=JSON.stringify([next.publicAppearances||{},next.levels||{}]);const stylesChanged=membershipStyleSignature!==nextSignature;membershipStyleSignature=nextSignature;membershipState=next;renderMembershipContent();renderMembershipEntry();
-  if(stylesChanged){socialRenderMemo=null;lastChatRenderSignature='';renderFeed();renderSocial();renderBird();renderArchive();}
+  if(stylesChanged){socialRenderMemo=null;lastChatRenderSignature='';renderFeed();renderSocial();chatRoomUi.render();renderArchive();}
 }
 function authenticatedUser(next=accountState){
   const user=next.user;const sessionUser=next.session?.user;
@@ -223,7 +220,7 @@ function renderAccount(next){
   if(next.ready&&previousUserId!==String(user?.id||''))renderSocial();
   if(next.ready)renderFeed();
   if(next.ready)renderPolls();
-  if(next.ready)renderBird();
+  if(next.ready)chatRoomUi.render();
   if(next.ready)renderArchive();
   renderMembershipEntry();
   renderAuthGate(next);
@@ -249,14 +246,14 @@ function navigate(view){
   else if(view==='square')squareMode='feed';
   const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;membershipPayment.setVisible(view==='membership'&&['purchase','orders'].includes(membershipTab));
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
-  const localViews=['home','compose','square','rooms','bird','play','games','buddy','membership','archive','settings'];
+  const localViews=['home','compose','square','rooms','chatrooms','play','games','buddy','membership','archive','settings'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
   if(!localViews.includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
   $('[data-emoji-panel]').hidden=true;
   if(view!=='buddy')socialStore.closeChat();
   if(view!=='square')feedStore.deactivate();
   if(view!=='rooms')pollStore.deactivate();
-  if(view!=='bird')birdStore.deactivate();
+  if(view!=='chatrooms')chatRoomUi.deactivate();
   if(view!=='play')gamePartyUi.deactivate();
   if(view!=='games')window.__FW_GAMES__?.close();
   if(view==='buddy')socialStore.loadBuddy();
@@ -270,7 +267,7 @@ function navigate(view){
     if(squareMode==='echo')socialStore.loadEcho().catch(()=>{});
   }
   if(view==='rooms')pollStore.activate().catch(error=>toast(error.message||'课题读取失败。'));
-  if(view==='bird')birdStore.activate().catch(error=>toast(error.message||'新闻专区读取失败。'));
+  if(view==='chatrooms')chatRoomUi.activate().catch(error=>toast(error.message||'闲聊房间读取失败。'));
   if(view==='play')gamePartyUi.activate().catch(error=>toast(error.message||'组队房间读取失败。'));
   if(view==='games')window.__FW_GAMES__?.activate();
   if(view==='membership'){renderMembershipContent();membershipStore.load(true).catch(error=>toast(error.message||'会员信息读取失败。'));}
@@ -298,7 +295,6 @@ function releasePreview(draft){if(draft?.imagePreview){try{URL.revokeObjectURL(d
 function isImageFile(file){return Boolean(file)&&(/^image\//i.test(String(file.type||''))||/\.(?:jpe?g|png|webp|gif|bmp)$/i.test(String(file.name||'')));}
 function setComposeDraftFile(file){if(!file)return false;releasePreview(composeDraft);composeDraft.imageFile=file;composeDraft.imagePreview=URL.createObjectURL(file);renderCompose();return true;}
 function setCommentDraftFile(postId,file){if(!file)return false;const draft=draftFor(postId);releasePreview(draft);draft.imageFile=file;draft.imagePreview=URL.createObjectURL(file);renderPostDetail();return true;}
-function appendBirdDraftFiles(files){const requested=Array.from(files||[]).filter(isImageFile);const incoming=requested.slice(0,20-birdDraft.files.length);birdDraft.files.push(...incoming);birdDraft.previews.push(...incoming.map(file=>URL.createObjectURL(file)));if(incoming.length<requested.length)toast('最多上传 20 张图片。');renderBirdCompose();return incoming.length>0;}
 function selectedStickerPreview(draft,context,postId=''){
   const url=Array.from(draft.stickers||[])[0];if(!url)return'';
   const remove=context==='compose'?'data-compose-sticker-remove':`data-comment-sticker-remove="${esc(postId)}"`;
@@ -391,15 +387,6 @@ function renderPolls(next=pollState){
 }
 
 function safeDirectUrl(value){try{const url=new URL(String(value||''));return['http:','https:'].includes(url.protocol)?url.href:'';}catch{return'';}}
-function birdAuthor(post){if(post.display_mode==='anonymous')return{nickname:'匿名发布者',avatar_url:'',anonymous:true};if(post.display_mode==='pen_name')return{nickname:post.pen_name||'临时作者',avatar_url:'',anonymous:true};const profile=birdState.profiles[String(post.user_id)]||{};return{id:post.user_id,nickname:profile.nickname||'发布者',avatar_url:profile.avatar_url||'',anonymous:false};}
-function birdReaction(post){const values={valid:0,seen:0,tissue:0};const active={valid:false,seen:false,tissue:false};const mine=String(accountState.user?.id||'');(post.reactions||[]).forEach(row=>{if(row.type in values)values[row.type]+=1;if(String(row.user_id)===mine)active[row.type]=true;});return{values,active};}
-function releaseBirdFiles(){birdDraft.previews.forEach(url=>{try{URL.revokeObjectURL(url);}catch{}});birdDraft.files=[];birdDraft.previews=[];}
-function renderBirdCompose(){const host=$('[data-bird-compose-host]');if(!host)return;host.hidden=!birdComposeOpen;if(!birdComposeOpen)return;if(!accountState.user){host.innerHTML='<div class="state-card"><b>登录后发布内容</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';return;}host.innerHTML=`<form class="bird-compose-card" data-bird-compose-form><div><h2>发布一条专区内容</h2><p>标题 2–80 字，正文最多 5000 字，可上传最多 20 张图片。</p></div><label>标题<input name="title" maxlength="80" required value="${esc(birdDraft.title)}"></label><label>正文<textarea name="content" maxlength="5000" required>${esc(birdDraft.content)}</textarea></label><fieldset><legend>署名方式</legend>${[['profile','使用账号资料'],['anonymous','匿名发布'],['pen_name','临时笔名']].map(([value,label])=>`<label><input type="radio" name="displayMode" value="${value}" ${birdDraft.displayMode===value?'checked':''}> ${label}</label>`).join('')}</fieldset>${birdDraft.displayMode==='pen_name'?`<label>临时笔名<input name="penName" maxlength="20" value="${esc(birdDraft.penName)}" required></label>`:''}<div class="media-tools"><label class="secondary compact file-button">添加图片<input type="file" accept="image/*" multiple data-bird-files hidden></label><span>${birdDraft.files.length}/20 · 每张会压缩至 800KB 内 · 可 Ctrl+V 粘贴</span></div>${birdDraft.previews.length?`<div class="bird-preview-grid">${birdDraft.previews.map((url,index)=>`<div><img src="${esc(url)}" alt="待上传图片"><button type="button" data-bird-remove-file="${index}">×</button></div>`).join('')}</div>`:''}<div class="compose-actions"><button class="secondary" type="button" data-bird-compose-toggle>取消</button><button class="primary" type="submit" ${birdState.busy?'disabled':''}>${birdState.busy?'发布中...':'发布内容'}</button></div></form>`;}
-function birdCard(post){const author=birdAuthor(post);const cover=safeDirectUrl(post.images?.[0]?.url);return `<article class="bird-card" data-bird-open="${esc(post.id)}">${cover?`<div class="bird-cover"><img src="${esc(cover)}" alt="内容图片" loading="lazy">${post.images.length>1?`<span>共 ${post.images.length} 张图</span>`:''}</div>`:'<div class="bird-cover empty">暂无配图</div>'}<div><h2>${esc(post.title)}</h2><div class="post-author">${avatarHtml(author,'social-avatar mini',{anonymous:author.anonymous,anonymousLabel:author.nickname,userId:author.id})}<b>${esc(author.nickname)}</b>${author.anonymous?'':vipBadgeHtml(author.id)}</div><time>${esc(timeText(post.created_at))}</time></div></article>`;}
-function renderBirdFeed(){const host=$('[data-bird-feed]');if(!host)return;if(birdState.loading&&!birdState.loaded){host.innerHTML='<div class="state-card">正在读取新闻专区...</div>';return;}if(birdState.error&&!birdState.posts.length){host.innerHTML=`<div class="state-card"><b>新闻专区暂时读取失败</b><span>${esc(birdState.error)}</span><button class="secondary compact" type="button" data-bird-refresh>重试</button></div>`;return;}host.innerHTML=birdState.posts.length?birdState.posts.map(birdCard).join(''):'<div class="state-card"><b>新闻专区还没有内容</b><span>可以先发布一条长图文。</span></div>';}
-function renderBirdDetail(){const host=$('[data-bird-detail]');if(!host)return;const post=birdState.posts.find(row=>String(row.id)===String(birdState.openPostId));if(!post){host.innerHTML='<div class="post-detail-empty"><b>选择一条内容</b><span>查看完整正文、图片、评论和互动。</span></div>';return;}const author=birdAuthor(post);const stats=birdReaction(post);const mine=String(post.user_id)===String(accountState.user?.id);host.innerHTML=`<div class="detail-scroll"><header class="detail-head"><button class="secondary compact" type="button" data-bird-close>关闭</button>${mine?`<button class="secondary compact danger" type="button" data-bird-delete-post="${esc(post.id)}">删除内容</button>`:''}</header><article class="bird-detail-card"><p class="bird-label">新闻专区</p><h2>${esc(post.title)}</h2><div class="post-author">${avatarHtml(author,'social-avatar',{anonymous:author.anonymous,anonymousLabel:author.nickname,userId:author.id})}<b>${esc(author.nickname)}</b>${author.anonymous?'':vipBadgeHtml(author.id)}<time>${esc(timeText(post.created_at))}</time></div><div class="bird-content">${emojiText(post.content)}</div>${post.images.length?`<div class="bird-images">${post.images.map(image=>safeDirectUrl(image.url)).filter(Boolean).map(url=>`<img src="${esc(url)}" alt="内容图片，点击查看原图" loading="lazy" data-lightbox-src="${esc(url)}">`).join('')}</div>`:''}<div class="reaction-row">${[['valid','有点意思'],['seen','我也见过'],['tissue','递纸巾']].map(([type,label])=>`<button class="${stats.active[type]?'active':''}" type="button" data-bird-react="${type}" data-post-id="${esc(post.id)}" ${stats.active[type]?'disabled':''}>${label} ${stats.values[type]}</button>`).join('')}</div></article><section class="comments-section"><h3>评论 ${post.comments.length}</h3><div class="comment-list">${post.comments.length?post.comments.map(comment=>{const profile=birdState.profiles[String(comment.user_id)]||{};const own=String(comment.user_id)===String(accountState.user?.id);return `<article class="post-comment">${avatarHtml(profile,'social-avatar mini',{userId:comment.user_id})}<div><div class="comment-meta"><b>${esc(profile.nickname||'匿名回声')}</b>${vipBadgeHtml(comment.user_id)}<time>${esc(timeText(comment.created_at))}</time></div><div class="rich-text">${emojiText(comment.content)}</div>${own?`<div class="comment-actions"><button class="danger" type="button" data-bird-delete-comment="${esc(comment.id)}">删除</button></div>`:''}</div></article>`;}).join(''):'<div class="state-card small">还没有评论，可以先留一句。</div>'}</div>${accountState.user?`<form class="comment-compose-card" data-bird-comment-form="${esc(post.id)}"><textarea name="content" maxlength="500" placeholder="留一句评论，最多 500 字"></textarea><button class="primary full" type="submit" ${birdState.busy?'disabled':''}>发送</button></form>`:'<div class="state-card small"><b>登录后参与评论</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>'}</section></div>`;}
-function renderBird(next=birdState){birdState=next;renderBirdCompose();renderBirdFeed();renderBirdDetail();}
-
 const ARCHIVE_AWARD={title:'点赞之王',en:'LIKE KING',medal:'赞',quote:'代表废话'};
 function archiveAvatar(row,className='archive-avatar'){return avatarHtml(row,className);}
 function archiveWinner(row,rank){const item=row||{nickname:`暂无第${rank}名`,score:0};return `<div class="archive-winner rank-${rank}">${archiveAvatar(item)}<b>${esc(item.nickname||'暂无上榜')}</b><strong>${Number(item.score||0)}</strong><i>${rank}</i></div>`;}
@@ -506,14 +493,6 @@ function bindNavigation(){
     if(event.target.closest('[data-membership-refresh]')){membershipStore.load(true).catch(()=>{});return;}
     const switcher=event.target.closest('[data-show-auth]');if(switcher){showAuth(switcher.dataset.showAuth);return;}
     if(event.target.closest('[data-archive-refresh]')){archiveStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
-    if(event.target.closest('[data-bird-refresh]')){birdStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
-    if(event.target.closest('[data-bird-compose-toggle]')){birdComposeOpen=!birdComposeOpen;if(!birdComposeOpen)releaseBirdFiles();renderBirdCompose();requestAnimationFrame(()=>$('[data-bird-compose-form] input[name="title"]')?.focus());return;}
-    const removeBirdFile=event.target.closest('[data-bird-remove-file]');if(removeBirdFile){const index=Number(removeBirdFile.dataset.birdRemoveFile);const url=birdDraft.previews[index];if(url)URL.revokeObjectURL(url);birdDraft.files.splice(index,1);birdDraft.previews.splice(index,1);renderBirdCompose();return;}
-    const birdReact=event.target.closest('[data-bird-react]');if(birdReact){try{await birdStore.react(birdReact.dataset.postId,birdReact.dataset.birdReact);toast('互动已记录。');}catch(error){toast(error.message||'互动失败。');}return;}
-    const deleteBirdPost=event.target.closest('[data-bird-delete-post]');if(deleteBirdPost){if(!window.confirm('确定删除这条内容吗？'))return;try{await birdStore.deletePost(deleteBirdPost.dataset.birdDeletePost);toast('内容已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
-    const deleteBirdComment=event.target.closest('[data-bird-delete-comment]');if(deleteBirdComment){if(!window.confirm('确定删除这条评论吗？'))return;try{await birdStore.deleteComment(deleteBirdComment.dataset.birdDeleteComment);toast('评论已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
-    if(event.target.closest('[data-bird-close]')){birdStore.closePost();return;}
-    const openBird=event.target.closest('[data-bird-open]');if(openBird){birdStore.openPost(openBird.dataset.birdOpen);return;}
     if(event.target.closest('[data-poll-refresh]')){pollStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
     if(event.target.closest('[data-poll-create-toggle]')){pollCreateOpen=!pollCreateOpen;renderPolls();requestAnimationFrame(()=>$('[data-poll-create-form] input[name="title"]')?.focus());return;}
     const pollTab=event.target.closest('[data-poll-filter]');if(pollTab){pollFilter=pollTab.dataset.pollFilter;renderPolls();return;}
@@ -577,7 +556,6 @@ function bindForms(){
   $('[data-chat-compose]').addEventListener('submit',async event=>{event.preventDefault();const input=event.currentTarget.elements.message;const text=input.value;try{const targetId=await socialStore.sendMessage(text);if(String(socialStore.state.chat.targetId)===String(targetId)){input.value='';input.focus();}}catch(error){toast(error.message||'发送失败。');}});
   $('[data-sticker-file]').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;try{await socialStore.uploadSticker(file);toast('表情已添加。');}catch(error){toast(error.message||'添加表情失败。');}});
   document.addEventListener('input',event=>{
-    const birdForm=event.target.closest?.('[data-bird-compose-form]');if(birdForm){if(event.target.name==='title')birdDraft.title=event.target.value;if(event.target.name==='content')birdDraft.content=event.target.value;if(event.target.name==='penName')birdDraft.penName=event.target.value;return;}
     if(event.target.matches('[data-compose-form] textarea')){composeDraft.text=event.target.value;const count=$('.compose-count');if(count)count.textContent=`${composeDraft.text.length}/500`;return;}
     const form=event.target.closest?.('[data-comment-form]');if(form&&event.target.matches('textarea'))draftFor(form.dataset.commentForm).text=event.target.value;
   });
@@ -585,22 +563,17 @@ function bindForms(){
     const files=Array.from(event.detail?.files||[]).filter(isImageFile);if(!files.length)return;
     if(event.target.matches?.('[data-compose-image]')){event.preventDefault();setComposeDraftFile(files[0]);return;}
     if(event.target.matches?.('[data-comment-image]')){event.preventDefault();setCommentDraftFile(event.target.dataset.commentImage,files[0]);return;}
-    if(event.target.matches?.('[data-bird-files]')){event.preventDefault();appendBirdDraftFiles(files);}
   });
   document.addEventListener('change',event=>{
     if(event.target.matches('[data-settings-profile] input[name="avatar"]')){const file=event.target.files?.[0];if(avatarPreviewUrl){URL.revokeObjectURL(avatarPreviewUrl);avatarPreviewUrl='';}if(!file){setAvatar($('[data-profile-avatar]'),accountState.user);setProfileStatus('');return;}if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>10*1024*1024){event.target.value='';setAvatar($('[data-profile-avatar]'),accountState.user);setProfileStatus('头像请选择 JPG、PNG 或 WebP，原图不超过 10MB。',true);return;}avatarPreviewUrl=URL.createObjectURL(file);const preview=$('[data-profile-avatar]');preview.textContent='';preview.style.backgroundImage=`url("${avatarPreviewUrl}")`;preview.classList.add('has-image');setProfileStatus('将按中心裁剪为正方形，并自动压缩到适合头像的大小。');return;}
-    if(event.target.matches('[data-bird-files]')){appendBirdDraftFiles(event.target.files);event.target.value='';return;}
-    if(event.target.matches('[data-bird-compose-form] input[name="displayMode"]')){birdDraft.displayMode=event.target.value;renderBirdCompose();return;}
     if(event.target.matches('[data-compose-image]')){setComposeDraftFile(event.target.files?.[0]);return;}
     if(event.target.matches('[data-comment-image]'))setCommentDraftFile(event.target.dataset.commentImage,event.target.files?.[0]);
   });
   document.addEventListener('submit',async event=>{
-    const birdCompose=event.target.closest?.('[data-bird-compose-form]');if(birdCompose){event.preventDefault();try{await birdStore.createPost({title:birdDraft.title,content:birdDraft.content,displayMode:birdDraft.displayMode,penName:birdDraft.penName,files:birdDraft.files});releaseBirdFiles();birdDraft.title='';birdDraft.content='';birdDraft.displayMode='profile';birdDraft.penName='';birdComposeOpen=false;toast('内容已发布。');renderBird();}catch(error){toast(error.message||'发布失败。');}return;}
-    const birdComment=event.target.closest?.('[data-bird-comment-form]');if(birdComment){event.preventDefault();try{await birdStore.createComment(birdComment.dataset.birdCommentForm,new FormData(birdComment).get('content'));toast('评论已发送。');}catch(error){toast(error.message||'评论失败。');}return;}
     const createPoll=event.target.closest?.('[data-poll-create-form]');if(createPoll){event.preventDefault();const fd=new FormData(createPoll);try{await pollStore.createPoll({title:fd.get('title'),options:[1,2,3,4].map(index=>fd.get(`option${index}`)),isOfficial:fd.get('official')==='on'});pollCreateOpen=false;pollFilter=accountState.user?.role==='admin'&&fd.get('official')==='on'?'official':'user';toast('投票课题已发布。');renderPolls();}catch(error){toast(error.message||'发布失败。');}return;}
     const addOption=event.target.closest?.('[data-poll-add-option]');if(addOption){event.preventDefault();try{await pollStore.addOption(addOption.dataset.pollAddOption,new FormData(addOption).get('label'));toast('新选项已加入并投票。');}catch(error){toast(error.message||'新增选项失败。');}return;}
     const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();try{await feedStore.createPost({text:composeDraft.text,imageFile:composeDraft.imageFile,stickerUrls:Array.from(composeDraft.stickers)});releasePreview(composeDraft);composeDraft.text='';composeDraft.stickers.clear();toast('已投递到精神广场。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
-bindSidebarMore();bindNavigation();bindForms();desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);birdStore.subscribe(renderBird);archiveStore.subscribe(renderArchive);authStore.boot();
+bindSidebarMore();bindNavigation();bindForms();chatRoomUi.init({toast,avatarHtml,memberName,emojiText,emojiImage,fufuImage,emojis:EMOJIS,fufu:FUFU_PACK});desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);archiveStore.subscribe(renderArchive);authStore.boot();
