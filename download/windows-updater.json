@@ -1,11 +1,11 @@
 {
-  "version": "1.3.22",
+  "pub_date": "2026-10-12T03:02:24.9864154Z",
+  "notes": "Windows 1.3.23：新闻专区替换为闲聊房间，支持密码、加入审核、3天/7天/30天/永久保存及房主管理。",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlY5aFRvcUxZdmhYd0srM0JZRTZ0bWxsWVljUlNyaUVkM1BXTGRCWG54a09aSFJPL2VSdCtFcEw2ZGViL0o2bm5ycUQ3cUZWbVpNQjZ4aTc5YjMzYkFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNjI3MTM2CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMjJfeDY0LXNldHVwLmV4ZQpUL3hNNGtTckNZZ3BUNkRtZWh0QjkwOGIvVldYNnV4UGJLejdPM1ExQnBwdUhYN0hNa0sza0U4WG80MUorNFlrOGhrU1d0R1FZS2dBaXZWN3lad1RCZz09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.22-setup.exe"
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.23-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmIzblhmOGhnTkNxczExY25NQVFXNlU1b1FvWFJZOWhORXBVTDBkeHAwaEh1Z0FRUWFpd2pjaTBlU2dXdE03ODA1UENFTFRqRDExSEhMM3NSendTMHdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNzczOTY5CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMjNfeDY0LXNldHVwLmV4ZQpoSWhEOE9ZR0dlVGNKU0hzQ3g1dUw1VzFEMTByeTFGK0dIdFYyNlVJaHdiTmg3RTg0bDE3bFRkQ0Y1ZithQ1lKMjllZGYrcTRxNzd3NFdSUWRvalRBQT09Cg=="
     }
   },
-  "notes": "Windows 1.3.22：档案移至主导航会员上方，精神广场新增我的牢骚，支持查看更早的帖子、评论和互动。",
-  "pub_date": "2026-10-10T10:15:16.8254884Z"
+  "version": "1.3.23"
 }
