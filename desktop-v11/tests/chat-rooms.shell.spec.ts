@@ -4,7 +4,6 @@ const user={id:me,aud:'authenticated',role:'authenticated',email:'room-test@exam
 const owner={id:other,nickname:'房主',avatar_url:''},self={id:me,nickname:'测试研究员',avatar_url:''};
 function room(id:string,password=false,approval=false,owned=false){return {id,owner_id:owned?me:other,name:owned?'我创建的闲聊房间':password?'密码闲聊房间':'公开闲聊房间',description:'进来聊聊今天的工作和生活。',owner:owned?self:owner,join_mode:approval?'approval':'direct',has_password:password,retention_days:7,expires_at:new Date(Date.now()+7*86400000).toISOString(),created_at:new Date().toISOString(),member_count:owned?1:2,joined:owned,is_owner:owned,request_status:null,pending_count:owned?1:0};}
 async function setup(page:Page,options:{password?:boolean,approval?:boolean,owned?:boolean}={}){
- page.on('pageerror',e=>console.error('ROOM PAGE ERROR:',e.stack));
  const rooms:any[]=[room('11111111-1111-4111-8111-111111111111',!!options.password,!!options.approval,!!options.owned)];
  const messages:any[]=[{id:1,room_id:rooms[0].id,user_id:other,content:'这里是房间聊天记录',created_at:new Date().toISOString(),author:owner}];
  const members:any[]=[{user_id:rooms[0].owner_id,nickname:rooms[0].owner.nickname,is_owner:true,joined_at:new Date().toISOString()},{user_id:other,nickname:'待管理成员',is_owner:false,joined_at:new Date().toISOString()}];
@@ -72,7 +71,7 @@ test('房主处理申请、管理成员、修改设置并解散，普通成员�
 });
 
 test('聊天表情选择后关闭、可粘贴图片，窄窗口布局无横向溢出',async({page})=>{
- await setup(page,{owned:true});await enter(page);await page.locator('[data-room-picker-toggle]').first().click();await expect(page.locator('[data-room-emoji]')).toHaveCount(89);await page.locator('[data-room-picker-tab="fufu1"]').click();await expect(page.locator('[data-room-emoji]')).toHaveCount(24);await page.locator('[data-room-emoji]').first().click();await expect(page.locator('.room-picker')).toBeHidden();await expect(page.locator('[data-room-send-form] textarea')).toHaveValue('[伏伏1:01]');
+ await setup(page,{owned:true});await enter(page);await page.locator('.room-compose-actions [data-room-picker-toggle]').click();await expect(page.locator('[data-room-emoji]')).toHaveCount(89);await page.locator('[data-room-picker-tab="fufu1"]').click();await expect(page.locator('[data-room-emoji]')).toHaveCount(24);await page.locator('[data-room-emoji]').first().click();await expect(page.locator('.room-picker')).toBeHidden();await expect(page.locator('[data-room-send-form] textarea')).toHaveValue('[伏伏1:01]');
  await page.locator('[data-room-send-form] textarea').evaluate(node=>{const data=new DataTransfer();data.items.add(new File([new Uint8Array([137,80,78,71])],'test.png',{type:'image/png'}));node.dispatchEvent(new ClipboardEvent('paste',{clipboardData:data,bubbles:true,cancelable:true}));});await expect(page.locator('.room-attachment-preview img')).toHaveAttribute('src',/^blob:/);
  await page.locator('[data-room-attachment-remove]').click();
  for(const width of [1280,1066,760]){await page.setViewportSize({width,height:width===760?560:728});await expect(page.locator('[data-room-send-form]')).toBeInViewport();expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);await expect(page.locator('.nav-item[data-nav="chatrooms"]')).toBeInViewport({ratio:1});}
