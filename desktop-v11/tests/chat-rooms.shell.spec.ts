@@ -19,7 +19,8 @@ async function setup(page:Page,options:{password?:boolean,approval?:boolean,owne
    data={rooms:rooms.filter(r=>body.p_filter==='all'||body.p_filter==='mine'&&(r.joined||r.request_status==='pending')||body.p_filter==='owned'&&r.is_owner||body.p_filter==='joined'&&r.joined&&!r.is_owner||body.p_filter==='pending'&&r.request_status==='pending'),has_more:false,server_time:new Date().toISOString()};
   }else if(path.endsWith('/fw_chat_room_read')){
    const r=rooms.find(r=>r.id===body.p_room_id);if(!r)return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({message:'房间已解散或到期。'})});
-   data={room:r,messages:r.joined?messages.filter(m=>m.room_id===r.id):[],members:r.joined?members:[],requests:r.is_owner?requests:[],has_more:false,server_time:new Date().toISOString()};
+   const visible=r.joined?messages.filter(m=>m.room_id===r.id&&(!body.p_before_id||m.id<body.p_before_id)).slice(-100):[];
+   data={room:r,messages:visible,members:r.joined?members:[],requests:r.is_owner?requests:[],has_more:visible.length===100,server_time:new Date().toISOString()};
   }else if(path.endsWith('/fw_chat_room_action')){
    calls.push({op:body.p_action,...body});const r=rooms.find(r=>r.id===body.p_room_id),p=body.p_payload||{};
    if(body.p_action==='create'){const created=room('22222222-2222-4222-8222-222222222222',!!p.password,p.join_mode==='approval',true);Object.assign(created,p,{expires_at:p.retention_days?new Date(Date.now()+p.retention_days*86400000).toISOString():null});delete created.password;rooms.push(created);data={room_id:created.id,status:'joined'};}
@@ -81,4 +82,13 @@ test('退出账号清空房间内容和草稿，读取失败可重试',async({pa
  const {setFailure}=await setup(page,{owned:true});await enter(page);await page.locator('[data-room-send-form] textarea').fill('未发送的个人草稿');await page.locator('[data-room-create]').click();await expect(page.locator('[data-room-editor-form]')).toBeVisible();await page.locator('[data-room-editor-close]').click();
  await page.locator('[data-room-mine-toggle]').click();setFailure(true);await page.locator('[data-room-refresh]').click();await expect(page.locator('.room-inline-error')).toContainText('读取房间暂时失败');setFailure(false);await page.locator('.room-inline-error [data-room-refresh]').click();await expect(page.locator('.room-inline-error')).toHaveCount(0);
  await page.locator('.account-button[data-open-account]').click();page.once('dialog',d=>d.accept());await page.locator('[data-sign-out]').click();await expect(page.locator('#app')).toBeHidden();await expect(page.locator('[data-room-detail]')).not.toContainText('这里是房间聊天记录');
+});
+
+
+test('已加载的历史聊天在新消息刷新后保留，成员退出后隐藏记录',async({page})=>{
+ const {messages,rooms}=await setup(page,{owned:true});messages.splice(0,messages.length,...Array.from({length:150},(_,i)=>({id:i+1,room_id:rooms[0].id,user_id:other,content:`历史消息 ${i+1}`,created_at:new Date().toISOString(),author:owner})));await enter(page);
+ await expect(page.locator('[data-room-message]')).toHaveCount(100);await page.locator('[data-room-history]').click();await expect(page.locator('[data-room-message]')).toHaveCount(150);await expect(page.locator('[data-room-history]')).toHaveCount(0);
+ messages.push({id:151,room_id:rooms[0].id,user_id:other,content:'最新消息',created_at:new Date().toISOString(),author:owner});
+ await page.evaluate(async()=>{const {chatRoomStore}=await import('/src/chat-room-store.js');await chatRoomStore.readRoom();});await expect(page.locator('[data-room-message]')).toHaveCount(151);await expect(page.locator('[data-room-messages]')).toContainText('历史消息 1');await expect(page.locator('[data-room-history]')).toHaveCount(0);
+ rooms[0].joined=false;rooms[0].is_owner=false;await page.evaluate(async()=>{const {chatRoomStore}=await import('/src/chat-room-store.js');await chatRoomStore.readRoom();});await expect(page.locator('[data-room-send-form]')).toHaveCount(0);await expect(page.locator('[data-room-detail]')).not.toContainText('历史消息 1');
 });

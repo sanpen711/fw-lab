@@ -40,8 +40,10 @@ async function readRoom(id=state.selectedId,older=false){
  try{
   const before=older?state.detail?.messages?.[0]?.id:null;const data=await rpc('fw_chat_room_read',{p_room_id:String(id),p_before_id:before||null});if(g!==generation||t!==openToken)return;serverTime(data);
   if(!data?.room)throw new Error('房间已经不存在。');
-  data.messages=await assets(data.messages||[],t);if(g!==generation||t!==openToken)return;
+  data.messages=data.messages||[];
   if(older&&state.detail?.room.id===data.room.id)data.messages=Array.from(new Map([...data.messages,...state.detail.messages].map(row=>[String(row.id),row])).values()).sort((a,b)=>Number(a.id)-Number(b.id));
+  else if(!changed&&data.room.joined&&state.detail?.messages.length>100&&data.messages.length&&Number(data.messages[0].id)<=Number(state.detail.messages.at(-1).id)){const before=Number(data.messages[0].id);data.messages=[...state.detail.messages.filter(m=>Number(m.id)<before),...data.messages];data.has_more=state.detail.has_more;}
+  data.messages=await assets(data.messages,t);if(g!==generation||t!==openToken)return;
   state.detail=data;
   const index=state.rooms.findIndex(r=>String(r.id)===String(id));if(index>=0)state.rooms[index]=data.room;
   if(active&&changed)subscribeMessages(id);
@@ -54,7 +56,7 @@ function refreshSoon(roomId=''){
 }
 function subscribeMessages(id){
  removeChannel(messageChannel);const g=generation;let subscribed=false;
- messageChannel=client.channel(`desktop-chat-room-${id}-${g}`).on('postgres_changes',{event:'*',schema:'public',table:'chat_room_messages',filter:`room_id=eq.${id}`},()=>{if(active&&g===generation&&state.selectedId===String(id))readRoom().catch(()=>{});})
+ messageChannel=client.channel(`desktop-chat-room-${id}-${g}`).on('postgres_changes',{event:'*',schema:'public',table:'chat_room_messages',filter:`room_id=eq.${id}`},payload=>{if(active&&g===generation&&state.selectedId===String(id)){if(payload.eventType==='DELETE'&&state.detail){state.detail.messages=state.detail.messages.filter(m=>String(m.id)!==String(payload.old?.id));emit();}readRoom().catch(()=>{});}})
  .subscribe(status=>{if(g!==generation||!active)return;state.connection=status==='SUBSCRIBED'?'':status==='CHANNEL_ERROR'||status==='TIMED_OUT'?'实时连接中断，可点击刷新同步消息。':state.connection;if(status==='SUBSCRIBED'&&subscribed)readRoom().catch(()=>{});if(status==='SUBSCRIBED')subscribed=true;emit();});
 }
 function activate(){
