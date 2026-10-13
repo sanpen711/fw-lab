@@ -93,6 +93,58 @@ test('反馈弹窗打开时退出账号不会阻挡重新登录',async({page})=>
   await boot(page);await page.locator('[data-feedback-open]').click();await page.evaluate(async()=>{const {authStore}=await import('/src/auth-store.js');await authStore.signOut();});await expect(page.locator('[data-home-tool-modal]')).toBeHidden();await expect(page.locator('[data-account-modal]')).toBeVisible();const email=page.locator('[data-auth-view="login"] input[name="email"]');await email.focus();await expect(email).toBeFocused();
 });
 
+test('组队小窗口优先显示聊天，空游戏ID不能复制，折叠和草稿在刷新后保留',async({page})=>{
+  await page.setViewportSize({width:760,height:560});await boot(page);await partyFixture(page,'joined',{emptyIds:true});await nav(page,'play');await page.locator('[data-party-open="51"]').click();
+  const form=page.locator('[data-party-chat-form]'),overview=page.locator('[data-party-panel="overview"]');await expect(form).toBeVisible();await expect(overview).not.toHaveAttribute('open');await expect(page.locator('.party-contact-card [data-copy-text]')).toHaveCount(0);
+  await expect.poll(()=>page.locator('.party-chat').evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThan(220);await expect.poll(()=>form.evaluate(el=>el.getBoundingClientRect().bottom)).toBeCloseTo(560,0);
+  const input=form.locator('input');await input.fill('组队聊天草稿');await overview.locator('summary').click();await expect(overview).toHaveAttribute('open','');await input.focus();await input.evaluate((el:HTMLInputElement)=>el.setSelectionRange(2,4));
+  await page.evaluate(async()=>{const {gamePartyStore}=await import('/src/game-party-store.js');await gamePartyStore.load(true);});await expect(overview).toHaveAttribute('open','');await expect(input).toHaveValue('组队聊天草稿');await expect(input).toBeFocused();expect(await input.evaluate((el:HTMLInputElement)=>[el.selectionStart,el.selectionEnd])).toEqual([2,4]);
+  await overview.locator('summary').focus();await page.keyboard.press('Enter');await expect(overview).not.toHaveAttribute('open');await page.evaluate(async()=>{const {gamePartyStore}=await import('/src/game-party-store.js');await gamePartyStore.load(true);});await expect(overview.locator('summary')).toBeFocused();await expect(overview).not.toHaveAttribute('open');
+  page.once('dialog',dialog=>dialog.dismiss());await page.locator('[data-party-leave]').click();await expect(form).toBeVisible();
+});
+
+test('队长申请区可展开审核，处理后保持展开、聊天草稿和历史位置',async({page})=>{
+  await boot(page);const requests=await partyFixture(page,'captain');await nav(page,'play');await page.locator('[data-party-open="51"]').click();
+  const management=page.locator('[data-party-panel="management"]');await expect(management).not.toHaveAttribute('open');await expect(management.locator('summary')).toContainText('1 待确认');await management.locator('summary').click();await expect(management).toHaveAttribute('open','');await expect(management).toContainText('申请人游戏ID');
+  await page.locator('[data-party-chat-form] input').fill('队长正在写的话');const messages=page.locator('.party-chat-messages');await messages.evaluate(el=>el.scrollTop=0);await page.locator('[data-party-decide="accept"]').click();await expect(page.locator('[data-toast]')).toContainText('已同意加入');
+  await expect(management).toHaveAttribute('open','');await expect(management.locator('summary')).toContainText('0 待确认 · 2 已加入');await expect(page.locator('[data-party-chat-form] input')).toHaveValue('队长正在写的话');expect(await messages.evaluate(el=>el.scrollTop)).toBe(0);expect(requests.some(row=>row.path.endsWith('/fw_decide_game_party')&&row.body.p_accept===true)).toBe(true);
+  await expect(page.locator('[data-party-close]')).toBeVisible();
+});
+
+for(const role of ['pending','visitor'] as const)test(`组队${role==='pending'?'待审核':'未加入'}状态不显示队内ID和聊天`,async({page})=>{
+  await page.setViewportSize({width:760,height:560});await boot(page);await partyFixture(page,role);await nav(page,'play');await page.locator('[data-party-open="51"]').click();
+  await expect(page.locator('.party-contact-card,.party-chat,[data-party-chat-form]')).toHaveCount(0);await expect(page.locator('[data-party-detail]')).not.toContainText('队长游戏ID');await expect(page.locator('[data-party-detail]')).not.toContainText('申请人游戏ID');
+  if(role==='pending')await expect(page.locator('[data-party-leave]')).toHaveText('撤回申请');
+  else{const form=page.locator('[data-party-join-form]');await form.locator('[name="gameId"]').fill('加入草稿ID');await form.locator('[name="message"]').fill('申请说明');await page.evaluate(async()=>{const {gamePartyStore}=await import('/src/game-party-store.js');await gamePartyStore.load(true);});await expect(form.locator('[name="gameId"]')).toHaveValue('加入草稿ID');await expect(form.locator('[name="message"]')).toHaveValue('申请说明');}
+});
+
+test('直接加入后切到聊天布局，长队名、ID和备注不会挤出操作按钮',async({page})=>{
+  await page.setViewportSize({width:760,height:560});await boot(page);await partyFixture(page,'visitor',{direct:true,longInfo:true});await nav(page,'play');await page.locator('[data-party-open="51"]').click();
+  const form=page.locator('[data-party-join-form]');await form.locator('[name="gameId"]').fill('我自己的ID');await form.locator('[type="submit"]').click();await expect(page.locator('[data-party-chat-form]')).toBeVisible();await expect(page.locator('.party-contact-card')).toContainText('我自己的ID');
+  await page.locator('[data-party-panel="overview"] summary').click();
+  const clipped=await page.locator('[data-party-detail] button').evaluateAll(nodes=>nodes.filter(el=>{const r=el.getBoundingClientRect();return r.width&&r.height&&r.top<innerHeight&&r.bottom>0&&(r.left<0||r.right>innerWidth);}).map(el=>el.textContent));expect(clipped).toEqual([]);expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBe(0);
+  expect((await page.locator('.party-chat').boundingBox())!.height).toBeGreaterThan(130);const messages=page.locator('.party-chat-messages');await messages.evaluate(el=>el.scrollTop=el.scrollHeight);const last=(await page.locator('.party-chat-message').last().boundingBox())!,composer=(await page.locator('[data-party-chat-form]').boundingBox())!;expect(last.y+last.height).toBeLessThanOrEqual(composer.y);
+});
+
+async function partyFixture(page:Page,role:'joined'|'captain'|'pending'|'visitor',options:{emptyIds?:boolean,direct?:boolean,longInfo?:boolean}={}){
+  const captain=role==='captain'?me:other,requests:{path:string,body:any}[]=[];
+  const party={id:51,captain_id:captain,game_name:options.longInfo?'一起轻松玩游戏'.repeat(4).slice(0,30):'斗地主',server_name:'微信',mode:'血流成河',starts_at_text:'今晚 20:00',capacity:5,member_count:2,status:'open',requires_approval:!options.direct,note:options.longInfo?'这是较长的组队说明，确认展开资料时聊天仍可使用。'.repeat(9).slice(0,200):''};
+  const members:any[]=[{party_id:51,user_id:captain,role:'captain',state:'accepted'}];
+  if(role==='captain')members.push({party_id:51,user_id:other,role:'member',state:'pending',request_message:'想一起玩'},{party_id:51,user_id:third,role:'member',state:'accepted'});
+  else if(role!=='visitor')members.push({party_id:51,user_id:me,role:'member',state:role==='pending'?'pending':'accepted'});
+  const contacts=[{party_id:51,user_id:captain,game_id:options.emptyIds?'':options.longInfo?'LongGameID'.repeat(6):'队长游戏ID'},{party_id:51,user_id:role==='captain'?other:me,game_id:options.emptyIds?'':'申请人游戏ID'}];
+  await page.route(/\/rest\/v1\/(?:game_parties|game_party_members|game_party_contacts|game_party_messages|rpc\/fw_(?:decide_game_party|apply_game_party))/,async route=>{
+    const path=new URL(route.request().url()).pathname,body=route.request().postDataJSON()||{};requests.push({path,body});let data:any=[];
+    if(path.endsWith('/game_parties'))data=[party];
+    else if(path.endsWith('/game_party_members'))data=members;
+    else if(path.endsWith('/game_party_contacts'))data=contacts;
+    else if(path.endsWith('/game_party_messages'))data=Array.from({length:40},(_,i)=>({id:900+i,party_id:51,user_id:captain,content:`队伍历史消息 ${i+1}`,created_at:'2026-10-12T00:00:00Z'}));
+    else if(path.endsWith('/fw_decide_game_party')){members.find(row=>row.user_id===body.p_user_id).state=body.p_accept?'accepted':'rejected';party.member_count++;data=null;}
+    else if(path.endsWith('/fw_apply_game_party')){members.push({party_id:51,user_id:me,role:'member',state:options.direct?'accepted':'pending'});contacts.find(row=>row.user_id===me)!.game_id=body.p_game_id;data=options.direct?'joined':'pending';}
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
+  });return requests;
+}
+
 const me='00000000-0000-4000-8000-000000000024',other='00000000-0000-4000-8000-000000000025',third='00000000-0000-4000-8000-000000000026';
 const user={id:me,aud:'authenticated',role:'authenticated',email:'audit@example.com',app_metadata:{provider:'email',providers:['email']},user_metadata:{nickname:'检查研究员',lab_code:'AUDIT1'},created_at:'2026-09-18T00:00:00Z'};
 const profiles=[{id:me,nickname:'检查研究员',lab_code:'AUDIT1'},{id:other,nickname:'搭子甲',lab_code:'AUDIT2'},{id:third,nickname:'搭子乙',lab_code:'AUDIT3'}];
