@@ -79,10 +79,10 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: npx tauri build --config src-tauri/tauri.v11.conf.json --bundles nsis
 
-      - name: Test native Alipay URL restrictions
+      - name: Test native URL restrictions
         env:
           TAURI_CONFIG: '{"build":{"frontendDist":"../desktop-v11/dist"}}'
-        run: cargo test --manifest-path src-tauri/Cargo.toml alipay_checkout::tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
 
       - name: Prepare website download and updater metadata
         shell: pwsh

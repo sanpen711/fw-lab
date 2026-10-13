@@ -116,5 +116,6 @@ body.auth-required{overflow:hidden;background:#f6f6f4}
 @media (max-height:680px){.post-detail-column .comment-compose-card .compose-compact-picker{height:210px;min-height:180px}.post-detail-column .comment-compose-card .image-preview{max-height:210px}}
 
 .square-mine-button.active{border-color:var(--deep);background:var(--deep);color:#fff}.square-mine-footer{display:grid;justify-items:center;gap:9px;padding:12px 0 22px;color:var(--muted);font-size:12px}.square-mine-footer span{overflow-wrap:anywhere}
+.rich-text .external-web-link{color:#ad646a;text-decoration:underline;text-decoration-color:#e6b0b6;text-underline-offset:3px;overflow-wrap:anywhere}.rich-text .external-web-link:hover{color:#94505b}.rich-text .external-web-link:focus-visible{outline:2px solid #ffb5bd;outline-offset:2px;border-radius:3px}
 
 .chat-new-messages{position:absolute;z-index:7;right:20px;bottom:86px;background:#fff;box-shadow:0 4px 15px #00000012}.chat-new-messages[hidden]{display:none}.chat-heading>div{min-width:0}.chat-heading h2{overflow-wrap:anywhere}.chat-heading>button{flex-shrink:0}.home-tool-modal [data-home-tool-view][hidden]{display:none!important}

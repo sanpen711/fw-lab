@@ -16,6 +16,7 @@ import {desktopSettings} from './desktop-settings.js';
 import {APP_VERSION} from './config.js';
 import {captureUiState,restoreUiState,deferWhileComposing} from './ui-state.js';
 import {openDialog,closeDialog} from './dialog-focus.js';
+import {renderWebLinks,bindExternalLinks} from './external-links.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
@@ -126,7 +127,7 @@ function richContent(value){
   const source=String(value||'');const pattern=/\[\[(FW_MEDIA_IMAGE|FW_USER_STICKER):([A-Za-z0-9+/=]+)\]\]/g;let cursor=0;let match;const text=[];const media=[];
   while((match=pattern.exec(source))){text.push(source.slice(cursor,match.index));const url=safeMediaUrl(match[2]);if(url)media.push(match[1]==='FW_USER_STICKER'?`<img class="rich-sticker" src="${esc(url)}" alt="自定义表情" loading="lazy">`:`<img class="rich-image" src="${esc(url)}" alt="帖子图片，点击查看原图" loading="lazy" data-lightbox-src="${esc(url)}">`);cursor=match.index+match[0].length;}
   text.push(source.slice(cursor));const clean=text.join('').trim();const standaloneFufu=!media.length&&FUFU_PACK.some(item=>item[0]===clean);
-  return `${clean?`<div class="rich-text${standaloneFufu?' fufu-only':''}">${emojiText(clean)}</div>`:''}${media.length?`<div class="rich-media">${media.join('')}</div>`:''}`||'<div class="rich-text">（空白记录）</div>';
+  return `${clean?`<div class="rich-text${standaloneFufu?' fufu-only':''}">${renderWebLinks(clean,emojiText)}</div>`:''}${media.length?`<div class="rich-media">${media.join('')}</div>`:''}`||'<div class="rich-text">（空白记录）</div>';
 }
 
 function memberDate(value){if(!value)return'';const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});}
@@ -596,4 +597,4 @@ function bindForms(){
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
-bindSidebarMore();bindNavigation();bindForms();chatRoomUi.init({toast,avatarHtml,memberName,emojiText,emojiImage,fufuImage,emojis:EMOJIS,fufu:FUFU_PACK});desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);archiveStore.subscribe(renderArchive);authStore.boot();
+bindExternalLinks({onError:toast});bindSidebarMore();bindNavigation();bindForms();chatRoomUi.init({toast,avatarHtml,memberName,emojiText,emojiImage,fufuImage,emojis:EMOJIS,fufu:FUFU_PACK});desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);archiveStore.subscribe(renderArchive);authStore.boot();

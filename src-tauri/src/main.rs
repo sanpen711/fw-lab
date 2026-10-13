@@ -2,6 +2,7 @@
 
 mod desktop_identity;
 mod alipay_checkout;
+mod external_links;
 mod persistent_cache;
 
 use serde::Serialize;
@@ -642,6 +643,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             alipay_checkout::desktop_open_alipay,
+            external_links::desktop_open_web_url,
             desktop_cache_read,
             desktop_cache_write,
             desktop_cache_remove,

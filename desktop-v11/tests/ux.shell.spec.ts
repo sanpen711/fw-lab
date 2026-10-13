@@ -126,6 +126,34 @@ test('直接加入后切到聊天布局，长队名、ID和备注不会挤出操
   expect((await page.locator('.party-chat').boundingBox())!.height).toBeGreaterThan(130);const messages=page.locator('.party-chat-messages');await messages.evaluate(el=>el.scrollTop=el.scrollHeight);const last=(await page.locator('.party-chat-message').last().boundingBox())!,composer=(await page.locator('[data-party-chat-form]').boundingBox())!;expect(last.y+last.height).toBeLessThanOrEqual(composer.y);
 });
 
+test('广场帖子和评论网址通过默认浏览器打开，点击列表链接不会打开帖子详情',async({page})=>{
+  await boot(page);await linkFixture(page);await nav(page,'square');const card=page.locator('.square-post[data-open-post="101"]'),link=card.locator('[data-external-link]');await expect(link).toBeVisible();await nativeLinkMock(page);
+  const currentUrl=page.url();await link.click();await expect.poll(()=>page.evaluate(()=>(window as any).__linkCalls.length)).toBe(1);expect(await page.evaluate(async()=>{const {feedStore}=await import('/src/feed-store.js');return feedStore.state.openPostId;})).toBe('');expect(page.url()).toBe(currentUrl);
+  await card.locator('.post-meta').click();const commentLink=page.locator('.post-comment [data-external-link]');await expect(commentLink).toHaveAttribute('href','https://www.example.org/path');await page.locator('[data-comment-form] textarea').fill('保留这条评论草稿');await commentLink.focus();await page.keyboard.press('Enter');await expect.poll(()=>page.evaluate(()=>(window as any).__linkCalls.length)).toBe(2);
+  await page.locator('.detail-post [data-external-link]').click({button:'middle'});await expect.poll(()=>page.evaluate(()=>(window as any).__linkCalls.length)).toBe(3);await expect(page.locator('[data-comment-form] textarea')).toHaveValue('保留这条评论草稿');expect(page.url()).toBe(currentUrl);
+  const calls=await page.evaluate(()=>(window as any).__linkCalls);expect(calls.map(row=>row.command)).toEqual(Array(3).fill('desktop_open_web_url'));expect(calls.map(row=>row.args.url)).toEqual(['https://example.com/watch?v=one&lang=zh','https://www.example.org/path','https://example.com/watch?v=one&lang=zh']);
+});
+
+test('浏览器预览的网址在新标签页打开并保留当前页面',async({page})=>{
+  await boot(page);await linkFixture(page);await nav(page,'square');await page.evaluate(()=>{(window as any).__linkCalls=[];window.open=((...args)=>{(window as any).__linkCalls.push(args);return null;}) as any;});
+  const currentUrl=page.url();await page.locator('.square-post [data-external-link]').click({modifiers:['Control']});await expect.poll(()=>page.evaluate(()=>(window as any).__linkCalls.length)).toBe(1);expect(await page.evaluate(()=>(window as any).__linkCalls[0])).toEqual(['https://example.com/watch?v=one&lang=zh','_blank','noopener,noreferrer']);expect(page.url()).toBe(currentUrl);expect(page.context().pages()).toHaveLength(1);
+});
+
+test('外链打开失败有提示，非法地址和HTML文本不会变成可执行内容',async({page})=>{
+  await boot(page);await linkFixture(page);await nav(page,'square');await page.locator('.square-post .post-meta').click();await expect(page.locator('.post-comment [data-external-link]')).toHaveCount(1);await expect(page.locator('.post-comment script,.post-comment img[onerror],.post-comment a[href^="javascript:"]')).toHaveCount(0);expect(await page.evaluate(()=>(window as any).__URL_XSS)).toBeUndefined();
+  await nativeLinkMock(page,true);await page.locator('[data-comment-form] textarea').fill('失败时保留草稿');const currentUrl=page.url();await page.locator('.detail-post [data-external-link]').click();await expect(page.locator('[data-toast]')).toHaveText('打开失败，请复制网址到浏览器。');await expect(page.locator('[data-comment-form] textarea')).toHaveValue('失败时保留草稿');expect(page.url()).toBe(currentUrl);
+});
+
+test('搭子私聊继续拦截普通网址并保留输入',async({page})=>{
+  await boot(page);await openChat(page);const input=page.locator('[data-chat-compose] input[name="message"]');await input.fill('https://example.com/');await page.locator('[data-chat-compose] [type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('私聊暂不支持链接');await expect(input).toHaveValue('https://example.com/');
+});
+
+async function linkFixture(page:Page){
+  await page.route('**/rest/v1/posts**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{id:101,user_id:other,content:'看看这个网址：https://example.com/watch?v=one&lang=zh。😀',created_at:'2026-10-12T01:00:00Z'}])}));
+  await page.route('**/rest/v1/comments**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{id:201,post_id:101,user_id:other,content:'网址：www.example.org/path。javascript:alert(1) file:///tmp/x https://user:pass@example.com/ <script>window.__URL_XSS=1</script>',created_at:'2026-10-12T02:00:00Z'}])}));
+}
+async function nativeLinkMock(page:Page,failure=false){await page.evaluate(failure=>{(window as any).__linkCalls=[];(window as any).__TAURI__={core:{invoke:async(command,args)=>{if(command==='desktop_open_web_url'){(window as any).__linkCalls.push({command,args});if(failure)throw new Error('模拟打开失败');}return null;}}};},failure);}
+
 async function partyFixture(page:Page,role:'joined'|'captain'|'pending'|'visitor',options:{emptyIds?:boolean,direct?:boolean,longInfo?:boolean}={}){
   const captain=role==='captain'?me:other,requests:{path:string,body:any}[]=[];
   const party={id:51,captain_id:captain,game_name:options.longInfo?'一起轻松玩游戏'.repeat(4).slice(0,30):'斗地主',server_name:'微信',mode:'血流成河',starts_at_text:'今晚 20:00',capacity:5,member_count:2,status:'open',requires_approval:!options.direct,note:options.longInfo?'这是较长的组队说明，确认展开资料时聊天仍可使用。'.repeat(9).slice(0,200):''};
