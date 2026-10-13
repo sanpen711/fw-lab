@@ -275,8 +275,6 @@ assert.match(app,/previousScrollTop=host\.querySelector\('\.detail-content-scrol
 assert.match(app,/previousPostId===String\(post\.id\)[\s\S]*scrollTop=previousScrollTop/,'点击回复后必须恢复同一帖子的评论位置');
 assert.match(styles,/\.post-detail-column \.detail-scroll\{position:relative;display:grid;grid-template-rows:auto minmax\(0,1fr\)/,'帖子详情必须只让正文与评论的连续内容区滚动');
 assert.match(styles,/\.detail-content-scroll\{min-height:0;overflow-y:auto/,'正文与评论必须共用一个滚动容器');
-assert.match(styles,/\.post-detail-column \.comment-compose-card\{position:absolute;[\s\S]*bottom:0/,'评论输入区必须固定停靠在帖子详情底部');
-assert.match(styles,/\.post-detail-column \.comment-compose-card \.compose-compact-picker\{position:absolute;[\s\S]*bottom:152px/,'评论表情面板必须向上浮出且不能撑动输入区');
 assert.match(styles,/height:min\(310px,calc\(100vh - 250px\)\);min-height:210px/,'小表情与我的表情面板必须保持相同高度');
 assert.match(styles,/\.compose-compact-picker \.inline-sticker-grid\{grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/,'评论区我的表情必须使用五列正方形预览');
 assert.match(styles,/\.inline-sticker-item>button:first-child\{[^}]*aspect-ratio:1/,'评论区我的表情格子必须保持正方形');

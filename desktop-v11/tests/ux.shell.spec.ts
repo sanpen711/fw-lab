@@ -58,6 +58,13 @@ for(const width of [760,1066])test(`窗口宽度${width}的广场、组队和私
   await page.setViewportSize({width,height:560});await boot(page);
   for(const route of ['square','play','buddy']){await nav(page,route);if(route==='square')await page.locator('[data-open-post="101"]').first().click();if(route==='play')await page.locator('[data-party-open]').first().click();if(route==='buddy')await page.locator(`[data-open-chat="${other}"]`).first().click();
     const clipped=await page.locator('.view.active button').evaluateAll(nodes=>nodes.filter(el=>{const r=el.getBoundingClientRect();return r.width&&r.height&&r.top<innerHeight&&r.bottom>0&&(r.left<0||r.right>innerWidth);}).map(el=>el.textContent));expect(clipped).toEqual([]);
+    if(route==='square'){
+      const form=page.locator('[data-comment-form]'),composer=(await form.boundingBox())!;expect(composer.y+composer.height).toBeCloseTo(560,0);
+      await page.locator('.detail-content-scroll').evaluate(el=>el.scrollTop=el.scrollHeight);const lastComment=(await page.locator('.post-comment').last().boundingBox())!;expect(lastComment.y+lastComment.height).toBeLessThanOrEqual(composer.y);
+      await form.locator('[data-compact-picker-toggle]').click();const picker=page.locator('[data-comment-form] .compose-compact-picker');await expect(picker).toBeVisible();const panel=(await picker.boundingBox())!;
+      expect(panel.y).toBeGreaterThanOrEqual(56);expect(panel.y+panel.height).toBeLessThan(composer.y);expect(panel.x).toBeGreaterThanOrEqual(0);expect(panel.x+panel.width).toBeLessThanOrEqual(width);expect((await form.boundingBox())!.height).toBe(composer.height);
+      await form.locator('[data-compact-picker-toggle]').click();
+    }
   }
 });
 
