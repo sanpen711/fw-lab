@@ -47,15 +47,20 @@ function scheduleEnhance(){if(enhanceQueued)return;enhanceQueued=true;queueMicro
 
 document.addEventListener('click',event=>{
   if(event.target.closest?.('[data-comment-emoji],[data-comment-sticker]')){openPickerKey='';return;}
+  if(event.target.closest?.('[data-compose-emoji],[data-compose-sticker]')){openPickerKey='';requestAnimationFrame(()=>document.querySelector('[data-compose-form] textarea')?.focus({preventScroll:true}));return;}
   const pickerButton=event.target.closest?.('[data-compact-picker-toggle]');
   if(pickerButton){event.preventDefault();const key=pickerButton.closest('[data-picker-surface]')?.dataset.pickerSurface||'';openPickerKey=openPickerKey===key?'':key;enhanceCompose();return;}
+  if(openPickerKey==='compose'&&!event.target.closest?.('[data-compose-form] .compose-compact-picker')){openPickerKey='';enhanceCompose();}
   const mediaButton=event.target.closest?.('[data-compact-media]');
   if(mediaButton){event.preventDefault();const form=mediaButton.closest('[data-compose-form],[data-comment-form]');form?.querySelector('[data-compose-image],[data-comment-image]')?.click();return;}
   if(event.target.closest?.('[data-nav]')){openPickerKey='';scheduleEnhance();}
 },true);
 
 document.addEventListener('submit',event=>{if(event.target.matches?.('[data-compose-form],[data-comment-form]'))openPickerKey='';},true);
-document.addEventListener('keydown',event=>{if(!event.ctrlKey||event.key!=='Enter')return;const form=event.target.closest?.('[data-comment-form]');if(!form||event.target.tagName!=='TEXTAREA')return;event.preventDefault();form.requestSubmit();});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&openPickerKey==='compose'){event.preventDefault();openPickerKey='';enhanceCompose();document.querySelector('[data-compose-form] [data-compact-picker-toggle]')?.focus({preventScroll:true});return;}
+  if(!event.ctrlKey||event.key!=='Enter')return;const form=event.target.closest?.('[data-comment-form]');if(!form||event.target.tagName!=='TEXTAREA')return;event.preventDefault();form.requestSubmit();
+});
 
 const observer=new MutationObserver(scheduleEnhance);
 observer.observe(document.body,{childList:true,subtree:true});

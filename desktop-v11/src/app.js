@@ -333,12 +333,15 @@ function renderCompose(){
   const host=$('[data-compose-content]');if(!host)return;if(deferWhileComposing(host,renderCompose))return;const inputState=captureUiState(host),mediaInput=host.querySelector('[data-compose-image]');
   if(!accountState.user){host.innerHTML='<div class="state-card"><b>登录后发牢骚</b><span>发布内容会与网页、PWA、APK 共用同一账号和数据库。</span><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';return;}
   host.innerHTML=`<form class="compose-card" data-compose-form>
-    <label for="composeText">把想说的先放在这里</label><textarea id="composeText" name="content" maxlength="${POST_TEXT_LIMIT}" placeholder="不要求有结论，也不要求立刻振作。" ${feedState.busy?'disabled':''}>${esc(composeDraft.text)}</textarea><div class="compose-count">${composeDraft.text.length}/${POST_TEXT_LIMIT}</div>
-    <div class="media-tools"><label class="secondary compact file-button">添加图片 / 视频<input type="file" accept="${MEDIA_ACCEPT}" multiple data-compose-image hidden ${feedState.busy?'disabled':''}></label></div>
-    <div class="compose-media-hint">图片、GIF 和我的表情合计 4 张，或单独 1 个视频。GIF ≤3MB；视频 ≤20MB、30 秒。<span>实况照片请先存储为视频，HEIC 请转换为 JPG。</span></div>
+    <div class="compose-input-heading"><label for="composeText">把想说的先放在这里</label><div class="compose-count">${composeDraft.text.length}/${POST_TEXT_LIMIT}</div></div>
+    <textarea id="composeText" name="content" maxlength="${POST_TEXT_LIMIT}" placeholder="不要求有结论，也不要求立刻振作。" ${feedState.busy?'disabled':''}>${esc(composeDraft.text)}</textarea>
     ${attachmentPreview(composeDraft,'compose')}
-    <div class="picker-block" hidden>${sharedPicker(composeDraft,'compose')}</div>
-    <div class="compose-actions"><button class="secondary" type="button" data-nav="square">取消</button><button class="primary" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发布中...':'投递到精神广场'}</button></div>
+    <details class="compose-upload-help"><summary>图片 / 表情最多 4 张，视频 1 个<span>上传说明</span></summary><div class="compose-help-panel">图片自动压缩；GIF 最大 3MB；视频最大 20MB、30 秒。<br>实况照片请先存储为视频，HEIC 请转换为 JPG。</div></details>
+    <div class="compose-editor-footer">
+      <div class="media-tools"><label class="secondary compact file-button">添加图片 / 视频<input type="file" accept="${MEDIA_ACCEPT}" multiple data-compose-image hidden ${feedState.busy?'disabled':''}></label></div>
+      <div class="picker-block" hidden>${sharedPicker(composeDraft,'compose')}</div>
+      <div class="compose-actions"><button class="secondary" type="button" data-nav="square">取消</button><button class="primary" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发布中...':'发布'}</button></div>
+    </div>
   </form>`;restoreMediaInput(host,mediaInput,'[data-compose-image]');restoreUiState(host,inputState);
 }
 function postCard(post){
@@ -601,7 +604,7 @@ function bindForms(){
   document.addEventListener('submit',async event=>{
     const createPoll=event.target.closest?.('[data-poll-create-form]');if(createPoll){event.preventDefault();const fd=new FormData(createPoll),owner=accountState.user?.id;try{await pollStore.createPoll({title:fd.get('title'),options:[1,2,3,4].map(index=>fd.get(`option${index}`)),isOfficial:fd.get('official')==='on'});if(accountState.user?.id!==owner)return;createPoll.reset();pollCreateOpen=false;pollFilter=accountState.user?.role==='admin'&&fd.get('official')==='on'?'official':'user';toast('投票课题已发布。');renderPolls();}catch(error){toast(error.message||'发布失败。');}return;}
     const addOption=event.target.closest?.('[data-poll-add-option]');if(addOption){event.preventDefault();try{await pollStore.addOption(addOption.dataset.pollAddOption,new FormData(addOption).get('label'));toast('新选项已加入并投票。');}catch(error){toast(error.message||'新增选项失败。');}return;}
-    const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();const owner=accountState.user?.id,text=composeDraft.text,attachments=composeDraft.attachments;try{await feedStore.createPost({text,attachments});if(accountState.user?.id!==owner)return;if(composeDraft.text===text&&composeDraft.attachments===attachments){releasePreview(composeDraft);composeDraft.text='';}toast('已投递到精神广场。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
+    const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();const owner=accountState.user?.id,text=composeDraft.text,attachments=composeDraft.attachments;try{await feedStore.createPost({text,attachments});if(accountState.user?.id!==owner)return;if(composeDraft.text===text&&composeDraft.attachments===attachments){releasePreview(composeDraft);composeDraft.text='';}toast('发布成功。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);const owner=accountState.user?.id,text=draft.text,attachments=draft.attachments;try{await feedStore.createComment({postId,text,attachments});if(accountState.user?.id!==owner)return;if(draft.text===text&&draft.attachments===attachments){releasePreview(draft);draft.text='';}toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }

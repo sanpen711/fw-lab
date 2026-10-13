@@ -262,6 +262,26 @@ test('广场四个我的表情可单独发表评论，小窗口预览不增高�
   await form.locator('[type="submit"]').click();await expect.poll(()=>recorded.comments.length).toBe(1);expect(recorded.uploads).toHaveLength(0);expect((recorded.comments[0].content.match(/\[\[FW_USER_STICKER:/g)||[]).length).toBe(4);await expect(page.locator('.post-comment[data-comment-id="902"] .media-gallery')).toHaveAttribute('data-media-count','4');
 });
 
+for(const size of [{width:760,height:560},{width:1066,height:728}])test(`发牢骚 ${size.width}px 四图后无需滚页即可选择表情和发布`,async({page})=>{
+  await page.setViewportSize(size);await boot(page);const recorded=await mediaFixture(page,{failInsert:true});await nav(page,'compose');
+  const form=page.locator('[data-compose-form]'),input=form.locator('textarea'),picker=form.locator('.compose-compact-picker'),toggle=form.locator('[data-compact-picker-toggle]'),publish=form.locator('[type="submit"]');
+  const text='今天想说的话\n'.repeat(20);await input.fill(text);await form.locator('[data-compose-image]').setInputFiles([1,2,3,4].map(photoFile));await expect(form.locator('.media-draft-item')).toHaveCount(4);
+  const thumbnails=await form.locator('.media-draft-item').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return{width:r.width,height:r.height,y:r.y};}));thumbnails.forEach(box=>{expect(box.width).toBeGreaterThanOrEqual(56);expect(box.width).toBeCloseTo(box.height,0);expect(box.y).toBeCloseTo(thumbnails[0].y,0);});
+  await expect(publish).toHaveText('发布');const back=page.locator('.compose-page .section-heading [data-nav="square"]');await expect(back).toHaveText('返回');
+  const bounds=async()=>{const controls=[publish,toggle,form.locator('[data-compact-media]'),form.locator('.media-draft-preview')];for(const control of controls){const box=(await control.boundingBox())!;expect(box.y).toBeGreaterThanOrEqual(0);expect(box.y+box.height).toBeLessThanOrEqual(size.height);expect(box.x+box.width).toBeLessThanOrEqual(size.width);}};
+  await bounds();const height=(await form.boundingBox())!.height;expect(await page.evaluate(()=>document.documentElement.scrollHeight>innerHeight)).toBe(false);
+  if(process.env.FW_COMPOSE_QA_DIR)await page.screenshot({path:`${process.env.FW_COMPOSE_QA_DIR}/four-images-${size.width}.png`});
+  await toggle.click();await expect(picker).toBeVisible();const panel=(await picker.boundingBox())!,footer=(await form.locator('.compose-editor-footer').boundingBox())!,heading=(await page.locator('.compose-page .section-heading').boundingBox())!;
+  expect(panel.y).toBeGreaterThanOrEqual(heading.y+heading.height);expect(panel.y+panel.height).toBeLessThan(footer.y);expect(panel.x+panel.width).toBeLessThanOrEqual(size.width);expect((await form.boundingBox())!.height).toBeCloseTo(height,0);
+  const emoji=form.locator('[data-compose-emoji]').first();const value=await emoji.getAttribute('data-compose-emoji');await emoji.click();await expect(picker).toBeHidden();await expect(input).toBeFocused();await expect(input).toHaveValue(text+value);await expect(form.locator('.media-draft-item')).toHaveCount(4);await bounds();
+  await toggle.click();await form.locator('[data-compose-picker-tab="fufu1"]').click();await expect(form.locator('.fufu-pack-item')).toHaveCount(24);await form.locator('.labeled-sticker-pack').evaluate(el=>el.scrollTop=el.scrollHeight);
+  if(process.env.FW_COMPOSE_QA_DIR)await page.screenshot({path:`${process.env.FW_COMPOSE_QA_DIR}/picker-${size.width}.png`});
+  await page.keyboard.press('Escape');await expect(picker).toBeHidden();await expect(toggle).toBeFocused();await toggle.click();await input.click({position:{x:12,y:8}});await expect(picker).toBeHidden();
+  await form.locator('.compose-upload-help summary').click();await expect(form.locator('.compose-help-panel')).toBeVisible();await expect(form.locator('.compose-help-panel')).toContainText('20MB');expect((await form.boundingBox())!.height).toBeCloseTo(height,0);await form.locator('.compose-upload-help summary').click();
+  await back.click();await expect(page.locator('[data-view-panel="square"]')).toHaveClass(/active/);await nav(page,'compose');await expect(input).toHaveValue(text+value);await expect(form.locator('.media-draft-item')).toHaveCount(4);
+  await publish.click();await expect(page.locator('[data-toast]')).toContainText('模拟发布失败');await expect(input).toHaveValue(text+value);await expect(form.locator('.media-draft-item')).toHaveCount(4);await expect(publish).toBeEnabled();expect(recorded.posts).toHaveLength(1);await bounds();expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollTop>0)).toBe(false);
+});
+
 async function partyFixture(page:Page,role:'joined'|'captain'|'pending'|'visitor',options:{emptyIds?:boolean,direct?:boolean,longInfo?:boolean}={}){
   const captain=role==='captain'?me:other,requests:{path:string,body:any}[]=[];
   const party={id:51,captain_id:captain,game_name:options.longInfo?'一起轻松玩游戏'.repeat(4).slice(0,30):'斗地主',server_name:'微信',mode:'血流成河',starts_at_text:'今晚 20:00',capacity:5,member_count:2,status:'open',requires_approval:!options.direct,note:options.longInfo?'这是较长的组队说明，确认展开资料时聊天仍可使用。'.repeat(9).slice(0,200):''};

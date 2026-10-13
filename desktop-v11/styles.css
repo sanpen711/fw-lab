@@ -148,3 +148,39 @@ body.auth-required{overflow:hidden;background:#f6f6f4}
 .comment-compose-footer [data-comment-count]{font-style:normal}
 .compose-media-hint{color:var(--muted);font-size:11px;line-height:1.6}
 .compose-media-hint>span{display:block;color:#888}
+
+/* Keep the square post editor within the desktop window. */
+html body [data-view-panel="compose"]{height:100vh;min-height:0!important;overflow:hidden}
+html body [data-view-panel="compose"] .compose-page{display:grid;grid-template-rows:auto minmax(0,1fr);height:100%;min-height:0!important;overflow:hidden}
+.compose-page .section-heading{align-items:center;gap:16px;padding:14px 28px}
+.compose-page .section-heading h1{margin:0;font-size:24px;line-height:1.4;letter-spacing:-.03em}
+.compose-page .section-heading span{display:block;margin-top:4px;font-size:11px;line-height:1.6}
+.compose-page .section-heading>button{flex:none}
+.compose-page .compose-wrap{min-width:0;min-height:0;width:min(820px,calc(100% - 40px));height:100%;margin:0 auto;padding:16px 0 20px}
+.compose-page .compose-card{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0;height:100%;padding:20px;border-radius:16px}
+.compose-input-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none}
+.compose-input-heading label{font-size:12px;font-weight:700}
+.compose-input-heading .compose-count{margin:0;white-space:nowrap}
+.compose-page .compose-card textarea{flex:1;min-height:110px;resize:none;overflow:auto;padding:12px;border-radius:12px;font-size:14px}
+.compose-page .media-draft-preview{flex:none;padding:8px;border-radius:9px}
+.compose-page .media-draft-items{width:100%}
+.compose-page .media-draft-item{flex-basis:66px}
+.compose-page .media-draft-item:has(video){flex-basis:128px}
+.compose-upload-help{position:relative;flex:none;min-width:0;color:var(--muted);font-size:10px;line-height:1.6}
+.compose-upload-help summary{display:flex;justify-content:space-between;gap:8px;list-style:none;cursor:pointer}
+.compose-upload-help summary::-webkit-details-marker{display:none}
+.compose-upload-help summary>span{flex:none;color:#ad646a}
+.compose-upload-help summary>span::after{content:' ＋'}
+.compose-upload-help[open] summary>span::after{content:' −'}
+.compose-help-panel{position:absolute;z-index:8;right:0;bottom:calc(100% + 8px);width:min(440px,100%);padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;box-shadow:0 8px 24px #00000012;font-size:11px;line-height:1.7}
+.compose-editor-footer{position:relative;display:flex;align-items:center;gap:12px;flex:none;min-width:0;padding-top:10px;border-top:1px solid var(--line)}
+.compose-editor-footer .compose-compact-tools{min-width:0;margin:0}
+.compose-editor-footer .compose-compact-tool{width:36px;height:36px;min-width:36px;border-radius:9px}
+.compose-editor-footer .compose-paste-hint{font-size:10px;font-weight:400;white-space:nowrap}
+.compose-editor-footer .compose-actions{flex:none;gap:8px;margin-left:auto;padding:0}
+.compose-editor-footer .compose-actions>button{min-height:36px;padding:0 16px;font-size:13px}
+.compose-editor-footer .compose-actions>.primary{min-width:88px}
+.compose-page .compose-editor-footer .compose-compact-picker{position:absolute;z-index:10;left:0;bottom:calc(100% + 10px);display:flex;flex-direction:column;gap:9px;width:min(520px,100%);height:310px;min-height:0;margin:0;padding:10px 12px 12px;border-radius:12px;background:#fff;box-shadow:0 12px 32px #00000016}
+.compose-editor-footer .compose-compact-picker .inline-picker-tabs,.compose-editor-footer .compose-compact-picker .sticker-toolbar{flex:none}
+.compose-editor-footer .compose-compact-picker .inline-emoji-grid,.compose-editor-footer .compose-compact-picker .inline-sticker-grid,.compose-editor-footer .compose-compact-picker .labeled-sticker-pack{flex:1;min-height:0;max-height:none;overflow-y:auto}
+@media(max-height:620px){.compose-page .section-heading{padding-block:10px}.compose-page .section-heading h1{font-size:22px}.compose-page .compose-wrap{padding-block:12px}.compose-page .compose-card{gap:10px;padding:16px}.compose-page .media-draft-item{flex-basis:60px}.compose-page .compose-editor-footer .compose-compact-picker{height:290px}}
