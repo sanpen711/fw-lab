@@ -107,7 +107,7 @@ function openTool(view){
   openDialog(modal,{close:closeTool,initialFocus:()=>$('[data-home-tool-view]:not([hidden]) input, [data-home-tool-view]:not([hidden]) textarea',modal)});
 }
 
-function closeTool(){const modal=$('[data-home-tool-modal]');if(!modal)return;modal.hidden=true;document.body.classList.remove('modal-open');setStatus('');closeDialog(modal);}
+function closeTool(){const modal=$('[data-home-tool-modal]');if(!modal)return;modal.hidden=true;if($('[data-account-modal]')?.hidden)document.body.classList.remove('modal-open');setStatus('');closeDialog(modal);}
 
 function renderWeatherResults(locations){
   const host=$('[data-weather-results]');if(!host)return;host.replaceChildren();weatherSearchResults=locations;
@@ -158,6 +158,7 @@ function bindForms(){
 
 function initHomeWidgets(options={}){
   if(started)return;started=true;notify=options.toast||notify;openAccount=options.openAccount||openAccount;
+  authStore.subscribe(auth=>{if(auth.ready&&(!auth.user||auth.user.cached||auth.user.disabled)&&!$('[data-home-tool-modal]')?.hidden)closeTool();});
   document.addEventListener('click',event=>{
     if(event.target.closest?.('[data-weather-open]')){openTool('weather');return;}
     if(event.target.closest?.('[data-offwork-open]')){openTool('offwork');return;}

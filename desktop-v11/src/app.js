@@ -200,6 +200,7 @@ function renderAuthGate(next){
   document.body.classList.toggle('auth-required',locked);app.hidden=locked;app.inert=locked;app.setAttribute('aria-hidden',String(locked));
   modal.dataset.authLocked=String(locked);modal.classList.toggle('auth-gate-modal',locked);modal.classList.toggle('auth-gate-checking',checkingOnly);close.hidden=locked;
   if(locked){
+    closeLightbox();
     modal.hidden=false;document.body.classList.add('modal-open');checking.hidden=next.ready&&!bootFailure;content.hidden=!next.ready||bootFailure;
     if(checkingCopy)checkingCopy.textContent=bootFailure?(next.error||'登录状态确认失败，请检查网络后重试。'):'请稍候，确认后将自动进入客户端。';
     if(retry)retry.hidden=!bootFailure;
@@ -589,7 +590,7 @@ function bindForms(){
     if(event.target.matches('[data-comment-image]'))setCommentDraftFile(event.target.dataset.commentImage,event.target.files?.[0]);
   });
   document.addEventListener('submit',async event=>{
-    const createPoll=event.target.closest?.('[data-poll-create-form]');if(createPoll){event.preventDefault();const fd=new FormData(createPoll);try{await pollStore.createPoll({title:fd.get('title'),options:[1,2,3,4].map(index=>fd.get(`option${index}`)),isOfficial:fd.get('official')==='on'});createPoll.reset();pollCreateOpen=false;pollFilter=accountState.user?.role==='admin'&&fd.get('official')==='on'?'official':'user';toast('投票课题已发布。');renderPolls();}catch(error){toast(error.message||'发布失败。');}return;}
+    const createPoll=event.target.closest?.('[data-poll-create-form]');if(createPoll){event.preventDefault();const fd=new FormData(createPoll),owner=accountState.user?.id;try{await pollStore.createPoll({title:fd.get('title'),options:[1,2,3,4].map(index=>fd.get(`option${index}`)),isOfficial:fd.get('official')==='on'});if(accountState.user?.id!==owner)return;createPoll.reset();pollCreateOpen=false;pollFilter=accountState.user?.role==='admin'&&fd.get('official')==='on'?'official':'user';toast('投票课题已发布。');renderPolls();}catch(error){toast(error.message||'发布失败。');}return;}
     const addOption=event.target.closest?.('[data-poll-add-option]');if(addOption){event.preventDefault();try{await pollStore.addOption(addOption.dataset.pollAddOption,new FormData(addOption).get('label'));toast('新选项已加入并投票。');}catch(error){toast(error.message||'新增选项失败。');}return;}
     const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();try{await feedStore.createPost({text:composeDraft.text,imageFile:composeDraft.imageFile,stickerUrls:Array.from(composeDraft.stickers)});releasePreview(composeDraft);composeDraft.text='';composeDraft.stickers.clear();toast('已投递到精神广场。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}

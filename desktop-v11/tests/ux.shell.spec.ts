@@ -82,6 +82,10 @@ test('更多菜单支持Esc关闭并恢复触发按钮焦点',async({page})=>{
   await boot(page);const trigger=page.locator('[data-sidebar-more-toggle]');await trigger.click();await page.locator('.sidebar-more-menu [data-nav="settings"]').focus();await page.keyboard.press('Escape');await expect(trigger).toHaveAttribute('aria-expanded','false');await expect(trigger).toBeFocused();
 });
 
+test('反馈弹窗打开时退出账号不会阻挡重新登录',async({page})=>{
+  await boot(page);await page.locator('[data-feedback-open]').click();await page.evaluate(async()=>{const {authStore}=await import('/src/auth-store.js');await authStore.signOut();});await expect(page.locator('[data-home-tool-modal]')).toBeHidden();await expect(page.locator('[data-account-modal]')).toBeVisible();const email=page.locator('[data-auth-view="login"] input[name="email"]');await email.focus();await expect(email).toBeFocused();
+});
+
 const me='00000000-0000-4000-8000-000000000024',other='00000000-0000-4000-8000-000000000025',third='00000000-0000-4000-8000-000000000026';
 const user={id:me,aud:'authenticated',role:'authenticated',email:'audit@example.com',app_metadata:{provider:'email',providers:['email']},user_metadata:{nickname:'检查研究员',lab_code:'AUDIT1'},created_at:'2026-09-18T00:00:00Z'};
 const profiles=[{id:me,nickname:'检查研究员',lab_code:'AUDIT1'},{id:other,nickname:'搭子甲',lab_code:'AUDIT2'},{id:third,nickname:'搭子乙',lab_code:'AUDIT3'}];
