@@ -102,7 +102,7 @@ jobs:
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.3.24：修复小窗口按钮裁切、私聊草稿串用、投票与组队失败丢失输入，并优化评论焦点、消息滚动、导航提示和键盘操作。'
+          $notes = 'Windows 1.3.24：精神广场正文与评论支持300字，图片、GIF和自定义表情共4张，视频单独发布1个；优化发布页、评论区和组队详情排版，支持帖子链接直接打开和多图左右翻看，并修复小窗口显示、输入草稿、消息滚动及键盘操作问题。'
 
           $metadata = @{
             available = $true
@@ -155,7 +155,7 @@ jobs:
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" "$signature" --clobber
           else
-            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.3.24' --notes '修复小窗口按钮裁切、私聊草稿串用、投票与组队失败丢失输入，并优化评论焦点、消息滚动、导航提示和键盘操作。'
+            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.3.24' --notes '精神广场正文与评论支持300字，图片、GIF和自定义表情共4张，视频单独发布1个；优化发布页、评论区和组队详情排版，支持帖子链接直接打开和多图左右翻看，并修复小窗口显示、输入草稿、消息滚动及键盘操作问题。'
           fi
 
       - name: Mirror installer to Supabase Storage
