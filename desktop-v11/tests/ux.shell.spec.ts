@@ -1,6 +1,7 @@
 import {test,expect,type Page} from '@playwright/test';
+import {readFileSync} from 'node:fs';
 
-async function nav(page:Page,route:string){await page.locator(`.nav-item[data-nav="${route}"]`).click();}
+async function nav(page:Page,route:string){if(route==='compose'){await page.locator('.nav-item[data-nav="home"]').click();await page.locator('.hero-actions [data-nav="compose"]').click();return;}await page.locator(`.nav-item[data-nav="${route}"]`).click();}
 async function openChat(page:Page,id=other){await nav(page,'buddy');await page.locator(`[data-open-chat="${id}"]`).first().click();await expect(page.locator('[data-chat-compose] input[name="message"]')).toBeEnabled();}
 async function incoming(page:Page){
   await page.evaluate(async()=>{const {authStore}=await import('/src/auth-store.js');const original=authStore.client.channel.bind(authStore.client);(window as any).__uxSubscriptions=[];authStore.client.channel=(...args)=>{const channel=original(...args),on=channel.on.bind(channel);channel.on=(type,filter,callback)=>{(window as any).__uxSubscriptions.push({filter,callback});return on(type,filter,callback);};return channel;};});
@@ -154,6 +155,113 @@ async function linkFixture(page:Page){
 }
 async function nativeLinkMock(page:Page,failure=false){await page.evaluate(failure=>{(window as any).__linkCalls=[];(window as any).__TAURI__={core:{invoke:async(command,args)=>{if(command==='desktop_open_web_url'){(window as any).__linkCalls.push({command,args});if(failure)throw new Error('模拟打开失败');}return null;}}};},failure);}
 
+const mediaOrigin='https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/chat-media/fixture/';
+const mediaMarker=(kind:string,name:string)=>`[[${kind}:${Buffer.from(mediaOrigin+name).toString('base64')}]]`;
+const tinyPng=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6lAAAAABJRU5ErkJggg==','base64');
+const tinyGif=Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7','base64');
+const tinyVideo=Buffer.from('GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAI9EU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggEeTbuMU6uEHFO7a1OsggIn7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNjAuMTYuMTAwV0GNTGF2ZjYwLjE2LjEwMESJiECPQAAAAAAAFlSua8GuAQAAAAAAADjXgQFzxYhs/dMYYbmPQZyBACK1nIN1bmSIgQCGhVZfVlA4g4EBI+ODhAvrwgDgibCBELqBEJqBAhJUw2f8c3OgY8CAZ8iaRaOHRU5DT0RFUkSHjUxhdmY2MC4xNi4xMDBzc9ZjwItjxYhs/dMYYbmPQWfIoUWjh0VOQ09ERVJEh5RMYXZjNjAuMzEuMTAyIGxpYnZweGfIoUWjiERVUkFUSU9ORIeTMDA6MDA6MDEuMDAwMDAwMDAwAB9DtnVAgueBAKOhgQAAgBACAJ0BKhAAEAAARwiFhYiFhIgCAgAMDmAA/mgAo5WBAMgAsQEABRCsABgAGFgv9AAIAACjlYEBkACxAQAFEKwAGAAYWC/0AAgAAKOVgQJYALEBAAUQrAAYABhYL/QACAAAo5WBAyAAsQEABRCsABgAGFgv9AAIAAAcU7trkbuPs4EAt4r3gQHxggGf8IED','base64');
+const photoFile=(i:number)=>({name:`photo${i}.png`,mimeType:'image/png',buffer:tinyPng});
+const videoFile=()=>({name:'live-as-video.webm',mimeType:'video/webm',buffer:tinyVideo});
+async function mediaFixture(page:Page,options:{failUpload?:number,failInsert?:boolean}={}){
+  const recorded={uploads:[] as string[],deletes:[] as string[][],posts:[] as any[],comments:[] as any[]};let uploadCount=0;
+  const entries=Array.from({length:4},(_,i)=>({id:501+i,user_id:other,created_at:'2026-10-12T01:00:00Z',content:`${i+1} 张图片示例\n`+Array.from({length:i+1},(_,j)=>mediaMarker(j===1?'FW_USER_STICKER':'FW_MEDIA_IMAGE',j===0?'portrait.svg':`photo${j}.svg`)).join('\n')}));
+  entries.push({id:505,user_id:other,created_at:'2026-10-12T01:00:00Z',content:mediaMarker('FW_MEDIA_VIDEO','clip.webm')},{id:506,user_id:other,created_at:'2026-10-12T01:00:00Z',content:mediaMarker('FW_USER_STICKER','photo1.svg')},{id:507,user_id:other,created_at:'2026-10-12T01:00:00Z',content:mediaMarker('FW_USER_STICKER','photo1.svg')+'\n'+mediaMarker('FW_MEDIA_VIDEO','clip.webm')});
+  await page.route(/\/storage\/v1\/object\/(?:public\/chat-media\/fixture\/|chat-media(?:\/|$))/,async route=>{
+    const request=route.request(),path=new URL(request.url()).pathname;
+    if(request.method()==='DELETE'){recorded.deletes.push(request.postDataJSON().prefixes);return route.fulfill({status:200,contentType:'application/json',body:'[]'});}
+    if(request.method()==='POST'){uploadCount++;recorded.uploads.push(path);return route.fulfill({status:options.failUpload===uploadCount?503:200,contentType:'application/json',body:JSON.stringify(options.failUpload===uploadCount?{message:'模拟媒体上传失败'}:{Key:path})});}
+    if(path.endsWith('.webm'))return route.fulfill({status:200,contentType:'video/webm',body:tinyVideo});
+    const portrait=path.endsWith('portrait.svg');return route.fulfill({status:200,contentType:'image/svg+xml',body:`<svg xmlns="http://www.w3.org/2000/svg" width="${portrait?180:300}" height="${portrait?320:200}"><rect width="100%" height="100%" fill="#e4e4e4"/><circle cx="80" cy="80" r="40" fill="#aaa"/></svg>`});
+  });
+  await page.route(/\/rest\/v1\/(posts|comments|user_stickers)(?:\?|$)/,async route=>{
+    const request=route.request(),path=new URL(request.url()).pathname;let data:any=[];
+    if(request.method()==='POST'){
+      const row=request.postDataJSON();(path.endsWith('/posts')?recorded.posts:recorded.comments).push(row);
+      if(options.failInsert)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'模拟发布失败'})});
+      data={...row,id:path.endsWith('/posts')?901:902,created_at:new Date().toISOString()};
+    }else if(path.endsWith('/posts'))data=entries;
+    else if(path.endsWith('/comments'))data=Array.from({length:4},(_,i)=>({id:601+i,post_id:501,user_id:other,content:entries[i].content,created_at:'2026-10-12T02:00:00Z'}));
+    else data=Array.from({length:5},(_,i)=>({id:801+i,user_id:me,image_url:mediaOrigin+`sticker${i}.svg`,created_at:new Date().toISOString()}));
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
+  });return recorded;
+}
+
+for(const width of [760,1066])test(`广场媒体 ${width}px 窗口的一、二、三、四张布局与视频`,async({page})=>{
+  await page.setViewportSize({width,height:width===760?560:728});await boot(page);await mediaFixture(page);await nav(page,'square');
+  for(let count=1;count<=4;count++){
+    const card=page.locator(`.square-post[data-open-post="${500+count}"]`),gallery=card.locator('.media-gallery');await expect(gallery).toHaveAttribute('data-media-count',String(count));await card.evaluate(el=>el.scrollIntoView({block:'center'}));
+    await expect.poll(()=>gallery.locator('img').evaluateAll(nodes=>nodes.filter(el=>(el as HTMLImageElement).naturalWidth>0).length)).toBe(count);
+    const boxes=await gallery.locator('.rich-media-item').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height};}));
+    if(count===1){await expect.poll(()=>gallery.locator('img').evaluate((el:HTMLImageElement)=>el.naturalHeight)).toBe(320);expect(boxes[0].h).toBeGreaterThan(boxes[0].w);}
+    else {boxes.forEach(b=>expect(b.w).toBeCloseTo(b.h,0));expect(boxes[0].y).toBeCloseTo(boxes[1].y,0);if(count===3)expect(boxes[1].y).toBeCloseTo(boxes[2].y,0);if(count===4){expect(boxes[2].y).toBeGreaterThan(boxes[0].y);expect(boxes[0].x).toBeCloseTo(boxes[2].x,0);expect(boxes[2].y).toBeCloseTo(boxes[3].y,0);}}
+    if(process.env.FW_MEDIA_QA_DIR)await page.screenshot({path:`${process.env.FW_MEDIA_QA_DIR}/gallery-${count}-${width}.png`});
+    await card.locator('.post-meta').click();await expect(page.locator('.detail-post .media-gallery')).toHaveAttribute('data-media-count',String(count));
+  }
+  await page.locator('.square-post[data-open-post="501"] .post-meta').click();for(let count=1;count<=4;count++)await expect(page.locator(`.post-comment[data-comment-id="${600+count}"] .media-gallery`)).toHaveAttribute('data-media-count',String(count));
+  const image=page.locator('.detail-post [data-lightbox-src]');await image.focus();await page.keyboard.press('Enter');await expect(page.locator('[data-media-lightbox]')).toBeVisible();await page.keyboard.press('Escape');await expect(image).toBeFocused();
+  const videoCard=page.locator('.square-post[data-open-post="505"]');await videoCard.evaluate(el=>el.scrollIntoView({block:'center'}));const video=videoCard.locator('video');await expect(video).toHaveAttribute('controls','');await video.click();await expect(page.locator('.detail-post .media-gallery')).toHaveAttribute('data-media-count','1');await expect(page.locator('.detail-post video')).toHaveCount(0);
+  await page.locator('.square-post[data-open-post="506"] .post-meta').click();await expect(page.locator('.detail-post .rich-media-item.is-sticker')).toHaveCount(1);
+  await page.locator('.square-post[data-open-post="507"] .post-meta').click();await expect(page.locator('.detail-post .rich-media-item.is-sticker')).toHaveCount(1);await expect(page.locator('.detail-post video')).toHaveCount(1);await expect(page.locator('.detail-post .rich-text')).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
+});
+
+for(const context of ['compose','comment'] as const)test(`广场${context==='compose'?'发帖':'评论'}接受 300 字和四张混合媒体，支持逐张移除`,async({page})=>{
+  await boot(page);const recorded=await mediaFixture(page);await nav(page,context==='compose'?'compose':'square');if(context==='comment')await page.locator('.square-post[data-open-post="501"] .post-meta').click();
+  const form=page.locator(context==='compose'?'[data-compose-form]':'[data-comment-form]'),input=form.locator('textarea'),file=form.locator(`[data-${context}-image]`);
+  await expect(input).toHaveAttribute('maxlength','300');await expect(file).toHaveAttribute('multiple','');await input.fill('字'.repeat(300));
+  await file.evaluate(el=>(window as any).__mediaInput=el);
+  await file.setInputFiles([photoFile(1),{name:'animated.gif',mimeType:'image/gif',buffer:tinyGif}]);await expect(form.locator('.media-draft-item')).toHaveCount(2);
+  expect(await file.evaluate(el=>el===(window as any).__mediaInput)).toBe(true);
+  await form.locator('[data-compact-picker-toggle]').click();await form.locator(`[data-${context}-picker-tab="stickers"]`).click();await form.locator(`[data-${context}-sticker]`).nth(0).click();
+  await file.setInputFiles(photoFile(3));await expect(form.locator('.media-draft-item')).toHaveCount(4);
+  await file.setInputFiles(photoFile(4));await expect(page.locator('[data-toast]')).toContainText('合计最多 4 张');await expect(form.locator('.media-draft-item')).toHaveCount(4);
+  await form.locator(`[data-${context}-attachment-remove="0"]`).click();await expect(form.locator('.media-draft-item')).toHaveCount(3);await file.setInputFiles(photoFile(4));await expect(form.locator('.media-draft-item')).toHaveCount(4);
+  await form.locator('[type="submit"]').click();await expect.poll(()=>(context==='compose'?recorded.posts:recorded.comments).length).toBe(1);
+  const content=(context==='compose'?recorded.posts:recorded.comments)[0].content;expect(content.split('\n')[0]).toBe('字'.repeat(300));expect((content.match(/\[\[FW_MEDIA_IMAGE:/g)||[]).length).toBe(3);expect((content.match(/\[\[FW_USER_STICKER:/g)||[]).length).toBe(1);expect(recorded.uploads).toHaveLength(3);
+  await expect(page.locator(context==='compose'?'.square-post[data-open-post="901"] .media-gallery':'.post-comment[data-comment-id="902"] .media-gallery')).toHaveAttribute('data-media-count','4');
+  if(context==='compose'){await nav(page,'compose');await expect(page.locator('[data-compose-form] textarea')).toHaveValue('');}else await expect(input).toHaveValue('');
+});
+
+test('广场粘贴多图、继续添加及超限失败保留附件与文字',async({page})=>{
+  await boot(page);await mediaFixture(page);await nav(page,'compose');const form=page.locator('[data-compose-form]');await form.locator('textarea').fill('粘贴草稿');
+  const paste=async(count:number)=>form.locator('textarea').evaluate((textarea,{count,png})=>{const data=new DataTransfer(),bytes=Uint8Array.from(atob(png),c=>c.charCodeAt(0));for(let i=0;i<count;i++)data.items.add(new File([bytes],`paste${i}.png`,{type:'image/png'}));textarea.dispatchEvent(new ClipboardEvent('paste',{clipboardData:data,bubbles:true,cancelable:true}));},{count,png:tinyPng.toString('base64')});
+  await paste(3);await expect(form.locator('.media-draft-item')).toHaveCount(3);await paste(2);await expect(page.locator('[data-toast]')).toContainText('合计最多 4 张');await expect(form.locator('.media-draft-item')).toHaveCount(3);await paste(1);await expect(form.locator('.media-draft-item')).toHaveCount(4);await expect(form.locator('textarea')).toHaveValue('粘贴草稿');
+});
+
+test('广场上传中途失败清理已上传文件，保留四张草稿并可重试',async({page})=>{
+  await boot(page);const recorded=await mediaFixture(page,{failUpload:2});await nav(page,'compose');const form=page.locator('[data-compose-form]');await form.locator('textarea').fill('失败草稿');await form.locator('[data-compose-image]').setInputFiles([1,2,3,4].map(photoFile));
+  await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('模拟媒体上传失败');await expect(form.locator('textarea')).toHaveValue('失败草稿');await expect(form.locator('.media-draft-item')).toHaveCount(4);expect(recorded.posts).toHaveLength(0);expect(recorded.deletes).toHaveLength(1);expect(recorded.deletes[0]).toHaveLength(1);
+  await form.locator('[type="submit"]').click();await expect.poll(()=>recorded.posts.length).toBe(1);await expect(page.locator('.square-post[data-open-post="901"] .media-gallery')).toHaveAttribute('data-media-count','4');
+});
+
+test('广场仅媒体可发布，视频单独一个且不与表情混发，HEIC 显示转换提示',async({page})=>{
+  await boot(page);const recorded=await mediaFixture(page);await nav(page,'compose');const form=page.locator('[data-compose-form]'),file=form.locator('[data-compose-image]');
+  await file.setInputFiles({name:'original.heic',mimeType:'image/heic',buffer:tinyPng});await expect(page.locator('[data-toast]')).toContainText('实况照片请先存储为视频');await expect(form.locator('.media-draft-item')).toHaveCount(0);
+  await file.setInputFiles([videoFile(),videoFile()]);await expect(page.locator('[data-toast]')).toContainText('最多发送 1 个视频');await expect(form.locator('.media-draft-item')).toHaveCount(0);
+  await file.setInputFiles(videoFile());await expect(form.locator('.media-draft-item video')).toHaveCount(1);await file.setInputFiles(photoFile(1));await expect(page.locator('[data-toast]')).toContainText('视频请单独发送');await expect(form.locator('.media-draft-item')).toHaveCount(1);
+  await form.locator('[data-compact-picker-toggle]').click();await form.locator('[data-compose-picker-tab="stickers"]').click();await form.locator('[data-compose-sticker]').first().click();await expect(page.locator('[data-toast]')).toContainText('视频请单独发送');
+  await form.locator('[type="submit"]').click();await expect.poll(()=>recorded.posts.length).toBe(1);expect(recorded.posts[0].content).toMatch(/^\[\[FW_MEDIA_VIDEO:/);await expect(page.locator('.square-post[data-open-post="901"] video')).toHaveCount(1);
+});
+
+test('广场存储层拒绝超长文字、五张媒体和超大 GIF，发布失败保留评论媒体',async({page})=>{
+  await boot(page);const recorded=await mediaFixture(page,{failInsert:true});await nav(page,'square');await page.locator('.square-post[data-open-post="501"] .post-meta').click();
+  const errors=await page.evaluate(async()=>{const {feedStore}=await import('/src/feed-store.js');const errors=[];for(const data of [{text:'字'.repeat(301)},{text:'合法',attachments:Array.from({length:5},()=>({kind:'sticker',url:'https://example.com/x.gif'}))},{text:'合法',attachments:[{kind:'image',file:new File([new Uint8Array(3*1024*1024+1)],'big.gif',{type:'image/gif'})}]}]){for(const kind of ['post','comment'])try{await(kind==='post'?feedStore.createPost(data):feedStore.createComment({postId:501,...data}));}catch(error){errors.push(error.message);}}return errors;});
+  expect(errors).toHaveLength(6);expect(errors.filter(e=>e.includes('300 字'))).toHaveLength(2);expect(recorded.uploads).toHaveLength(0);expect(recorded.posts).toHaveLength(0);expect(recorded.comments).toHaveLength(0);
+  const form=page.locator('[data-comment-form]');await form.locator('textarea').fill('保留评论媒体');await form.locator('[data-comment-image]').setInputFiles([photoFile(1),photoFile(2)]);await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('模拟发布失败');await expect(form.locator('.media-draft-item')).toHaveCount(2);await expect(form.locator('textarea')).toHaveValue('保留评论媒体');expect(recorded.deletes[0]).toHaveLength(2);
+});
+
+test('广场四个我的表情可单独发表评论，小窗口预览不增高输入区且草稿按帖子保留',async({page})=>{
+  await page.setViewportSize({width:760,height:560});await boot(page);const recorded=await mediaFixture(page);await nav(page,'square');await page.locator('.square-post[data-open-post="501"] .post-meta').click();
+  const form=page.locator('[data-comment-form]');const height=(await form.boundingBox())!.height;
+  const select=async(i:number)=>{await form.locator('[data-compact-picker-toggle]').click();await form.locator('[data-comment-picker-tab="stickers"]').click();await form.locator(`[data-comment-sticker="${mediaOrigin}sticker${i}.svg"]`).click();};
+  for(let i=0;i<4;i++)await select(i);await expect(form.locator('.media-draft-item')).toHaveCount(4);await select(4);await expect(page.locator('[data-toast]')).toContainText('合计最多 4 张');await expect(form.locator('.media-draft-item')).toHaveCount(4);
+  await select(1);await expect(form.locator('.media-draft-item')).toHaveCount(3);await select(1);await expect(form.locator('.media-draft-item')).toHaveCount(4);
+  expect((await form.boundingBox())!.height).toBeCloseTo(height,0);const tray=(await form.locator('.media-draft-preview').boundingBox())!,box=(await form.boundingBox())!;expect(tray.y+tray.height).toBeLessThan(box.y);expect(tray.x+tray.width).toBeLessThanOrEqual(760);
+  if(process.env.FW_MEDIA_QA_DIR)await page.screenshot({path:`${process.env.FW_MEDIA_QA_DIR}/comment-four-stickers-760.png`});
+  await page.locator('.square-post[data-open-post="502"] .post-meta').click();await expect(form.locator('.media-draft-item')).toHaveCount(0);await page.locator('.square-post[data-open-post="501"] .post-meta').click();await expect(form.locator('.media-draft-item')).toHaveCount(4);
+  await form.locator('[type="submit"]').click();await expect.poll(()=>recorded.comments.length).toBe(1);expect(recorded.uploads).toHaveLength(0);expect((recorded.comments[0].content.match(/\[\[FW_USER_STICKER:/g)||[]).length).toBe(4);await expect(page.locator('.post-comment[data-comment-id="902"] .media-gallery')).toHaveAttribute('data-media-count','4');
+});
+
 async function partyFixture(page:Page,role:'joined'|'captain'|'pending'|'visitor',options:{emptyIds?:boolean,direct?:boolean,longInfo?:boolean}={}){
   const captain=role==='captain'?me:other,requests:{path:string,body:any}[]=[];
   const party={id:51,captain_id:captain,game_name:options.longInfo?'一起轻松玩游戏'.repeat(4).slice(0,30):'斗地主',server_name:'微信',mode:'血流成河',starts_at_text:'今晚 20:00',capacity:5,member_count:2,status:'open',requires_approval:!options.direct,note:options.longInfo?'这是较长的组队说明，确认展开资料时聊天仍可使用。'.repeat(9).slice(0,200):''};
@@ -217,5 +325,7 @@ async function boot(page:Page,options:{failRpc?:string}={}){
   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
  });
 
+ if(process.env.FW_MEDIA_QA_FONT)await page.route('**/qa-font.otf',route=>route.fulfill({status:200,contentType:'font/otf',body:readFileSync(process.env.FW_MEDIA_QA_FONT!)}));
  await page.goto('/');await page.locator('#app:not([hidden])').waitFor();
+ if(process.env.FW_MEDIA_QA_FONT){await page.addStyleTag({content:"@font-face{font-family:QAChinese;src:url('/qa-font.otf')}body,button,input,textarea,select{font-family:QAChinese,sans-serif!important}"});await page.evaluate(()=>document.fonts.ready);}
 }

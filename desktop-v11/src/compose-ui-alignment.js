@@ -29,12 +29,12 @@ function enhanceSurface(form,key){
     tools=document.createElement('div');tools.className='compose-compact-tools';tools.dataset.composeCompactTools='1';tools.dataset.pickerSurface=key;
     const legacy=key==='compose'?' data-compose-compact-emoji':' data-comment-compact-emoji';
     const legacyMedia=key==='compose'?' data-compose-compact-media':' data-comment-compact-media';
-    tools.innerHTML=`<button class="compose-compact-tool" type="button" data-compact-picker-toggle${legacy} aria-label="打开表情" aria-expanded="false">${icon('face')}</button><button class="compose-compact-tool" type="button" data-compact-media${legacyMedia} aria-label="添加图片或视频">${icon('media')}</button>${key==='compose'?'<span class="compose-paste-hint">Ctrl+V 粘贴图片</span>':''}`;
+    tools.innerHTML=`<button class="compose-compact-tool" type="button" data-compact-picker-toggle${legacy} aria-label="打开表情" aria-expanded="false">${icon('face')}</button><button class="compose-compact-tool" type="button" data-compact-media${legacyMedia} aria-label="添加最多四张图片或一个视频" title="图片、GIF 和我的表情合计最多 4 张；视频单独 1 个">${icon('media')}</button>${key==='compose'?'<span class="compose-paste-hint">Ctrl+V 粘贴图片</span>':''}`;
     const mediaTools=form.querySelector('.media-tools');
     if(mediaTools)mediaTools.before(tools);else form.querySelector('textarea')?.after(tools);
   }
-  const toggle=form.querySelector('[data-compact-picker-toggle]');if(toggle)toggle.setAttribute('aria-expanded',String(openPickerKey===key));
-  const media=form.querySelector('[data-compact-media]');if(media)media.disabled=!fileInput;
+  const toggle=form.querySelector('[data-compact-picker-toggle]');if(toggle){toggle.setAttribute('aria-expanded',String(openPickerKey===key));toggle.disabled=Boolean(fileInput?.disabled);}
+  const media=form.querySelector('[data-compact-media]');if(media)media.disabled=!fileInput||fileInput.disabled;
 }
 
 function enhanceCompose(){

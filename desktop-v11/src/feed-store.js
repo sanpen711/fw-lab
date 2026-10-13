@@ -1,5 +1,6 @@
 import {authStore} from './auth-store.js';
 import {desktopCache} from './desktop-persistent-cache.js';
+import {POST_TEXT_LIMIT,COMMENT_TEXT_LIMIT,mediaKind,validateAttachments,composeContent} from './square-media.js';
 
 const listeners=new Set();
 const client=authStore.client;
@@ -7,8 +8,6 @@ function emptyMine(){return {userId:'',loaded:false,loading:false,error:'',posts
 const state={loaded:false,loading:false,busy:false,error:'',posts:[],profiles:{},openPostId:'',reply:null,mine:emptyMine()};
 const MY_POSTS_PAGE_SIZE=30;
 const SQUARE_CACHE_FRESH_MS=60*1000;
-const POST_TEXT_LIMIT=500;
-const COMMENT_TEXT_LIMIT=180;
 const STORED_CONTENT_LIMIT=4000;
 let squareChannel=null;
 let refreshTimer=null;
@@ -32,13 +31,6 @@ function countContent(){if(window.__FW_DESKTOP_V11__)window.__FW_DESKTOP_V11__.c
 function user(){const current=authStore.state.user;return current&&!current.cached?current:null;}
 function requireUser(){const current=user();if(!current)throw new Error('请先登录。');if(current.disabled)throw new Error('这个账号已被停用。');return current;}
 function unique(values){return Array.from(new Set((values||[]).filter(Boolean).map(String)));}
-function encodeMarker(kind,url){return `[[${kind}:${btoa(String(url||''))}]]`;}
-function composeContent(text,{imageUrl='',mediaUrl='',mediaKind='',stickerUrls=[]}={}){
-  const parts=[];const clean=String(text||'').trim();if(clean)parts.push(clean);
-  (stickerUrls||[]).slice(0,1).forEach(url=>{if(url)parts.push(encodeMarker('FW_USER_STICKER',url));});
-  const url=mediaUrl||imageUrl;if(url)parts.push(encodeMarker(mediaKind==='video'?'FW_MEDIA_VIDEO':'FW_MEDIA_IMAGE',url));
-  return parts.join('\n').trim();
-}
 function checkedText(value,limit,label){const text=String(value||'').trim();if(text.length>limit)throw new Error(`${label}最多 ${limit} 字。`);return text;}
 // 缓存可以使用启动时从本机恢复的账号；只有发帖等写操作才必须等待联网确认。
 // 之前复用了 user()，会把 cached:true 的本机账号误判成 public，导致重启后读错缓存键。
@@ -206,17 +198,16 @@ function closePost(){state.openPostId='';state.reply=null;emit('detail');}
 function setReply(comment){state.reply=comment?{postId:String(comment.post_id),targetCommentId:String(comment.id),rootCommentId:String(comment.parent_comment_id||comment.id),targetUserId:String(comment.user_id),name:state.profiles[String(comment.user_id)]?.nickname||'匿名用户'}:null;emit('detail');}
 function clearReply(){state.reply=null;emit('detail');}
 
-function mediaKind(file){const type=String(file?.type||'').toLowerCase();const name=String(file?.name||'').toLowerCase();if(type.startsWith('image/')||/\.(jpe?g|png|webp|gif)$/i.test(name))return'image';if(type.startsWith('video/')||/\.(mp4|mov|webm|m4v)$/i.test(name))return'video';return'';}
 async function compressImage(file){
   if(!file||mediaKind(file)!=='image')throw new Error('请选择图片文件。');
   const gif=/gif/i.test(file.type||'')||/\.gif$/i.test(file.name||'');if(gif){if(file.size>3*1024*1024)throw new Error('GIF 不能超过 3MB。');return file;}
-  if(file.size<=800*1024)return file;
+  if(file.size<=800*1024&&['image/jpeg','image/png','image/webp'].includes(file.type))return file;
   const localUrl=URL.createObjectURL(file);
   try{
     const image=await new Promise((resolve,reject)=>{const node=new Image();node.onload=()=>resolve(node);node.onerror=()=>reject(new Error('图片读取失败。'));node.src=localUrl;});
     const scale=Math.min(1,1280/Math.max(image.naturalWidth||image.width,image.naturalHeight||image.height));
     const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round((image.naturalWidth||image.width)*scale));canvas.height=Math.max(1,Math.round((image.naturalHeight||image.height)*scale));canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
-    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.82));if(!blob)return file;
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.82));if(!blob)throw new Error('图片处理失败，请换一张图片。');
     return new File([blob],String(file.name||'image').replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg'});
   }finally{URL.revokeObjectURL(localUrl);}
 }
@@ -230,32 +221,48 @@ async function uploadMedia(file,kind='post'){
   if(!file?.size)return{url:'',kind:''};const current=requireUser();const type=mediaKind(file);if(!type)throw new Error('只支持图片、GIF 或视频。');const upload=type==='video'?await validateVideo(file):await compressImage(file);
   const ext=(upload.name?.match(/\.([a-z0-9]+)$/i)?.[1]||(type==='video'?'mp4':'jpg')).toLowerCase();const path=`${current.id}/${kind}/${type}/${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}.${ext}`;
   const result=await client.storage.from('chat-media').upload(path,upload,{upsert:false,cacheControl:'31536000',contentType:upload.type||(type==='video'?'video/mp4':'image/jpeg')});if(result.error)throw new Error(`媒体上传失败：${result.error.message}`);
-  const url=client.storage.from('chat-media').getPublicUrl(path).data.publicUrl;if(!url)throw new Error('媒体地址生成失败。');return{url,kind:type};
+  const url=client.storage.from('chat-media').getPublicUrl(path).data.publicUrl;if(!url)throw new Error('媒体地址生成失败。');return{url,kind:type,path};
 }
 async function uploadImage(file,kind='post'){const media=await uploadMedia(file,kind);if(media.kind&&media.kind!=='image')throw new Error('请选择图片文件。');return media.url;}
+function checkedAttachments({attachments,imageFile=null,stickerUrls=[]}){
+  const items=attachments??[...stickerUrls.map(url=>({kind:'sticker',url})),...(imageFile?[{kind:mediaKind(imageFile),file:imageFile}]:[])];
+  return validateAttachments(items.map(item=>({...item})));
+}
+async function uploadAttachments(items,scope,uploaded){
+  const result=[];for(const item of items){if(item.file){const media=await uploadMedia(item.file,scope);uploaded.push(media.path);result.push(media);}else result.push({kind:item.kind,url:item.url});}return result;
+}
+async function discardUploads(paths){if(paths.length)try{await client.storage.from('chat-media').remove(paths);}catch{}}
 
-async function createPost({text,imageFile=null,stickerUrls=[]}){
-  const current=requireUser();const clean=checkedText(text,POST_TEXT_LIMIT,'帖子文字');if(state.busy)throw new Error('正在处理，请稍候。');state.busy=true;emit('compose');
+async function createPost(input){
+  const current=requireUser();const clean=checkedText(input.text,POST_TEXT_LIMIT,'帖子文字'),items=checkedAttachments(input),uploaded=[];let inserted=false;if(state.busy)throw new Error('正在处理，请稍候。');state.busy=true;emit('compose');
   try{
-    const media=imageFile?.size?await uploadMedia(imageFile,'post'):{url:'',kind:''};const content=composeContent(clean,{mediaUrl:media.url,mediaKind:media.kind,stickerUrls});
+    const attachments=await uploadAttachments(items,'post',uploaded);const content=composeContent(clean,{attachments});
     if(!content)throw new Error('先写点什么或添加图片、视频、表情。');if(content.length>STORED_CONTENT_LIMIT)throw new Error('附带的图片或表情信息过长，请重新选择。');
+    if(user()?.id!==current.id)throw new Error('账号已切换，请重新发布。');
     const saved=fail(await client.from('posts').insert({user_id:current.id,content,is_deleted:false}).select('id,user_id,content,created_at').single(),'发布失败');
+    inserted=true;
+    if(user()?.id!==current.id)return saved;
     const changed=upsertPost(saved);await fetchProfiles([current.id]);if(changed)await commitContent();return saved;
-  }finally{state.busy=false;emit('compose');}
+  }catch(error){if(!inserted)await discardUploads(uploaded);throw error;}finally{state.busy=false;emit('compose');}
 }
 
-async function createComment({postId,text,imageFile=null,stickerUrls=[]}){
+async function createComment(input){
+  const {postId,text}=input;
   const current=requireUser();const post=getPost(postId);if(!post)throw new Error('帖子已经不存在。');
-  const clean=checkedText(text,COMMENT_TEXT_LIMIT,'评论文字');if(state.busy)throw new Error('正在处理，请稍候。');state.busy=true;emit('detail');
+  const clean=checkedText(text,COMMENT_TEXT_LIMIT,'评论文字'),items=checkedAttachments(input),uploaded=[];
+  const reply=state.reply&&String(state.reply.postId)===String(postId)?state.reply:null;
+  let inserted=false;if(state.busy)throw new Error('正在处理，请稍候。');state.busy=true;emit('detail');
   try{
-    const media=imageFile?.size?await uploadMedia(imageFile,'comment'):{url:'',kind:''};let content=composeContent(clean,{mediaUrl:media.url,mediaKind:media.kind,stickerUrls});
+    const attachments=await uploadAttachments(items,'comment',uploaded);const content=composeContent(clean,{attachments});
     if(!content)throw new Error('先写点回复内容或添加图片、视频、表情。');if(content.length>STORED_CONTENT_LIMIT)throw new Error('附带的图片或表情信息过长，请重新选择。');
-    const reply=state.reply&&String(state.reply.postId)===String(postId)?state.reply:null;
+    if(user()?.id!==current.id)throw new Error('账号已切换，请重新评论。');
     const row={post_id:post.id,user_id:current.id,content,is_deleted:false};
     if(reply){row.parent_comment_id=Number(reply.rootCommentId);row.reply_to_comment_id=Number(reply.targetCommentId);row.reply_to_user_id=reply.targetUserId;}
     const saved=fail(await client.from('comments').insert(row).select('id,post_id,user_id,parent_comment_id,reply_to_comment_id,reply_to_user_id,content,created_at').single(),'评论失败');
-    state.reply=null;const changed=upsertComment(saved);await fetchProfiles([current.id,saved.reply_to_user_id]);if(changed)await commitContent();return saved;
-  }finally{state.busy=false;emit('detail');}
+    inserted=true;
+    if(user()?.id!==current.id)return saved;
+    if(state.reply===reply)state.reply=null;const changed=upsertComment(saved);await fetchProfiles([current.id,saved.reply_to_user_id]);if(changed)await commitContent();return saved;
+  }catch(error){if(!inserted)await discardUploads(uploaded);throw error;}finally{state.busy=false;emit('detail');}
 }
 
 async function toggleReaction(postId,type){
