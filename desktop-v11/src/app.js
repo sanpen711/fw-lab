@@ -18,6 +18,7 @@ import {captureUiState,restoreUiState,deferWhileComposing} from './ui-state.js';
 import {openDialog,closeDialog} from './dialog-focus.js';
 import {renderWebLinks,bindExternalLinks} from './external-links.js';
 import {POST_TEXT_LIMIT,COMMENT_TEXT_LIMIT,MEDIA_ACCEPT,mediaKind,validateAttachments,parseContent} from './square-media.js';
+import {mediaLightbox} from './media-lightbox.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
@@ -113,8 +114,8 @@ function setAvatar(element,user){
   else{element.textContent=initials(user?.nickname);element.classList.remove('has-image');}
 }
 function toast(message){const node=$('[data-toast]');node.textContent=message;node.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>node.classList.remove('show'),2800);}
-function openLightbox(url){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||!image||!url)return;image.src=url;modal.classList.toggle('sticker-preview',String(url).includes('/emoji/fufu1/'));modal.hidden=false;document.body.classList.add('lightbox-open');openDialog(modal,{close:closeLightbox});}
-function closeLightbox(){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||modal.hidden)return;modal.hidden=true;modal.classList.remove('sticker-preview');if(image)image.removeAttribute('src');document.body.classList.remove('lightbox-open');closeDialog(modal);}
+function openLightbox(trigger){mediaLightbox.open(trigger);}
+function closeLightbox(){mediaLightbox.close();}
 function setFormStatus(message,error=false){const node=$('[data-form-status]');node.textContent=message||'';node.classList.toggle('error',error);}
 function setProfileStatus(message,error=false){const node=$('[data-profile-status]');if(!node)return;node.textContent=message||'';node.classList.toggle('error',error);}
 function timeText(value){
@@ -501,7 +502,7 @@ function renderSocial(next=socialState){
 
 function bindNavigation(){
   document.addEventListener('click',async event=>{
-    const lightbox=event.target.closest('[data-lightbox-src]');if(lightbox){event.preventDefault();openLightbox(lightbox.dataset.lightboxSrc||lightbox.src);return;}
+    const lightbox=event.target.closest('[data-lightbox-src]');if(lightbox){event.preventDefault();openLightbox(lightbox);return;}
     if(event.target.closest('[data-media-lightbox-close]')||event.target.matches('[data-media-lightbox]')){closeLightbox();return;}
     const nav=event.target.closest('[data-nav]');if(nav){navigate(nav.dataset.nav);return;}
     if(event.target.closest('[data-open-account]')){openAccount();return;}if(event.target.closest('[data-close-account]')){closeAccount();return;}

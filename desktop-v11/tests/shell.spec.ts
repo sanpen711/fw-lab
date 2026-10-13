@@ -114,6 +114,7 @@ test('复制的图片可以直接粘贴到发布输入框',async({page})=>{
 });
 
 test('首页轻工具按天气、下班倒计时和反馈意见排列',async({page})=>{
+  await page.clock.setFixedTime(await page.evaluate(()=>new Date(2026,9,13,10,0,0).getTime()));
   await page.goto('/');
   const cards=page.locator('.home-grid .home-tool-card');
   await expect(cards).toHaveCount(3);

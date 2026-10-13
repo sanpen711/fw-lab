@@ -184,3 +184,13 @@ html body [data-view-panel="compose"] .compose-page{display:grid;grid-template-r
 .compose-editor-footer .compose-compact-picker .inline-picker-tabs,.compose-editor-footer .compose-compact-picker .sticker-toolbar{flex:none}
 .compose-editor-footer .compose-compact-picker .inline-emoji-grid,.compose-editor-footer .compose-compact-picker .inline-sticker-grid,.compose-editor-footer .compose-compact-picker .labeled-sticker-pack{flex:1;min-height:0;max-height:none;overflow-y:auto}
 @media(max-height:620px){.compose-page .section-heading{padding-block:10px}.compose-page .section-heading h1{font-size:22px}.compose-page .compose-wrap{padding-block:12px}.compose-page .compose-card{gap:10px;padding:16px}.compose-page .media-draft-item{flex-basis:60px}.compose-page .compose-editor-footer .compose-compact-picker{height:290px}}
+
+/* Browse one post or comment without reopening its images. */
+.media-lightbox [hidden]{display:none!important}
+.media-lightbox .lightbox-arrow{top:50%;right:auto;display:grid;place-items:center;width:46px;height:46px;padding:10px;transform:translateY(-50%);background:rgba(20,20,20,.58);border-color:#ffffff55}
+.media-lightbox .lightbox-prev{left:18px}
+.media-lightbox .lightbox-next{right:18px}
+.media-lightbox .lightbox-arrow:hover{background:rgba(60,60,60,.85);border-color:#ffffff99}
+.media-lightbox .lightbox-arrow svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.media-lightbox.has-gallery img{max-width:min(1400px,calc(100vw - 144px));max-height:calc(100vh - 112px)}
+.media-lightbox .lightbox-count{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);min-width:60px;padding:6px 12px;border:1px solid #ffffff26;border-radius:999px;background:#00000055;color:#fff;text-align:center;font-size:12px;font-variant-numeric:tabular-nums;line-height:1.4}

@@ -428,7 +428,13 @@
     </section>
   </div>
 
-  <div class="media-lightbox" data-media-lightbox hidden role="dialog" aria-modal="true" aria-label="查看原图"><button type="button" data-media-lightbox-close aria-label="关闭原图">×</button><img data-media-lightbox-image alt="原图"></div>
+  <div class="media-lightbox" data-media-lightbox hidden role="dialog" aria-modal="true" aria-label="查看原图">
+    <button type="button" data-media-lightbox-close aria-label="关闭原图">×</button>
+    <button class="lightbox-arrow lightbox-prev" type="button" data-media-lightbox-prev aria-label="上一张图片" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
+    <img data-media-lightbox-image alt="原图">
+    <button class="lightbox-arrow lightbox-next" type="button" data-media-lightbox-next aria-label="下一张图片" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+    <div class="lightbox-count" data-media-lightbox-count aria-live="polite" aria-atomic="true" hidden></div>
+  </div>
   <div class="toast" data-toast role="status" aria-live="polite"></div>
   <script type="module" src="/src/app.js"></script>
   <script type="module" src="/src/alignment-nav-fix.js"></script>

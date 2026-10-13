@@ -171,6 +171,7 @@ async function mediaFixture(page:Page,options:{failUpload?:number,failInsert?:bo
     if(request.method()==='DELETE'){recorded.deletes.push(request.postDataJSON().prefixes);return route.fulfill({status:200,contentType:'application/json',body:'[]'});}
     if(request.method()==='POST'){uploadCount++;recorded.uploads.push(path);return route.fulfill({status:options.failUpload===uploadCount?503:200,contentType:'application/json',body:JSON.stringify(options.failUpload===uploadCount?{message:'模拟媒体上传失败'}:{Key:path})});}
     if(path.endsWith('.webm'))return route.fulfill({status:200,contentType:'video/webm',body:tinyVideo});
+    if(path.endsWith('.gif'))return route.fulfill({status:200,contentType:'image/gif',body:tinyGif});
     const portrait=path.endsWith('portrait.svg');return route.fulfill({status:200,contentType:'image/svg+xml',body:`<svg xmlns="http://www.w3.org/2000/svg" width="${portrait?180:300}" height="${portrait?320:200}"><rect width="100%" height="100%" fill="#e4e4e4"/><circle cx="80" cy="80" r="40" fill="#aaa"/></svg>`});
   });
   await page.route(/\/rest\/v1\/(posts|comments|user_stickers)(?:\?|$)/,async route=>{
@@ -280,6 +281,47 @@ for(const size of [{width:760,height:560},{width:1066,height:728}])test(`发牢�
   await form.locator('.compose-upload-help summary').click();await expect(form.locator('.compose-help-panel')).toBeVisible();await expect(form.locator('.compose-help-panel')).toContainText('20MB');expect((await form.boundingBox())!.height).toBeCloseTo(height,0);await form.locator('.compose-upload-help summary').click();
   await back.click();await expect(page.locator('[data-view-panel="square"]')).toHaveClass(/active/);await nav(page,'compose');await expect(input).toHaveValue(text+value);await expect(form.locator('.media-draft-item')).toHaveCount(4);
   await publish.click();await expect(page.locator('[data-toast]')).toContainText('模拟发布失败');await expect(input).toHaveValue(text+value);await expect(form.locator('.media-draft-item')).toHaveCount(4);await expect(publish).toBeEnabled();expect(recorded.posts).toHaveLength(1);await bounds();expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollTop>0)).toBe(false);
+});
+
+test('广场大图从点击的第三张开始，按钮和方向键循环切换且保留列表位置',async({page})=>{
+  await page.setViewportSize({width:1066,height:728});await boot(page);await mediaFixture(page);await nav(page,'square');
+  const gallery=page.locator('.square-post[data-open-post="504"] .media-gallery'),thumb=gallery.locator('[data-lightbox-src]').nth(2);await thumb.click();
+  const modal=page.locator('[data-media-lightbox]'),image=modal.locator('[data-media-lightbox-image]'),counter=modal.locator('[data-media-lightbox-count]');
+  await expect(modal).toBeVisible();await expect(counter).toHaveText('3 / 4');await expect(image).toHaveAttribute('src',mediaOrigin+'photo2.svg');await expect(page.locator('[data-post-detail]')).toContainText('选择一条帖子');
+  const scroll=await page.locator('[data-square-feed]').evaluate(el=>el.scrollTop);
+  await modal.locator('[data-media-lightbox-next]').click();await expect(counter).toHaveText('4 / 4');await modal.locator('[data-media-lightbox-next]').click();await expect(counter).toHaveText('1 / 4');
+  await modal.locator('[data-media-lightbox-prev]').click();await expect(counter).toHaveText('4 / 4');await page.keyboard.press('ArrowLeft');await expect(counter).toHaveText('3 / 4');await page.keyboard.press('ArrowRight');await expect(counter).toHaveText('4 / 4');
+  if(process.env.FW_LIGHTBOX_QA_DIR)await page.screenshot({path:`${process.env.FW_LIGHTBOX_QA_DIR}/post-four-1066.png`});
+  await page.keyboard.press('Escape');await expect(modal).toBeHidden();await expect(thumb).toBeFocused();expect(await page.locator('[data-square-feed]').evaluate(el=>el.scrollTop)).toBe(scroll);
+});
+
+test('广场评论大图只切换本评论图片，小窗口控件完整且关闭后保留草稿和焦点',async({page})=>{
+  await page.setViewportSize({width:760,height:560});await boot(page);await mediaFixture(page);await nav(page,'square');await page.locator('.square-post[data-open-post="501"] .post-meta').click();await page.locator('[data-comment-form] textarea').fill('看图时保留评论草稿');
+  const thumb=page.locator('.post-comment[data-comment-id="604"] [data-lightbox-src]').nth(1);await thumb.click();
+  const modal=page.locator('[data-media-lightbox]'),counter=modal.locator('[data-media-lightbox-count]');await expect(counter).toHaveText('2 / 4');await page.keyboard.press('ArrowRight');await expect(counter).toHaveText('3 / 4');await expect(modal.locator('img')).toHaveAttribute('src',mediaOrigin+'photo2.svg');
+  await modal.locator('[data-media-lightbox-next]').click();await expect(counter).toHaveText('4 / 4');await modal.locator('[data-media-lightbox-next]').click();await expect(counter).toHaveText('1 / 4');
+  await expect.poll(()=>modal.locator('img').evaluate((el:HTMLImageElement)=>el.naturalWidth)).toBeGreaterThan(0);
+  for(const control of [modal.locator('img'),modal.locator('[data-media-lightbox-prev]'),modal.locator('[data-media-lightbox-next]'),counter,modal.locator('[data-media-lightbox-close]')]){const box=(await control.boundingBox())!;expect(box.x).toBeGreaterThanOrEqual(0);expect(box.y).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(760);expect(box.y+box.height).toBeLessThanOrEqual(560);}
+  await modal.locator('[data-media-lightbox-close]').focus();for(let i=0;i<5;i++){await page.keyboard.press('Tab');expect(await modal.evaluate(el=>el.contains(document.activeElement))).toBe(true);}
+  const scroll=await page.locator('.detail-content-scroll').evaluate(el=>el.scrollTop);if(process.env.FW_LIGHTBOX_QA_DIR)await page.screenshot({path:`${process.env.FW_LIGHTBOX_QA_DIR}/comment-four-760.png`});
+  await modal.locator('[data-media-lightbox-close]').click();await expect(modal).toBeHidden();await expect(thumb).toBeFocused();await expect(page.locator('[data-comment-form] textarea')).toHaveValue('看图时保留评论草稿');expect(await page.locator('.detail-content-scroll').evaluate(el=>el.scrollTop)).toBe(scroll);
+});
+
+test('广场单图和伏伏独立预览不显示翻页，图片本身不关闭且背景可关闭',async({page})=>{
+  await boot(page);await mediaFixture(page);await nav(page,'square');await page.locator('.square-post[data-open-post="501"] [data-lightbox-src]').click();
+  const modal=page.locator('[data-media-lightbox]');await expect(modal.locator('[data-media-lightbox-next]')).toBeHidden();await expect(modal.locator('[data-media-lightbox-prev]')).toBeHidden();await expect(modal.locator('[data-media-lightbox-count]')).toBeHidden();
+  const src=await modal.locator('img').getAttribute('src');await page.keyboard.press('ArrowRight');await expect(modal.locator('img')).toHaveAttribute('src',src!);await modal.locator('img').click();await expect(modal).toBeVisible();await modal.click({position:{x:4,y:4}});await expect(modal).toBeHidden();
+  await page.route('**/rest/v1/posts**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{id:508,user_id:other,content:'[伏伏1:01]',created_at:'2026-10-12T01:00:00Z'}])}));await page.evaluate(async()=>{const {feedStore}=await import('/src/feed-store.js');await feedStore.load(true);});
+  const fufu=page.locator('.square-post[data-open-post="508"] [data-lightbox-src]');await fufu.click();await expect(modal).toHaveClass(/sticker-preview/);await expect(modal.locator('img')).toHaveAttribute('src','/emoji/fufu1/01.webp');await expect(modal.locator('[data-media-lightbox-next]')).toBeHidden();await page.keyboard.press('Escape');await expect(modal).toBeHidden();
+});
+
+test('广场重复图片保留独立序号，GIF 可切换，刷新不打断相册且关闭恢复新缩略图焦点',async({page})=>{
+  await boot(page);await mediaFixture(page);const content=[mediaMarker('FW_MEDIA_IMAGE','portrait.svg'),mediaMarker('FW_MEDIA_IMAGE','portrait.svg'),mediaMarker('FW_MEDIA_IMAGE','animated.gif'),mediaMarker('FW_USER_STICKER','photo3.svg')].join('\n');let prefix='刷新前';
+  await page.route('**/rest/v1/posts**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{id:510,user_id:other,content:prefix+'\n'+content,created_at:'2026-10-12T01:00:00Z'}])}));await nav(page,'square');
+  const thumb=page.locator('.square-post[data-open-post="510"] [data-lightbox-src]').nth(1);await thumb.click();const modal=page.locator('[data-media-lightbox]'),counter=modal.locator('[data-media-lightbox-count]');await expect(counter).toHaveText('2 / 4');
+  await page.keyboard.press('ArrowRight');await expect(counter).toHaveText('3 / 4');await expect(modal.locator('img')).toHaveAttribute('src',mediaOrigin+'animated.gif');await page.keyboard.press('ArrowRight');await expect(counter).toHaveText('4 / 4');
+  prefix='刷新后';await page.evaluate(async()=>{const {feedStore}=await import('/src/feed-store.js');await feedStore.load(true);});await expect(page.locator('.square-post[data-open-post="510"] .rich-text')).toHaveText('刷新后');await expect(modal).toBeVisible();await expect(counter).toHaveText('4 / 4');await page.keyboard.press('ArrowLeft');await expect(counter).toHaveText('3 / 4');
+  await page.keyboard.press('Escape');await expect(modal).toBeHidden();await expect(thumb).toBeFocused();
 });
 
 async function partyFixture(page:Page,role:'joined'|'captain'|'pending'|'visitor',options:{emptyIds?:boolean,direct?:boolean,longInfo?:boolean}={}){
