@@ -1,11 +1,11 @@
 {
+  "sha256": "912df674cafcef859fd7211749b5d1fe9e6aa61192f7c9c75fb80128d7acd698",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "available": true,
+  "notes": "Windows 1.3.24：精神广场正文与评论支持300字，图片、GIF和自定义表情共4张，视频单独发布1个；优化发布页、评论区和组队详情排版，支持帖子链接直接打开和多图左右翻看，并修复小窗口显示、输入草稿、消息滚动及键盘操作问题。",
   "rollbackVersion": "1.0.5",
   "platform": "Windows 10/11 64 位",
-  "version": "1.3.23",
-  "sha256": "141f86e203e69a0a6fa30b92f5f6d464ede3dcf1e9420de28ed97259f4af6b7a",
-  "publishedAt": "2026-10-12T03:02:24.9864154Z",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.23-setup.exe",
-  "notes": "Windows 1.3.23：新闻专区替换为闲聊房间，支持密码、加入审核、3天/7天/30天/永久保存及房主管理。",
-  "available": true
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.24-setup.exe",
+  "publishedAt": "2026-10-13T10:04:20.4684973Z",
+  "version": "1.3.24"
 }
