@@ -1,5 +1,6 @@
 import {authStore} from './auth-store.js';
 import {SUPABASE_URL} from './config.js';
+import {openDialog,closeDialog} from './dialog-focus.js';
 
 const WEATHER_LOCATION_KEY='fw:desktop:v11:weather-location';
 const WEATHER_CACHE_KEY='fw:desktop:v11:weather-cache';
@@ -96,17 +97,17 @@ function setStatus(message='',error=false){const node=$('[data-home-tool-status]
 
 function openTool(view){
   const modal=$('[data-home-tool-modal]');if(!modal)return;
-  $$('[data-home-tool-view]',modal).forEach(panel=>{panel.hidden=panel.dataset.homeToolView!==view;});
+  $$('[data-home-tool-view]',modal).forEach(panel=>{panel.hidden=panel.dataset.homeToolView!==view;panel.inert=panel.hidden;});
   setStatus('');modal.hidden=false;document.body.classList.add('modal-open');
   if(view==='weather'){
     $('[data-weather-form] input[name="city"]',modal).value=readLocal(WEATHER_LOCATION_KEY)?.query||'';
     renderWeatherResults([]);
   }
   if(view==='offwork')$('[data-offwork-form] input[name="time"]',modal).value=readLocal(OFFWORK_TIME_KEY)||'18:00';
-  requestAnimationFrame(()=>$('[data-home-tool-view]:not([hidden]) input, [data-home-tool-view]:not([hidden]) textarea',modal)?.focus());
+  openDialog(modal,{close:closeTool,initialFocus:()=>$('[data-home-tool-view]:not([hidden]) input, [data-home-tool-view]:not([hidden]) textarea',modal)});
 }
 
-function closeTool(){const modal=$('[data-home-tool-modal]');if(!modal)return;modal.hidden=true;document.body.classList.remove('modal-open');setStatus('');}
+function closeTool(){const modal=$('[data-home-tool-modal]');if(!modal)return;modal.hidden=true;if($('[data-account-modal]')?.hidden)document.body.classList.remove('modal-open');setStatus('');closeDialog(modal);}
 
 function renderWeatherResults(locations){
   const host=$('[data-weather-results]');if(!host)return;host.replaceChildren();weatherSearchResults=locations;
@@ -157,6 +158,7 @@ function bindForms(){
 
 function initHomeWidgets(options={}){
   if(started)return;started=true;notify=options.toast||notify;openAccount=options.openAccount||openAccount;
+  authStore.subscribe(auth=>{if(auth.ready&&(!auth.user||auth.user.cached||auth.user.disabled)&&!$('[data-home-tool-modal]')?.hidden)closeTool();});
   document.addEventListener('click',event=>{
     if(event.target.closest?.('[data-weather-open]')){openTool('weather');return;}
     if(event.target.closest?.('[data-offwork-open]')){openTool('offwork');return;}

@@ -29,12 +29,12 @@ function enhanceSurface(form,key){
     tools=document.createElement('div');tools.className='compose-compact-tools';tools.dataset.composeCompactTools='1';tools.dataset.pickerSurface=key;
     const legacy=key==='compose'?' data-compose-compact-emoji':' data-comment-compact-emoji';
     const legacyMedia=key==='compose'?' data-compose-compact-media':' data-comment-compact-media';
-    tools.innerHTML=`<button class="compose-compact-tool" type="button" data-compact-picker-toggle${legacy} aria-label="打开表情" aria-expanded="false">${icon('face')}</button><button class="compose-compact-tool" type="button" data-compact-media${legacyMedia} aria-label="添加图片或视频">${icon('media')}</button>${key==='compose'?'<span class="compose-paste-hint">Ctrl+V 粘贴图片</span>':''}`;
+    tools.innerHTML=`<button class="compose-compact-tool" type="button" data-compact-picker-toggle${legacy} aria-label="打开表情" aria-expanded="false">${icon('face')}</button><button class="compose-compact-tool" type="button" data-compact-media${legacyMedia} aria-label="添加最多四张图片或一个视频" title="图片、GIF 和我的表情合计最多 4 张；视频单独 1 个">${icon('media')}</button>${key==='compose'?'<span class="compose-paste-hint">Ctrl+V 粘贴图片</span>':''}`;
     const mediaTools=form.querySelector('.media-tools');
     if(mediaTools)mediaTools.before(tools);else form.querySelector('textarea')?.after(tools);
   }
-  const toggle=form.querySelector('[data-compact-picker-toggle]');if(toggle)toggle.setAttribute('aria-expanded',String(openPickerKey===key));
-  const media=form.querySelector('[data-compact-media]');if(media)media.disabled=!fileInput;
+  const toggle=form.querySelector('[data-compact-picker-toggle]');if(toggle){toggle.setAttribute('aria-expanded',String(openPickerKey===key));toggle.disabled=Boolean(fileInput?.disabled);}
+  const media=form.querySelector('[data-compact-media]');if(media)media.disabled=!fileInput||fileInput.disabled;
 }
 
 function enhanceCompose(){
@@ -47,15 +47,20 @@ function scheduleEnhance(){if(enhanceQueued)return;enhanceQueued=true;queueMicro
 
 document.addEventListener('click',event=>{
   if(event.target.closest?.('[data-comment-emoji],[data-comment-sticker]')){openPickerKey='';return;}
+  if(event.target.closest?.('[data-compose-emoji],[data-compose-sticker]')){openPickerKey='';requestAnimationFrame(()=>document.querySelector('[data-compose-form] textarea')?.focus({preventScroll:true}));return;}
   const pickerButton=event.target.closest?.('[data-compact-picker-toggle]');
   if(pickerButton){event.preventDefault();const key=pickerButton.closest('[data-picker-surface]')?.dataset.pickerSurface||'';openPickerKey=openPickerKey===key?'':key;enhanceCompose();return;}
+  if(openPickerKey==='compose'&&!event.target.closest?.('[data-compose-form] .compose-compact-picker')){openPickerKey='';enhanceCompose();}
   const mediaButton=event.target.closest?.('[data-compact-media]');
   if(mediaButton){event.preventDefault();const form=mediaButton.closest('[data-compose-form],[data-comment-form]');form?.querySelector('[data-compose-image],[data-comment-image]')?.click();return;}
   if(event.target.closest?.('[data-nav]')){openPickerKey='';scheduleEnhance();}
 },true);
 
 document.addEventListener('submit',event=>{if(event.target.matches?.('[data-compose-form],[data-comment-form]'))openPickerKey='';},true);
-document.addEventListener('keydown',event=>{if(!event.ctrlKey||event.key!=='Enter')return;const form=event.target.closest?.('[data-comment-form]');if(!form||event.target.tagName!=='TEXTAREA')return;event.preventDefault();form.requestSubmit();});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&openPickerKey==='compose'){event.preventDefault();openPickerKey='';enhanceCompose();document.querySelector('[data-compose-form] [data-compact-picker-toggle]')?.focus({preventScroll:true});return;}
+  if(!event.ctrlKey||event.key!=='Enter')return;const form=event.target.closest?.('[data-comment-form]');if(!form||event.target.tagName!=='TEXTAREA')return;event.preventDefault();form.requestSubmit();
+});
 
 const observer=new MutationObserver(scheduleEnhance);
 observer.observe(document.body,{childList:true,subtree:true});

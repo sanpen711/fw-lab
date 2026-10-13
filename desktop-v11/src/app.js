@@ -14,6 +14,11 @@ import {identityClass,memberName,memberBadge} from './member-identity.js';
 import {membershipExperience,identityEditor} from './membership-experience.js';
 import {desktopSettings} from './desktop-settings.js';
 import {APP_VERSION} from './config.js';
+import {captureUiState,restoreUiState,deferWhileComposing} from './ui-state.js';
+import {openDialog,closeDialog} from './dialog-focus.js';
+import {renderWebLinks,bindExternalLinks} from './external-links.js';
+import {POST_TEXT_LIMIT,COMMENT_TEXT_LIMIT,MEDIA_ACCEPT,mediaKind,validateAttachments,parseContent} from './square-media.js';
+import {mediaLightbox} from './media-lightbox.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
@@ -61,8 +66,11 @@ let pollCreateOpen=false;
 let avatarPreviewUrl='';
 let authGateLocked=true;
 let protectedAppStarted=false;
-const composeDraft={text:'',imageFile:null,imagePreview:'',stickers:new Set(),pickerTab:'emoji'};
+const composeDraft={text:'',attachments:[],pickerTab:'emoji'};
 const commentDrafts=new Map();
+const chatDrafts=new Map();
+let chatComposerTarget='';
+let chatMessageIds=new Set();
 
 window.__FW_DESKTOP_V11__={version:APP_VERSION,architecture:'local-frontend',contentRequests:0,socialContentRequests:0,realtimeChat:true,pollingTimers:0};
 
@@ -106,8 +114,8 @@ function setAvatar(element,user){
   else{element.textContent=initials(user?.nickname);element.classList.remove('has-image');}
 }
 function toast(message){const node=$('[data-toast]');node.textContent=message;node.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>node.classList.remove('show'),2800);}
-function openLightbox(url){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||!image||!url)return;image.src=url;modal.classList.toggle('sticker-preview',String(url).includes('/emoji/fufu1/'));modal.hidden=false;document.body.classList.add('lightbox-open');}
-function closeLightbox(){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||modal.hidden)return;modal.hidden=true;modal.classList.remove('sticker-preview');if(image)image.removeAttribute('src');document.body.classList.remove('lightbox-open');}
+function openLightbox(trigger){mediaLightbox.open(trigger);}
+function closeLightbox(){mediaLightbox.close();}
 function setFormStatus(message,error=false){const node=$('[data-form-status]');node.textContent=message||'';node.classList.toggle('error',error);}
 function setProfileStatus(message,error=false){const node=$('[data-profile-status]');if(!node)return;node.textContent=message||'';node.classList.toggle('error',error);}
 function timeText(value){
@@ -116,12 +124,10 @@ function timeText(value){
 function noticeText(type){return({like:'点赞了你的帖子',comment:'评论了你的帖子',comment_reply:'回复了你的评论',chat_agree:'赞同了你的房间消息',game_party_apply:'申请加入你的开黑房间',game_party_joined:'加入了你的开黑房间',game_party_accepted:'同意了你的开黑申请',game_party_rejected:'处理了你的开黑申请',system:'发送了一条系统通知'})[type]||'给你发来一条回声';}
 function previewText(value){return String(value||'对你的低功耗发言产生了回应。').replace(/\[\[FW_USER_STICKER:[A-Za-z0-9+/=]+\]\]/g,'动画表情').replace(/\[\[FW_MEDIA_IMAGE:[A-Za-z0-9+/=]+\]\]/g,'图片').replace(/\[\[FW_MEDIA_VIDEO:[A-Za-z0-9+/=]+\]\]/g,'视频').replace(/\s+/g,' ').trim()||'对你的低功耗发言产生了回应。';}
 function decodeSticker(value){const match=String(value||'').trim().match(/^\[\[FW_USER_STICKER:([A-Za-z0-9+/=]+)\]\]$/);if(!match)return'';try{return atob(match[1]);}catch{return'';}}
-function safeMediaUrl(encoded){try{const url=new URL(atob(encoded));return['http:','https:'].includes(url.protocol)?url.href:'';}catch{return'';}}
 function richContent(value){
-  const source=String(value||'');const pattern=/\[\[(FW_MEDIA_IMAGE|FW_USER_STICKER):([A-Za-z0-9+/=]+)\]\]/g;let cursor=0;let match;const text=[];const media=[];
-  while((match=pattern.exec(source))){text.push(source.slice(cursor,match.index));const url=safeMediaUrl(match[2]);if(url)media.push(match[1]==='FW_USER_STICKER'?`<img class="rich-sticker" src="${esc(url)}" alt="自定义表情" loading="lazy">`:`<img class="rich-image" src="${esc(url)}" alt="帖子图片，点击查看原图" loading="lazy" data-lightbox-src="${esc(url)}">`);cursor=match.index+match[0].length;}
-  text.push(source.slice(cursor));const clean=text.join('').trim();const standaloneFufu=!media.length&&FUFU_PACK.some(item=>item[0]===clean);
-  return `${clean?`<div class="rich-text${standaloneFufu?' fufu-only':''}">${emojiText(clean)}</div>`:''}${media.length?`<div class="rich-media">${media.join('')}</div>`:''}`||'<div class="rich-text">（空白记录）</div>';
+  const {text:clean,media}=parseContent(value);const standaloneFufu=!media.length&&FUFU_PACK.some(item=>item[0]===clean);
+  const gallery=media.map((item,index)=>item.kind==='video'?`<video class="rich-video" src="${esc(item.url)}" controls playsinline preload="metadata" aria-label="帖子视频"></video>`:`<button class="rich-media-item${item.kind==='sticker'?' is-sticker':''}" type="button" data-lightbox-src="${esc(item.url)}" aria-label="查看第 ${index+1} 张${item.kind==='sticker'?'表情':'图片'}"><img class="${item.kind==='sticker'?'rich-sticker':'rich-image'}" src="${esc(item.url)}" alt="${item.kind==='sticker'?'我的表情':'图片'}" loading="lazy"></button>`).join('');
+  return `${clean?`<div class="rich-text${standaloneFufu?' fufu-only':''}">${renderWebLinks(clean,emojiText)}</div>`:''}${media.length?`<div class="rich-media media-gallery" data-media-count="${media.length}">${gallery}</div>`:''}`||'<div class="rich-text">（空白记录）</div>';
 }
 
 function memberDate(value){if(!value)return'';const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});}
@@ -195,6 +201,7 @@ function renderAuthGate(next){
   document.body.classList.toggle('auth-required',locked);app.hidden=locked;app.inert=locked;app.setAttribute('aria-hidden',String(locked));
   modal.dataset.authLocked=String(locked);modal.classList.toggle('auth-gate-modal',locked);modal.classList.toggle('auth-gate-checking',checkingOnly);close.hidden=locked;
   if(locked){
+    closeLightbox();
     modal.hidden=false;document.body.classList.add('modal-open');checking.hidden=next.ready&&!bootFailure;content.hidden=!next.ready||bootFailure;
     if(checkingCopy)checkingCopy.textContent=bootFailure?(next.error||'登录状态确认失败，请检查网络后重试。'):'请稍候，确认后将自动进入客户端。';
     if(retry)retry.hidden=!bootFailure;
@@ -208,6 +215,7 @@ function renderAuthGate(next){
 }
 function renderAccount(next){
   const previousUserId=String(accountState.user?.id||'');accountState=next;const user=next.user;
+  if(previousUserId!==String(user?.id||'')){releasePreview(composeDraft);composeDraft.text='';commentDrafts.forEach(releasePreview);commentDrafts.clear();chatDrafts.clear();chatComposerTarget='';chatMessageIds.clear();lastChatRenderSignature='';$('[data-chat-compose] input[name="message"]').value='';}
   $('[data-account-label]').textContent=user?user.nickname:(next.ready?'注册 / 登录':'正在连接…');
   setAvatar($('[data-account-avatar]'),user);setAvatar($('[data-profile-avatar]'),user);
   $('[data-profile-name]').textContent=user?.nickname||'研究员';$('[data-profile-email]').textContent=user?.email||'';
@@ -237,7 +245,7 @@ function openAccount(){
   const modal=$('[data-account-modal]');modal.hidden=false;document.body.classList.add('modal-open');showAuth('login');
 }
 function closeAccount(){if(authGateLocked)return;$('[data-account-modal]').hidden=true;document.body.classList.remove('modal-open');setFormStatus('');}
-function closeSidebarMore(){const wrap=$('[data-sidebar-more-wrap]');wrap?.classList.remove('open');$('[data-sidebar-more-toggle]')?.setAttribute('aria-expanded','false');}
+function closeSidebarMore(restoreFocus=false){const wrap=$('[data-sidebar-more-wrap]');wrap?.classList.remove('open');const toggle=$('[data-sidebar-more-toggle]');toggle?.setAttribute('aria-expanded','false');if(restoreFocus)toggle?.focus();}
 function bindSidebarMore(){document.addEventListener('click',event=>{const toggle=event.target.closest('[data-sidebar-more-toggle]');if(toggle){const wrap=toggle.closest('[data-sidebar-more-wrap]');const open=!wrap.classList.contains('open');closeSidebarMore();closeAccountMenu();wrap.classList.toggle('open',open);toggle.setAttribute('aria-expanded',String(open));return;}if(!event.target.closest('[data-sidebar-more-wrap]'))closeSidebarMore();if(!event.target.closest('.account-menu-wrap'))closeAccountMenu();},true);}
 
 function navigate(view){
@@ -290,15 +298,25 @@ function reactionInfo(post){
   const mine=String(accountState.user?.id||'');const values={like:0};const active={like:false};
   (post.reactions||[]).forEach(row=>{if(row.type!=='like')return;values.like+=1;if(String(row.user_id)===mine)active.like=true;});return{values,active};
 }
-function draftFor(postId){const key=String(postId);if(!commentDrafts.has(key))commentDrafts.set(key,{text:'',imageFile:null,imagePreview:'',stickers:new Set(),pickerTab:'emoji'});return commentDrafts.get(key);}
-function releasePreview(draft){if(draft?.imagePreview){try{URL.revokeObjectURL(draft.imagePreview);}catch{}}if(draft){draft.imageFile=null;draft.imagePreview='';}}
-function isImageFile(file){return Boolean(file)&&(/^image\//i.test(String(file.type||''))||/\.(?:jpe?g|png|webp|gif|bmp)$/i.test(String(file.name||'')));}
-function setComposeDraftFile(file){if(!file)return false;releasePreview(composeDraft);composeDraft.imageFile=file;composeDraft.imagePreview=URL.createObjectURL(file);renderCompose();return true;}
-function setCommentDraftFile(postId,file){if(!file)return false;const draft=draftFor(postId);releasePreview(draft);draft.imageFile=file;draft.imagePreview=URL.createObjectURL(file);renderPostDetail();return true;}
-function selectedStickerPreview(draft,context,postId=''){
-  const url=Array.from(draft.stickers||[])[0];if(!url)return'';
-  const remove=context==='compose'?'data-compose-sticker-remove':`data-comment-sticker-remove="${esc(postId)}"`;
-  return `<div class="selected-sticker-preview"><img src="${esc(url)}" alt="已选择的表情"><span>已选择 1 个表情</span><button type="button" ${remove}>移除</button></div>`;
+function draftFor(postId){const key=String(postId);if(!commentDrafts.has(key))commentDrafts.set(key,{text:'',attachments:[],pickerTab:'emoji'});return commentDrafts.get(key);}
+function releasePreview(draft){draft?.attachments.forEach(item=>{if(item.preview)URL.revokeObjectURL(item.preview);});if(draft)draft.attachments=[];}
+function removeAttachment(draft,index){const item=draft.attachments[index];if(!item)return;if(item.preview)URL.revokeObjectURL(item.preview);draft.attachments=draft.attachments.filter((_,i)=>i!==index);}
+function addDraftFiles(draft,files){
+  if(feedState.busy)return false;const additions=Array.from(files||[]).map(file=>({file,kind:mediaKind(file)}));if(!additions.length)return false;
+  try{validateAttachments([...draft.attachments,...additions]);}catch(error){toast(error.message);return false;}
+  draft.attachments=[...draft.attachments,...additions.map(item=>({...item,preview:URL.createObjectURL(item.file)}))];return true;
+}
+function toggleDraftSticker(draft,url){
+  if(feedState.busy)return;const index=draft.attachments.findIndex(item=>item.kind==='sticker'&&item.url===url);if(index>=0){removeAttachment(draft,index);return;}
+  try{validateAttachments([...draft.attachments,{kind:'sticker',url}]);draft.attachments=[...draft.attachments,{kind:'sticker',url}];rememberSticker(url);}catch(error){toast(error.message);}
+}
+function attachmentPreview(draft,context,postId=''){
+  if(!draft.attachments.length)return'';
+  return `<div class="image-preview media-draft-preview${context==='comment'?' small':''}"><div class="media-draft-heading"><span>${draft.attachments[0].kind==='video'?'视频 1/1':`图片 / 表情 ${draft.attachments.length}/4`}</span><small>可逐张移除</small></div><div class="media-draft-items">${draft.attachments.map((item,index)=>`<div class="media-draft-item">${item.kind==='video'?`<video src="${esc(item.preview)}" controls playsinline preload="metadata" aria-label="待发送视频"></video>`:`<img src="${esc(item.preview||item.url)}" alt="待发送${item.kind==='sticker'?'表情':'图片'} ${index+1}">`}<button type="button" data-${context}-attachment-remove="${index}"${postId?` data-post-id="${esc(postId)}"`:''} aria-label="移除第 ${index+1} 个媒体" ${feedState.busy?'disabled':''}>×</button></div>`).join('')}</div></div>`;
+}
+function restoreMediaInput(host,input,selector){
+  const next=host.querySelector(selector);if(!input||!next)return;
+  input.accept=next.accept;input.multiple=next.multiple;input.disabled=next.disabled;next.replaceWith(input);
 }
 function sharedPicker(draft,context,postId=''){
   const tab=draft.pickerTab||'emoji';const suffix=postId?` data-post-id="${esc(postId)}"`:'';const unifiedLayout=context==='compose'||context==='comment';
@@ -307,22 +325,25 @@ function sharedPicker(draft,context,postId=''){
   if(tab==='fufu1')return `${tabs}<div class="inline-fufu-grid${unifiedLayout?' labeled-sticker-pack':''}">${FUFU_PACK.map(item=>unifiedLayout?`<div class="fufu-pack-item"><button type="button" data-${context}-emoji="${esc(item[0])}"${suffix} aria-label="${esc(item[2])}">${fufuImage(item)}</button><span title="${esc(item[2])}">${esc(item[2])}</span></div>`:`<button type="button" data-${context}-emoji="${esc(item[0])}"${suffix} aria-label="${esc(item[2])}">${fufuImage(item)}</button>`).join('')}</div>`;
   if(socialState.stickers.loading&&!socialState.stickers.loaded)return `${tabs}<div class="state-card small">正在读取我的表情...</div>`;
   const rows=sortedStickers();const attribute=`data-${context}-sticker`;
-  const toolbar=unifiedLayout?`<div class="sticker-toolbar sticker-library-meta"><span>${rows.length}/${membershipStore.stickerLimit()}</span><small>最大 1MB · 每次选择 1 个</small></div>`:`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>${uiIcon('media')}添加表情</button><span>${rows.length}/${membershipStore.stickerLimit()} · 最大 1MB · 发送时仅选 1 个</span></div>`;
+  const toolbar=unifiedLayout?`<div class="sticker-toolbar sticker-library-meta"><span>${rows.length}/${membershipStore.stickerLimit()}</span><small>最大 1MB · 与图片合计最多 4 张</small></div>`:`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>${uiIcon('media')}添加表情</button><span>${rows.length}/${membershipStore.stickerLimit()} · 最大 1MB · 发送时仅选 1 个</span></div>`;
   const addTile=unifiedLayout?`<div class="inline-sticker-item sticker-add-item"><button type="button" data-upload-sticker aria-label="添加表情"><b aria-hidden="true">＋</b><span>添加</span></button></div>`:'';
   const gridClass=`inline-sticker-grid${unifiedLayout?' unified-sticker-grid':''}${!rows.length?' is-empty':''}`;
-  return `${tabs}${toolbar}<div class="${gridClass}"${!rows.length?' aria-label="我的表情为空"':''}>${addTile}${rows.map(row=>{const on=draft.stickers.has(row.image_url);return `<div class="inline-sticker-item"><button class="${on?'selected':''}" type="button" ${attribute}="${esc(row.image_url)}"${suffix} aria-pressed="${on}"><img src="${esc(row.image_url)}" alt="我的表情"></button><button class="inline-sticker-delete" type="button" data-delete-sticker="${esc(row.id)}" aria-label="删除这个表情">×</button></div>`;}).join('')}</div>`;
+  return `${tabs}${toolbar}<div class="${gridClass}"${!rows.length?' aria-label="我的表情为空"':''}>${addTile}${rows.map(row=>{const on=draft.attachments.some(item=>item.kind==='sticker'&&item.url===row.image_url);return `<div class="inline-sticker-item"><button class="${on?'selected':''}" type="button" ${attribute}="${esc(row.image_url)}"${suffix} aria-pressed="${on}" ${feedState.busy?'disabled':''}><img src="${esc(row.image_url)}" alt="我的表情"></button><button class="inline-sticker-delete" type="button" data-delete-sticker="${esc(row.id)}" aria-label="删除这个表情">×</button></div>`;}).join('')}</div>`;
 }
 function renderCompose(){
-  const host=$('[data-compose-content]');if(!host)return;
+  const host=$('[data-compose-content]');if(!host)return;if(deferWhileComposing(host,renderCompose))return;const inputState=captureUiState(host),mediaInput=host.querySelector('[data-compose-image]');
   if(!accountState.user){host.innerHTML='<div class="state-card"><b>登录后发牢骚</b><span>发布内容会与网页、PWA、APK 共用同一账号和数据库。</span><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';return;}
   host.innerHTML=`<form class="compose-card" data-compose-form>
-    <label for="composeText">把想说的先放在这里</label><textarea id="composeText" name="content" maxlength="500" placeholder="不要求有结论，也不要求立刻振作。">${esc(composeDraft.text)}</textarea><div class="compose-count">${composeDraft.text.length}/500</div>
-    <div class="media-tools"><label class="secondary compact file-button">添加图片<input type="file" accept="image/*" data-compose-image hidden></label><span>静态图过大时会压缩；GIF 最大 3MB；每次最多发送 1 个“我的表情”。</span></div>
-    ${composeDraft.imagePreview?`<div class="image-preview"><img src="${esc(composeDraft.imagePreview)}" alt="待发布图片"><button class="secondary compact danger" type="button" data-compose-image-remove>移除图片</button></div>`:''}
-    ${selectedStickerPreview(composeDraft,'compose')}
-    <div class="picker-block" hidden>${sharedPicker(composeDraft,'compose')}</div>
-    <div class="compose-actions"><button class="secondary" type="button" data-nav="square">取消</button><button class="primary" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发布中...':'投递到精神广场'}</button></div>
-  </form>`;
+    <div class="compose-input-heading"><label for="composeText">把想说的先放在这里</label><div class="compose-count">${composeDraft.text.length}/${POST_TEXT_LIMIT}</div></div>
+    <textarea id="composeText" name="content" maxlength="${POST_TEXT_LIMIT}" placeholder="不要求有结论，也不要求立刻振作。" ${feedState.busy?'disabled':''}>${esc(composeDraft.text)}</textarea>
+    ${attachmentPreview(composeDraft,'compose')}
+    <details class="compose-upload-help"><summary>图片 / 表情最多 4 张，视频 1 个<span>上传说明</span></summary><div class="compose-help-panel">图片自动压缩；GIF 最大 3MB；视频最大 20MB、30 秒。<br>实况照片请先存储为视频，HEIC 请转换为 JPG。</div></details>
+    <div class="compose-editor-footer">
+      <div class="media-tools"><label class="secondary compact file-button">添加图片 / 视频<input type="file" accept="${MEDIA_ACCEPT}" multiple data-compose-image hidden ${feedState.busy?'disabled':''}></label></div>
+      <div class="picker-block" hidden>${sharedPicker(composeDraft,'compose')}</div>
+      <div class="compose-actions"><button class="secondary" type="button" data-nav="square">取消</button><button class="primary" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发布中...':'发布'}</button></div>
+    </div>
+  </form>`;restoreMediaInput(host,mediaInput,'[data-compose-image]');restoreUiState(host,inputState);
 }
 function postCard(post){
   const profile=currentProfile(post.user_id);const reactions=reactionInfo(post);const open=String(feedState.openPostId)===String(post.id);
@@ -361,13 +382,16 @@ function commentHtml(comment,{reply=false}={}){
 }
 function renderPostDetail(){
   const host=$('[data-post-detail]');if(!host)return;const previousPostId=host.dataset.renderedPostId||'';const previousScrollTop=host.querySelector('.detail-content-scroll')?.scrollTop||0;const post=feedStore.getPost(feedState.openPostId);
+  const samePost=post&&previousPostId===String(post.id);if(samePost&&deferWhileComposing(host,renderPostDetail))return;
+  const inputState=captureUiState(host),mediaInput=samePost?host.querySelector('[data-comment-image]'):null;
   if(!post){delete host.dataset.renderedPostId;host.innerHTML='<div class="post-detail-empty mascot-detail-empty"><img src="/mascot-fufu.webp" alt="伏伏"><b>选择一条帖子</b><span>伏伏会在这里陪你查看评论和互动。</span></div>';return;}
   const profile=currentProfile(post.user_id);const reaction=reactionInfo(post);const mine=String(post.user_id)===String(accountState.user?.id);const tree=commentTree(post.comments);const draft=draftFor(post.id);const reply=feedState.reply&&String(feedState.reply.postId)===String(post.id)?feedState.reply:null;
   const comments=tree.roots.length?tree.roots.map(root=>`<div class="comment-thread">${commentHtml(root)}${(tree.replies.get(String(root.id))||[]).map(item=>commentHtml(item,{reply:true})).join('')}</div>`).join(''):'<div class="comment-empty">还没有评论，来说两句吧。</div>';
-  const composer=accountState.user?`<form class="comment-compose-card" data-comment-form="${esc(post.id)}">${reply?`<div class="replying">正在回复 ${esc(reply.name)}<button type="button" data-clear-reply>取消</button></div>`:''}<div class="comment-compose-toolbar"><div class="media-tools"><label class="secondary compact file-button">图片<input type="file" accept="image/*" data-comment-image="${esc(post.id)}" hidden></label><span>也可以只发送图片或表情</span></div>${selectedStickerPreview(draft,'comment',post.id)}</div><textarea name="content" maxlength="180" placeholder="发表评论，最多 180 字">${esc(draft.text)}</textarea>${draft.imagePreview?`<div class="image-preview small"><img src="${esc(draft.imagePreview)}" alt="待发送图片"><button class="secondary compact danger" type="button" data-comment-image-remove="${esc(post.id)}">移除</button></div>`:''}<div class="picker-block compact-picker" hidden>${sharedPicker(draft,'comment',post.id)}</div><div class="comment-compose-footer"><span>Ctrl + Enter 发送</span><button class="primary compact" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发送中...':'发表评论'}</button></div></form>`:'';
+  const composer=accountState.user?`<form class="comment-compose-card" data-comment-form="${esc(post.id)}">${reply?`<div class="replying">正在回复 ${esc(reply.name)}<button type="button" data-clear-reply>取消</button></div>`:''}<textarea name="content" rows="2" aria-label="评论内容" maxlength="${COMMENT_TEXT_LIMIT}" placeholder="发表评论，最多 300 字" ${feedState.busy?'disabled':''}>${esc(draft.text)}</textarea>${attachmentPreview(draft,'comment',post.id)}<div class="picker-block compact-picker" hidden>${sharedPicker(draft,'comment',post.id)}</div><div class="comment-compose-footer"><div class="comment-compose-toolbar"><div class="media-tools"><label class="secondary compact file-button">图片 / 视频<input type="file" accept="${MEDIA_ACCEPT}" multiple data-comment-image="${esc(post.id)}" hidden ${feedState.busy?'disabled':''}></label></div></div><span><i data-comment-count>${draft.text.length}/${COMMENT_TEXT_LIMIT}</i> · Ctrl + Enter</span><button class="primary compact" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发送中...':'发表评论'}</button></div></form>`:'';
   const signIn=accountState.user?'':'<div class="state-card small"><b>登录后参与评论</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';
   host.innerHTML=`<div class="detail-scroll ${accountState.user?'has-comment-composer':''}"><header class="detail-head"><b>帖子详情</b><div class="row-actions">${mine?`<button class="detail-quiet-action danger" type="button" data-delete-post="${esc(post.id)}">删除帖子</button>`:`<button class="detail-quiet-action" type="button" data-report-post="${esc(post.id)}">举报</button>`}<button class="secondary compact" type="button" data-close-post>关闭</button></div></header><div class="detail-content-scroll"><article class="detail-post"><div class="detail-author-row"><div class="post-author">${avatarHtml(profile,'social-avatar',{userId:post.user_id})}<b>${memberName(profile.nickname||'匿名研究员',post.user_id)}</b>${vipBadgeHtml(post.user_id)}</div><time>${esc(new Date(post.created_at).toLocaleString('zh-CN'))}</time></div>${richContent(post.content)}<div class="detail-post-actions"><div class="reaction-row"><button class="${reaction.active.like?'active':''}" type="button" data-react="like" data-post-id="${esc(post.id)}" aria-pressed="${reaction.active.like}">点赞 ${reaction.values.like}</button></div></div></article><section class="comments-section"><div class="comments-heading"><h3>评论</h3><span>${(post.comments||[]).length} 条</span></div><div class="comment-list">${comments}</div>${signIn}</section></div>${composer}</div>`;
   host.dataset.renderedPostId=String(post.id);if(previousPostId===String(post.id))host.querySelector('.detail-content-scroll').scrollTop=previousScrollTop;
+  if(samePost){restoreMediaInput(host,mediaInput,'[data-comment-image]');restoreUiState(host,inputState);}
 }
 function renderFeed(next=feedState,scope='all'){feedState=next;if(scope==='all'||scope==='compose')renderCompose();if(scope==='all'||scope==='content')renderSquareFeed();if(scope!=='compose'){syncSquarePostSelection();renderPostDetail();}}
 
@@ -382,7 +406,8 @@ function pollCard(poll){
 function renderPolls(next=pollState){
   pollState=next;const countNode=$('[data-poll-daily-count]');if(countNode)countNode.textContent=accountState.user?(pollState.dailyCount==null?'今日次数读取失败':`今日发起 ${pollState.dailyCount}/3`):'登录后可见';
   $$('[data-poll-filter]').forEach(button=>button.classList.toggle('active',button.dataset.pollFilter===pollFilter));
-  const create=$('[data-poll-create-host]');if(create){create.hidden=!pollCreateOpen;if(pollCreateOpen)create.innerHTML=accountState.user?`<form class="poll-create-card" data-poll-create-form><div><h2>发起 7 天投票</h2><p>每人每天最多 3 次；标题最多 120 字，创建时必须填写 4 个不同选项。</p></div><label>课题标题<input name="title" maxlength="120" autocomplete="off" required placeholder="例如：今天最值得研究的崩溃来源是什么？"></label><div class="poll-initial-options">${[1,2,3,4].map(index=>`<label>选项 ${index}<input name="option${index}" maxlength="80" required></label>`).join('')}</div>${accountState.user.role==='admin'?'<label class="poll-official-check"><input type="checkbox" name="official"> 作为官方课题发布并置顶</label>':''}<div class="compose-actions"><button class="secondary" type="button" data-poll-create-toggle>取消</button><button class="primary" type="submit" ${pollState.busy?'disabled':''}>${pollState.busy?'发布中...':'发布课题'}</button></div></form>`:'<div class="state-card"><b>登录后发起课题</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';}
+  const create=$('[data-poll-create-host]');if(create){const owner=`${accountState.user?.id||''}:${accountState.user?.role||''}`;if(create.dataset.owner!==owner){create.replaceChildren();create.dataset.owner=owner;}create.hidden=!pollCreateOpen;if(pollCreateOpen&&!create.querySelector('[data-poll-create-form]'))create.innerHTML=accountState.user?`<form class="poll-create-card" data-poll-create-form><div><h2>发起 7 天投票</h2><p>每人每天最多 3 次；标题最多 120 字，创建时必须填写 4 个不同选项。</p></div><label>课题标题<input name="title" maxlength="120" autocomplete="off" required placeholder="例如：今天最值得研究的崩溃来源是什么？"></label><div class="poll-initial-options">${[1,2,3,4].map(index=>`<label>选项 ${index}<input name="option${index}" maxlength="80" required></label>`).join('')}</div>${accountState.user.role==='admin'?'<label class="poll-official-check"><input type="checkbox" name="official"> 作为官方课题发布并置顶</label>':''}<div class="compose-actions"><button class="secondary" type="button" data-poll-create-toggle>取消</button><button class="primary" type="submit" ${pollState.busy?'disabled':''}>${pollState.busy?'发布中...':'发布课题'}</button></div></form>`:'<div class="state-card"><b>登录后发起课题</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';}
+  const form=create?.querySelector('[data-poll-create-form]');if(form){for(const field of form.elements)field.disabled=pollState.busy;form.querySelector('[type="submit"]').textContent=pollState.busy?'发布中...':'发布课题';}
   const list=$('[data-poll-list]');if(!list)return;if(pollState.loading&&!pollState.loaded){list.innerHTML='<div class="state-card">正在读取学术研讨课题...</div>';return;}if(pollState.error&&!pollState.polls.length){list.innerHTML=`<div class="state-card"><b>课题暂时读取失败</b><span>${esc(pollState.error)}</span><button class="secondary compact" type="button" data-poll-refresh>重试</button></div>`;return;}const rows=pollState.polls.filter(pollMatches).sort((a,b)=>pollFilter==='ended'?new Date(b.created_at)-new Date(a.created_at):Number(b.is_official)-Number(a.is_official)||new Date(b.created_at)-new Date(a.created_at));list.innerHTML=rows.length?rows.map(pollCard).join(''):'<div class="state-card">这个分类下暂时没有课题。</div>';
 }
 
@@ -441,13 +466,19 @@ function renderBuddyList(){
 
 function messageBubble(row){const mine=String(row.sender_id)===String(accountState.user?.id);const sticker=decodeSticker(row.content);return `<article class="chat-message ${mine?'mine':''}"><small>${mine?'你':esc(socialState.chat.profile?.nickname||'搭子')} ${vipBadgeHtml(row.sender_id)}</small><div class="chat-bubble ${sticker?'sticker':''}">${sticker?`<img src="${esc(sticker)}" alt="表情">`:emojiText(row.content)}</div><time>${esc(timeText(row.created_at))}</time></article>`;}
 function renderChat(){
-  const chat=socialState.chat;const messages=$('[data-chat-messages]');const input=$('[data-chat-compose] input');const submit=$('[data-chat-compose] button[type="submit"]');const emoji=$('[data-emoji-toggle]');
+  const chat=socialState.chat;const messages=$('[data-chat-messages]');const input=$('[data-chat-compose] input[name="message"]');const submit=$('[data-chat-compose] button[type="submit"]');const emoji=$('[data-emoji-toggle]');const target=String(chat.targetId||'');
+  if(chatComposerTarget!==target){if(chatComposerTarget)chatDrafts.set(chatComposerTarget,input.value);chatComposerTarget=target;input.value=chatDrafts.get(target)||'';$('[data-emoji-panel]').hidden=true;}
   $('[data-chat-title]').textContent=chat.targetId?`和 ${chat.profile?.nickname||'搭子'} 私聊`:'选择一个搭子';$('[data-chat-subtitle]').textContent=chat.targetId?`${chat.profile?.lab_code?`实验品编号：${chat.profile.lab_code}`:'实验品编号：未设置'}${chat.loading?' · 正在同步':''}`:'左边点一个消息或搭子，右边直接聊天。';$('[data-close-chat]').hidden=!chat.targetId;
   const enabled=Boolean(chat.targetId&&!chat.loading);input.disabled=!enabled;submit.disabled=!enabled||chat.sending;emoji.disabled=!enabled;input.placeholder=enabled?'输入文字，或 Ctrl+V 直接粘贴图片...':'先从左侧选择一个搭子';submit.textContent=chat.sending?'发送中...':'发送';
   const signature=[chat.targetId,chat.loading&&!(chat.rows||[]).length?'loading':'ready',chat.profile?.nickname||'',...(chat.rows||[]).map(row=>`${row.id}:${row.is_deleted?'1':'0'}:${row.content}`)].join('|');
-  if(signature===lastChatRenderSignature)return;const shouldScroll=Boolean(chat.targetId&&(chat.rows||[]).length);lastChatRenderSignature=signature;
+  if(signature===lastChatRenderSignature)return;
+  const changedTarget=messages.dataset.target!==target,top=messages.scrollTop,nearBottom=messages.scrollHeight-top-messages.clientHeight<70;
+  const newRows=changedTarget?[]:(chat.rows||[]).filter(row=>!chatMessageIds.has(String(row.id)));
+  const shouldScroll=changedTarget||nearBottom||newRows.some(row=>String(row.sender_id)===String(accountState.user?.id));
+  const notice=$('[data-chat-new-messages]');if(changedTarget||shouldScroll)notice.hidden=true;else if(newRows.length)notice.hidden=false;
+  messages.dataset.target=target;chatMessageIds=new Set((chat.rows||[]).map(row=>String(row.id)));lastChatRenderSignature=signature;
   if(chat.loading&&!chat.rows.length){messages.innerHTML='<div class="state-card">正在打开私聊...</div>';return;}if(!chat.targetId){messages.innerHTML='<div class="state-card">还没有选择聊天对象。</div>';return;}if(!chat.rows.length){messages.innerHTML='<div class="state-card">还没有私聊消息。可以先低功耗地打个招呼。</div>';return;}
-  messages.innerHTML=chat.rows.map(messageBubble).join('');if(shouldScroll)requestAnimationFrame(()=>{messages.scrollTop=messages.scrollHeight;});
+  messages.innerHTML=chat.rows.map(messageBubble).join('');if(shouldScroll)requestAnimationFrame(()=>{if(messages.dataset.target===target)messages.scrollTop=messages.scrollHeight;});else messages.scrollTop=top;
 }
 
 function renderEmojiPanel(){
@@ -471,7 +502,7 @@ function renderSocial(next=socialState){
 
 function bindNavigation(){
   document.addEventListener('click',async event=>{
-    const lightbox=event.target.closest('[data-lightbox-src]');if(lightbox){event.preventDefault();openLightbox(lightbox.dataset.lightboxSrc||lightbox.src);return;}
+    const lightbox=event.target.closest('[data-lightbox-src]');if(lightbox){event.preventDefault();openLightbox(lightbox);return;}
     if(event.target.closest('[data-media-lightbox-close]')||event.target.matches('[data-media-lightbox]')){closeLightbox();return;}
     const nav=event.target.closest('[data-nav]');if(nav){navigate(nav.dataset.nav);return;}
     if(event.target.closest('[data-open-account]')){openAccount();return;}if(event.target.closest('[data-close-account]')){closeAccount();return;}
@@ -505,15 +536,13 @@ function bindNavigation(){
     if(event.target.closest('[data-square-mine-retry]')){feedStore.loadMine(true,feedState.mine.retryMore).catch(error=>toast(error.message||'加载失败。'));return;}
     if(event.target.closest('[data-square-refresh]')){if(squareMode==='echo')socialStore.loadEcho(true).catch(error=>toast(error.message||'回声刷新失败。'));else if(squareMode==='mine')feedStore.loadMine(true).catch(error=>toast(error.message||'我的牢骚刷新失败。'));else feedStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
     const composePickerTab=event.target.closest('[data-compose-picker-tab]');if(composePickerTab){composeDraft.pickerTab=composePickerTab.dataset.composePickerTab;if(composeDraft.pickerTab==='stickers')socialStore.loadStickers().catch(error=>toast(error.message));renderCompose();return;}
-    const composeEmoji=event.target.closest('[data-compose-emoji]');if(composeEmoji){if(composeDraft.text.length+composeEmoji.dataset.composeEmoji.length<=500)composeDraft.text+=composeEmoji.dataset.composeEmoji;renderCompose();requestAnimationFrame(()=>$('[data-compose-form] textarea')?.focus());return;}
-    const composeSticker=event.target.closest('[data-compose-sticker]');if(composeSticker){const url=composeSticker.dataset.composeSticker;if(composeDraft.stickers.has(url))composeDraft.stickers.clear();else{composeDraft.stickers.clear();composeDraft.stickers.add(url);rememberSticker(url);}renderCompose();return;}
-    if(event.target.closest('[data-compose-sticker-remove]')){composeDraft.stickers.clear();renderCompose();return;}
-    if(event.target.closest('[data-compose-image-remove]')){releasePreview(composeDraft);renderCompose();return;}
+    const composeEmoji=event.target.closest('[data-compose-emoji]');if(composeEmoji){if(composeDraft.text.length+composeEmoji.dataset.composeEmoji.length<=POST_TEXT_LIMIT)composeDraft.text+=composeEmoji.dataset.composeEmoji;renderCompose();requestAnimationFrame(()=>$('[data-compose-form] textarea')?.focus());return;}
+    const composeSticker=event.target.closest('[data-compose-sticker]');if(composeSticker){toggleDraftSticker(composeDraft,composeSticker.dataset.composeSticker);renderCompose();return;}
+    const composeRemove=event.target.closest('[data-compose-attachment-remove]');if(composeRemove){if(!feedState.busy)removeAttachment(composeDraft,Number(composeRemove.dataset.composeAttachmentRemove));renderCompose();return;}
     const commentPickerTab=event.target.closest('[data-comment-picker-tab]');if(commentPickerTab){const draft=draftFor(commentPickerTab.dataset.postId);draft.pickerTab=commentPickerTab.dataset.commentPickerTab;if(draft.pickerTab==='stickers')socialStore.loadStickers().catch(error=>toast(error.message));renderPostDetail();return;}
-    const commentEmoji=event.target.closest('[data-comment-emoji]');if(commentEmoji){const draft=draftFor(commentEmoji.dataset.postId);if(draft.text.length+commentEmoji.dataset.commentEmoji.length<=180)draft.text+=commentEmoji.dataset.commentEmoji;renderPostDetail();requestAnimationFrame(()=>$('[data-comment-form] textarea')?.focus());return;}
-    const commentSticker=event.target.closest('[data-comment-sticker]');if(commentSticker){const draft=draftFor(commentSticker.dataset.postId);const url=commentSticker.dataset.commentSticker;if(draft.stickers.has(url))draft.stickers.clear();else{draft.stickers.clear();draft.stickers.add(url);rememberSticker(url);}renderPostDetail();return;}
-    const removeCommentSticker=event.target.closest('[data-comment-sticker-remove]');if(removeCommentSticker){draftFor(removeCommentSticker.dataset.commentStickerRemove).stickers.clear();renderPostDetail();return;}
-    const removeCommentImage=event.target.closest('[data-comment-image-remove]');if(removeCommentImage){releasePreview(draftFor(removeCommentImage.dataset.commentImageRemove));renderPostDetail();return;}
+    const commentEmoji=event.target.closest('[data-comment-emoji]');if(commentEmoji){const draft=draftFor(commentEmoji.dataset.postId);if(draft.text.length+commentEmoji.dataset.commentEmoji.length<=COMMENT_TEXT_LIMIT)draft.text+=commentEmoji.dataset.commentEmoji;renderPostDetail();requestAnimationFrame(()=>$('[data-comment-form] textarea')?.focus());return;}
+    const commentSticker=event.target.closest('[data-comment-sticker]');if(commentSticker){toggleDraftSticker(draftFor(commentSticker.dataset.postId),commentSticker.dataset.commentSticker);renderPostDetail();return;}
+    const commentRemove=event.target.closest('[data-comment-attachment-remove]');if(commentRemove){if(!feedState.busy)removeAttachment(draftFor(commentRemove.dataset.postId),Number(commentRemove.dataset.commentAttachmentRemove));renderPostDetail();return;}
     const react=event.target.closest('[data-react]');if(react){try{const added=await feedStore.toggleReaction(react.dataset.postId,react.dataset.react);toast(added?'已收到。':'已撤回。');}catch(error){toast(error.message||'互动失败。');}return;}
     const reply=event.target.closest('[data-reply-comment]');if(reply){const post=feedStore.getPost(feedState.openPostId);const comment=post?.comments.find(row=>String(row.id)===String(reply.dataset.replyComment));if(comment){feedStore.setReply(comment);requestAnimationFrame(()=>$('[data-comment-form] textarea')?.focus());}return;}
     if(event.target.closest('[data-clear-reply]')){feedStore.clearReply();return;}
@@ -521,6 +550,7 @@ function bindNavigation(){
     const deleteComment=event.target.closest('[data-delete-comment]');if(deleteComment){if(!window.confirm('确定删除这条评论吗？'))return;try{await feedStore.deleteComment(deleteComment.dataset.deleteComment);toast('评论已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
     const report=event.target.closest('[data-report-post]');if(report){const reason=window.prompt('请填写举报原因（至少 2 个字）');if(reason==null)return;try{await feedStore.report('post',report.dataset.reportPost,reason);toast('举报已提交，管理员会处理。');}catch(error){toast(error.message||'举报失败。');}return;}
     if(event.target.closest('[data-close-post]')){feedStore.closePost();return;}
+    if(event.target.closest('video'))return;
     const openPost=event.target.closest('[data-open-post]');if(openPost){feedStore.openPost(openPost.dataset.openPost);socialStore.loadStickers().catch(()=>{});return;}
     if(event.target.closest('[data-echo-refresh]')){socialStore.loadEcho(true);return;}
     if(event.target.closest('[data-echo-mark-all]')){try{await socialStore.markAllEchoRead();}catch(error){toast(error.message||'全部已读失败。');}return;}
@@ -534,13 +564,14 @@ function bindNavigation(){
     if(event.target.closest('[data-close-chat]')){socialStore.closeChat();return;}
     if(event.target.closest('[data-emoji-toggle]')){const panel=$('[data-emoji-panel]');panel.hidden=!panel.hidden;if(!panel.hidden)renderEmojiPanel();return;}
     const emojiSwitch=event.target.closest('[data-emoji-tab]');if(emojiSwitch){emojiTab=emojiSwitch.dataset.emojiTab;if(emojiTab==='stickers')socialStore.loadStickers().catch(error=>toast(error.message));renderEmojiPanel();return;}
-    const emoji=event.target.closest('[data-insert-emoji]');if(emoji){const input=$('[data-chat-compose] input');input.value+=emoji.dataset.insertEmoji;input.focus();return;}
+    const emoji=event.target.closest('[data-insert-emoji]');if(emoji){const input=$('[data-chat-compose] input[name="message"]');input.value+=emoji.dataset.insertEmoji;input.dispatchEvent(new Event('input',{bubbles:true}));input.focus();return;}
+    if(event.target.closest('[data-chat-new-messages]')){const messages=$('[data-chat-messages]');messages.scrollTop=messages.scrollHeight;$('[data-chat-new-messages]').hidden=true;return;}
     const sticker=event.target.closest('[data-send-sticker]');if(sticker){try{rememberSticker(sticker.dataset.sendSticker);await socialStore.sendMessage('',{stickerUrl:sticker.dataset.sendSticker});$('[data-emoji-panel]').hidden=true;}catch(error){toast(error.message||'发送失败。');}return;}
     if(event.target.closest('[data-upload-sticker]')){$('[data-sticker-file]').click();return;}
     const deleteSticker=event.target.closest('[data-delete-sticker]');if(deleteSticker){event.stopPropagation();try{await socialStore.deleteSticker(deleteSticker.dataset.deleteSticker);toast('表情已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
   });
   $('[data-account-modal]').addEventListener('click',event=>{if(event.target.matches('[data-account-modal]'))closeAccount();});
-  window.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if(!$('[data-media-lightbox]')?.hidden){closeLightbox();return;}closeAccountMenu();if(!$('[data-account-modal]').hidden)closeAccount();});
+  window.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if(!$('[data-media-lightbox]')?.hidden){closeLightbox();return;}if($('[data-sidebar-more-wrap]')?.classList.contains('open')){closeSidebarMore(true);return;}closeAccountMenu();if(!$('[data-account-modal]').hidden)closeAccount();});
 }
 
 async function runForm(form,action,success){setFormStatus('正在处理…');try{const value=await action(new FormData(form));setFormStatus('');await success?.(value);}catch(error){setFormStatus(error.message||'操作失败，请稍后重试。',true);}}
@@ -553,27 +584,29 @@ function bindForms(){
   $('[data-resend-code]').addEventListener('click',()=>runForm($('[data-auth-view="verify"]'),()=>authStore.resendRegistration(),result=>{toast(`验证码已重新发送至 ${result.email}。`);}));
   $('[data-sign-out]').addEventListener('click',async event=>{if(!window.confirm('确定退出当前账号吗？'))return;event.currentTarget.disabled=true;try{closeAccountMenu();await authStore.signOut();toast('已退出登录。');showAuth('login');}catch(error){toast(error.message||'退出登录失败。');}finally{event.currentTarget.disabled=false;}});
   $('[data-buddy-search]').addEventListener('submit',event=>{event.preventDefault();socialStore.searchProfiles(new FormData(event.currentTarget).get('q')).catch(error=>toast(error.message||'搜索失败。'));});
-  $('[data-chat-compose]').addEventListener('submit',async event=>{event.preventDefault();const input=event.currentTarget.elements.message;const text=input.value;try{const targetId=await socialStore.sendMessage(text);if(String(socialStore.state.chat.targetId)===String(targetId)){input.value='';input.focus();}}catch(error){toast(error.message||'发送失败。');}});
+  $('[data-chat-compose]').addEventListener('submit',async event=>{event.preventDefault();const input=event.currentTarget.elements.message;const text=input.value,owner=accountState.user?.id;try{const targetId=await socialStore.sendMessage(text);if(accountState.user?.id!==owner)return;if(chatDrafts.get(String(targetId))===text)chatDrafts.delete(String(targetId));if(String(socialStore.state.chat.targetId)===String(targetId)&&input.value===text){input.value='';input.focus();}}catch(error){toast(error.message||'发送失败。');}});
+  $('[data-chat-messages]').addEventListener('scroll',event=>{const box=event.currentTarget;if(box.scrollHeight-box.scrollTop-box.clientHeight<70)$('[data-chat-new-messages]').hidden=true;});
   $('[data-sticker-file]').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;try{await socialStore.uploadSticker(file);toast('表情已添加。');}catch(error){toast(error.message||'添加表情失败。');}});
   document.addEventListener('input',event=>{
-    if(event.target.matches('[data-compose-form] textarea')){composeDraft.text=event.target.value;const count=$('.compose-count');if(count)count.textContent=`${composeDraft.text.length}/500`;return;}
-    const form=event.target.closest?.('[data-comment-form]');if(form&&event.target.matches('textarea'))draftFor(form.dataset.commentForm).text=event.target.value;
+    if(event.target.matches('[data-chat-compose] input[name="message"]')){if(chatComposerTarget)chatDrafts.set(chatComposerTarget,event.target.value);return;}
+    if(event.target.matches('[data-compose-form] textarea')){composeDraft.text=event.target.value;const count=$('.compose-count');if(count)count.textContent=`${composeDraft.text.length}/${POST_TEXT_LIMIT}`;return;}
+    const form=event.target.closest?.('[data-comment-form]');if(form&&event.target.matches('textarea')){const draft=draftFor(form.dataset.commentForm);draft.text=event.target.value;const count=form.querySelector('[data-comment-count]');if(count)count.textContent=`${draft.text.length}/${COMMENT_TEXT_LIMIT}`;}
   });
   document.addEventListener('fw:clipboard-files',event=>{
-    const files=Array.from(event.detail?.files||[]).filter(isImageFile);if(!files.length)return;
-    if(event.target.matches?.('[data-compose-image]')){event.preventDefault();setComposeDraftFile(files[0]);return;}
-    if(event.target.matches?.('[data-comment-image]')){event.preventDefault();setCommentDraftFile(event.target.dataset.commentImage,files[0]);return;}
+    const files=Array.from(event.detail?.files||[]);if(!files.length)return;
+    if(event.target.matches?.('[data-compose-image]')){event.preventDefault();if(addDraftFiles(composeDraft,files)){renderCompose();toast('已粘贴图片，可预览后发布。');}return;}
+    if(event.target.matches?.('[data-comment-image]')){event.preventDefault();if(addDraftFiles(draftFor(event.target.dataset.commentImage),files)){renderPostDetail();toast('已粘贴图片，可预览后发送。');}return;}
   });
   document.addEventListener('change',event=>{
     if(event.target.matches('[data-settings-profile] input[name="avatar"]')){const file=event.target.files?.[0];if(avatarPreviewUrl){URL.revokeObjectURL(avatarPreviewUrl);avatarPreviewUrl='';}if(!file){setAvatar($('[data-profile-avatar]'),accountState.user);setProfileStatus('');return;}if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>10*1024*1024){event.target.value='';setAvatar($('[data-profile-avatar]'),accountState.user);setProfileStatus('头像请选择 JPG、PNG 或 WebP，原图不超过 10MB。',true);return;}avatarPreviewUrl=URL.createObjectURL(file);const preview=$('[data-profile-avatar]');preview.textContent='';preview.style.backgroundImage=`url("${avatarPreviewUrl}")`;preview.classList.add('has-image');setProfileStatus('将按中心裁剪为正方形，并自动压缩到适合头像的大小。');return;}
-    if(event.target.matches('[data-compose-image]')){setComposeDraftFile(event.target.files?.[0]);return;}
-    if(event.target.matches('[data-comment-image]'))setCommentDraftFile(event.target.dataset.commentImage,event.target.files?.[0]);
+    if(event.target.matches('[data-compose-image]')){const files=Array.from(event.target.files||[]);event.target.value='';if(addDraftFiles(composeDraft,files))renderCompose();return;}
+    if(event.target.matches('[data-comment-image]')){const files=Array.from(event.target.files||[]);event.target.value='';if(addDraftFiles(draftFor(event.target.dataset.commentImage),files))renderPostDetail();}
   });
   document.addEventListener('submit',async event=>{
-    const createPoll=event.target.closest?.('[data-poll-create-form]');if(createPoll){event.preventDefault();const fd=new FormData(createPoll);try{await pollStore.createPoll({title:fd.get('title'),options:[1,2,3,4].map(index=>fd.get(`option${index}`)),isOfficial:fd.get('official')==='on'});pollCreateOpen=false;pollFilter=accountState.user?.role==='admin'&&fd.get('official')==='on'?'official':'user';toast('投票课题已发布。');renderPolls();}catch(error){toast(error.message||'发布失败。');}return;}
+    const createPoll=event.target.closest?.('[data-poll-create-form]');if(createPoll){event.preventDefault();const fd=new FormData(createPoll),owner=accountState.user?.id;try{await pollStore.createPoll({title:fd.get('title'),options:[1,2,3,4].map(index=>fd.get(`option${index}`)),isOfficial:fd.get('official')==='on'});if(accountState.user?.id!==owner)return;createPoll.reset();pollCreateOpen=false;pollFilter=accountState.user?.role==='admin'&&fd.get('official')==='on'?'official':'user';toast('投票课题已发布。');renderPolls();}catch(error){toast(error.message||'发布失败。');}return;}
     const addOption=event.target.closest?.('[data-poll-add-option]');if(addOption){event.preventDefault();try{await pollStore.addOption(addOption.dataset.pollAddOption,new FormData(addOption).get('label'));toast('新选项已加入并投票。');}catch(error){toast(error.message||'新增选项失败。');}return;}
-    const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();try{await feedStore.createPost({text:composeDraft.text,imageFile:composeDraft.imageFile,stickerUrls:Array.from(composeDraft.stickers)});releasePreview(composeDraft);composeDraft.text='';composeDraft.stickers.clear();toast('已投递到精神广场。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
-    const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
+    const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();const owner=accountState.user?.id,text=composeDraft.text,attachments=composeDraft.attachments;try{await feedStore.createPost({text,attachments});if(accountState.user?.id!==owner)return;if(composeDraft.text===text&&composeDraft.attachments===attachments){releasePreview(composeDraft);composeDraft.text='';}toast('发布成功。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
+    const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);const owner=accountState.user?.id,text=draft.text,attachments=draft.attachments;try{await feedStore.createComment({postId,text,attachments});if(accountState.user?.id!==owner)return;if(draft.text===text&&draft.attachments===attachments){releasePreview(draft);draft.text='';}toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
-bindSidebarMore();bindNavigation();bindForms();chatRoomUi.init({toast,avatarHtml,memberName,emojiText,emojiImage,fufuImage,emojis:EMOJIS,fufu:FUFU_PACK});desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);archiveStore.subscribe(renderArchive);authStore.boot();
+bindExternalLinks({onError:toast});bindSidebarMore();bindNavigation();bindForms();chatRoomUi.init({toast,avatarHtml,memberName,emojiText,emojiImage,fufuImage,emojis:EMOJIS,fufu:FUFU_PACK});desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);archiveStore.subscribe(renderArchive);authStore.boot();

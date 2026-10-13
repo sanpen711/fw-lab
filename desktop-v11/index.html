@@ -24,19 +24,19 @@
       </button>
       <nav class="nav-list">
         <div class="nav-primary-group">
-          <button class="nav-item active" type="button" data-nav="home"><span class="nav-icon nav-icon-home" aria-hidden="true"></span><b>首页</b></button>
-          <button class="nav-item" type="button" data-nav="square"><span class="nav-icon nav-icon-brain" aria-hidden="true"></span><b>精神广场</b><i class="notification-dot" data-dot="square" aria-label="精神广场有新消息" hidden></i></button>
-          <button class="nav-item" type="button" data-nav="rooms"><span class="nav-icon nav-icon-discussion" aria-hidden="true"></span><b>学术研讨</b></button>
-          <button class="nav-item" type="button" data-nav="chatrooms"><span class="nav-icon nav-icon-chatrooms" aria-hidden="true"></span><b>闲聊房间</b></button>
-          <button class="nav-item" type="button" data-nav="play"><span class="nav-icon nav-icon-buddy" aria-hidden="true"></span><b>下班开黑</b><i class="notification-dot" data-dot="play" aria-label="下班开黑有新消息" hidden></i></button>
-          <button class="nav-item" type="button" data-nav="games"><span class="nav-icon nav-icon-game" aria-hidden="true"></span><b>小游戏</b></button>
+          <button class="nav-item active" type="button" data-nav="home" aria-label="首页" title="首页"><span class="nav-icon nav-icon-home" aria-hidden="true"></span><b>首页</b></button>
+          <button class="nav-item" type="button" data-nav="square" aria-label="精神广场" title="精神广场"><span class="nav-icon nav-icon-brain" aria-hidden="true"></span><b>精神广场</b><i class="notification-dot" data-dot="square" aria-label="精神广场有新消息" hidden></i></button>
+          <button class="nav-item" type="button" data-nav="rooms" aria-label="学术研讨" title="学术研讨"><span class="nav-icon nav-icon-discussion" aria-hidden="true"></span><b>学术研讨</b></button>
+          <button class="nav-item" type="button" data-nav="chatrooms" aria-label="闲聊房间" title="闲聊房间"><span class="nav-icon nav-icon-chatrooms" aria-hidden="true"></span><b>闲聊房间</b></button>
+          <button class="nav-item" type="button" data-nav="play" aria-label="下班开黑" title="下班开黑"><span class="nav-icon nav-icon-buddy" aria-hidden="true"></span><b>下班开黑</b><i class="notification-dot" data-dot="play" aria-label="下班开黑有新消息" hidden></i></button>
+          <button class="nav-item" type="button" data-nav="games" aria-label="小游戏" title="小游戏"><span class="nav-icon nav-icon-game" aria-hidden="true"></span><b>小游戏</b></button>
         </div>
         <div class="nav-lower-group">
-          <button class="nav-item" type="button" data-nav="buddy"><span class="nav-icon nav-icon-buddy" aria-hidden="true"></span><b>搭子</b><i class="badge" data-badge="buddy" hidden></i></button>
-          <button class="nav-item" type="button" data-nav="archive"><span class="nav-icon nav-icon-archive" aria-hidden="true"></span><b>档案</b></button>
-          <button class="nav-item" type="button" data-nav="membership"><span class="nav-icon nav-icon-membership" aria-hidden="true"></span><b>会员</b></button>
+          <button class="nav-item" type="button" data-nav="buddy" aria-label="搭子" title="搭子"><span class="nav-icon nav-icon-buddy" aria-hidden="true"></span><b>搭子</b><i class="badge" data-badge="buddy" hidden></i></button>
+          <button class="nav-item" type="button" data-nav="archive" aria-label="档案" title="档案"><span class="nav-icon nav-icon-archive" aria-hidden="true"></span><b>档案</b></button>
+          <button class="nav-item" type="button" data-nav="membership" aria-label="会员" title="会员"><span class="nav-icon nav-icon-membership" aria-hidden="true"></span><b>会员</b></button>
           <div class="sidebar-more-wrap" data-sidebar-more-wrap>
-            <button class="nav-item sidebar-more-button" type="button" data-sidebar-more-toggle aria-haspopup="menu" aria-expanded="false"><span class="sidebar-more-icon" aria-hidden="true"><i></i><i></i><i></i></span><b>更多</b></button>
+            <button class="nav-item sidebar-more-button" type="button" data-sidebar-more-toggle aria-haspopup="menu" aria-expanded="false" aria-label="更多" title="更多"><span class="sidebar-more-icon" aria-hidden="true"><i></i><i></i><i></i></span><b>更多</b></button>
             <div class="sidebar-more-menu" role="menu" aria-label="更多栏目">
               <button type="button" role="menuitem" data-align-nav="rules"><span class="nav-icon nav-icon-info" aria-hidden="true"></span><b>入馆须知</b></button>
               <button type="button" role="menuitem" data-align-nav="moderation"><span class="nav-icon nav-icon-notice" aria-hidden="true"></span><b>处理公告</b></button>
@@ -109,8 +109,8 @@
       <section class="view" data-view-panel="compose">
         <div class="compose-page">
           <div class="section-heading">
-            <div><p>LOW POWER POST</p><h1>发一句牢骚</h1><span>文字、图片、视频和我的表情会直接写入共用的精神广场。</span></div>
-            <button class="secondary compact" type="button" data-nav="square">去精神广场</button>
+            <div><h1>发一句牢骚</h1><span>文字、图片、视频和我的表情会直接写入共用的精神广场。</span></div>
+            <button class="secondary compact" type="button" data-nav="square">返回</button>
           </div>
           <div class="compose-wrap" data-compose-content><div class="state-card">正在准备发布工具...</div></div>
         </div>
@@ -225,6 +225,7 @@
               <button class="secondary compact" type="button" data-close-chat hidden>关闭私聊</button>
             </header>
             <div class="chat-messages" data-chat-messages><div class="state-card">还没有选择聊天对象。</div></div>
+            <button class="chat-new-messages secondary compact" type="button" data-chat-new-messages hidden>有新消息 · 查看</button>
             <form class="chat-compose" data-chat-compose>
               <button class="emoji-trigger" type="button" data-emoji-toggle aria-label="打开表情"><svg class="ui-symbol" aria-hidden="true"><use href="/ui-icons.svg#face"></use></svg></button>
               <input name="message" maxlength="300" autocomplete="off" placeholder="先从左侧选择一个搭子" disabled>
@@ -427,7 +428,13 @@
     </section>
   </div>
 
-  <div class="media-lightbox" data-media-lightbox hidden role="dialog" aria-modal="true" aria-label="查看原图"><button type="button" data-media-lightbox-close aria-label="关闭原图">×</button><img data-media-lightbox-image alt="原图"></div>
+  <div class="media-lightbox" data-media-lightbox hidden role="dialog" aria-modal="true" aria-label="查看原图">
+    <button type="button" data-media-lightbox-close aria-label="关闭原图">×</button>
+    <button class="lightbox-arrow lightbox-prev" type="button" data-media-lightbox-prev aria-label="上一张图片" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
+    <img data-media-lightbox-image alt="原图">
+    <button class="lightbox-arrow lightbox-next" type="button" data-media-lightbox-next aria-label="下一张图片" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+    <div class="lightbox-count" data-media-lightbox-count aria-live="polite" aria-atomic="true" hidden></div>
+  </div>
   <div class="toast" data-toast role="status" aria-live="polite"></div>
   <script type="module" src="/src/app.js"></script>
   <script type="module" src="/src/alignment-nav-fix.js"></script>

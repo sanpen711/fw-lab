@@ -1,6 +1,7 @@
 import {chatRoomStore} from './chat-room-store.js';
 import {authStore} from './auth-store.js';
 import {socialStore} from './social-store.js';
+import {captureUiState,restoreUiState,deferWhileComposing} from './ui-state.js';
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let helpers={},state=chatRoomStore.state,mode='chat',myFilter='mine',pickerTab='emoji',editor=null,lastUser='',lastRoom='',active=false;
 const drafts=new Map();
@@ -44,6 +45,8 @@ function pickerHtml(d){const tabs=[['emoji','小表情'],['stickers','我的表�
 function composeHtml(){const d=draft();return `<form class="room-compose" data-room-send-form>${pickerHtml(d)}${d.preview||d.stickerUrl?`<div class="room-attachment-preview"><img src="${esc(d.preview||d.stickerUrl)}" alt="待发送附件"><button class="secondary compact" type="button" data-room-attachment-remove>移除</button></div>`:''}<textarea name="message" rows="2" maxlength="1000" placeholder="发一条消息，最多 1000 字" ${state.busy?'disabled':''}>${esc(d.text)}</textarea><div class="room-compose-actions"><div><button class="secondary compact" type="button" data-room-picker-toggle>表情</button><label class="secondary compact file-button">图片<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-room-image hidden></label><span class="room-character-count">${d.text.length}/1000</span></div><button class="primary compact" type="submit" ${state.busy?'disabled':''}>${state.busy?'发送中…':'发送'}</button></div><small>Ctrl + Enter 发送</small></form>`;}
 function renderDetail(){
  const host=$('[data-room-detail]');if(!host)return;
+ const sameContext=host.dataset.mode===mode&&lastRoom===state.selectedId;if(sameContext&&deferWhileComposing(host,renderDetail))return;
+ const ui=captureUiState(host,['.room-editor','.room-members']);
  const focused=host.contains(document.activeElement)?document.activeElement:null;const focusedName=focused?.name,selection=focused?.selectionStart,focusedValue=focused?.value;
  const oldScroll=host.querySelector('[data-room-messages]'),oldTop=oldScroll?.scrollTop||0,oldHeight=oldScroll?.scrollHeight||0,nearBottom=!oldScroll||oldHeight-oldTop-oldScroll.clientHeight<70,same=lastRoom===state.selectedId;
  if(mode==='create'||mode==='manage'){host.innerHTML=editorHtml();}
@@ -54,6 +57,7 @@ function renderDetail(){
  }
  const scroll=host.querySelector('[data-room-messages]');if(scroll){if(!same||nearBottom)scroll.scrollTop=scroll.scrollHeight;else scroll.scrollTop=oldTop;}
  if(focusedName){const next=host.querySelector(`[name="${focusedName}"]`);if(next&&!next.disabled){if(focusedName==='password'&&mode==='chat')next.value=focusedValue||'';next.focus({preventScroll:true});try{next.setSelectionRange(selection,selection);}catch{}}}
+ if(sameContext)restoreUiState(host,ui);host.dataset.mode=mode;
  lastRoom=state.selectedId;
 }
 function render(next=state){state=next;if(mode==='manage'&&!state.detail?.room.is_owner){mode='chat';editor=null;}renderList();renderDetail();}

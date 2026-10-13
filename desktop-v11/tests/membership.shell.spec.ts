@@ -52,7 +52,8 @@ async function setup(page:Page,active=true,paymentMode=false as false|'success'|
 }
 
 test('会员装扮独立预览保存，切换栏目保留草稿和阅读位置',async({page})=>{
-  const {requests}=await setup(page);await page.setViewportSize({width:1066,height:728});await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  const {requests}=await setup(page);await page.setViewportSize({width:1066,height:560});await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  await expect.poll(()=>page.evaluate(async()=>{const {membershipStore}=await import('/src/membership-store.js');return membershipStore.state.loaded&&!membershipStore.state.loading;})).toBe(true);
   await expect(page.locator('[data-member-identity-form]')).toHaveCount(0);
   await page.locator('.membership-tabs [data-membership-tab="appearance"]').click();
   await expect(page.locator('[data-member-identity-form] input[name="title"]')).toHaveValue('摸鱼研究员');
@@ -60,12 +61,13 @@ test('会员装扮独立预览保存，切换栏目保留草稿和阅读位置',
   await scroll.evaluate(node=>{node.scrollTop=40;});
   for(const [field,value] of [['theme','pink_starlight'],['frame','ticket'],['nickname_color','rose_gold'],['card_layout','classic']]){
     const choice=page.locator(`[data-member-identity-choice="${field}"][data-value="${value}"]`);await choice.scrollIntoViewIfNeeded();
-    const before=await scroll.evaluate(node=>node.scrollTop);expect(before).toBeGreaterThan(0);
+    // 首屏选项可以位于顶部；底部的恢复与保存按钮覆盖实际非零滚动。
+    const before=await scroll.evaluate(node=>node.scrollTop);
     await choice.click();await expect(choice).toHaveAttribute('aria-pressed','true');await expect(choice).toBeFocused();
     expect(Math.abs(await scroll.evaluate(node=>node.scrollTop)-before)).toBeLessThanOrEqual(1);
   }
   const reset=page.locator('[data-member-identity-reset]');await reset.scrollIntoViewIfNeeded();
-  const beforeReset=await scroll.evaluate(node=>node.scrollTop);await reset.click();
+  const beforeReset=await scroll.evaluate(node=>node.scrollTop);expect(beforeReset).toBeGreaterThan(0);await reset.click();
   expect(Math.abs(await scroll.evaluate(node=>node.scrollTop)-beforeReset)).toBeLessThanOrEqual(1);
   await page.locator('[data-member-identity-choice="frame"][data-value="corners"]').click();
   await page.locator('[data-member-identity-form] input[name="title"]').fill('准点下班');
@@ -76,7 +78,7 @@ test('会员装扮独立预览保存，切换栏目保留草稿和阅读位置',
   await expect(page.locator('[data-member-identity-form] input[name="title"]')).toHaveValue('准点下班');
   await expect(page.locator('[data-member-identity-choice="frame"][data-value="corners"]')).toHaveAttribute('aria-pressed','true');
   const save=page.getByRole('button',{name:'保存装扮',exact:true});await save.scrollIntoViewIfNeeded();
-  const beforeSave=await scroll.evaluate(node=>node.scrollTop);await save.click();
+  const beforeSave=await scroll.evaluate(node=>node.scrollTop);expect(beforeSave).toBeGreaterThan(0);await save.click();
   await expect(page.locator('[data-member-identity-status]')).toHaveText('当前设置已同步');
   expect(Math.abs(await scroll.evaluate(node=>node.scrollTop)-beforeSave)).toBeLessThanOrEqual(1);
   expect(requests.find(row=>row.path.endsWith('/fw_set_membership_appearance')).body).toMatchObject({p_frame:'corners',p_title:'准点下班',p_card_layout:'pass',p_intro:'下班后上线'});
