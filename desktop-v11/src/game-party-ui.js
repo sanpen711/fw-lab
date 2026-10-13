@@ -2,6 +2,7 @@ import {authStore} from './auth-store.js';
 import {gamePartyStore} from './game-party-store.js';
 import {membershipStore} from './membership-store.js';
 import {identityClass,memberName,memberBadge} from './member-identity.js';
+import {captureUiState,restoreUiState,readFormValues,restoreFormValues,deferWhileComposing} from './ui-state.js';
 
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>Array.from(root.querySelectorAll(selector));
@@ -9,6 +10,9 @@ let partyState=gamePartyStore.state;
 let filter='open';
 let createOpen=false;
 let notify=()=>{};
+let draftOwner='';
+const partyDrafts=new Map();
+function partyDraft(id){const key=String(id);if(!partyDrafts.has(key))partyDrafts.set(key,{chat:'',join:{}});return partyDrafts.get(key);}
 
 function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
 function initials(name){return String(name||'FW').trim().slice(0,2).toUpperCase();}
@@ -27,8 +31,10 @@ function hasApplicationAlert(partyId){return partyState.applicationAlerts.some(r
 
 function renderCreate(){
   const host=$('[data-party-create-host]');const detail=$('[data-party-detail]');if(!host)return;host.hidden=!createOpen;if(detail)detail.hidden=createOpen;if(!createOpen)return;
+  const owner=`${me()?.id||''}:${membershipStore.canCreateParty()}`;if(host.dataset.owner!==owner){host.replaceChildren();host.dataset.owner=owner;}
   if(!me()){host.innerHTML='<div class="state-card small"><b>登录后创建组队</b><span>房间资料和游戏 ID 会跟随你的账号保存。</span><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';return;}
   if(!membershipStore.canCreateParty()){host.innerHTML='<div class="state-card small"><b>会员才能创建组队</b><span>普通用户可以加入已有房间，也可以继续管理已创建的房间。</span><button class="primary compact" type="button" data-nav="membership">查看会员</button><button class="secondary compact" type="button" data-party-create-toggle>返回组队列表</button></div>';return;}
+  const existing=host.querySelector('[data-party-create-form]');if(existing){for(const field of existing.elements)field.disabled=partyState.busy;existing.querySelector('[type="submit"]').textContent=partyState.busy?'创建中...':'创建组队';return;}
   host.innerHTML=`<form class="party-create-card" data-party-create-form><header><h2>创建组队</h2><p>只有游戏名称必须填写；当前最多可以同时创建 ${membershipStore.partyLimit()} 个组队。</p></header><div class="party-form-grid"><label>游戏名称<input name="gameName" maxlength="30" required></label><label>游戏模式<input name="mode" maxlength="30"></label><label>大区 / 服务器<input name="serverName" maxlength="30"></label><label>开玩时间<input name="startsAt" maxlength="40" autocomplete="off"></label><label>总人数<input name="capacity" type="number" min="2" max="10"></label><label>你的游戏 ID<input name="gameId" maxlength="60" autocomplete="off"></label><label class="party-approval-option"><input name="requiresApproval" type="checkbox" checked><span><b>进队需要申请</b><small>取消勾选后，其他人提交加入信息即可直接进队。</small></span></label><label class="party-form-full">补充说明<textarea name="note" maxlength="200"></textarea></label></div><div class="party-form-actions"><button class="secondary" type="button" data-party-create-toggle>取消</button><button class="primary" type="submit" ${partyState.busy?'disabled':''}>${partyState.busy?'创建中...':'创建组队'}</button></div></form>`;
 }
 
@@ -41,6 +47,8 @@ function chatHtml(){const rows=partyState.messages;return`<section class="party-
 
 function renderDetail(){
   const host=$('[data-party-detail]');if(!host)return;const party=partyState.parties.find(row=>String(row.id)===String(partyState.openPartyId));if(!party){host.innerHTML='<div class="party-detail-empty"><b>选一个组队房间</b><span>公开信息可以直接看，游戏 ID 只向队长和已确认队友显示。</span></div>';return;}
+  const sameParty=host.dataset.party===String(party.id)&&host.dataset.owner===String(me()?.id||'');if(sameParty&&deferWhileComposing(host,renderDetail))return;
+  const ui=captureUiState(host,['.party-detail-scroll','.party-chat-messages']);const oldMessages=host.querySelector('.party-chat-messages');const nearBottom=!oldMessages||oldMessages.scrollHeight-oldMessages.scrollTop-oldMessages.clientHeight<70;
   const captain=profile(party.captain_id);const mine=myMember(party);const captainMode=isCaptain(party);const accepted=captainMode||mine?.state==='accepted';const needsApproval=party.requires_approval!==false;const [status,statusClass]=statusInfo(party);let action='';
   if(!me())action=`<section class="party-detail-section"><div class="party-access-card"><b>登录后${needsApproval?'申请加入':'加入队伍'}</b><span>${needsApproval?'队长确认后才能进入队伍聊天。':'这个房间无需申请，提交加入信息后可直接进队。'}</span><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div></section>`;
   else if(captainMode){const pending=partyState.members.filter(row=>String(row.party_id)===String(party.id)&&row.state==='pending');const joined=partyState.members.filter(row=>String(row.party_id)===String(party.id)&&row.state==='accepted'&&row.role!=='captain');const review=needsApproval?`<section class="party-detail-section"><header><h3>待确认申请</h3><span>${pending.length} 人</span></header><p class="party-privacy-note">申请人的游戏 ID 只在这里向队长显示。</p><div class="party-member-list">${pending.length?pending.map(row=>memberRow(party,row,true)).join(''):'<div class="state-card small">暂时没有新的申请。</div>'}</div></section>`:'';action=`${review}<section class="party-detail-section"><header><h3>已加入队友</h3><span>${joined.length} 人</span></header><div class="party-member-list">${joined.length?joined.map(row=>memberRow(party,row)).join(''):'<div class="state-card small">队友还在路上。</div>'}</div><button class="secondary compact" type="button" data-party-close="${esc(party.id)}">结束并删除房间</button></section>${chatHtml()}`;}
@@ -51,11 +59,14 @@ function renderDetail(){
   const composer=accepted?`<form class="party-chat-compose" data-party-chat-form="${esc(party.id)}"><input name="content" maxlength="300" autocomplete="off" placeholder="只对已确认队友可见" required><button class="primary" type="submit" ${partyState.busy?'disabled':''}>发送</button></form>`:'';
   const details=[party.server_name,party.mode].filter(Boolean).join(' · ')||'未填写更多信息';
   host.innerHTML=`<div class="party-detail-shell"><header class="party-detail-head"><div><b>组队详情</b><i class="party-status ${statusClass}">${status}</i></div><button class="secondary compact" type="button" data-party-detail-close>关闭</button></header><div class="party-detail-scroll ${accepted?'has-party-composer':''}"><article class="party-summary"><div class="party-summary-title"><div><h2>${esc(party.game_name)}</h2><p>${esc(details)}</p></div><strong>${Number(party.member_count)}/${Number(party.capacity||5)} 人</strong></div><div class="party-meta-grid"><div><small>开玩时间</small><b>${esc(startText(party))}</b></div><div><small>进队方式</small><b>${needsApproval?'需要申请':'直接加入'}</b></div></div><div class="party-captain">${avatar(captain,'social-avatar',party.captain_id)}<div><small>队长</small><b>${memberName(captain.nickname||'研究员',party.captain_id)} ${badge(party.captain_id)}</b></div></div>${party.note?`<p class="party-note">${esc(party.note)}</p>`:''}</article>${action}</div>${composer}</div>`;
-  requestAnimationFrame(()=>{const box=$('.party-chat-messages',host);if(box)box.scrollTop=box.scrollHeight;});
+  host.dataset.party=String(party.id);host.dataset.owner=String(me()?.id||'');const d=partyDraft(party.id);restoreFormValues(host.querySelector('[data-party-join-form]'),d.join);restoreFormValues(host.querySelector('[data-party-chat-form]'),{content:d.chat});if(sameParty)restoreUiState(host,ui);
+  if(!sameParty||nearBottom)requestAnimationFrame(()=>{if(host.dataset.party!==String(party.id))return;const box=$('.party-chat-messages',host);if(box)box.scrollTop=box.scrollHeight;});
 }
 
-function render(next=partyState){partyState=next;renderCreate();renderList();renderDetail();}
+function render(next=partyState){partyState=next;const owner=String(authStore.state.user?.id||'');if(owner!==draftOwner){draftOwner=owner;partyDrafts.clear();createOpen=false;$('[data-party-create-host]')?.replaceChildren();}renderCreate();renderList();renderDetail();}
 function bind(){
+  const saveDraft=event=>{const chat=event.target.closest?.('[data-party-chat-form]'),join=event.target.closest?.('[data-party-join-form]');if(chat)partyDraft(chat.dataset.partyChatForm).chat=chat.elements.content.value;if(join)partyDraft(join.dataset.partyJoinForm).join=readFormValues(join);};
+  document.addEventListener('input',saveDraft);document.addEventListener('change',saveDraft);
   document.addEventListener('click',async event=>{
     const filterButton=event.target.closest('[data-party-filter]');if(filterButton){filter=filterButton.dataset.partyFilter;renderList();return;}
     if(event.target.closest('[data-party-create-toggle]')){createOpen=!createOpen;renderCreate();requestAnimationFrame(()=>$('[data-party-create-form] input[name="gameName"]')?.focus());return;}
@@ -68,9 +79,9 @@ function bind(){
     const copy=event.target.closest('[data-copy-text]');if(copy){try{await navigator.clipboard.writeText(copy.dataset.copyText||'');notify('游戏 ID 已复制。');}catch{notify('复制失败，请手动选择游戏 ID。');}return;}
   });
   document.addEventListener('submit',async event=>{
-    const create=event.target.closest('[data-party-create-form]');if(create){event.preventDefault();const fd=new FormData(create);try{await gamePartyStore.createParty({gameName:fd.get('gameName'),serverName:fd.get('serverName'),mode:fd.get('mode'),startsAt:fd.get('startsAt'),capacity:fd.get('capacity'),gameId:fd.get('gameId'),note:fd.get('note'),requiresApproval:fd.get('requiresApproval')==='on'});createOpen=false;filter='mine';notify('组队房间已创建。');render();}catch(error){notify(error.message||'创建失败。');}return;}
-    const join=event.target.closest('[data-party-join-form]');if(join){event.preventDefault();const fd=new FormData(join);try{const result=await gamePartyStore.applyToParty(join.dataset.partyJoinForm,{gameId:fd.get('gameId'),message:fd.get('message')});notify(result==='joined'?'已加入队伍。':'申请已发给队长。');}catch(error){notify(error.message||'加入失败。');}return;}
-    const chat=event.target.closest('[data-party-chat-form]');if(chat){event.preventDefault();const fd=new FormData(chat);try{await gamePartyStore.sendMessage(chat.dataset.partyChatForm,fd.get('content'));chat.reset();}catch(error){notify(error.message||'发送失败。');}}
+    const create=event.target.closest('[data-party-create-form]');if(create){event.preventDefault();const fd=new FormData(create),owner=me()?.id;try{await gamePartyStore.createParty({gameName:fd.get('gameName'),serverName:fd.get('serverName'),mode:fd.get('mode'),startsAt:fd.get('startsAt'),capacity:fd.get('capacity'),gameId:fd.get('gameId'),note:fd.get('note'),requiresApproval:fd.get('requiresApproval')==='on'});if(me()?.id!==owner)return;create.reset();createOpen=false;filter='mine';notify('组队房间已创建。');render();}catch(error){notify(error.message||'创建失败。');}return;}
+    const join=event.target.closest('[data-party-join-form]');if(join){event.preventDefault();const fd=new FormData(join),id=join.dataset.partyJoinForm,owner=me()?.id;partyDraft(id).join=readFormValues(join);try{const result=await gamePartyStore.applyToParty(id,{gameId:fd.get('gameId'),message:fd.get('message')});if(me()?.id!==owner)return;partyDraft(id).join={};renderDetail();notify(result==='joined'?'已加入队伍。':'申请已发给队长。');}catch(error){notify(error.message||'加入失败。');}return;}
+    const chat=event.target.closest('[data-party-chat-form]');if(chat){event.preventDefault();const id=chat.dataset.partyChatForm,text=chat.elements.content.value,owner=me()?.id;partyDraft(id).chat=text;try{await gamePartyStore.sendMessage(id,text);if(me()?.id!==owner)return;if(partyDraft(id).chat===text)partyDraft(id).chat='';renderDetail();}catch(error){notify(error.message||'发送失败。');}}
   });
 }
 

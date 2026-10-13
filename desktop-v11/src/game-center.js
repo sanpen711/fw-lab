@@ -1,4 +1,5 @@
 import {NES_GAMES} from './nes-games.js';
+import {APP_VERSION} from './config.js';
 
 const nesGames=Object.fromEntries(Object.entries(NES_GAMES).map(([id,game])=>[id,{
   title:game.title,
@@ -22,7 +23,7 @@ let current='';
 function frameUrl(game){
   const target=game.page||`./games/${game.path}/index.html`;
   const url=new URL(target,document.baseURI);
-  url.searchParams.set('v','1.3.23');
+  url.searchParams.set('v',APP_VERSION);
   return url.href;
 }
 
@@ -34,15 +35,18 @@ function open(id){
   $('[data-game-title]').textContent=game.title;
   $('[data-game-tip]').textContent=game.tip;
   const frame=$('[data-game-frame]');frame.title=game.title;frame.src=frameUrl(game);
+  frame.focus({preventScroll:true});frame.contentWindow?.focus();
   try{localStorage.setItem('fw:desktop:v11:last-game',id);}catch{}
 }
 
 function close(){
+  const previous=current;
   current='';
   const frame=$('[data-game-frame]');
   if(frame)frame.src='about:blank';
   const stage=$('[data-game-stage]');if(stage)stage.hidden=true;
   const hall=$('[data-game-hall]');if(hall)hall.hidden=false;
+  if(previous&&hall?.closest('.view.active'))$(`[data-game-open="${previous}"]`)?.focus({preventScroll:true});
 }
 
 function reload(){if(current){const frame=$('[data-game-frame]');const url=frame.src;frame.src='about:blank';requestAnimationFrame(()=>{frame.src=url;});}}
@@ -60,3 +64,4 @@ document.addEventListener('click',event=>{
 });
 
 window.__FW_GAMES__={activate,close,open};
+$('[data-game-frame]')?.addEventListener('load',()=>{const frame=$('[data-game-frame]');if(current&&frame.src!=='about:blank'&&frame.closest('.view.active')){frame.focus({preventScroll:true});frame.contentWindow?.focus();}});

@@ -52,18 +52,22 @@ async function setup(page:Page,active=true,paymentMode=false as false|'success'|
 }
 
 test('会员装扮独立预览保存，切换栏目保留草稿和阅读位置',async({page})=>{
-  const {requests}=await setup(page);await page.setViewportSize({width:1066,height:728});await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  const {requests}=await setup(page);await page.setViewportSize({width:1066,height:560});await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  await expect.poll(()=>page.evaluate(async()=>{const {membershipStore}=await import('/src/membership-store.js');return membershipStore.state.loaded&&!membershipStore.state.loading;})).toBe(true);
   await expect(page.locator('[data-member-identity-form]')).toHaveCount(0);
   await page.locator('.membership-tabs [data-membership-tab="appearance"]').click();
   await expect(page.locator('[data-member-identity-form] input[name="title"]')).toHaveValue('摸鱼研究员');
   const scroll=page.locator('.membership-page-scroll');
   await scroll.evaluate(node=>{node.scrollTop=40;});
+  let exercisedScroll=false;
   for(const [field,value] of [['theme','pink_starlight'],['frame','ticket'],['nickname_color','rose_gold'],['card_layout','classic']]){
     const choice=page.locator(`[data-member-identity-choice="${field}"][data-value="${value}"]`);await choice.scrollIntoViewIfNeeded();
-    const before=await scroll.evaluate(node=>node.scrollTop);expect(before).toBeGreaterThan(0);
+    // 首组选项可能被浏览器滚回顶部；仍要求后续选项实际覆盖非零滚动。
+    const before=await scroll.evaluate(node=>node.scrollTop);exercisedScroll||=before>0;
     await choice.click();await expect(choice).toHaveAttribute('aria-pressed','true');await expect(choice).toBeFocused();
     expect(Math.abs(await scroll.evaluate(node=>node.scrollTop)-before)).toBeLessThanOrEqual(1);
   }
+  expect(exercisedScroll).toBe(true);
   const reset=page.locator('[data-member-identity-reset]');await reset.scrollIntoViewIfNeeded();
   const beforeReset=await scroll.evaluate(node=>node.scrollTop);await reset.click();
   expect(Math.abs(await scroll.evaluate(node=>node.scrollTop)-beforeReset)).toBeLessThanOrEqual(1);

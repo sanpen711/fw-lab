@@ -14,6 +14,8 @@ import {identityClass,memberName,memberBadge} from './member-identity.js';
 import {membershipExperience,identityEditor} from './membership-experience.js';
 import {desktopSettings} from './desktop-settings.js';
 import {APP_VERSION} from './config.js';
+import {captureUiState,restoreUiState,deferWhileComposing} from './ui-state.js';
+import {openDialog,closeDialog} from './dialog-focus.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
@@ -63,6 +65,9 @@ let authGateLocked=true;
 let protectedAppStarted=false;
 const composeDraft={text:'',imageFile:null,imagePreview:'',stickers:new Set(),pickerTab:'emoji'};
 const commentDrafts=new Map();
+const chatDrafts=new Map();
+let chatComposerTarget='';
+let chatMessageIds=new Set();
 
 window.__FW_DESKTOP_V11__={version:APP_VERSION,architecture:'local-frontend',contentRequests:0,socialContentRequests:0,realtimeChat:true,pollingTimers:0};
 
@@ -106,8 +111,8 @@ function setAvatar(element,user){
   else{element.textContent=initials(user?.nickname);element.classList.remove('has-image');}
 }
 function toast(message){const node=$('[data-toast]');node.textContent=message;node.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>node.classList.remove('show'),2800);}
-function openLightbox(url){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||!image||!url)return;image.src=url;modal.classList.toggle('sticker-preview',String(url).includes('/emoji/fufu1/'));modal.hidden=false;document.body.classList.add('lightbox-open');}
-function closeLightbox(){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||modal.hidden)return;modal.hidden=true;modal.classList.remove('sticker-preview');if(image)image.removeAttribute('src');document.body.classList.remove('lightbox-open');}
+function openLightbox(url){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||!image||!url)return;image.src=url;modal.classList.toggle('sticker-preview',String(url).includes('/emoji/fufu1/'));modal.hidden=false;document.body.classList.add('lightbox-open');openDialog(modal,{close:closeLightbox});}
+function closeLightbox(){const modal=$('[data-media-lightbox]');const image=$('[data-media-lightbox-image]');if(!modal||modal.hidden)return;modal.hidden=true;modal.classList.remove('sticker-preview');if(image)image.removeAttribute('src');document.body.classList.remove('lightbox-open');closeDialog(modal);}
 function setFormStatus(message,error=false){const node=$('[data-form-status]');node.textContent=message||'';node.classList.toggle('error',error);}
 function setProfileStatus(message,error=false){const node=$('[data-profile-status]');if(!node)return;node.textContent=message||'';node.classList.toggle('error',error);}
 function timeText(value){
@@ -208,6 +213,7 @@ function renderAuthGate(next){
 }
 function renderAccount(next){
   const previousUserId=String(accountState.user?.id||'');accountState=next;const user=next.user;
+  if(previousUserId!==String(user?.id||'')){chatDrafts.clear();chatComposerTarget='';chatMessageIds.clear();lastChatRenderSignature='';$('[data-chat-compose] input[name="message"]').value='';}
   $('[data-account-label]').textContent=user?user.nickname:(next.ready?'注册 / 登录':'正在连接…');
   setAvatar($('[data-account-avatar]'),user);setAvatar($('[data-profile-avatar]'),user);
   $('[data-profile-name]').textContent=user?.nickname||'研究员';$('[data-profile-email]').textContent=user?.email||'';
@@ -237,7 +243,7 @@ function openAccount(){
   const modal=$('[data-account-modal]');modal.hidden=false;document.body.classList.add('modal-open');showAuth('login');
 }
 function closeAccount(){if(authGateLocked)return;$('[data-account-modal]').hidden=true;document.body.classList.remove('modal-open');setFormStatus('');}
-function closeSidebarMore(){const wrap=$('[data-sidebar-more-wrap]');wrap?.classList.remove('open');$('[data-sidebar-more-toggle]')?.setAttribute('aria-expanded','false');}
+function closeSidebarMore(restoreFocus=false){const wrap=$('[data-sidebar-more-wrap]');wrap?.classList.remove('open');const toggle=$('[data-sidebar-more-toggle]');toggle?.setAttribute('aria-expanded','false');if(restoreFocus)toggle?.focus();}
 function bindSidebarMore(){document.addEventListener('click',event=>{const toggle=event.target.closest('[data-sidebar-more-toggle]');if(toggle){const wrap=toggle.closest('[data-sidebar-more-wrap]');const open=!wrap.classList.contains('open');closeSidebarMore();closeAccountMenu();wrap.classList.toggle('open',open);toggle.setAttribute('aria-expanded',String(open));return;}if(!event.target.closest('[data-sidebar-more-wrap]'))closeSidebarMore();if(!event.target.closest('.account-menu-wrap'))closeAccountMenu();},true);}
 
 function navigate(view){
@@ -361,6 +367,8 @@ function commentHtml(comment,{reply=false}={}){
 }
 function renderPostDetail(){
   const host=$('[data-post-detail]');if(!host)return;const previousPostId=host.dataset.renderedPostId||'';const previousScrollTop=host.querySelector('.detail-content-scroll')?.scrollTop||0;const post=feedStore.getPost(feedState.openPostId);
+  const samePost=post&&previousPostId===String(post.id);if(samePost&&deferWhileComposing(host,renderPostDetail))return;
+  const inputState=captureUiState(host);
   if(!post){delete host.dataset.renderedPostId;host.innerHTML='<div class="post-detail-empty mascot-detail-empty"><img src="/mascot-fufu.webp" alt="伏伏"><b>选择一条帖子</b><span>伏伏会在这里陪你查看评论和互动。</span></div>';return;}
   const profile=currentProfile(post.user_id);const reaction=reactionInfo(post);const mine=String(post.user_id)===String(accountState.user?.id);const tree=commentTree(post.comments);const draft=draftFor(post.id);const reply=feedState.reply&&String(feedState.reply.postId)===String(post.id)?feedState.reply:null;
   const comments=tree.roots.length?tree.roots.map(root=>`<div class="comment-thread">${commentHtml(root)}${(tree.replies.get(String(root.id))||[]).map(item=>commentHtml(item,{reply:true})).join('')}</div>`).join(''):'<div class="comment-empty">还没有评论，来说两句吧。</div>';
@@ -368,6 +376,7 @@ function renderPostDetail(){
   const signIn=accountState.user?'':'<div class="state-card small"><b>登录后参与评论</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';
   host.innerHTML=`<div class="detail-scroll ${accountState.user?'has-comment-composer':''}"><header class="detail-head"><b>帖子详情</b><div class="row-actions">${mine?`<button class="detail-quiet-action danger" type="button" data-delete-post="${esc(post.id)}">删除帖子</button>`:`<button class="detail-quiet-action" type="button" data-report-post="${esc(post.id)}">举报</button>`}<button class="secondary compact" type="button" data-close-post>关闭</button></div></header><div class="detail-content-scroll"><article class="detail-post"><div class="detail-author-row"><div class="post-author">${avatarHtml(profile,'social-avatar',{userId:post.user_id})}<b>${memberName(profile.nickname||'匿名研究员',post.user_id)}</b>${vipBadgeHtml(post.user_id)}</div><time>${esc(new Date(post.created_at).toLocaleString('zh-CN'))}</time></div>${richContent(post.content)}<div class="detail-post-actions"><div class="reaction-row"><button class="${reaction.active.like?'active':''}" type="button" data-react="like" data-post-id="${esc(post.id)}" aria-pressed="${reaction.active.like}">点赞 ${reaction.values.like}</button></div></div></article><section class="comments-section"><div class="comments-heading"><h3>评论</h3><span>${(post.comments||[]).length} 条</span></div><div class="comment-list">${comments}</div>${signIn}</section></div>${composer}</div>`;
   host.dataset.renderedPostId=String(post.id);if(previousPostId===String(post.id))host.querySelector('.detail-content-scroll').scrollTop=previousScrollTop;
+  if(samePost)restoreUiState(host,inputState);
 }
 function renderFeed(next=feedState,scope='all'){feedState=next;if(scope==='all'||scope==='compose')renderCompose();if(scope==='all'||scope==='content')renderSquareFeed();if(scope!=='compose'){syncSquarePostSelection();renderPostDetail();}}
 
@@ -382,7 +391,8 @@ function pollCard(poll){
 function renderPolls(next=pollState){
   pollState=next;const countNode=$('[data-poll-daily-count]');if(countNode)countNode.textContent=accountState.user?(pollState.dailyCount==null?'今日次数读取失败':`今日发起 ${pollState.dailyCount}/3`):'登录后可见';
   $$('[data-poll-filter]').forEach(button=>button.classList.toggle('active',button.dataset.pollFilter===pollFilter));
-  const create=$('[data-poll-create-host]');if(create){create.hidden=!pollCreateOpen;if(pollCreateOpen)create.innerHTML=accountState.user?`<form class="poll-create-card" data-poll-create-form><div><h2>发起 7 天投票</h2><p>每人每天最多 3 次；标题最多 120 字，创建时必须填写 4 个不同选项。</p></div><label>课题标题<input name="title" maxlength="120" autocomplete="off" required placeholder="例如：今天最值得研究的崩溃来源是什么？"></label><div class="poll-initial-options">${[1,2,3,4].map(index=>`<label>选项 ${index}<input name="option${index}" maxlength="80" required></label>`).join('')}</div>${accountState.user.role==='admin'?'<label class="poll-official-check"><input type="checkbox" name="official"> 作为官方课题发布并置顶</label>':''}<div class="compose-actions"><button class="secondary" type="button" data-poll-create-toggle>取消</button><button class="primary" type="submit" ${pollState.busy?'disabled':''}>${pollState.busy?'发布中...':'发布课题'}</button></div></form>`:'<div class="state-card"><b>登录后发起课题</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';}
+  const create=$('[data-poll-create-host]');if(create){const owner=`${accountState.user?.id||''}:${accountState.user?.role||''}`;if(create.dataset.owner!==owner){create.replaceChildren();create.dataset.owner=owner;}create.hidden=!pollCreateOpen;if(pollCreateOpen&&!create.querySelector('[data-poll-create-form]'))create.innerHTML=accountState.user?`<form class="poll-create-card" data-poll-create-form><div><h2>发起 7 天投票</h2><p>每人每天最多 3 次；标题最多 120 字，创建时必须填写 4 个不同选项。</p></div><label>课题标题<input name="title" maxlength="120" autocomplete="off" required placeholder="例如：今天最值得研究的崩溃来源是什么？"></label><div class="poll-initial-options">${[1,2,3,4].map(index=>`<label>选项 ${index}<input name="option${index}" maxlength="80" required></label>`).join('')}</div>${accountState.user.role==='admin'?'<label class="poll-official-check"><input type="checkbox" name="official"> 作为官方课题发布并置顶</label>':''}<div class="compose-actions"><button class="secondary" type="button" data-poll-create-toggle>取消</button><button class="primary" type="submit" ${pollState.busy?'disabled':''}>${pollState.busy?'发布中...':'发布课题'}</button></div></form>`:'<div class="state-card"><b>登录后发起课题</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';}
+  const form=create?.querySelector('[data-poll-create-form]');if(form){for(const field of form.elements)field.disabled=pollState.busy;form.querySelector('[type="submit"]').textContent=pollState.busy?'发布中...':'发布课题';}
   const list=$('[data-poll-list]');if(!list)return;if(pollState.loading&&!pollState.loaded){list.innerHTML='<div class="state-card">正在读取学术研讨课题...</div>';return;}if(pollState.error&&!pollState.polls.length){list.innerHTML=`<div class="state-card"><b>课题暂时读取失败</b><span>${esc(pollState.error)}</span><button class="secondary compact" type="button" data-poll-refresh>重试</button></div>`;return;}const rows=pollState.polls.filter(pollMatches).sort((a,b)=>pollFilter==='ended'?new Date(b.created_at)-new Date(a.created_at):Number(b.is_official)-Number(a.is_official)||new Date(b.created_at)-new Date(a.created_at));list.innerHTML=rows.length?rows.map(pollCard).join(''):'<div class="state-card">这个分类下暂时没有课题。</div>';
 }
 
@@ -441,13 +451,19 @@ function renderBuddyList(){
 
 function messageBubble(row){const mine=String(row.sender_id)===String(accountState.user?.id);const sticker=decodeSticker(row.content);return `<article class="chat-message ${mine?'mine':''}"><small>${mine?'你':esc(socialState.chat.profile?.nickname||'搭子')} ${vipBadgeHtml(row.sender_id)}</small><div class="chat-bubble ${sticker?'sticker':''}">${sticker?`<img src="${esc(sticker)}" alt="表情">`:emojiText(row.content)}</div><time>${esc(timeText(row.created_at))}</time></article>`;}
 function renderChat(){
-  const chat=socialState.chat;const messages=$('[data-chat-messages]');const input=$('[data-chat-compose] input');const submit=$('[data-chat-compose] button[type="submit"]');const emoji=$('[data-emoji-toggle]');
+  const chat=socialState.chat;const messages=$('[data-chat-messages]');const input=$('[data-chat-compose] input[name="message"]');const submit=$('[data-chat-compose] button[type="submit"]');const emoji=$('[data-emoji-toggle]');const target=String(chat.targetId||'');
+  if(chatComposerTarget!==target){if(chatComposerTarget)chatDrafts.set(chatComposerTarget,input.value);chatComposerTarget=target;input.value=chatDrafts.get(target)||'';$('[data-emoji-panel]').hidden=true;}
   $('[data-chat-title]').textContent=chat.targetId?`和 ${chat.profile?.nickname||'搭子'} 私聊`:'选择一个搭子';$('[data-chat-subtitle]').textContent=chat.targetId?`${chat.profile?.lab_code?`实验品编号：${chat.profile.lab_code}`:'实验品编号：未设置'}${chat.loading?' · 正在同步':''}`:'左边点一个消息或搭子，右边直接聊天。';$('[data-close-chat]').hidden=!chat.targetId;
   const enabled=Boolean(chat.targetId&&!chat.loading);input.disabled=!enabled;submit.disabled=!enabled||chat.sending;emoji.disabled=!enabled;input.placeholder=enabled?'输入文字，或 Ctrl+V 直接粘贴图片...':'先从左侧选择一个搭子';submit.textContent=chat.sending?'发送中...':'发送';
   const signature=[chat.targetId,chat.loading&&!(chat.rows||[]).length?'loading':'ready',chat.profile?.nickname||'',...(chat.rows||[]).map(row=>`${row.id}:${row.is_deleted?'1':'0'}:${row.content}`)].join('|');
-  if(signature===lastChatRenderSignature)return;const shouldScroll=Boolean(chat.targetId&&(chat.rows||[]).length);lastChatRenderSignature=signature;
+  if(signature===lastChatRenderSignature)return;
+  const changedTarget=messages.dataset.target!==target,top=messages.scrollTop,nearBottom=messages.scrollHeight-top-messages.clientHeight<70;
+  const newRows=changedTarget?[]:(chat.rows||[]).filter(row=>!chatMessageIds.has(String(row.id)));
+  const shouldScroll=changedTarget||nearBottom||newRows.some(row=>String(row.sender_id)===String(accountState.user?.id));
+  const notice=$('[data-chat-new-messages]');if(changedTarget||shouldScroll)notice.hidden=true;else if(newRows.length)notice.hidden=false;
+  messages.dataset.target=target;chatMessageIds=new Set((chat.rows||[]).map(row=>String(row.id)));lastChatRenderSignature=signature;
   if(chat.loading&&!chat.rows.length){messages.innerHTML='<div class="state-card">正在打开私聊...</div>';return;}if(!chat.targetId){messages.innerHTML='<div class="state-card">还没有选择聊天对象。</div>';return;}if(!chat.rows.length){messages.innerHTML='<div class="state-card">还没有私聊消息。可以先低功耗地打个招呼。</div>';return;}
-  messages.innerHTML=chat.rows.map(messageBubble).join('');if(shouldScroll)requestAnimationFrame(()=>{messages.scrollTop=messages.scrollHeight;});
+  messages.innerHTML=chat.rows.map(messageBubble).join('');if(shouldScroll)requestAnimationFrame(()=>{if(messages.dataset.target===target)messages.scrollTop=messages.scrollHeight;});else messages.scrollTop=top;
 }
 
 function renderEmojiPanel(){
@@ -534,13 +550,14 @@ function bindNavigation(){
     if(event.target.closest('[data-close-chat]')){socialStore.closeChat();return;}
     if(event.target.closest('[data-emoji-toggle]')){const panel=$('[data-emoji-panel]');panel.hidden=!panel.hidden;if(!panel.hidden)renderEmojiPanel();return;}
     const emojiSwitch=event.target.closest('[data-emoji-tab]');if(emojiSwitch){emojiTab=emojiSwitch.dataset.emojiTab;if(emojiTab==='stickers')socialStore.loadStickers().catch(error=>toast(error.message));renderEmojiPanel();return;}
-    const emoji=event.target.closest('[data-insert-emoji]');if(emoji){const input=$('[data-chat-compose] input');input.value+=emoji.dataset.insertEmoji;input.focus();return;}
+    const emoji=event.target.closest('[data-insert-emoji]');if(emoji){const input=$('[data-chat-compose] input[name="message"]');input.value+=emoji.dataset.insertEmoji;input.dispatchEvent(new Event('input',{bubbles:true}));input.focus();return;}
+    if(event.target.closest('[data-chat-new-messages]')){const messages=$('[data-chat-messages]');messages.scrollTop=messages.scrollHeight;$('[data-chat-new-messages]').hidden=true;return;}
     const sticker=event.target.closest('[data-send-sticker]');if(sticker){try{rememberSticker(sticker.dataset.sendSticker);await socialStore.sendMessage('',{stickerUrl:sticker.dataset.sendSticker});$('[data-emoji-panel]').hidden=true;}catch(error){toast(error.message||'发送失败。');}return;}
     if(event.target.closest('[data-upload-sticker]')){$('[data-sticker-file]').click();return;}
     const deleteSticker=event.target.closest('[data-delete-sticker]');if(deleteSticker){event.stopPropagation();try{await socialStore.deleteSticker(deleteSticker.dataset.deleteSticker);toast('表情已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
   });
   $('[data-account-modal]').addEventListener('click',event=>{if(event.target.matches('[data-account-modal]'))closeAccount();});
-  window.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if(!$('[data-media-lightbox]')?.hidden){closeLightbox();return;}closeAccountMenu();if(!$('[data-account-modal]').hidden)closeAccount();});
+  window.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if(!$('[data-media-lightbox]')?.hidden){closeLightbox();return;}if($('[data-sidebar-more-wrap]')?.classList.contains('open')){closeSidebarMore(true);return;}closeAccountMenu();if(!$('[data-account-modal]').hidden)closeAccount();});
 }
 
 async function runForm(form,action,success){setFormStatus('正在处理…');try{const value=await action(new FormData(form));setFormStatus('');await success?.(value);}catch(error){setFormStatus(error.message||'操作失败，请稍后重试。',true);}}
@@ -553,9 +570,11 @@ function bindForms(){
   $('[data-resend-code]').addEventListener('click',()=>runForm($('[data-auth-view="verify"]'),()=>authStore.resendRegistration(),result=>{toast(`验证码已重新发送至 ${result.email}。`);}));
   $('[data-sign-out]').addEventListener('click',async event=>{if(!window.confirm('确定退出当前账号吗？'))return;event.currentTarget.disabled=true;try{closeAccountMenu();await authStore.signOut();toast('已退出登录。');showAuth('login');}catch(error){toast(error.message||'退出登录失败。');}finally{event.currentTarget.disabled=false;}});
   $('[data-buddy-search]').addEventListener('submit',event=>{event.preventDefault();socialStore.searchProfiles(new FormData(event.currentTarget).get('q')).catch(error=>toast(error.message||'搜索失败。'));});
-  $('[data-chat-compose]').addEventListener('submit',async event=>{event.preventDefault();const input=event.currentTarget.elements.message;const text=input.value;try{const targetId=await socialStore.sendMessage(text);if(String(socialStore.state.chat.targetId)===String(targetId)){input.value='';input.focus();}}catch(error){toast(error.message||'发送失败。');}});
+  $('[data-chat-compose]').addEventListener('submit',async event=>{event.preventDefault();const input=event.currentTarget.elements.message;const text=input.value,owner=accountState.user?.id;try{const targetId=await socialStore.sendMessage(text);if(accountState.user?.id!==owner)return;if(chatDrafts.get(String(targetId))===text)chatDrafts.delete(String(targetId));if(String(socialStore.state.chat.targetId)===String(targetId)&&input.value===text){input.value='';input.focus();}}catch(error){toast(error.message||'发送失败。');}});
+  $('[data-chat-messages]').addEventListener('scroll',event=>{const box=event.currentTarget;if(box.scrollHeight-box.scrollTop-box.clientHeight<70)$('[data-chat-new-messages]').hidden=true;});
   $('[data-sticker-file]').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;try{await socialStore.uploadSticker(file);toast('表情已添加。');}catch(error){toast(error.message||'添加表情失败。');}});
   document.addEventListener('input',event=>{
+    if(event.target.matches('[data-chat-compose] input[name="message"]')){if(chatComposerTarget)chatDrafts.set(chatComposerTarget,event.target.value);return;}
     if(event.target.matches('[data-compose-form] textarea')){composeDraft.text=event.target.value;const count=$('.compose-count');if(count)count.textContent=`${composeDraft.text.length}/500`;return;}
     const form=event.target.closest?.('[data-comment-form]');if(form&&event.target.matches('textarea'))draftFor(form.dataset.commentForm).text=event.target.value;
   });
@@ -570,7 +589,7 @@ function bindForms(){
     if(event.target.matches('[data-comment-image]'))setCommentDraftFile(event.target.dataset.commentImage,event.target.files?.[0]);
   });
   document.addEventListener('submit',async event=>{
-    const createPoll=event.target.closest?.('[data-poll-create-form]');if(createPoll){event.preventDefault();const fd=new FormData(createPoll);try{await pollStore.createPoll({title:fd.get('title'),options:[1,2,3,4].map(index=>fd.get(`option${index}`)),isOfficial:fd.get('official')==='on'});pollCreateOpen=false;pollFilter=accountState.user?.role==='admin'&&fd.get('official')==='on'?'official':'user';toast('投票课题已发布。');renderPolls();}catch(error){toast(error.message||'发布失败。');}return;}
+    const createPoll=event.target.closest?.('[data-poll-create-form]');if(createPoll){event.preventDefault();const fd=new FormData(createPoll);try{await pollStore.createPoll({title:fd.get('title'),options:[1,2,3,4].map(index=>fd.get(`option${index}`)),isOfficial:fd.get('official')==='on'});createPoll.reset();pollCreateOpen=false;pollFilter=accountState.user?.role==='admin'&&fd.get('official')==='on'?'official':'user';toast('投票课题已发布。');renderPolls();}catch(error){toast(error.message||'发布失败。');}return;}
     const addOption=event.target.closest?.('[data-poll-add-option]');if(addOption){event.preventDefault();try{await pollStore.addOption(addOption.dataset.pollAddOption,new FormData(addOption).get('label'));toast('新选项已加入并投票。');}catch(error){toast(error.message||'新增选项失败。');}return;}
     const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();try{await feedStore.createPost({text:composeDraft.text,imageFile:composeDraft.imageFile,stickerUrls:Array.from(composeDraft.stickers)});releasePreview(composeDraft);composeDraft.text='';composeDraft.stickers.clear();toast('已投递到精神广场。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);try{await feedStore.createComment({postId,text:draft.text,imageFile:draft.imageFile,stickerUrls:Array.from(draft.stickers)});releasePreview(draft);draft.text='';draft.stickers.clear();toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
