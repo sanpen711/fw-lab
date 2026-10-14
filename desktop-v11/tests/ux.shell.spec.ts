@@ -10,6 +10,7 @@ async function deliver(page:Page){await page.evaluate(other=>{const handler=(win
 
 test('投票发布失败保留标题、四个选项，并可重试',async({page})=>{
   await boot(page,{failRpc:'fw_create_poll'});await nav(page,'rooms');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');
+  await expect(form.locator('[name="title"]')).toBeFocused();
   await form.locator('[name="title"]').fill('保留标题');for(let i=1;i<=4;i++)await form.locator(`[name="option${i}"]`).fill('选项'+i);
   await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('模拟网络失败');await expect(form.locator('[name="title"]')).toHaveValue('保留标题');for(let i=1;i<=4;i++)await expect(form.locator(`[name="option${i}"]`)).toHaveValue('选项'+i);
   await expect(form.locator('[type="submit"]')).toBeEnabled();
@@ -17,6 +18,7 @@ test('投票发布失败保留标题、四个选项，并可重试',async({page}
 
 test('创建组队失败保留完整表单和申请开关',async({page})=>{
   await boot(page,{failRpc:'fw_create_game_party'});await nav(page,'play');await page.locator('[data-party-create-toggle]').click();const form=page.locator('[data-party-create-form]');
+  await expect(form.locator('[name="gameName"]')).toBeFocused();
   await form.locator('[name="gameName"]').fill('今晚开黑');await form.locator('[name="note"]').fill('组队说明');await form.locator('[name="requiresApproval"]').uncheck();await form.locator('[type="submit"]').click();
   await expect(page.locator('[data-toast]')).toContainText('模拟网络失败');await expect(form.locator('[name="gameName"]')).toHaveValue('今晚开黑');await expect(form.locator('[name="note"]')).toHaveValue('组队说明');await expect(form.locator('[name="requiresApproval"]')).not.toBeChecked();await expect(form.locator('[type="submit"]')).toBeEnabled();
 });
