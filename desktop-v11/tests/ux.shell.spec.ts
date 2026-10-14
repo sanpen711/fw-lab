@@ -85,7 +85,7 @@ test('2048打开后直接接收键盘，返回后恢复卡片焦点',async({page
 });
 
 test('反馈弹窗限制正反Tab并在Esc关闭后恢复入口焦点',async({page})=>{
-  await boot(page);const trigger=page.locator('[data-feedback-open]');await trigger.click();for(const key of [...Array(7).fill('Tab'),...Array(7).fill('Shift+Tab')]){await page.keyboard.press(key);expect(await page.evaluate(()=>!!document.activeElement?.closest('[data-home-tool-modal]'))).toBe(true);}await page.keyboard.press('Escape');await expect(page.locator('[data-home-tool-modal]')).toBeHidden();await expect(trigger).toBeFocused();
+  await boot(page);const trigger=page.locator('[data-sidebar-more-toggle]');await trigger.click();await page.locator('[data-feedback-open]').click();for(const key of [...Array(7).fill('Tab'),...Array(7).fill('Shift+Tab')]){await page.keyboard.press(key);expect(await page.evaluate(()=>!!document.activeElement?.closest('[data-home-tool-modal]'))).toBe(true);}await page.keyboard.press('Escape');await expect(page.locator('[data-home-tool-modal]')).toBeHidden();await expect(trigger).toBeFocused();
 });
 
 test('更多菜单支持Esc关闭并恢复触发按钮焦点',async({page})=>{
@@ -93,7 +93,7 @@ test('更多菜单支持Esc关闭并恢复触发按钮焦点',async({page})=>{
 });
 
 test('反馈弹窗打开时退出账号不会阻挡重新登录',async({page})=>{
-  await boot(page);await page.locator('[data-feedback-open]').click();await page.evaluate(async()=>{const {authStore}=await import('/src/auth-store.js');await authStore.signOut();});await expect(page.locator('[data-home-tool-modal]')).toBeHidden();await expect(page.locator('[data-account-modal]')).toBeVisible();const email=page.locator('[data-auth-view="login"] input[name="email"]');await email.focus();await expect(email).toBeFocused();
+  await boot(page);await page.locator('[data-sidebar-more-toggle]').click();await page.locator('[data-feedback-open]').click();await page.evaluate(async()=>{const {authStore}=await import('/src/auth-store.js');await authStore.signOut();});await expect(page.locator('[data-home-tool-modal]')).toBeHidden();await expect(page.locator('[data-account-modal]')).toBeVisible();const email=page.locator('[data-auth-view="login"] input[name="email"]');await email.focus();await expect(email).toBeFocused();
 });
 
 test('组队小窗口优先显示聊天，空游戏ID不能复制，折叠和草稿在刷新后保留',async({page})=>{

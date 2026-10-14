@@ -4,6 +4,8 @@ on:
     paths:
       - 'admin-desktop/**'
       - 'desktop-v11/src/shop-model.js'
+      - 'desktop-v11/src/site-content-model.js'
+      - 'desktop-v11/src/external-links.js'
       - 'supabase/functions/_shared/shop.ts'
       - 'supabase/functions/shop-alipay/**'
       - 'supabase/functions/shop-alipay-notify/**'

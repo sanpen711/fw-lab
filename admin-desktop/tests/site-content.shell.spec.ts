@@ -1,0 +1,42 @@
+import {test,expect,Page} from '@playwright/test';
+import {deflateSync} from 'node:zlib';
+function png(){const crc=(b:Buffer)=>{let c=0xffffffff;for(const v of b){c^=v;for(let i=0;i<8;i++)c=c&1?0xedb88320^(c>>>1):c>>>1;}return (c^0xffffffff)>>>0;};const chunk=(t:string,b:Buffer)=>{const type=Buffer.from(t),size=Buffer.alloc(4),sum=Buffer.alloc(4);size.writeUInt32BE(b.length);sum.writeUInt32BE(crc(Buffer.concat([type,b])));return Buffer.concat([size,type,b,sum]);};const h=Buffer.alloc(13);h.writeUInt32BE(160);h.writeUInt32BE(90,4);h[8]=8;h[9]=2;const data=Buffer.alloc(481*90,220);for(let y=0;y<90;y++)data[y*481]=0;return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',h),chunk('IDAT',deflateSync(data)),chunk('IEND',Buffer.alloc(0))]);}
+const me='00000000-0000-4000-8000-000000000061';
+const user={id:me,email:'site-admin@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{nickname:'公告管理员'}};
+async function setup(page:Page){
+ const c:any={site_announcements:[],site_activities:[],requests:[],fail:false};
+ if(process.env.FW_MEDIA_QA_FONT)await page.route('**/__home-admin-qa.otf',r=>r.fulfill({path:process.env.FW_MEDIA_QA_FONT!}));
+ await page.addInitScript(user=>localStorage.setItem('fw-admin-desktop-auth',JSON.stringify({access_token:'token',refresh_token:'refresh',expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:'bearer',user})),user);
+ await page.route('https://**.supabase.co/**',async route=>{
+  const req=route.request(),url=new URL(req.url()),path=url.pathname,method=req.method(),raw=req.postData()||'',body=/^[\[{]/.test(raw)?JSON.parse(raw):{};c.requests.push({path,method,body});let data:any=[];
+  if(path.endsWith('/auth/v1/user'))data=user;
+  else if(path.endsWith('/fw_get_current_profile'))data=[{id:me,nickname:'公告管理员',role:'admin',is_banned:false}];
+  else if(path.includes('/storage/v1/object/public/'))return route.fulfill({contentType:'image/png',body:png()});
+  else if(path.includes('/storage/v1/object/'))data={Key:path.split('/activity-covers/')[1]};
+  else for(const table of ['site_announcements','site_activities'])if(path.endsWith('/'+table)){
+   const id=(url.searchParams.get('id')||'').replace('eq.','');
+   if(method==='POST'){
+    if(c.fail)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'模拟保存失败'})});
+    const row={...(Array.isArray(body)?body[0]:body),created_at:new Date().toISOString(),updated_at:new Date().toISOString(),published_at:body.is_published?new Date().toISOString():null,deleted_at:null};c[table].push(row);data={id:row.id};
+   }else if(method==='PATCH'){const row=c[table].find((r:any)=>r.id===id);Object.assign(row,body);if(body.is_published)row.published_at=new Date().toISOString();data={id};}
+   else data=c[table].filter((r:any)=>!r.deleted_at&&(!id||r.id===id));
+  }
+  return route.fulfill({contentType:'application/json',body:JSON.stringify(data)});
+ });
+ await page.goto('/');if(process.env.FW_MEDIA_QA_FONT){await page.addStyleTag({content:'@font-face{font-family:HomeAdminQA;src:url(/__home-admin-qa.otf)}body,input,button,textarea{font-family:HomeAdminQA,sans-serif!important}'});await page.evaluate(()=>document.fonts.ready);}
+ await page.locator('[data-nav="siteContent"]').click();await expect(page.locator('[data-site-admin-new]')).toBeVisible();return c;
+}
+async function activityForm(page:Page){await page.locator('[data-site-admin-tab="activities"]').click();await page.locator('[data-site-admin-new]').click();await page.locator('[name="title"]').fill('周边体验活动');await page.locator('[name="body"]').fill('填写活动介绍和参与方式');await page.locator('[name="starts_at"]').fill('2026-10-14T16:30');await page.locator('[name="ends_at"]').fill('2026-10-20T18:00');}
+test('后台发布置顶公告，预览转义正文，可以编辑、撤下和删除',async({page})=>{
+ const c=await setup(page);await page.locator('[data-site-admin-new]').click();await page.locator('[name="title"]').fill('新版功能说明');await page.locator('[name="body"]').fill('欢迎查看\n<script>alert(1)</script>');await page.locator('[name="is_pinned"]').check();await page.locator('[name="is_published"]').check();await page.locator('[data-site-admin-preview]').click();await expect(page.locator('.site-admin-preview')).toContainText('<script>alert(1)</script>');await expect(page.locator('.site-admin-preview script')).toHaveCount(0);await page.locator('[data-site-admin-form] [type="submit"]').click();await expect(page.locator('.site-admin-list')).toContainText('已发布');expect(c.site_announcements[0]).toMatchObject({is_published:true,is_pinned:true});
+ await page.locator('[data-site-admin-edit]').click();await page.locator('[name="title"]').fill('修改后的公告');await page.locator('[data-site-admin-form] [type="submit"]').click();await expect(page.locator('.site-admin-list')).toContainText('修改后的公告');await page.locator('[data-site-admin-publish]').click();await expect(page.locator('.site-admin-list')).toContainText('草稿');await page.locator('[data-site-admin-delete]').click();await page.locator('#action-dialog [type="submit"]').click();await expect(page.locator('.site-admin-list article')).toHaveCount(0);expect(c.site_announcements[0].deleted_at).toBeTruthy();
+});
+test('后台活动封面、北京时间和内部参与入口保存，草稿可再次发布',async({page},testInfo)=>{
+ const c=await setup(page);await activityForm(page);await page.locator('[name="summary"]').fill('看看新周边');await page.locator('[name="target"]').selectOption('shop');await page.locator('[data-site-admin-cover]').setInputFiles({name:'cover.png',mimeType:'image/png',buffer:png()});await expect(page.locator('.site-admin-cover img')).toBeVisible();await page.locator('[data-site-admin-preview]').click();await expect(page.locator('.site-admin-preview')).toContainText('周边商城');await page.setViewportSize({width:1080,height:720});expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);await page.locator('.page').evaluate(n=>n.scrollTop=0);await page.screenshot({path:testInfo.outputPath('site-admin-activity-editor.png')});await page.locator('[data-site-admin-form] [type="submit"]').click();await expect(page.locator('.site-admin-list')).toContainText('草稿');expect(c.site_activities[0]).toMatchObject({starts_at:'2026-10-14T08:30:00.000Z',ends_at:'2026-10-20T10:00:00.000Z',target_view:'shop',is_published:false});expect(c.site_activities[0].cover_path).toMatch(/^activities\//);await page.locator('[data-site-admin-publish]').click();await expect.poll(()=>c.site_activities[0].is_published).toBe(true);
+});
+test('失败保留草稿和已上传封面，重试不会重复上传；无效时间被拒绝',async({page})=>{
+ const c=await setup(page);await activityForm(page);await page.locator('[name="ends_at"]').fill('2026-10-14T16:00');await page.locator('[data-site-admin-form] [type="submit"]').click();await expect(page.locator('#toast')).toContainText('结束时间');expect(c.site_activities).toHaveLength(0);await page.locator('[name="ends_at"]').fill('2026-10-20T18:00');await page.locator('[data-site-admin-cover]').setInputFiles({name:'cover.png',mimeType:'image/png',buffer:png()});await expect(page.locator('.site-admin-cover img')).toBeVisible();c.fail=true;await page.locator('[data-site-admin-form] [type="submit"]').click();await expect(page.locator('#toast')).toContainText('草稿已保留');await expect(page.locator('[name="title"]')).toHaveValue('周边体验活动');c.fail=false;await page.locator('[data-site-admin-form] [type="submit"]').click();await expect(page.locator('.site-admin-list')).toContainText('周边体验活动');expect(c.requests.filter((r:any)=>r.method==='POST'&&r.path.includes('/storage/v1/object/activity-covers'))).toHaveLength(1);
+});
+test('切换公告和活动保留各自草稿，退出管理员后清空',async({page})=>{
+ await setup(page);await page.locator('[data-site-admin-new]').click();await page.locator('[name="title"]').fill('公告草稿');await page.locator('[data-site-admin-tab="activities"]').click();await page.locator('[data-site-admin-new]').click();await page.locator('[name="title"]').fill('活动草稿');await page.locator('[data-site-admin-tab="announcements"]').click();await expect(page.locator('[name="title"]')).toHaveValue('公告草稿');await page.locator('[data-logout]').click();await expect(page.locator('[data-login-form]')).toBeVisible();expect(await page.locator('#app').innerHTML()).not.toContain('公告草稿');
+});

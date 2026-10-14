@@ -7,6 +7,8 @@ on:
     paths:
       - 'admin-desktop/**'
       - 'desktop-v11/src/shop-model.js'
+      - 'desktop-v11/src/site-content-model.js'
+      - 'desktop-v11/src/external-links.js'
       - 'src-tauri/icons/icon.ico'
       - '.github/workflows/build-windows-admin.yml'
   workflow_dispatch:
@@ -87,7 +89,7 @@ jobs:
               --repo "${{ github.repository }}" `
               --target "${{ github.sha }}" `
               --title "FW管理台 6.0.2" `
-              --notes "新增商城管理：上传1—4张3∶4商品图，设置标题与售价，编辑或删除商品；查看周边订单与收货信息，回填快递公司和单号。"
+              --notes "新增商城管理：上传1—4张3∶4商品图，设置标题与售价，编辑或删除商品；查看周边订单与收货信息，回填快递公司和单号。新增公告与活动管理，支持草稿、预览、发布、置顶、撤下及删除，配置活动封面、时间和参与入口。"
           }
 
       - name: Publish admin updater metadata
@@ -97,7 +99,7 @@ jobs:
           $signatureFile = Get-Item "$($installer.FullName).sig"
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
-          $notes = '新增商城管理：上传1—4张3∶4商品图，设置标题与售价，编辑或删除商品；查看周边订单与收货信息，回填快递公司和单号。'
+          $notes = '新增商城管理：上传1—4张3∶4商品图，设置标题与售价，编辑或删除商品；查看周边订单与收货信息，回填快递公司和单号。新增公告与活动管理，支持草稿、预览、发布、置顶、撤下及删除，配置活动封面、时间和参与入口。'
           $downloadUrl = 'https://github.com/${{ github.repository }}/releases/download/fw-admin-v6.0.2/FW-Admin-6.0.2-Windows-x64-Setup.exe'
           $metadata = @{
             version = '6.0.2'

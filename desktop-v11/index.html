@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/game-center.css">
   <link rel="stylesheet" href="/game-party.css">
   <link rel="stylesheet" href="/chat-rooms.css">
+  <link rel="stylesheet" href="/site-content.css">
 </head>
 <body class="auth-required">
   <div id="app" class="app-shell" data-view="home" hidden inert aria-hidden="true">
@@ -40,6 +41,7 @@
             <div class="sidebar-more-menu" role="menu" aria-label="更多栏目">
               <button type="button" role="menuitem" data-align-nav="rules"><span class="nav-icon nav-icon-info" aria-hidden="true"></span><b>入馆须知</b></button>
               <button type="button" role="menuitem" data-align-nav="moderation"><span class="nav-icon nav-icon-notice" aria-hidden="true"></span><b>处理公告</b></button>
+              <button type="button" role="menuitem" data-feedback-open><span class="nav-icon nav-icon-discussion" aria-hidden="true"></span><b>反馈意见</b></button>
               <button class="sidebar-settings-entry" type="button" role="menuitem" data-nav="settings"><span class="nav-icon nav-icon-settings" aria-hidden="true"></span><b>设置</b></button>
             </div>
           </div>
@@ -58,6 +60,7 @@
     <main class="main-content">
       <section class="view active" data-view-panel="home">
         <div class="home-wrap">
+          <div class="home-announcement" data-home-announcement aria-label="站点公告"></div>
           <article class="hero-card">
             <div class="hero-content">
               <p class="hero-eyebrow">FW LAB / LOW POWER MODE</p>
@@ -85,26 +88,23 @@
             </div>
           </article>
           <div class="home-grid">
-            <button class="feature-card home-tool-card weather-card" type="button" data-weather-open>
-              <strong data-weather-main>设置天气</strong>
-              <p data-weather-detail>点击选择你所在的县区</p>
-              <em data-weather-meta>无需定位权限</em>
+            <button class="feature-card home-tool-card home-activities-card" type="button" data-nav="activities">
+              <strong>活动</strong>
+              <p data-home-activities-summary>查看各项活动与参与方式</p>
+              <em>查看活动 →</em>
             </button>
             <button class="feature-card home-tool-card offwork-card" type="button" data-offwork-open>
               <strong data-offwork-value>设置时间</strong>
               <p data-offwork-detail>今天几点下班？</p>
               <em data-offwork-meta>点击设置下班时间</em>
             </button>
-            <button class="feature-card home-tool-card feedback-card" type="button" data-feedback-open>
-              <strong>反馈意见</strong>
-              <p>遇到问题，或者有个小建议</p>
-              <em>登录后可直接提交</em>
-            </button>
           </div>
-          <a class="weather-credit" href="https://www.qweather.com" target="_blank" rel="noopener noreferrer" data-weather-credit hidden>天气服务由和风天气驱动</a>
           <p class="phase-note">Windows 1.1 本地前端</p>
         </div>
       </section>
+
+      <section class="view" data-view-panel="activities"><div class="site-content-page" data-site-content="activities"></div></section>
+      <section class="view" data-view-panel="announcements"><div class="site-content-page" data-site-content="announcements"></div></section>
 
       <section class="view" data-view-panel="compose">
         <div class="compose-page">
@@ -386,17 +386,6 @@
   <div class="modal home-tool-modal" data-home-tool-modal hidden>
     <section class="account-panel home-tool-panel" role="dialog" aria-modal="true" aria-label="首页工具设置">
       <button class="close-button" type="button" data-close-home-tool aria-label="关闭">×</button>
-
-      <div data-home-tool-view="weather" hidden>
-        <p class="eyebrow">LOCAL WEATHER</p>
-        <h2>设置天气</h2>
-        <p class="panel-copy">输入县、区或县级市，再从带省市的结果中选择。</p>
-        <form class="account-form home-tool-form" data-weather-form>
-          <label>地区<input name="city" maxlength="40" autocomplete="off" placeholder="例如：曹县、镇平县、义乌市" required></label>
-          <button class="primary full" type="submit">查找地区</button>
-          <div class="weather-results" data-weather-results hidden aria-live="polite"></div>
-        </form>
-      </div>
 
       <div data-home-tool-view="offwork" hidden>
         <p class="eyebrow">OFF DUTY COUNTDOWN</p>
