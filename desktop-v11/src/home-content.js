@@ -7,6 +7,8 @@ import {SITE_TABLES,SITE_FIELDS,ACTIVITY_FIELDS,ACTIVITY_TARGETS,activityImage,a
 const fresh=()=>({rows:[],page:0,hasNext:false,count:0,selected:'',scroll:0,loaded:false,loading:false,reload:false,error:'',loadedAt:0});
 const state={announcements:fresh(),activities:fresh()};
 let started=false,userId='',generation=0,view='home',navigate=()=>{},readNotices={};
+let announcementSignature='',announcementFrame=0;
+const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
 const controllers=new Set();
 const $=selector=>document.querySelector(selector);
 const readKey=()=>`fw:site-notices-read:${userId}`;
@@ -18,12 +20,27 @@ function markRead(row){
 }
 function cover(row){const url=activityImage(row.cover_path,SUPABASE_URL);return url?`<img class="site-activity-cover" src="${esc(url)}" alt="${esc(row.title)}" loading="lazy">`:'<div class="site-activity-cover site-cover-placeholder" aria-hidden="true">FW</div>';}
 function status(row){const label=activityStatus(row);return `<span class="site-activity-status ${label==='进行中'?'ongoing':''}">${label}</span>`;}
+function measureAnnouncement(){
+  announcementFrame=0;
+  const button=$('.announcement-message'),copy=button?.querySelector('[data-announcement-copy]');if(!button||!copy)return;
+  const width=copy.scrollWidth,scrolling=button.clientWidth>0&&width>button.clientWidth+1&&!reducedMotion.matches;
+  button.classList.toggle('is-scrolling',scrolling);button.dataset.scrolling=String(scrolling);
+  if(scrolling){const travel=width+48;button.style.setProperty('--announcement-travel',`${travel}px`);button.style.setProperty('--announcement-duration',`${Math.max(12,travel/32)}s`);}
+}
+function queueAnnouncementMeasure(){if(!announcementFrame)announcementFrame=requestAnimationFrame(measureAnnouncement);}
 function renderHome(){
   const host=$('[data-home-announcement]'),s=state.announcements;
   if(host){
     host.hidden=s.loaded&&!s.rows.length&&!s.error;
     const row=s.page===0?s.rows[0]:null;
-    host.innerHTML=row?`<b>公告</b>${readNotices[row.id]!==version(row)?'<i class="announcement-unread" aria-label="未读公告"></i>':''}<button class="announcement-title" type="button" data-site-open="${esc(row.id)}" data-site-kind="announcements">${esc(row.title)}</button><time>${esc(siteTime(row.published_at).split(' ')[0])}</time><button type="button" data-nav="announcements">查看全部 →</button>`:`<b>公告</b><span class="announcement-title">${s.error?'公告暂时无法读取':'正在读取公告…'}</span>${s.error?'<button type="button" data-site-refresh="announcements">重试</button>':''}`;
+    const body=String(row?.body||'').replace(/\s+/g,' ').trim(),unread=row&&readNotices[row.id]!==version(row);
+    const signature=JSON.stringify([userId,row?.id,row?.title,body,row?.published_at,unread,s.error]);
+    if(signature!==announcementSignature){
+      announcementSignature=signature;
+      const copy=row?`<strong>${esc(row.title)}</strong>${body?`<span>：${esc(body)}</span>`:''}`:'';
+      host.innerHTML=row?`${unread?'<i class="announcement-unread" aria-label="未读公告"></i>':''}<button class="announcement-message" type="button" data-site-open="${esc(row.id)}" data-site-kind="announcements" aria-label="${esc(row.title+(body?'：'+body:''))}"><span class="announcement-track"><span class="announcement-copy" data-announcement-copy>${copy}</span><span class="announcement-copy announcement-repeat" aria-hidden="true">${copy}</span></span></button><time>${esc(siteTime(row.published_at).split(' ')[0])}</time><button type="button" data-nav="announcements">查看全部 →</button>`:`<span class="announcement-placeholder">${s.error?'公告暂时无法读取':'正在读取公告…'}</span>${s.error?'<button type="button" data-site-refresh="announcements">重试</button>':''}`;
+    }
+    queueAnnouncementMeasure();
   }
   const summary=$('[data-home-activities-summary]');if(summary)summary.textContent=state.activities.count?`共有 ${state.activities.count} 项活动，点开查看详情`:'查看各项活动与参与方式';
 }
@@ -60,6 +77,9 @@ async function load(kind,force=false){
 export const homeContent={
   init(options){
     navigate=options.navigate;if(started)return;started=true;
+    new ResizeObserver(queueAnnouncementMeasure).observe($('[data-home-announcement]'));
+    reducedMotion.addEventListener('change',queueAnnouncementMeasure);
+    document.fonts?.addEventListener('loadingdone',queueAnnouncementMeasure);
     authStore.subscribe(auth=>{
       if(!auth.ready)return;const id=auth.user&&!auth.user.cached&&!auth.user.disabled?String(auth.user.id):'';if(id===userId)return;
       generation++;for(const c of controllers)c.abort();controllers.clear();userId=id;readNotices={};state.announcements=fresh();state.activities=fresh();view='home';
