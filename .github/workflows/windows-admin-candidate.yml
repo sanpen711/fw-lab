@@ -1,0 +1,59 @@
+name: Build Windows Admin Candidate
+on:
+  pull_request:
+    paths:
+      - 'admin-desktop/**'
+      - 'desktop-v11/src/shop-model.js'
+      - 'supabase/functions/_shared/shop.ts'
+      - 'supabase/functions/shop-alipay/**'
+      - 'supabase/functions/shop-alipay-notify/**'
+      - 'supabase/tests/shop-model.test.mjs'
+      - '.github/workflows/windows-admin-candidate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-admin-candidate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-admin-candidate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            admin-desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './admin-desktop/src-tauri -> target'
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix admin-desktop ci
+      - name: Verify management client and checkout models
+        run: |
+          npm --prefix admin-desktop test
+          node --experimental-transform-types --test supabase/tests/shop-model.test.mjs
+      - name: Install Chromium
+        run: npx playwright install chromium
+      - name: Verify product and shipment workflows
+        run: npx playwright test --config admin-desktop/playwright.config.ts
+      - name: Build unpublished Windows installer
+        working-directory: admin-desktop
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: npx tauri build --bundles nsis
+      - name: Upload unpublished management candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: fw-admin-windows-6.0.2-release-candidate
+          path: |
+            admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+            admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe.sig
+          if-no-files-found: error
+          retention-days: 14

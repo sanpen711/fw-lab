@@ -9,7 +9,7 @@ import {homeWidgets} from './home-widgets.js';
 import {membershipStore} from './membership-store.js';
 import {membershipPayment} from './membership-payment.js';
 import {membershipGrowthContent,membershipPurchasePage,membershipOrdersContent,dismissMembershipLevelNotice} from './membership-page.js';
-import {membershipShopContent} from './membership-shop.js';
+import {membershipShop,membershipShopContent} from './membership-shop.js';
 import {identityClass,memberName,memberBadge} from './member-identity.js';
 import {membershipExperience,identityEditor} from './membership-experience.js';
 import {desktopSettings} from './desktop-settings.js';
@@ -152,10 +152,10 @@ function renderMembershipContent(){
   const scrollTop=sameTab?host.querySelector('.membership-page-scroll')?.scrollTop||0:0;
   const growthExpanded=sameTab&&host.querySelector('[data-membership-growth]')?.open;
   const focused=host.contains(document.activeElement)?document.activeElement:null;
-  const focusAttribute=focused?Array.from(focused.attributes).find(attribute=>/^data-(membership|payment|member-identity)-/.test(attribute.name)):null;
-  const focusSelector=focused?.matches('[data-member-identity-choice]')?`[data-member-identity-choice="${CSS.escape(focused.dataset.memberIdentityChoice)}"][data-value="${CSS.escape(focused.dataset.value)}"]`:focused?.closest('[data-member-identity-form]')&&focused.name?`[data-member-identity-form] [name="${CSS.escape(focused.name)}"]`:focusAttribute?`[${focusAttribute.name}="${CSS.escape(focusAttribute.value)}"]`:'';
+  const focusAttribute=focused?Array.from(focused.attributes).find(attribute=>/^data-(membership|payment|member-identity|shop)-/.test(attribute.name)):null;
+  const focusSelector=focused?.matches('[data-member-identity-choice]')?`[data-member-identity-choice="${CSS.escape(focused.dataset.memberIdentityChoice)}"][data-value="${CSS.escape(focused.dataset.value)}"]`:focused?.closest('[data-member-identity-form]')&&focused.name?`[data-member-identity-form] [name="${CSS.escape(focused.name)}"]`:focused?.closest('[data-shop-checkout]')&&focused.name?`[data-shop-checkout] [name="${CSS.escape(focused.name)}"]`:focusAttribute?`[${focusAttribute.name}="${CSS.escape(focusAttribute.value)}"]`:'';
   const selection=typeof focused?.selectionStart==='number'?[focused.selectionStart,focused.selectionEnd]:null;
-  membershipPayment.setVisible(currentView==='membership'&&['purchase','orders'].includes(membershipTab));renderMembershipEntry();
+  membershipPayment.setVisible(currentView==='membership'&&['purchase','orders'].includes(membershipTab));membershipShop.setVisible(currentView==='membership'&&membershipTab==='shop');renderMembershipEntry();
   const tabs=`<nav class="membership-tabs" aria-label="会员栏目">${[['benefits','我的会员'],['appearance','会员装扮'],['orders','订单记录'],['shop','周边商城']].map(([value,label])=>`<button type="button" class="${membershipTab===value||membershipTab==='purchase'&&value==='benefits'?'active':''}" data-membership-tab="${value}">${label}</button>`).join('')}</nav>`;
   const paint=content=>{
     host.innerHTML=`${tabs}<div class="membership-page-scroll">${content}</div>`;host.dataset.membershipRenderedTab=membershipTab;
@@ -191,6 +191,7 @@ function startProtectedApp(){
   membershipPayment.start();
   membershipPayment.subscribe(()=>renderMembershipContent());
   membershipExperience.init({toast,refreshMembership:renderMembershipContent});
+  membershipShop.init({toast,render:renderMembershipContent});
 }
 function renderAuthGate(next){
   const app=$('#app');const modal=$('[data-account-modal]');const checking=$('[data-auth-checking]');const content=$('[data-auth-content]');
@@ -252,7 +253,7 @@ function navigate(view){
   closeSidebarMore();
   if(view==='echo'){view='square';squareMode='echo';}
   else if(view==='square')squareMode='feed';
-  const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;membershipPayment.setVisible(view==='membership'&&['purchase','orders'].includes(membershipTab));
+  const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;membershipPayment.setVisible(view==='membership'&&['purchase','orders'].includes(membershipTab));membershipShop.setVisible(view==='membership'&&membershipTab==='shop');
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
   const localViews=['home','compose','square','rooms','chatrooms','play','games','buddy','membership','archive','settings'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
