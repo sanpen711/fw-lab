@@ -42,12 +42,12 @@ async function setup(page:Page,mode:'success'|'pending'|'error'|'price'='success
 async function contact(page:Page){await page.locator('[name="recipient_name"]').fill('王小明');await page.locator('[name="recipient_phone"]').fill('13800000000');await page.locator('[name="recipient_address"]').fill('广东省深圳市南山区测试路一号三楼301室');}
 const createRequests=(c:any)=>c.requests.filter((r:any)=>r.path.endsWith('/shop-alipay')&&r.body.action==='create');
 
-test('商城卡片与四张详情图片均为3∶4，小窗口无横向裁切',async({page})=>{
+test('商城卡片与四张详情图片均为3∶4，小窗口无横向裁切',async({page},testInfo)=>{
  await setup(page);
- for(const width of [1066,760]){await page.setViewportSize({width,height:width===760?560:728});const img=page.locator('[data-shop-product] img').first();const rect=await img.boundingBox();expect(Math.abs(rect!.width/rect!.height-.75)).toBeLessThan(.01);expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);await page.screenshot({path:`/workspace/scratch/8b50cbe6da25/audit/shop-client-grid-${width}.png`});}
+ for(const width of [1066,760]){await page.setViewportSize({width,height:width===760?560:728});const img=page.locator('[data-shop-product] img').first();const rect=await img.boundingBox();expect(Math.abs(rect!.width/rect!.height-.75)).toBeLessThan(.01);expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);await page.screenshot({path:testInfo.outputPath(`shop-client-grid-${width}.png`)});}
  await page.locator('[data-shop-product]').first().click();await expect(page.locator('[data-shop-image]')).toHaveCount(4);await page.locator('[data-shop-image="3"]').click();await expect(page.locator('[data-shop-image="3"]')).toHaveAttribute('aria-pressed','true');await expect(page.locator('.shop-main-image')).toHaveAttribute('src',new RegExp(pid(14)));expect(await page.locator('.shop-detail').evaluate(n=>n.scrollWidth-n.clientWidth)).toBeLessThanOrEqual(1);
 });
-test('收货信息完整有效才下单，付款成功有订单号并显示快递信息',async({page})=>{
+test('收货信息完整有效才下单，付款成功有订单号并显示快递信息',async({page},testInfo)=>{
  const c=await setup(page);await page.locator('[data-shop-product]').first().click();await page.locator('.shop-pay').click();expect(createRequests(c)).toHaveLength(0);
  await contact(page);await page.locator('[name="recipient_phone"]').fill('123');await page.locator('.shop-pay').click();await expect(page.locator('[data-toast]')).toContainText('有效的联系电话');expect(createRequests(c)).toHaveLength(0);
  await page.locator('[name="recipient_phone"]').fill('13800000000');await page.locator('.shop-pay').click();await expect(page.locator('.shop-payment-state')).toContainText('FS'+'a'.repeat(32));
@@ -55,7 +55,7 @@ test('收货信息完整有效才下单，付款成功有订单号并显示快�
  await expect.poll(()=>page.evaluate(()=>(window as any).checkoutUrls.length)).toBe(1);await page.locator('[data-shop-query]').click();await expect(page.locator('.shop-payment-state')).toContainText('付款成功');await page.locator('[data-shop-view="orders"]').first().click();await expect(page.locator('.shop-order-status')).toHaveText('待发货');
  c.shipped=true;await page.locator('[data-shop-refresh]').click();await expect(page.locator('.shop-order-status')).toHaveText('已发货');await expect(page.locator('.shop-shipping')).toContainText('顺丰速运');await expect(page.locator('.shop-shipping')).toContainText('SF123456789');await page.locator('.shop-address summary').click();await expect(page.locator('.shop-address')).toContainText('王小明');await expect(page.locator('.shop-address')).toContainText('三楼301室');
  const caches=await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith('fw-shop-checkout')).map(k=>localStorage.getItem(k)).join(''));expect(caches).not.toContain('王小明');expect(caches).not.toContain('13800000000');
- await page.screenshot({path:'/workspace/scratch/8b50cbe6da25/audit/shop-client-shipped.png'});
+ await page.screenshot({path:testInfo.outputPath('shop-client-shipped.png')});
 });
 test('下单失败保留收货草稿，重试复用请求号且不把地址写入本地缓存',async({page})=>{
  const c=await setup(page,'error');await page.locator('[data-shop-product]').first().click();await contact(page);await page.locator('.shop-pay').click();await expect(page.locator('.membership-payment-error')).toContainText('连接失败');await expect(page.locator('[name="recipient_name"]')).toHaveValue('王小明');

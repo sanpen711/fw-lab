@@ -86,6 +86,13 @@ end $$;
 reset role;
 select set_config('request.jwt.claim.sub',current_setting('fw.shop_admin'),true);
 set local role authenticated;
+do $$begin
+ begin
+  update public.shop_orders set fulfillment_status='shipped',shipping_carrier=null,tracking_no=null
+    where id=current_setting('fw.shop_order')::uuid;
+  raise exception 'Missing shipment fields accepted';
+ exception when check_violation then null;end;
+end $$;
 update public.shop_orders set fulfillment_status='shipped',shipping_carrier='顺丰速运',tracking_no='SF123456789'
  where id=current_setting('fw.shop_order')::uuid;
 do $$begin
