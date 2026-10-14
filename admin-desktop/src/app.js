@@ -471,7 +471,7 @@ document.addEventListener('submit',async event=>{
   if(login){
     event.preventDefault();const data=new FormData(login);const status=login.querySelector('[data-login-status]');
     status.textContent='正在验证管理员权限…';
-    try{state.admin=await adminApi.signIn(data.get('email'),data.get('password'));await loadAll();}
+    try{state.admin=await adminApi.signIn(data.get('email'),data.get('password'));await loadAll();if(state.view==='siteContent')await siteContentAdmin.load();}
     catch(error){status.textContent=error.message||'登录失败。';}
     return;
   }
@@ -515,7 +515,7 @@ async function boot(){
   try{
     const admin=await adminApi.restoreAdmin();
     if(!admin){loginView();return;}
-    state.admin=admin;await loadAll();
+    state.admin=admin;await loadAll();if(state.view==='siteContent')await siteContentAdmin.load();
   }catch(error){loginView(error.message||'登录状态已失效，请重新登录。');}
 }
 

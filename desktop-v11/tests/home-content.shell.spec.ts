@@ -23,7 +23,7 @@ async function setup(page:Page){
   }
   return route.fulfill({contentType:'application/json',body:JSON.stringify(data)});
  });
- await page.goto('/');if(process.env.FW_MEDIA_QA_FONT){await page.addStyleTag({content:'@font-face{font-family:HomeQA;src:url(/__home-qa-font.otf)}body,input,button,textarea,h1{font-family:HomeQA,sans-serif!important}'});await page.evaluate(()=>document.fonts.ready);}
+ await page.goto('/');if(process.env.FW_MEDIA_QA_FONT){await page.addStyleTag({content:'@font-face{font-family:HomeQA;src:url(/__home-qa-font.otf)}body,input,button,textarea,html body .hero-card h1{font-family:HomeQA,sans-serif!important}'});await page.evaluate(()=>document.fonts.ready);}
  await expect(page.locator('[data-home-announcement]')).toContainText('置顶公告');await expect(page.locator('[data-home-activities-summary]')).toContainText('3 项活动');return c;
 }
 test('首页公告在主视觉上方，活动合并两格，倒计时在右，旧天气不再请求',async({page},testInfo)=>{
@@ -40,7 +40,7 @@ test('活动入口打开列表与详情，按时间显示状态，正文转义�
 });
 test('公告查看后移除未读标记，更新正文后重新提示未读，支持历史列表',async({page})=>{
  const c=await setup(page);await expect(page.locator('.announcement-unread')).toBeVisible();await page.locator('[data-home-announcement] [data-site-open]').click();await expect(page.locator('[data-site-content="announcements"]')).toContainText('公告内容');await expect(page.locator('.site-content-body a')).toHaveAttribute('href','https://example.com/notice');await page.locator('[data-site-back="announcements"]').click();await expect(page.locator('.site-notice-row')).toHaveCount(1);await page.locator('[data-site-content="announcements"] [data-nav="home"]').click();await expect(page.locator('.announcement-unread')).toHaveCount(0);
- c.notices[0].updated_at=new Date(Date.now()+60000).toISOString();await page.locator('.home-activities-card').click();await page.locator('[data-site-content="activities"] [data-nav="home"]').click();await expect(page.locator('.announcement-unread')).toBeVisible();
+ c.notices[0].updated_at=new Date(Date.now()+60000).toISOString();await page.locator('.nav-item[data-nav="home"]').click();await expect(page.locator('.announcement-unread')).toBeVisible();
 });
 test('活动读取失败可以重试，已结束的活动没有参与按钮',async({page})=>{
  const c=await setup(page);c.fail=true;await page.locator('.home-activities-card').click();await expect(page.locator('[data-site-content="activities"] [role="alert"]')).toBeVisible({timeout:18000});c.fail=false;await page.locator('[data-site-refresh="activities"]').click();await expect(page.locator('[data-site-content="activities"] [role="alert"]')).toHaveCount(0);await page.locator(`[data-site-open="${id(4)}"]`).click();await expect(page.locator('.site-content-detail')).toContainText('已经结束');await expect(page.locator('.site-content-action')).toHaveCount(0);

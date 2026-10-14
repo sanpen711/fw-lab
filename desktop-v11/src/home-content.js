@@ -4,7 +4,7 @@ import {escapeHtml as esc} from './member-identity.js';
 import {renderWebLinks,webUrl} from './external-links.js';
 import {SITE_TABLES,SITE_FIELDS,ACTIVITY_FIELDS,ACTIVITY_TARGETS,activityImage,activityStatus,siteTime} from './site-content-model.js';
 
-const fresh=()=>({rows:[],page:0,hasNext:false,count:0,selected:'',scroll:0,loaded:false,loading:false,error:'',loadedAt:0});
+const fresh=()=>({rows:[],page:0,hasNext:false,count:0,selected:'',scroll:0,loaded:false,loading:false,reload:false,error:'',loadedAt:0});
 const state={announcements:fresh(),activities:fresh()};
 let started=false,userId='',generation=0,view='home',navigate=()=>{},readNotices={};
 const controllers=new Set();
@@ -46,7 +46,7 @@ function renderPage(kind){
 }
 function render(){renderHome();for(const kind of Object.keys(state))renderPage(kind);}
 async function load(kind,force=false){
-  const s=state[kind];if(!userId||s.loading||s.loaded&&!force)return;
+  const s=state[kind];if(!userId)return;if(s.loading){if(force)s.reload=true;return;}if(s.loaded&&!force)return;
   const token=generation,requestedPage=s.page,controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);controllers.add(controller);
   s.loading=true;s.error='';render();
   try{
@@ -55,7 +55,7 @@ async function load(kind,force=false){
     s.rows=(data||[]).slice(0,20);s.hasNext=(data||[]).length>20;s.count=count??s.rows.length;s.loaded=true;s.loadedAt=Date.now();
     if(s.selected&&!s.rows.some(r=>r.id===s.selected))s.selected='';
   }catch{if(token===generation&&requestedPage===s.page)s.error='内容读取失败，请刷新重试。';}
-  finally{clearTimeout(timer);controllers.delete(controller);if(token===generation){s.loading=false;if(requestedPage!==s.page)load(kind,true);else render();}}
+  finally{clearTimeout(timer);controllers.delete(controller);if(token===generation){s.loading=false;if(requestedPage!==s.page||s.reload){s.reload=false;load(kind,true);}else render();}}
 }
 export const homeContent={
   init(options){
@@ -79,7 +79,7 @@ export const homeContent={
   },
   setVisible(next){
     const previous=view;view=next;
-    if(next==='home'){for(const k of Object.keys(state)){if(previous!=='home'){state[k].page=0;state[k].selected='';}load(k,previous!=='home');}}
+    if(next==='home'){for(const k of Object.keys(state)){if(previous!=='home'){state[k].page=0;state[k].selected='';}load(k,true);}}
     else if(state[next]){if(previous!==next)state[next].selected='';load(next,previous!==next);}render();if(previous!==next)$('.main-content').scrollTop=0;
   },
 };
