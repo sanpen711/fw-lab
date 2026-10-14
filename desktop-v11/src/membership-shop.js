@@ -31,7 +31,7 @@ async function loadOrders(force=false){
   }catch{if(token===generation)state.error='订单读取失败，请点击刷新重试。';}
   finally{clearTimeout(timer);if(token===generation){state.ordersLoading=false;render();}}
 }
-function heading(){return `<header class="shop-heading"><div><small>伏伏周边</small><h3>把伏伏带回日常</h3></div><nav aria-label="周边商城栏目"><button type="button" data-shop-view="catalog" aria-pressed="${state.view!=='orders'}">商品</button><button type="button" data-shop-view="orders" aria-pressed="${state.view==='orders'}">我的周边订单</button><button type="button" data-shop-refresh ${state.loading||state.ordersLoading?'disabled':''}>刷新</button></nav></header>`;}
+function heading(){return `<header class="shop-heading"><nav aria-label="周边商城栏目"><button type="button" data-shop-view="catalog" aria-pressed="${state.view!=='orders'}">商品</button><button type="button" data-shop-view="orders" aria-pressed="${state.view==='orders'}">我的周边订单</button><button type="button" data-shop-refresh ${state.loading||state.ordersLoading?'disabled':''}>刷新</button></nav></header>`;}
 function catalog(){
   if(state.loading&&!state.loaded)return '<div class="state-card">正在读取商品…</div>';
   return state.products.length?`<div class="shop-product-grid">${state.products.map(p=>`<button type="button" class="shop-product-card" data-shop-product="${esc(p.id)}"><img src="${esc(image(p.image_paths?.[0]))}" alt="${esc(p.title)}" loading="lazy"><h4>${esc(p.title)}</h4><strong>${shopMoney(p.price_cents)}</strong></button>`).join('')}</div>`:'<div class="membership-empty"><b>暂无上架商品</b><span>新周边上架后会显示在这里。</span></div>';
