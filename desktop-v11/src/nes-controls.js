@@ -14,7 +14,7 @@ export function createNesDefaultControls(profile){
   return controls;
 }
 
-export function installNesKeyboardControls(emulator,game,{storage,document:doc=globalThis.document,window:win=globalThis.window}={}){
+export function installNesKeyboardControls(emulator,game,{storage,document:doc=globalThis.document,window:win=globalThis.window,clock=globalThis}={}){
   const profile=game.keyboard;
   const defaults=createNesDefaultControls(profile);
   const marker=`fw:nes:${game.storageId}:keyboard-revision`;
@@ -36,11 +36,31 @@ export function installNesKeyboardControls(emulator,game,{storage,document:doc=g
 
   const bindings=new Map(profile.bindings.flatMap(binding=>binding.codes.map(code=>[code,binding])));
   const held=new Map();
+  const rapidFire=new Map();
   const sameButton=(a,b)=>a.player===b.player&&a.button===b.button;
+  const canPlay=()=>emulator.started&&!emulator.paused&&!doc.hidden&&emulator.settingsMenu.style.display==='none'&&!emulator.isPopupOpen()&&emulator.getSettingValue('keyboardInput')!=='enabled';
+  const releaseButton=({player,button})=>{
+    const id=`${player}:${button}`,rapid=rapidFire.get(id);
+    if(rapid){clock.clearInterval(rapid.timer);rapidFire.delete(id);}
+    emulator.gameManager.simulateInput(player,button,0);
+  };
   const releaseAll=()=>{
     const buttons=new Map([...held.values()].map(binding=>[`${binding.player}:${binding.button}`,binding]));
     held.clear();
-    for(const {player,button} of buttons.values())emulator.gameManager.simulateInput(player,button,0);
+    for(const binding of buttons.values())releaseButton(binding);
+  };
+  const pressButton=binding=>{
+    const {player,button,turboHz}=binding;
+    emulator.gameManager.simulateInput(player,button,1);
+    if(!turboHz)return;
+    // NES Contra fires on a fresh button press: alternate press/release while held.
+    const rapid={down:true,timer:0};
+    rapid.timer=clock.setInterval(()=>{
+      if(!canPlay()){releaseAll();return;}
+      rapid.down=!rapid.down;
+      emulator.gameManager.simulateInput(player,button,Number(rapid.down));
+    },1000/(turboHz*2));
+    rapidFire.set(`${player}:${button}`,rapid);
   };
   const keyChange=event=>{
     const binding=held.get(event.code)||bindings.get(event.code);
@@ -48,15 +68,15 @@ export function installNesKeyboardControls(emulator,game,{storage,document:doc=g
     const {player,button,key}=binding;
     if(event.type==='keyup'&&held.has(event.code)){
       held.delete(event.code);
-      if(![...held.values()].some(other=>sameButton(other,binding)))emulator.gameManager.simulateInput(player,button,0);
+      if(![...held.values()].some(other=>sameButton(other,binding)))releaseButton(binding);
     }else{
-      if(!emulator.started||emulator.settingsMenu.style.display!=='none'||emulator.isPopupOpen()||emulator.getSettingValue('keyboardInput')==='enabled')return;
+      if(!canPlay())return;
       // Respect later keyboard customization in the emulator's control menu.
       if(emulator.controls[player]?.[button]?.value!==Number(emulator.keyLookup(key)))return;
       if(event.type==='keydown'&&!event.repeat&&!held.has(event.code)){
         const alreadyDown=[...held.values()].some(other=>sameButton(other,binding));
         held.set(event.code,binding);
-        if(!alreadyDown)emulator.gameManager.simulateInput(player,button,1);
+        if(!alreadyDown)pressButton(binding);
       }
     }
     // Physical codes distinguish main Enter from numpad Enter, even with Num Lock off.

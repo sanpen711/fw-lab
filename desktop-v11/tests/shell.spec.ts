@@ -374,18 +374,42 @@ test('内置 NES 模拟器可加载 Mapper 23 魂斗罗并启动',async({page})=
   });
   for(const key of ['w','ArrowRight','j','Numpad2'])await page.keyboard.down(key);
   for(const key of ['w','ArrowRight','j','Numpad2'])await page.keyboard.up(key);
-  expect(await page.evaluate(()=>(window as any).__nesInputs)).toEqual([
-    [0,4,1],[1,7,1],[0,0,1],[1,8,1],[0,4,0],[1,7,0],[0,0,0],[1,8,0],
-  ]);
+  const simultaneous:any[]=await page.evaluate(()=>(window as any).__nesInputs);
+  expect(simultaneous.filter(([,button])=>button!==0)).toEqual([[0,4,1],[1,7,1],[1,8,1],[0,4,0],[1,7,0],[1,8,0]]);
+  expect(simultaneous.filter(([,button])=>button===0)[0]).toEqual([0,0,1]);
+  expect(simultaneous.filter(([,button])=>button===0).at(-1)).toEqual([0,0,0]);
   await page.evaluate(()=>{(window as any).__nesInputs=[];});
   await page.keyboard.press('Enter');await page.keyboard.press('NumpadEnter');await page.keyboard.press('Space');
-  expect(await page.evaluate(()=>(window as any).__nesInputs)).toEqual([[0,3,1],[0,3,0],[1,0,1],[1,0,0],[0,0,1],[0,0,0]]);
+  const quickPresses:any[]=await page.evaluate(()=>(window as any).__nesInputs);
+  expect(quickPresses.filter(([,button])=>button===3)).toEqual([[0,3,1],[0,3,0]]);
+  for(const player of [0,1]){
+    const attacks=quickPresses.filter(([p,button])=>p===player&&button===0);
+    expect(attacks[0]).toEqual([player,0,1]);expect(attacks.at(-1)).toEqual([player,0,0]);
+  }
   await page.evaluate(()=>{
     (window as any).__nesInputs=[];
     const parent=(window as any).EJS_emulator.elements.parent;
     for(const type of ['keydown','keyup'])parent.dispatchEvent(new KeyboardEvent(type,{bubbles:true,cancelable:true,code:'Numpad2',key:'ArrowDown',keyCode:40}));
   });
   expect(await page.evaluate(()=>(window as any).__nesInputs)).toEqual([[1,8,1],[1,8,0]]);
+  await page.evaluate(()=>{(window as any).__nesInputs=[];});
+  await page.keyboard.down('j');await page.keyboard.down('NumpadEnter');
+  for(const player of [0,1]){
+    await expect.poll(()=>page.evaluate(p=>(window as any).__nesInputs.filter(([player,button,state]:number[])=>player===p&&button===0&&state===1).length,player)).toBeGreaterThanOrEqual(3);
+  }
+  await page.keyboard.down('Space');await page.keyboard.up('j');
+  const p1Before=await page.evaluate(()=>(window as any).__nesInputs.filter(([p,b,state]:number[])=>p===0&&b===0&&state===1).length);
+  await expect.poll(()=>page.evaluate(()=>(window as any).__nesInputs.filter(([p,b,state]:number[])=>p===0&&b===0&&state===1).length)).toBeGreaterThan(p1Before);
+  await page.keyboard.up('Space');await page.keyboard.up('NumpadEnter');
+  const released=await page.evaluate(()=>(window as any).__nesInputs.length);
+  await page.waitForTimeout(180);
+  expect(await page.evaluate(()=>(window as any).__nesInputs.length)).toBe(released);
+  await page.keyboard.down('Space');
+  await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
+  const blurred=await page.evaluate(()=>(window as any).__nesInputs.length);
+  await page.waitForTimeout(180);
+  expect(await page.evaluate(()=>(window as any).__nesInputs.length)).toBe(blurred);
+  await page.keyboard.up('Space');
 });
 
 test('废话档案为本地按需榜单页面',async({page})=>{
