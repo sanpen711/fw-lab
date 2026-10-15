@@ -6,10 +6,11 @@ import {chatRoomUi} from './chat-room-ui.js';
 import {archiveStore} from './archive-store.js';
 import {gamePartyUi} from './game-party-ui.js';
 import {homeWidgets} from './home-widgets.js';
+import {homeContent} from './home-content.js';
 import {membershipStore} from './membership-store.js';
 import {membershipPayment} from './membership-payment.js';
 import {membershipGrowthContent,membershipPurchasePage,membershipOrdersContent,dismissMembershipLevelNotice} from './membership-page.js';
-import {membershipShopContent} from './membership-shop.js';
+import {membershipShop,membershipShopContent} from './membership-shop.js';
 import {identityClass,memberName,memberBadge} from './member-identity.js';
 import {membershipExperience,identityEditor} from './membership-experience.js';
 import {desktopSettings} from './desktop-settings.js';
@@ -23,6 +24,7 @@ import {mediaLightbox} from './media-lightbox.js';
 const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
 const routes={
+  activities:['活动','查看活动介绍与参与方式'],announcements:['公告','查看站点公告'],
   home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],chatrooms:['闲聊房间','找一个房间，坐下来聊聊'],play:['下班开黑','找到今晚一起玩的队友'],games:['小游戏','不用跳出软件，点开直接玩'],buddy:['搭子','左边选人，右边直接聊天'],membership:['会员','查看会员权益、套餐和订单'],archive:['档案','翻一翻被留下来的研究记录'],settings:['设置','管理个人资料、应用显示和本机缓存']
 };
 const EMOJIS=[
@@ -152,10 +154,10 @@ function renderMembershipContent(){
   const scrollTop=sameTab?host.querySelector('.membership-page-scroll')?.scrollTop||0:0;
   const growthExpanded=sameTab&&host.querySelector('[data-membership-growth]')?.open;
   const focused=host.contains(document.activeElement)?document.activeElement:null;
-  const focusAttribute=focused?Array.from(focused.attributes).find(attribute=>/^data-(membership|payment|member-identity)-/.test(attribute.name)):null;
-  const focusSelector=focused?.matches('[data-member-identity-choice]')?`[data-member-identity-choice="${CSS.escape(focused.dataset.memberIdentityChoice)}"][data-value="${CSS.escape(focused.dataset.value)}"]`:focused?.closest('[data-member-identity-form]')&&focused.name?`[data-member-identity-form] [name="${CSS.escape(focused.name)}"]`:focusAttribute?`[${focusAttribute.name}="${CSS.escape(focusAttribute.value)}"]`:'';
+  const focusAttribute=focused?Array.from(focused.attributes).find(attribute=>/^data-(membership|payment|member-identity|shop)-/.test(attribute.name)):null;
+  const focusSelector=focused?.matches('[data-member-identity-choice]')?`[data-member-identity-choice="${CSS.escape(focused.dataset.memberIdentityChoice)}"][data-value="${CSS.escape(focused.dataset.value)}"]`:focused?.closest('[data-member-identity-form]')&&focused.name?`[data-member-identity-form] [name="${CSS.escape(focused.name)}"]`:focused?.closest('[data-shop-checkout]')&&focused.name?`[data-shop-checkout] [name="${CSS.escape(focused.name)}"]`:focusAttribute?`[${focusAttribute.name}="${CSS.escape(focusAttribute.value)}"]`:'';
   const selection=typeof focused?.selectionStart==='number'?[focused.selectionStart,focused.selectionEnd]:null;
-  membershipPayment.setVisible(currentView==='membership'&&['purchase','orders'].includes(membershipTab));renderMembershipEntry();
+  membershipPayment.setVisible(currentView==='membership'&&['purchase','orders'].includes(membershipTab));membershipShop.setVisible(currentView==='membership'&&membershipTab==='shop');renderMembershipEntry();
   const tabs=`<nav class="membership-tabs" aria-label="会员栏目">${[['benefits','我的会员'],['appearance','会员装扮'],['orders','订单记录'],['shop','周边商城']].map(([value,label])=>`<button type="button" class="${membershipTab===value||membershipTab==='purchase'&&value==='benefits'?'active':''}" data-membership-tab="${value}">${label}</button>`).join('')}</nav>`;
   const paint=content=>{
     host.innerHTML=`${tabs}<div class="membership-page-scroll">${content}</div>`;host.dataset.membershipRenderedTab=membershipTab;
@@ -186,11 +188,13 @@ function startProtectedApp(){
   if(protectedAppStarted)return;protectedAppStarted=true;
   setMascotGreeting();
   homeWidgets.init({toast,openAccount});
+  homeContent.init({navigate:view=>{if(view==='shop'){membershipTab='shop';navigate('membership');}else navigate(view);}});
   gamePartyUi.init({toast});
   membershipStore.start();
   membershipPayment.start();
   membershipPayment.subscribe(()=>renderMembershipContent());
   membershipExperience.init({toast,refreshMembership:renderMembershipContent});
+  membershipShop.init({toast,render:renderMembershipContent});
 }
 function renderAuthGate(next){
   const app=$('#app');const modal=$('[data-account-modal]');const checking=$('[data-auth-checking]');const content=$('[data-auth-content]');
@@ -252,9 +256,10 @@ function navigate(view){
   closeSidebarMore();
   if(view==='echo'){view='square';squareMode='echo';}
   else if(view==='square')squareMode='feed';
-  const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;membershipPayment.setVisible(view==='membership'&&['purchase','orders'].includes(membershipTab));
-  $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===view));
-  const localViews=['home','compose','square','rooms','chatrooms','play','games','buddy','membership','archive','settings'];
+  const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;membershipPayment.setVisible(view==='membership'&&['purchase','orders'].includes(membershipTab));membershipShop.setVisible(view==='membership'&&membershipTab==='shop');
+  $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===(['activities','announcements'].includes(view)?'home':view)));
+  homeContent.setVisible(view);
+  const localViews=['home','compose','square','rooms','chatrooms','play','games','buddy','membership','archive','settings','announcements','activities'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
   if(!localViews.includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
   $('[data-emoji-panel]').hidden=true;
@@ -505,6 +510,7 @@ function bindNavigation(){
     const lightbox=event.target.closest('[data-lightbox-src]');if(lightbox){event.preventDefault();openLightbox(lightbox);return;}
     if(event.target.closest('[data-media-lightbox-close]')||event.target.matches('[data-media-lightbox]')){closeLightbox();return;}
     const nav=event.target.closest('[data-nav]');if(nav){navigate(nav.dataset.nav);return;}
+    if(event.target.closest('[data-feedback-open]')){closeSidebarMore(true);return;}
     if(event.target.closest('[data-open-account]')){openAccount();return;}if(event.target.closest('[data-close-account]')){closeAccount();return;}
     if(event.target.closest('[data-auth-retry]')){window.location.reload();return;}
     const membershipTabButton=event.target.closest('[data-membership-tab]');if(membershipTabButton){membershipTab=membershipTabButton.dataset.membershipTab;membershipPlanId='';renderMembershipContent();return;}

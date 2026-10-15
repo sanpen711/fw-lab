@@ -113,14 +113,13 @@ test('复制的图片可以直接粘贴到发布输入框',async({page})=>{
   expect(textPrevented).toBe(false);
 });
 
-test('首页轻工具按天气、下班倒计时和反馈意见排列',async({page})=>{
+test('首页两格活动、一格倒计时，反馈在更多菜单',async({page})=>{
   await page.clock.setFixedTime(await page.evaluate(()=>new Date(2026,9,13,10,0,0).getTime()));
   await page.goto('/');
   const cards=page.locator('.home-grid .home-tool-card');
-  await expect(cards).toHaveCount(3);
-  await expect(cards.nth(0)).toContainText('设置天气');
+  await expect(cards).toHaveCount(2);
+  await expect(cards.nth(0)).toContainText('活动');
   await expect(cards.nth(1)).toContainText('设置时间');
-  await expect(cards.nth(2)).toContainText('反馈意见');
 
   await page.locator('[data-offwork-open]').click();
   await expect(page.locator('[data-home-tool-view="offwork"]')).toBeVisible();
@@ -129,6 +128,7 @@ test('首页轻工具按天气、下班倒计时和反馈意见排列',async({pa
   await expect(page.locator('[data-home-tool-modal]')).toBeHidden();
   await expect(page.locator('[data-offwork-meta]')).toContainText('点击修改');
 
+  await page.locator('[data-sidebar-more-toggle]').click();
   await page.locator('[data-feedback-open]').click();
   await expect(page.locator('[data-home-tool-view="feedback"]')).toBeVisible();
   await page.locator('[data-close-home-tool]').click();

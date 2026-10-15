@@ -1,5 +1,7 @@
 import {adminApi} from './admin-api.js';
 import {APP_VERSION} from './config.js';
+import {shopAdmin} from './shop-admin.js';
+import {siteContentAdmin} from './site-content-admin.js';
 
 const app=document.querySelector('#app');
 const toastHost=document.querySelector('#toast');
@@ -15,6 +17,8 @@ const viewMeta={
   feedback:['问题反馈','接收问题和建议，记录内部处理结果'],
   users:['用户管理','搜索账号并处理禁言和封禁'],
   memberships:['会员管理','为用户增加会员时间或取消会员'],
+  shop:['商城管理','管理周边商品、收货信息与订单发货'],
+  siteContent:['公告与活动','发布首页公告，管理活动内容与参与入口'],
   content:['内容管理','统一管理广场、树洞、投票、房间和组队内容'],
   logs:['处理记录','查看所有管理操作和公开状态']
 };
@@ -104,8 +108,10 @@ function shellView(){
           ${navButton('feedback','03','问题反馈',feedbackCount,feedbackCount>0)}
           ${navButton('users','04','用户管理')}
           ${navButton('memberships','05','会员管理')}
-          ${navButton('content','06','内容管理')}
-          ${navButton('logs','07','处理记录')}
+          ${navButton('shop','06','商城管理')}
+          ${navButton('siteContent','07','公告与活动')}
+          ${navButton('content','08','内容管理')}
+          ${navButton('logs','09','处理记录')}
         </nav>
         <div class="sidebar-user"><strong>${esc(state.admin.nickname)}</strong><span>${esc(state.admin.email)}</span><button type="button" data-logout>退出登录</button></div>
       </aside>
@@ -125,6 +131,8 @@ function renderPage(){
   if(state.view==='feedback')return renderFeedback();
   if(state.view==='users')return renderUsers();
   if(state.view==='memberships')return renderMemberships();
+  if(state.view==='shop')return shopAdmin.content();
+  if(state.view==='siteContent')return siteContentAdmin.content();
   if(state.view==='content')return renderContent();
   return renderLogs();
 }
@@ -456,14 +464,14 @@ async function loadAll({quiet=false}={}){
   }finally{if(!quiet)setBusy(false);}
 }
 
-async function refresh(){await loadAll();toast('管理数据已刷新。');}
+async function refresh(){if(state.view==='shop'){await shopAdmin.load();return;}if(state.view==='siteContent'){await siteContentAdmin.load();return;}await loadAll();toast('管理数据已刷新。');}
 
 document.addEventListener('submit',async event=>{
   const login=event.target.closest('[data-login-form]');
   if(login){
     event.preventDefault();const data=new FormData(login);const status=login.querySelector('[data-login-status]');
     status.textContent='正在验证管理员权限…';
-    try{state.admin=await adminApi.signIn(data.get('email'),data.get('password'));await loadAll();}
+    try{state.admin=await adminApi.signIn(data.get('email'),data.get('password'));await loadAll();if(state.view==='siteContent')await siteContentAdmin.load();}
     catch(error){status.textContent=error.message||'登录失败。';}
     return;
   }
@@ -479,10 +487,10 @@ document.addEventListener('submit',async event=>{
 
 document.addEventListener('click',async event=>{
   const nav=event.target.closest('[data-nav]');
-  if(nav){state.view=nav.dataset.nav;state.query='';state.filter=state.view==='feedback'||state.view==='reports'?'pending':'all';state.selection=null;shellView();return;}
+  if(nav){state.view=nav.dataset.nav;state.query='';state.filter=state.view==='feedback'||state.view==='reports'?'pending':'all';state.selection=null;shellView();if(state.view==='shop')shopAdmin.load();if(state.view==='siteContent')siteContentAdmin.load();return;}
   if(event.target.closest('[data-refresh]')){refresh().catch(error=>toast(error.message||'刷新失败。',true));return;}
   if(event.target.closest('[data-toggle-tests]')){state.showTestData=!state.showTestData;state.selection=null;shellView();return;}
-  if(event.target.closest('[data-logout]')){setBusy(true,'正在退出…');try{await adminApi.signOut();state.admin=null;state.rows=emptyRows();loginView();}catch(error){toast(error.message,true);}finally{setBusy(false);}return;}
+  if(event.target.closest('[data-logout]')){setBusy(true,'正在退出…');try{await adminApi.signOut();shopAdmin.reset();siteContentAdmin.reset();state.admin=null;state.rows=emptyRows();loginView();}catch(error){toast(error.message,true);}finally{setBusy(false);}return;}
   const filter=event.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;state.selection=null;shellView();return;}
   const content=event.target.closest('[data-content-type]');if(content){state.contentType=content.dataset.contentType;state.selection=null;shellView();return;}
   const selected=event.target.closest('[data-select-type]');if(selected){selectRow(selected.dataset.selectType,selected.dataset.selectId,selected.dataset.selectKind||'');return;}
@@ -507,14 +515,16 @@ async function boot(){
   try{
     const admin=await adminApi.restoreAdmin();
     if(!admin){loginView();return;}
-    state.admin=admin;await loadAll();
+    state.admin=admin;await loadAll();if(state.view==='siteContent')await siteContentAdmin.load();
   }catch(error){loginView(error.message||'登录状态已失效，请重新登录。');}
 }
 
 adminApi.onAuthStateChange(event=>{
-  if(event==='SIGNED_OUT'&&state.admin){state.admin=null;state.rows=emptyRows();loginView();}
+  if(event==='SIGNED_OUT'&&state.admin){shopAdmin.reset();siteContentAdmin.reset();dialog.close();dialog.replaceChildren();dialogSubmit=null;state.admin=null;state.rows=emptyRows();loginView();}
 });
 
+shopAdmin.init({client:adminApi.client,render:()=>{if(state.admin&&state.view==='shop')shellView();},toast,admin:()=>state.admin,openDialog});
+siteContentAdmin.init({client:adminApi.client,render:()=>{if(state.admin&&state.view==='siteContent')shellView();},toast,admin:()=>state.admin,openDialog});
 boot();
 
 window.__FW_ADMIN_APP__={version:APP_VERSION};

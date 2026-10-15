@@ -6,6 +6,9 @@ on:
       - main
     paths:
       - 'admin-desktop/**'
+      - 'desktop-v11/src/shop-model.js'
+      - 'desktop-v11/src/site-content-model.js'
+      - 'desktop-v11/src/external-links.js'
       - 'src-tauri/icons/icon.ico'
       - '.github/workflows/build-windows-admin.yml'
   workflow_dispatch:
@@ -56,7 +59,7 @@ jobs:
       - name: Upload private installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-admin-windows-6.0.1
+          name: fw-admin-windows-6.0.2
           path: |
             admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
             admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe.sig
@@ -69,37 +72,37 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $source = Get-ChildItem "admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe" | Select-Object -First 1
-          if (-not $source) { throw 'FW管理台 6.0.1 安装包没有生成。' }
+          if (-not $source) { throw 'FW管理台 6.0.2 安装包没有生成。' }
           $signatureSource = Get-Item "$($source.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureSource) { throw 'FW管理台自动更新签名没有生成。' }
 
-          $installer = Join-Path $source.DirectoryName "FW-Admin-6.0.1-Windows-x64-Setup.exe"
+          $installer = Join-Path $source.DirectoryName "FW-Admin-6.0.2-Windows-x64-Setup.exe"
           $signature = "$installer.sig"
           Copy-Item $source.FullName $installer -Force
           Copy-Item $signatureSource.FullName $signature -Force
 
-          gh release view fw-admin-v6.0.1 --repo "${{ github.repository }}" *> $null
+          gh release view fw-admin-v6.0.2 --repo "${{ github.repository }}" *> $null
           if ($LASTEXITCODE -eq 0) {
-            gh release upload fw-admin-v6.0.1 $installer $signature --clobber --repo "${{ github.repository }}"
+            gh release upload fw-admin-v6.0.2 $installer $signature --clobber --repo "${{ github.repository }}"
           } else {
-            gh release create fw-admin-v6.0.1 $installer $signature `
+            gh release create fw-admin-v6.0.2 $installer $signature `
               --repo "${{ github.repository }}" `
               --target "${{ github.sha }}" `
-              --title "FW管理台 6.0.1" `
-              --notes "管理台自动更新基线版：启动检测新版本，显示下载、校验和安装阶段，完成后自动重启。"
+              --title "FW管理台 6.0.2" `
+              --notes "新增商城管理：上传1—4张3∶4商品图，设置标题与售价，编辑或删除商品；查看周边订单与收货信息，回填快递公司和单号。新增公告与活动管理，支持草稿、预览、发布、置顶、撤下及删除，配置活动封面、时间和参与入口。"
           }
 
       - name: Publish admin updater metadata
         shell: pwsh
         run: |
-          $installer = Get-Item "admin-desktop/src-tauri/target/release/bundle/nsis/FW-Admin-6.0.1-Windows-x64-Setup.exe"
+          $installer = Get-Item "admin-desktop/src-tauri/target/release/bundle/nsis/FW-Admin-6.0.2-Windows-x64-Setup.exe"
           $signatureFile = Get-Item "$($installer.FullName).sig"
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
-          $notes = '管理台自动更新基线版：启动检测新版本，显示下载、校验和安装阶段，完成后自动重启。'
-          $downloadUrl = 'https://github.com/${{ github.repository }}/releases/download/fw-admin-v6.0.1/FW-Admin-6.0.1-Windows-x64-Setup.exe'
+          $notes = '新增商城管理：上传1—4张3∶4商品图，设置标题与售价，编辑或删除商品；查看周边订单与收货信息，回填快递公司和单号。新增公告与活动管理，支持草稿、预览、发布、置顶、撤下及删除，配置活动封面、时间和参与入口。'
+          $downloadUrl = 'https://github.com/${{ github.repository }}/releases/download/fw-admin-v6.0.2/FW-Admin-6.0.2-Windows-x64-Setup.exe'
           $metadata = @{
-            version = '6.0.1'
+            version = '6.0.2'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
@@ -125,6 +128,6 @@ jobs:
           if ($LASTEXITCODE -eq 0) {
             Write-Host '管理台更新清单无需变更。'
           } else {
-            git commit -m "Release FW Admin 6.0.1 updater metadata"
+            git commit -m "Release FW Admin 6.0.2 updater metadata"
             git push origin HEAD:main
           }

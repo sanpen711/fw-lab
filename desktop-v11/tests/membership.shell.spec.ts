@@ -135,29 +135,11 @@ for(const active of [false,true])test(`${active?'会员续费':'普通用户开�
 });
 
 
-test('周边商城展示10元伏伏贴纸，未开售不创建付款订单',async({page})=>{
-  const {requests}=await setup(page,false,'success');await page.setViewportSize({width:1066,height:728});await page.goto('/');await page.locator('[data-nav="membership"]').click();
-  await expect(page.locator('.membership-tabs button')).toHaveText(['我的会员','会员装扮','订单记录','周边商城']);
-  await expect(page.locator('[data-member-identity-form]')).toHaveCount(0);
-  await page.screenshot({path:'/tmp/fw-member-overview.png'});
-  await page.locator('.membership-tabs [data-membership-tab="shop"]').click();
-  const product=page.locator('[data-shop-product="fufu-stickers"]');
-  await expect(product.getByRole('heading',{name:'伏伏表情包贴纸'})).toBeVisible();
-  await expect(product.locator('.membership-shop-price strong')).toHaveText('¥10 / 份');
-  await expect(product.locator('[data-shop-purchase]')).toBeDisabled();
-  await expect(product).toContainText('展示商品 · 暂未开售');
-  await expect(product.locator('.membership-sticker-grid img')).toHaveCount(9);
-  await expect.poll(()=>product.locator('img').evaluateAll(images=>images.every(img=>(img as HTMLImageElement).complete&&(img as HTMLImageElement).naturalWidth>0))).toBe(true);
-  for(const width of [1066,760]){
-    await page.setViewportSize({width,height:width===1066?728:820});
-    expect(await product.evaluate(node=>node.scrollWidth-node.clientWidth)).toBeLessThanOrEqual(1);
-    expect(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(1);
-    await page.screenshot({path:`/tmp/fw-member-shop-${width}.png`});
-  }
-  await page.locator('.membership-tabs [data-membership-tab="orders"]').click();
-  await expect(page.locator('.membership-order-head')).toBeVisible();
+test('未上架商品时商城显示空状态，会员订单继续独立',async({page})=>{
+  const {requests}=await setup(page,false,'success');await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  await page.locator('[data-membership-tab="shop"]').click();await expect(page.locator('.membership-shop')).toContainText('暂无上架商品');
+  await page.locator('[data-membership-tab="orders"]').click();await expect(page.locator('.membership-order-head')).toBeVisible();
   expect(requests.filter(row=>row.path.endsWith('/membership-alipay')&&row.body.action==='create')).toHaveLength(0);
-  expect(requests.filter(row=>['POST','PATCH','DELETE'].includes(row.method)&&/\/(membership_orders|memberships)$/.test(row.path))).toHaveLength(0);
 });
 
 test('到期会员保留装扮，不能保存装扮或创建组队，仍可加入',async({page})=>{

@@ -1,6 +1,6 @@
 [package]
 name = "fw-admin-desktop"
-version = "6.0.1"
+version = "6.0.2"
 description = "FW研究所管理员专用客户端"
 authors = ["FW研究所"]
 edition = "2021"

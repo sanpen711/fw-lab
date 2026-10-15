@@ -1,0 +1,6 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {shopPrice,shopRecipient,shopImage,shopStatus} from '../src/shop-model.js';
+test('decimal prices preserve cents and reject fractional cents or invalid amounts',()=>{assert.equal(shopPrice('19.90'),1990);assert.equal(shopPrice('0.01'),1);for(const value of ['0','1.005','-10','NaN','1000000.01','1e3'])assert.throws(()=>shopPrice(value));});
+test('shipping information requires a name, valid telephone and full address',()=>{assert.equal(shopRecipient({recipient_name:' 王小明 ',recipient_phone:'13800000000',recipient_address:'广东省深圳市南山区测试路1号'}).recipient_name,'王小明');for(const value of [{},{recipient_name:'王',recipient_phone:'123',recipient_address:'广东省深圳市南山区测试路1号'},{recipient_name:'王',recipient_phone:'13800000000',recipient_address:'测试'},{recipient_name:'王\n明',recipient_phone:'13800000000',recipient_address:'广东省深圳市南山区测试路1号'}])assert.throws(()=>shopRecipient(value));});
+test('images only use the product bucket and purchase status requires confirmed payment',()=>{assert.equal(shopImage('javascript:alert(1)','https://example.com'),'');assert.equal(shopImage('../private/address.json','https://example.com'),'');assert.equal(shopStatus({status:'pending',fulfillment_status:'shipped'}),'待付款');assert.equal(shopStatus({status:'paid',fulfillment_status:'shipped'}),'已发货');});
