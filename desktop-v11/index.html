@@ -174,18 +174,14 @@
         <div class="games-page">
           <div class="game-hall" data-game-hall>
             <div class="game-grid">
-              <button class="game-card game-card-nes" type="button" data-game-open="contra"><i>NES</i><b>魂斗罗 1代</b><span>无限人＋散弹枪版本，直接在电脑客户端内运行。</span><em>方向键＋Z / X</em></button>
-              <button class="game-card game-card-2048" type="button" data-game-open="2048"><i><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-2048"></use></svg></i><b>2048</b><span>合并相同数字，看看今天能摸到多高。</span><em>方向键操作</em></button>
-              <button class="game-card game-card-mines" type="button" data-game-open="minesweeper"><i><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-mines"></use></svg></i><b>扫雷</b><span>排除安全区域，别让第一杯咖啡先炸了。</span><em>鼠标操作</em></button>
-              <button class="game-card game-card-snake" type="button" data-game-open="snake"><i><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-snake"></use></svg></i><b>贪吃蛇</b><span>方向键控制，越吃越长，也越来越忙。</span><em>方向键操作</em></button>
-              <button class="game-card game-card-sudoku" type="button" data-game-open="sudoku"><i><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-sudoku"></use></svg></i><b>数独</b><span>从简单到困难，安静消耗一点上班时间。</span><em>鼠标和键盘</em></button>
-              <button class="game-card game-card-reaction" type="button" data-game-open="reaction"><i><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-reaction"></use></svg></i><b>反应测试</b><span>等画面变绿再点击，测测今天还醒着没有。</span><em>单局约 5 秒</em></button>
-              <button class="game-card game-card-catch" type="button" data-game-open="catch"><i><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-catch"></use></svg></i><b>接住掉落物</b><span>移动托盘接住文件，别让工作掉到地上。</span><em>单局 45 秒</em></button>
+              <button class="game-card game-card-nes" type="button" data-game-open="contra"><i aria-hidden="true">NES</i><b>魂斗罗 1代</b><span>无敌版 · 无限生命＋散弹枪</span></button>
+              <button class="game-card game-card-2048" type="button" data-game-open="2048"><i aria-hidden="true"><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-2048"></use></svg></i><b>2048</b><span>合并相同数字，挑战更高分数。</span></button>
+              <button class="game-card game-card-mines" type="button" data-game-open="minesweeper"><i aria-hidden="true"><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-mines"></use></svg></i><b>扫雷</b><span>避开隐藏地雷，找出所有安全格。</span></button>
+              <button class="game-card game-card-snake" type="button" data-game-open="snake"><i aria-hidden="true"><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-snake"></use></svg></i><b>贪吃蛇</b><span>吃掉食物不断变长，挑战更长纪录。</span></button>
+              <button class="game-card game-card-sudoku" type="button" data-game-open="sudoku"><i aria-hidden="true"><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-sudoku"></use></svg></i><b>数独</b><span>从简单到困难，完成九宫格数字挑战。</span></button>
+              <button class="game-card game-card-reaction" type="button" data-game-open="reaction"><i aria-hidden="true"><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-reaction"></use></svg></i><b>反应测试</b><span>等待画面变色，测测你的反应速度。</span></button>
+              <button class="game-card game-card-catch" type="button" data-game-open="catch"><i aria-hidden="true"><svg class="game-card-symbol" aria-hidden="true"><use href="/ui-icons.svg#game-catch"></use></svg></i><b>接住掉落物</b><span>接住不断掉落的物品，挑战更高分。</span></button>
             </div>
-            <details class="game-licenses">
-              <summary>开源许可</summary>
-              <p>NES 播放器使用 EmulatorJS 与 FCEUmm；2048、扫雷、贪吃蛇和数独基于开源项目；小表情图形使用 Twemoji。完整许可证均随安装包保留。</p>
-            </details>
           </div>
           <div class="game-stage" data-game-stage hidden>
             <header>
@@ -302,6 +298,13 @@
               <header><div><h2>缓存管理</h2><p>清理帖子、图片等本机临时缓存，不会删除账号、登录状态、表情、游戏文件或应用显示设置。</p></div></header>
               <div class="cache-summary"><div><small>当前缓存</small><strong data-cache-size>正在统计…</strong><span data-cache-detail></span></div><button class="secondary" type="button" data-clear-cache>清理缓存</button></div>
               <p class="settings-status" data-cache-status aria-live="polite"></p>
+            </section>
+            <section class="settings-card">
+              <header><div><h2>软件说明</h2></div></header>
+              <details class="game-licenses">
+                <summary>开源许可</summary>
+                <p>NES 播放器使用 EmulatorJS 与 FCEUmm；2048、扫雷、贪吃蛇和数独基于开源项目；小表情图形使用 Twemoji。完整许可证均随安装包保留。</p>
+              </details>
             </section>
           </div>
         </div>
