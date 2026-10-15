@@ -307,6 +307,15 @@ test('小游戏在电脑端内部打开且离开后卸载',async({page})=>{
   await page.locator('[data-game-back]').click();
   await expect(page.locator('[data-game-hall]')).toBeVisible();
   await expect(page.locator('[data-game-stage]')).toBeHidden();
+  await page.locator('[data-game-open="contra"]').click();
+  const tip=page.locator('[data-game-tip]');
+  await expect(tip).toContainText('玩家1：WASD 方向');
+  await expect(tip).toContainText('J / 空格 攻击');
+  await expect(tip).toContainText('玩家2：↑↓←→ 方向');
+  await expect(tip).toContainText('数字 2 跳跃');
+  await page.setViewportSize({width:760,height:560});
+  expect(await tip.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);
+  expect(await tip.evaluate(element=>getComputedStyle(element).whiteSpace)).toBe('pre-line');
 });
 
 test('内置 NES 模拟器可加载 Mapper 23 魂斗罗并启动',async({page})=>{
@@ -318,6 +327,12 @@ test('内置 NES 模拟器可加载 Mapper 23 魂斗罗并启动',async({page})=
   page.on('console',message=>consoleMessages.push(`${message.type()}: ${message.text()}`));
   page.on('request',request=>{
     if(request.url().includes('/emulatorjs/cores/'))coreRequests.push(request.url());
+  });
+  await page.addInitScript(()=>{
+    localStorage.setItem('ejs-fw-contra-1-infinite-spread-nes-魂斗罗 1代 无限人＋散弹枪-settings',JSON.stringify({
+      controlSettings:{0:{0:{value:88,value2:'BUTTON_2'},8:{value:90,value2:'BUTTON_1'},4:{value:38,value2:'DPAD_UP'}},1:{},2:{},3:{}},
+      settings:{},cheats:[],
+    }));
   });
   await page.goto('/nes-player.html');
   await expect(page.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
@@ -346,6 +361,31 @@ test('内置 NES 模拟器可加载 Mapper 23 魂斗罗并启动',async({page})=
   expect(coreRequests.some(url=>url.endsWith('/unpacked/fceumm/fceumm_libretro.wasm'))).toBe(true);
   expect(coreRequests.some(url=>/fceumm(?:-legacy)?-wasm\.data$/.test(url))).toBe(false);
   expect(pageErrors.filter(message=>/unsupported mapper|failed to start game/i.test(message))).toEqual([]);
+  expect(await page.evaluate(()=>{
+    const emulator=(window as any).EJS_emulator;
+    return[emulator.controls[0][0].value,emulator.controls[0][8].value,emulator.controls[0][4].value,emulator.controls[1][0].value];
+  })).toEqual([74,75,87,97]);
+  await page.evaluate(()=>{
+    const emulator=(window as any).EJS_emulator;
+    const input=emulator.gameManager.simulateInput.bind(emulator.gameManager);
+    (window as any).__nesInputs=[];
+    emulator.gameManager.simulateInput=(...args:any[])=>{(window as any).__nesInputs.push(args);return input(...args);};
+    emulator.elements.parent.focus();
+  });
+  for(const key of ['w','ArrowRight','j','Numpad2'])await page.keyboard.down(key);
+  for(const key of ['w','ArrowRight','j','Numpad2'])await page.keyboard.up(key);
+  expect(await page.evaluate(()=>(window as any).__nesInputs)).toEqual([
+    [0,4,1],[1,7,1],[0,0,1],[1,8,1],[0,4,0],[1,7,0],[0,0,0],[1,8,0],
+  ]);
+  await page.evaluate(()=>{(window as any).__nesInputs=[];});
+  await page.keyboard.press('Enter');await page.keyboard.press('NumpadEnter');await page.keyboard.press('Space');
+  expect(await page.evaluate(()=>(window as any).__nesInputs)).toEqual([[0,3,1],[0,3,0],[1,0,1],[1,0,0],[0,0,1],[0,0,0]]);
+  await page.evaluate(()=>{
+    (window as any).__nesInputs=[];
+    const parent=(window as any).EJS_emulator.elements.parent;
+    for(const type of ['keydown','keyup'])parent.dispatchEvent(new KeyboardEvent(type,{bubbles:true,cancelable:true,code:'Numpad2',key:'ArrowDown',keyCode:40}));
+  });
+  expect(await page.evaluate(()=>(window as any).__nesInputs)).toEqual([[1,8,1],[1,8,0]]);
 });
 
 test('废话档案为本地按需榜单页面',async({page})=>{

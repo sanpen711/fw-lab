@@ -1,11 +1,13 @@
 import './nes-player.css';
 import {DEFAULT_NES_GAME_ID,NES_GAMES} from './nes-games.js';
+import {createNesDefaultControls,installNesKeyboardControls} from './nes-controls.js';
 
 const base=new URL('./',document.baseURI);
 const boot=document.querySelector('[data-nes-boot]');
 const requestedGame=new URLSearchParams(location.search).get('game')||DEFAULT_NES_GAME_ID;
 const game=NES_GAMES[requestedGame]||NES_GAMES[DEFAULT_NES_GAME_ID];
 let startTimer=0;
+let removeKeyboardControls;
 
 function showError(message){
   document.documentElement.dataset.emulatorState='error';
@@ -36,6 +38,7 @@ window.EJS_DEBUG_XX=true;
 window.EJS_disableAutoLang=false;
 window.EJS_noAutoFocus=false;
 window.EJS_defaultOptions={retroarch_core:'fceumm'};
+window.EJS_defaultControls=createNesDefaultControls(game.keyboard);
 window.EJS_ready=()=>{
   document.documentElement.dataset.emulatorState='ready';
   if(boot)boot.hidden=true;
@@ -47,6 +50,8 @@ window.EJS_ready=()=>{
 };
 window.EJS_onGameStart=()=>{
   window.clearTimeout(startTimer);
+  removeKeyboardControls?.();
+  removeKeyboardControls=installNesKeyboardControls(window.EJS_emulator,game);
   document.documentElement.dataset.gameState='running';
 };
 
