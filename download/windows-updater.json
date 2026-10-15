@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-10-13T10:04:20.4684973Z",
-  "version": "1.3.24",
+  "version": "1.3.25",
+  "notes": "Windows 1.3.25：周边商城新增3∶4商品卡片与多图详情，填写收货人、联系电话及详细地址后可通过支付宝下单；我的周边订单显示订单号、付款状态、快递公司和单号。首页公告直接展示标题与正文，长内容自动滚动，新增活动列表，移除天气，活动占两格、倒计时占一格，反馈意见移至更多菜单。",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.24-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlorOFpHV1JuOFVuRlp5Y2kwUXd2dE5XWE01ZkJVeDhsMUVLTS9wNWJRb1RUZjFBVVJvV1E1MFkyQVp4a3FpUTVkdHZwc1FCYkNNd1AyYlh3dFNrQ1FVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxODg1NzQ1CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMjRfeDY0LXNldHVwLmV4ZQp3UTlvRXFnZE5NNkJub3k3V1h4bENSMGlsTExKZVhmV0dnNndWUXhzRWFmdkpMc1pIVS9aaGpPdTcvSmg3bXdMSHVvRmhIRWtlUWJyclUwRkdGa0xDUT09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.25-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmJvam10SVpqQVhVNlJ3TFBic05wWmZBTng2WGUxRG85OFlMelBmUkpSVElielhPd1UzRHNoM2xNOXZDcHJpRTM3bWp2Vi8vMUJBazJyTWo5ak1xSFE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMDU4MjM2CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMjVfeDY0LXNldHVwLmV4ZQoreFRHdk1teUd0blB6T00vSWNnTWlQSTZCQTY1UlNkNjBLSGU4NlpURnR0RHREOXdOZ01lS01iczQ3K1VWM1BQdkJ4M3VHcGw1dTllZHJ0eXhZS01CQT09Cg=="
     }
   },
-  "notes": "Windows 1.3.24：精神广场正文与评论支持300字，图片、GIF和自定义表情共4张，视频单独发布1个；优化发布页、评论区和组队详情排版，支持帖子链接直接打开和多图左右翻看，并修复小窗口显示、输入草稿、消息滚动及键盘操作问题。"
+  "pub_date": "2026-10-15T10:00:22.6714606Z"
 }
