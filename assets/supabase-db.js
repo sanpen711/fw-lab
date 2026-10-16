@@ -13,6 +13,15 @@
     : null;
 
   const enabled = !!client;
+  if(client){
+    import('./fw-user-activity.mjs?v=20261016-1').then(({createUserActivityTracker})=>{
+      const activity=createUserActivityTracker({record:()=>client.rpc('fw_record_user_activity')});
+      // Leave the Auth callback before making another Supabase request.
+      client.auth.onAuthStateChange((_event,session)=>{
+        setTimeout(()=>activity.setUser(session?.user?.id||null),0);
+      });
+    }).catch(()=>{/* Activity reporting must not interrupt the existing login flow. */});
+  }
   const redirect = () => window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
 
   const fail = (r, msg) => {

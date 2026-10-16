@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'desktop-v11/**'
+      - 'assets/fw-user-activity.mjs'
+      - 'tests/user-activity.test.mjs'
       - 'src-tauri/tauri.v11.conf.json'
       - 'src-tauri/src/**'
       - '.github/workflows/windows-v11-package.yml'

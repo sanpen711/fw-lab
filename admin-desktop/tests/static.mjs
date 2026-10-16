@@ -30,7 +30,8 @@ assert.match(app,/显示测试数据/,'管理台必须默认隐藏并允许显�
 assert.match(app,/树洞帖子/,'内容管理必须覆盖树洞帖子');
 assert.match(app,/树洞评论/,'内容管理必须覆盖树洞评论');
 assert.match(app,/组队留言/,'内容管理必须覆盖组队留言');
-assert.match(app,/最近登录/,'用户详情必须显示最近登录时间');
+assert.match(app,/最近活跃/,'用户列表必须显示真实活跃时间');
+assert.match(app,/上次登录/,'用户详情必须保留认证登录时间');
 assert.match(api,/fw_get_current_profile/,'登录后必须从数据库确认管理员角色');
 assert.match(api,/admin_list_feedback_tickets/,'反馈必须从正式后台工单读取');
 assert.match(api,/p_admin_reply:''/,'反馈处理不得向用户发送回复');
@@ -45,7 +46,7 @@ assert.match(api,/admin-delete-user/,'账号删除必须走受控服务端函数
 assert.doesNotMatch(api,/service[_-]?role/i,'安装包不得包含 service role 密钥');
 assert.match(css,/--bg:#f4f5f7/,'管理台必须使用白色浅灰管理界面');
 assert.equal(tauri.productName,'FW管理台');
-assert.equal(tauri.version,'6.0.3');
+assert.equal(tauri.version,'6.0.4');
 assert.equal(tauri.identifier,'com.fwyanjiusuo.admin');
 assert.equal(tauri.app.windows[0].minWidth,1080);
 assert.notEqual(tauri.identifier,'com.fwyanjiusuo.desktop','管理台必须使用独立应用标识');

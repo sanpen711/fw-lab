@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'admin-desktop/**'
+      - 'assets/fw-user-activity.mjs'
+      - 'tests/user-activity.test.mjs'
       - 'desktop-v11/src/shop-model.js'
       - 'desktop-v11/src/site-content-model.js'
       - 'desktop-v11/src/external-links.js'
@@ -53,7 +55,7 @@ jobs:
       - name: Upload unpublished management candidate
         uses: actions/upload-artifact@v4
         with:
-          name: fw-admin-windows-6.0.3-release-candidate
+          name: fw-admin-windows-6.0.4-release-candidate
           path: |
             admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
             admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe.sig

@@ -42,6 +42,7 @@ const membershipSourceText={payment:'用户购买',manual:'管理员操作',gift
 function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
 function short(value,max=90){const text=String(value||'').replace(/\s+/g,' ').trim();return text.length>max?`${text.slice(0,max)}…`:text;}
 function fmt(value){if(!value)return '—';try{return new Intl.DateTimeFormat('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(value));}catch{return '—';}}
+function activeTime(value){return value?fmt(value):'暂无记录';}
 function ago(value){if(!value)return '—';const diff=Date.now()-new Date(value).getTime();if(diff<60000)return '刚刚';if(diff<3600000)return `${Math.floor(diff/60000)}分钟前`;if(diff<86400000)return `${Math.floor(diff/3600000)}小时前`;return `${Math.floor(diff/86400000)}天前`;}
 function profileOf(row){const value=row?.profiles;return Array.isArray(value)?(value[0]||{}):(value||{});}
 function reportType(row){return row?.room_key||((Number(row?.id)>0&&row?.message_id)?'chat_message':'unknown');}
@@ -207,7 +208,7 @@ function renderUsers(){
   return `<div class="workspace ${state.selection?.type==='user'?'with-detail':''}">
     <section class="panel">
       <div class="panel-heading"><div><h2>用户列表</h2><p>共 ${state.rows.users.length} 个账号，测试账号会单独标记</p></div><div class="panel-tools"><input class="toolbar-search" data-search value="${esc(state.query)}" placeholder="搜索昵称、编号或账号"></div></div>
-      ${rows.length?`<div class="table-wrap"><table class="data-table"><colgroup><col style="width:28%"><col style="width:24%"><col style="width:24%"><col></colgroup><thead><tr><th>用户</th><th>实验品编号</th><th>账号状态</th><th>最近登录</th></tr></thead><tbody>${rows.map(row=>`<tr data-select-type="user" data-select-id="${esc(row.id)}" class="${isSelected('user',row.id)?'selected':''}"><td><strong class="ellipsis">${esc(row.nickname||'研究员')} ${row.is_test_account?'<span class="inline-tag">测试</span>':''}</strong><small class="ellipsis">${esc(row.email_search||row.id)}</small></td><td>${esc(row.lab_code||'未设置')}</td><td>${userStatusBadge(row)}</td><td>${esc(fmt(row.last_sign_in_at))}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state">没有符合条件的用户。</div>'}
+      ${rows.length?`<div class="table-wrap"><table class="data-table"><colgroup><col style="width:28%"><col style="width:24%"><col style="width:24%"><col></colgroup><thead><tr><th>用户</th><th>实验品编号</th><th>账号状态</th><th>最近活跃</th></tr></thead><tbody>${rows.map(row=>`<tr data-select-type="user" data-select-id="${esc(row.id)}" class="${isSelected('user',row.id)?'selected':''}"><td><strong class="ellipsis">${esc(row.nickname||'研究员')} ${row.is_test_account?'<span class="inline-tag">测试</span>':''}</strong><small class="ellipsis">${esc(row.email_search||row.id)}</small></td><td>${esc(row.lab_code||'未设置')}</td><td>${userStatusBadge(row)}</td><td>${esc(activeTime(row.last_active_at))}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state">没有符合条件的用户。</div>'}
     </section>
     ${state.selection?.type==='user'?renderUserDetail(state.selection.row):''}
   </div>`;
@@ -305,7 +306,7 @@ function renderUserDetail(row){
   const body=`
     <div class="detail-block"><h3>账号状态</h3><p>${userStatusBadge(row)} ${row.is_test_account?statusBadge('test','测试账号'):''}</p></div>
     <div class="detail-block"><h3>用户资料</h3><p>${esc(row.nickname||'研究员')}<br>实验品编号：${esc(row.lab_code||'未设置')}<br>登录账号：${esc(row.email_search||'未记录')}<br><small>${esc(row.id)}</small></p></div>
-    <div class="detail-block"><h3>账号时间</h3><p>注册：${esc(fmt(row.created_at))}<br>最近登录：${esc(fmt(row.last_sign_in_at))}</p></div>
+    <div class="detail-block"><h3>账号时间</h3><p>注册：${esc(fmt(row.created_at))}<br>最近活跃：${esc(activeTime(row.last_active_at))}<br>上次登录：${esc(fmt(row.last_sign_in_at))}</p></div>
     <div class="user-stat-grid"><div><strong>${Number(row.post_count||0)}</strong><span>公开发布</span></div><div><strong>${Number(row.comment_count||0)}</strong><span>互动内容</span></div><div><strong>${Number(row.report_count||0)}</strong><span>被举报</span></div><div><strong>${Number(row.moderation_count||0)}</strong><span>处理记录</span></div></div>
     ${row.role==='admin'?'':`<div class="danger-note"><strong>永久删除账号</strong><span>将删除登录账号及其关联内容、会话和文件，无法恢复。</span></div>`}`;
   const actions=row.role==='admin'?'<span class="badge in_progress">管理员账号不可处罚或删除</span>':`<button class="button danger-solid" type="button" data-action="user" data-id="${esc(row.id)}">调整账号状态</button><button class="button danger" type="button" data-action="user-delete" data-id="${esc(row.id)}">永久删除账号</button>`;

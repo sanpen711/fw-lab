@@ -1,12 +1,12 @@
 {
   "name": "fw-admin-desktop",
-  "version": "6.0.3",
+  "version": "6.0.4",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 1422 --strictPort",
     "build": "vite build",
-    "test:static": "node tests/static.mjs",
+    "test:static": "node tests/static.mjs && node --test ../tests/user-activity.test.mjs",
     "test": "npm run test:static && npm run build",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build --bundles nsis"
