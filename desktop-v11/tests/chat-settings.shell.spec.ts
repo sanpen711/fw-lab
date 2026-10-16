@@ -40,7 +40,7 @@ async function boot(page:Page){
 async function openChat(page:Page,id=other){
   await page.locator('.nav-item[data-nav="buddy"]').click();
   await page.locator(`[data-open-chat="${id}"]`).first().click();
-  await expect(page.locator('[data-chat-compose] input')).toBeEnabled();
+  await expect(page.locator('[data-chat-compose] input[name="message"]')).toBeEnabled();
 }
 
 async function privateFixture(page:Page){
@@ -71,11 +71,11 @@ test('私聊历史跨200条分页无遗漏，保留阅读位置、草稿与后�
   });
   await openChat(page);const messages=page.locator('[data-chat-messages]'),items=messages.locator('.chat-message');
   await expect(items).toHaveCount(200);await expect(items.first()).toHaveAttribute('data-chat-message-id','251');await expect(items.last()).toHaveAttribute('data-chat-message-id','450');
-  await page.locator('[data-chat-compose] input').fill('保留未发送文字');await messages.evaluate(el=>el.scrollTop=0);
+  await page.locator('[data-chat-compose] input[name="message"]').fill('保留未发送文字');await messages.evaluate(el=>el.scrollTop=0);
   const anchor=messages.locator('[data-chat-message-id="251"]'),before=await anchor.evaluate(el=>el.getBoundingClientRect().top);
   await messages.locator('[data-chat-load-older]').click();await expect(items).toHaveCount(400);
   expect(Math.abs((await anchor.evaluate(el=>el.getBoundingClientRect().top))-before)).toBeLessThan(2);
-  await expect(page.locator('[data-chat-new-messages]')).toBeHidden();await expect(page.locator('[data-chat-compose] input')).toHaveValue('保留未发送文字');
+  await expect(page.locator('[data-chat-new-messages]')).toBeHidden();await expect(page.locator('[data-chat-compose] input[name="message"]')).toHaveValue('保留未发送文字');
   await messages.evaluate(el=>el.scrollTop=0);await messages.locator('[data-chat-load-older]').click();await expect(items).toHaveCount(450);
   const ids=await items.evaluateAll(nodes=>nodes.map(el=>el.getAttribute('data-chat-message-id')));expect(new Set(ids).size).toBe(450);expect(ids).toEqual(Array.from({length:450},(_,i)=>String(i+1)));
   await expect(messages.locator('[data-chat-load-older]')).toHaveCount(0);await expect(messages).toContainText('没有更早的消息了');
@@ -94,7 +94,7 @@ test('私聊历史失败可重试，切换搭子后迟到响应不会串入新�
   await boot(page);await openChat(page);const messages=page.locator('[data-chat-messages]');
   await messages.locator('[data-chat-load-older]').click();await expect(messages).toContainText('更早的消息暂时读取失败');await expect(messages.locator('.chat-message')).toHaveCount(200);
   fail=false;await messages.locator('[data-chat-load-older]').click();await expect(messages.locator('[data-chat-load-older]')).toBeDisabled();
-  await page.locator(`[data-open-chat="${third}"]`).first().click();await expect(page.locator('[data-chat-title]')).toContainText('搭子乙');await expect(page.locator('[data-chat-compose] input')).toBeEnabled();
+  await page.locator(`[data-open-chat="${third}"]`).first().click();await expect(page.locator('[data-chat-title]')).toContainText('搭子乙');await expect(page.locator('[data-chat-compose] input[name="message"]')).toBeEnabled();
   const finished=page.waitForResponse(r=>r.url().includes('/private_messages')&&new URL(r.url()).searchParams.get('id')?.startsWith('lt.')&&r.status()===200);
   release();await (await finished).finished();await page.evaluate(()=>new Promise(requestAnimationFrame));await expect(messages.locator('.chat-message')).toHaveCount(0);await expect(messages.locator('[data-chat-load-older]')).toHaveCount(0);await expect(messages).toContainText('还没有私聊消息');
 });
