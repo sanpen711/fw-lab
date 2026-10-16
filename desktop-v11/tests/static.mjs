@@ -597,7 +597,7 @@ assert.match(social,/badgeRefreshQueued/,'并发红点刷新必须合并为至�
 assert.match(social,/buddyRefreshQueued/,'并发搭子列表刷新必须合并，避免重复读取');
 assert.match(social,/chatOpenToken/,'快速切换搭子时必须丢弃旧会话请求');
 assert.match(social,/state\.chat=\{\.\.\.state\.chat,targetId:wantedTarget,conversationId:convId[\s\S]*?subscribeChat\(convId\)[\s\S]*?from\('private_messages'\)/,'打开私聊必须先订阅实时消息，再合并历史记录');
-assert.match(social,/mergeMessages\(rows\.slice\(\)\.reverse\(\),state\.chat\.rows\)/,'历史消息必须与打开期间收到的实时消息去重合并');
+assert.match(social,/mergeMessages\(page\.slice\(\)\.reverse\(\),state\.chat\.rows\)/,'分页消息必须与打开期间收到的实时消息去重合并');
 assert.match(social,/privateReadPromises/,'同一搭子的并发已读写入必须复用一个请求');
 assert.match(social,/__pending:true/,'发送私聊必须先显示本地待发送消息');
 assert.match(social,/reconcileSentMessage/,'发送完成后必须在后台校准真实消息，且不阻塞输入框');
