@@ -159,7 +159,7 @@
     }
   }
   async function loadPosts(){
-    const {data,error}=await db().from('posts').select('id,user_id,content,status_tag,is_deleted,created_at,profiles(nickname,avatar_url)').order('created_at',{ascending:false}).limit(120);
+    const {data,error}=await db().from('posts').select('id,user_id,content,status_tag,is_deleted,created_at,profiles!posts_user_id_fkey(nickname,avatar_url)').order('created_at',{ascending:false}).limit(120);
     if(error) throw error; state.rows.posts=data||[];
   }
   async function loadComments(){
