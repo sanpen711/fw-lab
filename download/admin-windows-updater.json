@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-10-15T09:54:07.7630229Z",
-  "notes": "新增商城管理：上传1—4张3∶4商品图，设置标题与售价，编辑或删除商品；查看周边订单与收货信息，回填快递公司和单号。新增公告与活动管理，支持草稿、预览、发布、置顶、撤下及删除，配置活动封面、时间和参与入口。",
-  "version": "6.0.2",
+  "notes": "修复帖子与用户资料存在多条关联时管理台读取帖子失败的问题，明确使用帖子作者关联，恢复帖子列表、作者信息与详情读取。",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmFYT0xUZ3JOelN3dTlhQ3JrRjBXNEY3Tm4yT25pVnFOODFpTE1IV2o0UmwwUW9KZHFjeE5BRDVKeElOWEk3MG5VZFg3T1NlR3VGeXJ4VHFLZC8zbXdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMDU4MDM0CWZpbGU6RlfnrqHnkIblj7BfNi4wLjJfeDY0LXNldHVwLmV4ZQprUFlvTERON0dSc0xndTRoZTZHbytNVG1SOWZ3SjV4dXduT00xUU5OS2pMVXN6a0NGcXZ5YWNCanRCTzZCczlNbHp0UEUrOFZTbzl5cDFFMTg2SmFBUT09Cg==",
-      "url": "https://github.com/sanpen711/fw-lab/releases/download/fw-admin-v6.0.2/FW-Admin-6.0.2-Windows-x64-Setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWll4VzN2cGVCTEduR2VKeTdNYTVJUEZhemJleE9ia3hXeFlDb3gwcURBSFpaeEVrSmNVa296bTVXeVFTZDI5WlNrWVJuQmtXR0JEQ1M0ZFhxaFJkVFEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMTEzMDU3CWZpbGU6RlfnrqHnkIblj7BfNi4wLjNfeDY0LXNldHVwLmV4ZQppc2czSytPdlMvOWE0eWdKamVuMWZOdzlzd3RjU3BJdHpxOEJMcEpRNlk2TkVWWjVYMFJ6dkVaUmhXSFg4UEg3K3g3R1VaMnRXc0VWcXI4UDRKTDNCZz09Cg==",
+      "url": "https://github.com/sanpen711/fw-lab/releases/download/fw-admin-v6.0.3/FW-Admin-6.0.3-Windows-x64-Setup.exe"
     }
-  }
+  },
+  "pub_date": "2026-10-16T01:11:05.6773504Z",
+  "version": "6.0.3"
 }
