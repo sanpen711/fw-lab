@@ -88,7 +88,8 @@ test('私聊历史失败可重试，切换搭子后迟到响应不会串入新�
   await privateFixture(page);let fail=true,release!:()=>void;const pending=new Promise<void>(resolve=>release=resolve);
   await page.route('**/rest/v1/private_messages**',async route=>{
     if(!new URL(route.request().url()).searchParams.get('id')?.startsWith('lt.'))return route.fallback();
-    if(fail)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'测试网络失败'})});
+    // A terminal HTTP failure keeps this assertion independent of the SDK's 503 retry backoff.
+    if(fail)return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({message:'测试读取失败'})});
     await pending;return route.fallback();
   });
   await boot(page);await openChat(page);const messages=page.locator('[data-chat-messages]');
