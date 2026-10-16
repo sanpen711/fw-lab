@@ -68,7 +68,7 @@ async function listMemberships(){
 
 async function listPosts(){
   return fail(await client.from('posts')
-    .select('id,user_id,content,is_deleted,created_at,profiles(nickname,avatar_url,lab_code)')
+    .select('id,user_id,content,is_deleted,created_at,profiles!posts_user_id_fkey(nickname,avatar_url,lab_code)')
     .order('created_at',{ascending:false}).limit(200),'读取帖子失败')||[];
 }
 
