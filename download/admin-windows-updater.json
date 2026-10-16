@@ -1,11 +1,11 @@
 {
-  "notes": "修复帖子与用户资料存在多条关联时管理台读取帖子失败的问题，明确使用帖子作者关联，恢复帖子列表、作者信息与详情读取。",
+  "pub_date": "2026-10-16T03:25:17.1950479Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWll4VzN2cGVCTEduR2VKeTdNYTVJUEZhemJleE9ia3hXeFlDb3gwcURBSFpaeEVrSmNVa296bTVXeVFTZDI5WlNrWVJuQmtXR0JEQ1M0ZFhxaFJkVFEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMTEzMDU3CWZpbGU6RlfnrqHnkIblj7BfNi4wLjNfeDY0LXNldHVwLmV4ZQppc2czSytPdlMvOWE0eWdKamVuMWZOdzlzd3RjU3BJdHpxOEJMcEpRNlk2TkVWWjVYMFJ6dkVaUmhXSFg4UEg3K3g3R1VaMnRXc0VWcXI4UDRKTDNCZz09Cg==",
-      "url": "https://github.com/sanpen711/fw-lab/releases/download/fw-admin-v6.0.3/FW-Admin-6.0.3-Windows-x64-Setup.exe"
+      "url": "https://github.com/sanpen711/fw-lab/releases/download/fw-admin-v6.0.4/FW-Admin-6.0.4-Windows-x64-Setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWllSYWxiOUx3S2NSS2dTK1prYVl1U2t0R3l1ZHRZeXdPTmlITi9Sc1FpUXNnUGdrS01IZVROOFF0OTY0TUlEd0loNXY3YUk5aUJocWdxNlAwK1NSbkF3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMTIxMTA2CWZpbGU6RlfnrqHnkIblj7BfNi4wLjRfeDY0LXNldHVwLmV4ZQo3TkdzTGl3aVFoVS9DVGZvYk9aMXJaNzBhWkI5QkNmaTlCQkxFK0ZCQVVWcU5SMXE0V2dPcnRsVmtyOFUyaWVFeFM4LzhYS3k2WmZrQlNFNStnMytBZz09Cg=="
     }
   },
-  "pub_date": "2026-10-16T01:11:05.6773504Z",
-  "version": "6.0.3"
+  "version": "6.0.4",
+  "notes": "用户列表改为显示最近活跃时间，账号详情分别展示最近活跃和上次登录；仅前台打开和实际交互更新活跃时间，自动续期与闲置不计入，无历史记录时显示暂无记录。"
 }
