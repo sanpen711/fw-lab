@@ -1,11 +1,11 @@
 {
-  "platform": "Windows 10/11 64 位",
-  "publishedAt": "2026-10-16T03:35:18.4358222Z",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "rollbackVersion": "1.0.5",
-  "sha256": "66c00725c228dd2a506786ffffd1dfdd477423ebb102af885335116bab5b7851",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.27-setup.exe",
-  "notes": "Windows 1.3.27：新增真实活跃时间记录：前台打开和实际交互时上报，自动续期、后台和闲置不计入，账号活跃时间同步至管理台。",
+  "version": "1.3.28",
   "available": true,
-  "version": "1.3.27"
+  "publishedAt": "2026-10-16T10:09:25.2104066Z",
+  "rollbackVersion": "1.0.5",
+  "notes": "Windows 1.3.28：修复组队超过200条后的新消息展示，私聊支持加载更早消息；设置新增当前版本号和手动检查更新。",
+  "platform": "Windows 10/11 64 位",
+  "sha256": "db2fc6a3480cf6b2e12e85f727ffaa9db21953526f7489eba394d0071bebf621",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.28-setup.exe",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
 }
