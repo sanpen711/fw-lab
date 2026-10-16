@@ -7,6 +7,7 @@ on:
   workflow_run:
     workflows:
       - Build Windows App
+      - Build Windows Admin App
     types:
       - completed
   workflow_dispatch:
