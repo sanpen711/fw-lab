@@ -28,7 +28,7 @@ async function load(force=false){
       count();contacts=fail(await client.from('game_party_contacts').select('party_id,user_id,game_id,updated_at').in('party_id',partyIds),'读取游戏 ID 失败')||[];
       count();const notices=fail(await client.from('notifications').select('id,actor_id,type,target_id,created_at').eq('user_id',currentUser().id).in('type',PARTY_ALERT_TYPES).eq('is_read',false).in('target_id',partyIds.map(String)),'读取组队提醒失败')||[];
       const pendingKeys=new Set(members.filter(row=>row.state==='pending').map(row=>`${row.party_id}:${row.user_id}`));applicationAlerts=notices.filter(row=>row.type!=='game_party_apply'||pendingKeys.has(`${row.target_id}:${row.actor_id}`));
-      if(state.openPartyId){count();messages=fail(await client.from('game_party_messages').select('id,party_id,user_id,content,created_at').eq('party_id',state.openPartyId).order('created_at',{ascending:true}).limit(200),'读取队伍聊天失败')||[];}
+      if(state.openPartyId){count();messages=(fail(await client.from('game_party_messages').select('id,party_id,user_id,content,created_at').eq('party_id',state.openPartyId).order('id',{ascending:false}).limit(200),'读取队伍聊天失败')||[]).reverse();}
     }
     const profileIds=Array.from(new Set([...parties.map(row=>row.captain_id),...members.map(row=>row.user_id),...messages.map(row=>row.user_id)].filter(Boolean)));const profiles={...state.profiles};
     if(profileIds.length){count();const rows=fail(await client.from('profiles').select('id,nickname,avatar_url').in('id',profileIds),'读取队友资料失败')||[];rows.forEach(row=>{profiles[String(row.id)]=row;});}

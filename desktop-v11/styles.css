@@ -194,3 +194,7 @@ html body [data-view-panel="compose"] .compose-page{display:grid;grid-template-r
 .media-lightbox .lightbox-arrow svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .media-lightbox.has-gallery img{max-width:min(1400px,calc(100vw - 144px));max-height:calc(100vh - 112px)}
 .media-lightbox .lightbox-count{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);min-width:60px;padding:6px 12px;border:1px solid #ffffff26;border-radius:999px;background:#00000055;color:#fff;text-align:center;font-size:12px;font-variant-numeric:tabular-nums;line-height:1.4}
+
+.chat-history{display:grid;justify-items:center;gap:7px;color:var(--muted);font-size:11px;text-align:center}.chat-history p{margin:0;color:#ad5363}
+
+.settings-version-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 0 12px}.settings-version-row>div{display:grid;gap:5px}.settings-version-row span{font-size:12px;color:var(--muted)}.settings-version-row strong{font-size:18px}.settings-version-row button{flex:none}
