@@ -383,7 +383,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "assets/supabase-live.js?v=ui-consistency-20260811-1",
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
     "assets/supabase-config.js",
-    "assets/supabase-db.js?v=web-square-inline-20260914-1"
+    "assets/supabase-db.js?v=user-activity-20261016-1"
   ];
 
   function fail(src){

@@ -1,9 +1,12 @@
 import {createClient} from '@supabase/supabase-js';
 import {AUTH_STORAGE_KEY,SUPABASE_PUBLISHABLE_KEY,SUPABASE_URL} from './config.js';
+import {createUserActivityTracker} from '../../assets/fw-user-activity.mjs';
 
 const client=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
   auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:AUTH_STORAGE_KEY}
 });
+const activity=createUserActivityTracker({record:()=>client.rpc('fw_record_user_activity')});
+client.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT')activity.stop();});
 
 function fail(result,label){
   if(result?.error) throw new Error(`${label}：${result.error.message}`);
@@ -19,9 +22,11 @@ async function readAdmin(){
   if(!auth?.user) return null;
   const profile=first(fail(await client.rpc('fw_get_current_profile'),'确认管理员权限失败'));
   if(!profile||profile.role!=='admin'||profile.is_banned){
+    activity.stop();
     await client.auth.signOut();
     throw new Error('这个账号没有管理权限。');
   }
+  activity.setUser(auth.user.id);
   return {
     id:auth.user.id,
     email:auth.user.email||profile.email||'',

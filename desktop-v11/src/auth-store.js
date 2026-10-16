@@ -1,6 +1,7 @@
 import {createClient} from '@supabase/supabase-js';
 import {ACCOUNT_CACHE_KEY, APP_VERSION, PASSWORD_RESET_URL, SUPABASE_ANON_KEY, SUPABASE_URL} from './config.js';
 import {desktopCache} from './desktop-persistent-cache.js';
+import {createUserActivityTracker} from '../../assets/fw-user-activity.mjs';
 
 const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storageKey:'fw-lab-auth-token'}
@@ -8,6 +9,7 @@ const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 const listeners = new Set();
 const state = {ready:false, busy:false, session:null, user:null, error:''};
+const activity=createUserActivityTracker({record:()=>client.rpc('fw_record_user_activity')});
 let bootPromise = null;
 let lastProfileUserId = '';
 let pendingRegistration = null;
@@ -32,6 +34,7 @@ async function hydrateProfileCache(userId){
 }
 
 function emit(){
+  activity.setUser(state.user&&!state.user.cached?state.user.id:null);
   const snapshot={...state};
   listeners.forEach(listener=>listener(snapshot));
 }

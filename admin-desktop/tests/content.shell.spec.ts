@@ -1,11 +1,12 @@
 import {test,expect,Page} from '@playwright/test';
+test.use({timezoneId:'Asia/Shanghai'});
 
 const adminId='00000000-0000-4000-8000-000000000091';
 const authorId='00000000-0000-4000-8000-000000000092';
 const user={id:adminId,email:'content-admin@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{}};
 const author={nickname:'发帖作者',avatar_url:'',lab_code:'FW0092'};
 
-async function setup(page:Page,{failPosts=false}={}){
+async function setup(page:Page,{failPosts=false,lastActiveAt='2026-10-16T02:10:00Z'}:{failPosts?:boolean,lastActiveAt?:string|null}={}){
   const requests:string[]=[];
   const created_at=new Date().toISOString();
   await page.addInitScript(user=>localStorage.setItem('fw-admin-desktop-auth',JSON.stringify({access_token:'admin-token',refresh_token:'refresh',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,token_type:'bearer',user})),user);
@@ -14,7 +15,7 @@ async function setup(page:Page,{failPosts=false}={}){
     let data:unknown=[];
     if(path.endsWith('/auth/v1/user'))data=user;
     else if(path.endsWith('/fw_get_current_profile'))data=[{id:adminId,nickname:'内容管理员',role:'admin',is_banned:false}];
-    else if(path.endsWith('/admin_list_profiles'))data=[{id:authorId,...author,is_test_account:false,is_banned:false}];
+    else if(path.endsWith('/admin_list_profiles'))data=[{id:authorId,...author,is_test_account:false,is_banned:false,last_sign_in_at:'2026-10-10T06:27:00Z',last_active_at:lastActiveAt}];
     else if(path.endsWith('/admin_list_feedback_tickets'))data=[{id:301,user_id:authorId,nickname:author.nickname,content:'请检查反馈入口',status:'new',priority:'normal',created_at}];
     else if(path.endsWith('/posts')){
       requests.push(url.searchParams.get('select')||'');
@@ -54,4 +55,27 @@ test('帖子读取失败时保留其他模块数据，反馈仍可打开',async(
   await expect(page.locator('.metric-card').nth(1).locator('strong')).toHaveText('1');
   await page.locator('[data-nav="feedback"]').click();
   await expect(page.locator('.data-table')).toContainText('请检查反馈入口');
+});
+
+test('用户列表显示最近活跃，详情分开展示上次登录',async({page})=>{
+  await setup(page);
+  await page.locator('[data-nav="users"]').click();
+  await expect(page.locator('.data-table thead')).toContainText('最近活跃');
+  const row=page.locator(`[data-select-type="user"][data-select-id="${authorId}"]`);
+  await expect(row).toContainText('2026/10/16 10:10');
+  await expect(row).not.toContainText('2026/10/10');
+  await row.click();
+  await expect(page.locator('.detail-panel')).toContainText('最近活跃：2026/10/16 10:10');
+  await expect(page.locator('.detail-panel')).toContainText('上次登录：2026/10/10 14:27');
+});
+
+test('没有活跃记录时显示暂无记录，不使用旧登录时间补填',async({page})=>{
+  await setup(page,{lastActiveAt:null});
+  await page.locator('[data-nav="users"]').click();
+  const row=page.locator(`[data-select-type="user"][data-select-id="${authorId}"]`);
+  await expect(row).toContainText('暂无记录');
+  await expect(row).not.toContainText('2026/10/10');
+  await row.click();
+  await expect(page.locator('.detail-panel')).toContainText('最近活跃：暂无记录');
+  await expect(page.locator('.detail-panel')).toContainText('上次登录：');
 });

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fw-mobile-home-20261008-3';
+const CACHE_NAME = 'fw-mobile-activity-20261016-1';
 const APP_BASE = new URL('./', self.location.href).pathname;
 const SITE_BASE = APP_BASE.replace(/app\/?$/, '');
 const appPath = path => APP_BASE + path;
@@ -13,6 +13,7 @@ const APP_SHELL = [
   appPath('mobile-sync.css'),
   assetPath('supabase-config.js'),
   assetPath('supabase-db.js'),
+  assetPath('fw-user-activity.mjs'),
   assetPath('fw-download-client.js'),
   appPath('app.js'),
   appPath('nav.js'),
