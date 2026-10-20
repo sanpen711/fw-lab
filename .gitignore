@@ -11,3 +11,7 @@ desktop-v11/dist/
 admin-desktop/dist/
 admin-desktop/src-tauri/target/
 supabase/.temp/
+
+.web-stage/
+.site/
+web-client/dist/
