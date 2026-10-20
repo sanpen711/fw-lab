@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-10-16T10:09:25.2104066Z",
-  "version": "1.3.28",
+  "notes": "Windows 1.3.29：学术研讨支持2～4个初始选项，可选1/3/7/15/30天投票时长；发起人可选择是否允许他人补充选项。",
+  "version": "1.3.29",
+  "pub_date": "2026-10-20T06:50:34.1998757Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWldYelB6eG9BcUxEMHhoK1k4Wk42U2xlQWFVc2hNdGh3V083V3AvSStkV2JxelVlSWU0TzZjR0FMQ1U1akNEK0RJQUExOEwwKzFCZmN1d01od2Z6aUE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMTQ1MjI2CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMjhfeDY0LXNldHVwLmV4ZQpQV2c0ODkycDhOVDNRTFh2YTF6SXdydzYyTWM4eWFsNWZrRk5oOFFHZU9hMkYwZkZjbW9jNk11QkUwRVBOMEdQc0l3c3Y2enJBNmQvUmx0QTVSVERCZz09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.28-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlN1ekdMVjBYZnRKOVdDZklqR25ZVng0NmlKZDVIZkN0Nk5wcFpqazdaMlBteVd4MzRZSWxVU2IwSEI2dXkvTHNDRUFuMDB2RHJKVktja3o2MDZRaWd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyNDc5MDI0CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMjlfeDY0LXNldHVwLmV4ZQo5WkFYbEtEUHNNK3NuVXZZbW44Z2VuVXV0aXJVUUhkK09aYVRGNnozZjlaL0J5SlA3a0NKd0FvYk5reEZlaXZlNGZHRWVYODRFTkY2elJ3RlF0U29EUT09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.29-setup.exe"
     }
-  },
-  "notes": "Windows 1.3.28：修复组队超过200条后的新消息展示，私聊支持加载更早消息；设置新增当前版本号和手动检查更新。"
+  }
 }
