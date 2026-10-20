@@ -1,0 +1,24 @@
+name: Browser Client Checks
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desktop-v11/package-lock.json
+      - run: npm --prefix desktop-v11 ci
+      - run: node scripts/build-web.mjs
+      - run: node scripts/prepare-web-site.mjs
+      - run: node --test web-client/tests/contracts.test.mjs desktop-v11/tests/membership-levels.test.mjs desktop-v11/tests/square-media.test.mjs desktop-v11/tests/shop-model.test.mjs desktop-v11/tests/site-content-model.test.mjs
+      - working-directory: desktop-v11
+        run: npx playwright install --with-deps chromium
+      - run: desktop-v11/node_modules/.bin/playwright test --config web-client/playwright.config.ts
