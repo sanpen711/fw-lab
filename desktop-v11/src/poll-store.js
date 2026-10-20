@@ -39,7 +39,7 @@ async function load(force=false){
   if(!force&&!state.loaded){const hit=await hydrateCache();if(hit){load(true).catch(()=>{});return state.polls;}}
   if(state.loading||(!force&&state.loaded))return state.polls;const showInitial=!state.loaded;const previousSignature=contentSignature(state.polls,state.profiles,state.dailyCount);state.loading=true;state.error='';if(showInitial)emit();
   try{
-    count();const rows=fail(await client.from('polls').select('id,user_id,title,is_official,created_at,ends_at,closed_at,conclusion').eq('is_deleted',false).order('is_official',{ascending:false}).order('created_at',{ascending:false}).limit(80),'读取课题失败')||[];
+    count();const rows=fail(await client.from('polls').select('id,user_id,title,is_official,created_at,ends_at,closed_at,conclusion,allow_user_options').eq('is_deleted',false).order('is_official',{ascending:false}).order('created_at',{ascending:false}).limit(80),'读取课题失败')||[];
     const ids=rows.map(row=>row.id);let options=[];let stats=[];let votes=[];
     if(ids.length){
       count();options=fail(await client.from('poll_options').select('id,poll_id,user_id,label,source,created_at').in('poll_id',ids).order('created_at',{ascending:true}),'读取选项失败')||[];
@@ -59,7 +59,15 @@ function activate(){active=true;if(!channel){channel=client.channel('desktop-v11
 function deactivate(){active=false;clearTimeout(refreshTimer);if(channel){client.removeChannel(channel);channel=null;}}
 
 async function mutate(action){requireUser();if(state.busy)throw new Error('正在处理，请稍候。');state.busy=true;emit();try{const result=await action();await load(true);return result;}finally{state.busy=false;emit();}}
-async function createPoll({title,options,isOfficial=false}){const user=requireUser();const clean=String(title||'').trim();const values=(options||[]).map(value=>String(value||'').trim());if(!clean)throw new Error('请先填写课题标题。');if(clean.length>120)throw new Error('课题标题最多 120 个字。');if(values.length!==4||values.some(value=>!value))throw new Error('创建投票必须填写 4 个初始选项。');if(new Set(values.map(value=>value.toLowerCase())).size!==4)throw new Error('初始选项不能重复。');return mutate(()=>client.rpc('fw_create_poll',{p_title:clean,p_options:values,p_is_official:Boolean(isOfficial&&user.role==='admin')}).then(result=>fail(result,'发布课题失败')));}
+async function createPoll({title,options,isOfficial=false,durationDays=7,allowUserOptions=false}){
+  const user=requireUser();const clean=String(title||'').trim();const values=(options||[]).map(value=>String(value||'').trim()).filter(Boolean);const days=Number(durationDays);
+  if(!clean)throw new Error('请先填写课题标题。');if(clean.length>120)throw new Error('课题标题最多 120 个字。');
+  if(values.length<2||values.length>4)throw new Error('创建投票需要填写 2～4 个初始选项。');
+  if(values.some(value=>value.length>80))throw new Error('每个选项最多 80 个字。');
+  if(new Set(values.map(value=>value.toLowerCase())).size!==values.length)throw new Error('初始选项不能重复。');
+  if(![1,3,7,15,30].includes(days))throw new Error('投票时长请选择 1、3、7、15 或 30 天。');
+  return mutate(()=>client.rpc('fw_create_poll_v2',{p_title:clean,p_options:values,p_is_official:Boolean(isOfficial&&user.role==='admin'),p_duration_days:days,p_allow_user_options:Boolean(allowUserOptions)}).then(result=>fail(result,'发布课题失败')));
+}
 async function vote(pollId,optionId){return mutate(()=>client.rpc('fw_vote_poll',{p_poll_id:Number(pollId),p_option_id:Number(optionId)}).then(result=>fail(result,'投票失败')));}
 async function addOption(pollId,label){const clean=String(label||'').trim();if(!clean)throw new Error('请先填写新增选项。');return mutate(async()=>{const optionId=fail(await client.rpc('fw_add_poll_option',{p_poll_id:Number(pollId),p_label:clean}),'新增选项失败');if(optionId)fail(await client.rpc('fw_vote_poll',{p_poll_id:Number(pollId),p_option_id:Number(optionId)}),'新选项投票失败');return optionId;});}
 async function deleteOption(optionId){return mutate(()=>client.rpc('fw_delete_my_poll_option',{p_option_id:Number(optionId)}).then(result=>fail(result,'删除选项失败')));}

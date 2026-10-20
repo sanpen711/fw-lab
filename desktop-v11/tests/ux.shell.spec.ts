@@ -9,11 +9,53 @@ async function incoming(page:Page){
 async function deliver(page:Page){await page.evaluate(other=>{const handler=(window as any).__uxSubscriptions.find(x=>x.filter.table==='private_messages'&&x.filter.event==='INSERT');handler.callback({new:{id:1001,conversation_id:601,sender_id:other,content:'新消息',is_deleted:false,created_at:new Date().toISOString()}});},other);}
 
 test('投票发布失败保留标题、四个选项，并可重试',async({page})=>{
-  await boot(page,{failRpc:'fw_create_poll'});await nav(page,'rooms');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');
+  await boot(page,{failRpc:'fw_create_poll_v2'});await nav(page,'rooms');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');
   await expect(form.locator('[name="title"]')).toBeFocused();
   await form.locator('[name="title"]').fill('保留标题');for(let i=1;i<=4;i++)await form.locator(`[name="option${i}"]`).fill('选项'+i);
   await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('模拟网络失败');await expect(form.locator('[name="title"]')).toHaveValue('保留标题');for(let i=1;i<=4;i++)await expect(form.locator(`[name="option${i}"]`)).toHaveValue('选项'+i);
   await expect(form.locator('[type="submit"]')).toBeEnabled();
+});
+
+for(const [days,count] of [[1,2],[3,3],[7,4],[15,2],[30,3]])test(`投票支持${count}个选项、${days}天并发送补充权限`,async({page})=>{
+  await boot(page);await nav(page,'rooms');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');
+  await expect(form.locator('[name="durationDays"]')).toHaveValue('7');await expect(form.locator('[name="allowUserOptions"]')).not.toBeChecked();
+  expect(await form.locator('[name="durationDays"] option').allTextContents()).toEqual(['1天','3天','7天','15天','30天']);
+  await form.locator('[name="title"]').fill('可配置投票');for(let i=1;i<=count;i++)await form.locator(`[name="option${i}"]`).fill('选项'+i);
+  await form.locator('[name="durationDays"]').selectOption(String(days));if(days===30)await form.locator('[name="allowUserOptions"]').check();
+  const [req]=await Promise.all([page.waitForRequest(r=>r.url().endsWith('/fw_create_poll_v2')),form.locator('[type="submit"]').click()]);
+  expect(req.postDataJSON()).toEqual({p_title:'可配置投票',p_options:Array.from({length:count},(_,i)=>'选项'+(i+1)),p_is_official:false,p_duration_days:days,p_allow_user_options:days===30});
+  await expect(form).toBeHidden();
+});
+
+test('投票失败保留时长和补充权限，重复选项不提交',async({page})=>{
+  await boot(page,{failRpc:'fw_create_poll_v2'});await nav(page,'rooms');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');
+  await form.locator('[name="title"]').fill('保留投票设置');await form.locator('[name="option1"]').fill('相同');await form.locator('[name="option2"]').fill(' 相同 ');await form.locator('[name="durationDays"]').selectOption('15');await form.locator('[name="allowUserOptions"]').check();
+  let writes=0;page.on('request',r=>{if(r.url().endsWith('/fw_create_poll_v2'))writes++;});
+  await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('初始选项不能重复');expect(writes).toBe(0);
+  await form.locator('[name="option2"]').fill('不同');await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('模拟网络失败');expect(writes).toBe(1);
+  await expect(form.locator('[name="durationDays"]')).toHaveValue('15');await expect(form.locator('[name="allowUserOptions"]')).toBeChecked();await expect(form.locator('[type="submit"]')).toBeEnabled();
+});
+
+test('课题按发起人设置显示补充入口，新增仍自动投票，结束后只读',async({page})=>{
+  await boot(page);const now=Date.now();
+  const rows=[{id:81,title:'禁止补充',allow_user_options:false},{id:82,title:'开放补充',allow_user_options:true},{id:83,title:'历史课题'},{id:84,title:'已结束的课题',allow_user_options:true}].map(row=>({...row,user_id:other,is_official:false,created_at:new Date(now-86400000).toISOString(),ends_at:new Date(now+(row.id===84?-3600000:29*86400000)).toISOString()}));
+  await page.route('**/rest/v1/polls?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(rows)}));
+  await page.route('**/rest/v1/poll_options?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(rows.flatMap(row=>[1,2].map(i=>({id:row.id*10+i,poll_id:row.id,label:'选项'+i,source:'initial',user_id:null}))))}));
+  await page.route('**/rest/v1/rpc/fw_add_poll_option',route=>route.fulfill({status:200,contentType:'application/json',body:'829'}));
+  await nav(page,'rooms');await expect(page.locator('.poll-card')).toHaveCount(3);
+  const closed=page.locator('.poll-card').filter({has:page.getByRole('heading',{name:'禁止补充',exact:true})});await expect(closed.locator('[data-poll-add-option]')).toHaveCount(0);await expect(closed).toContainText('发起人未开放补充选项');
+  await expect(page.locator('[data-poll-add-option="82"]')).toBeVisible();await expect(page.locator('[data-poll-add-option="83"]')).toBeVisible();await expect(page.locator('.poll-list')).not.toContainText('默认 7 天截止');
+  const calls:string[]=[];page.on('request',req=>{if(req.url().endsWith('/fw_add_poll_option')||req.url().endsWith('/fw_vote_poll'))calls.push(new URL(req.url()).pathname.split('/').pop()!);});
+  await page.locator('[data-poll-add-option="82"] input').fill('补充项');const [voteReq]=await Promise.all([page.waitForRequest(req=>req.url().endsWith('/fw_vote_poll')),page.locator('[data-poll-add-option="82"] button').click()]);
+  expect(voteReq.postDataJSON()).toEqual({p_poll_id:82,p_option_id:829});expect(calls).toEqual(['fw_add_poll_option','fw_vote_poll']);
+  await page.locator('[data-poll-filter="ended"]').click();await expect(page.locator('.poll-card')).toHaveCount(1);await expect(page.locator('[data-poll-add-option]')).toHaveCount(0);await expect(page.locator('[data-poll-vote]').first()).toBeDisabled();
+});
+
+test('投票发布表单在小窗口内可操作',async({page})=>{
+  await page.setViewportSize({width:760,height:560});await boot(page);await nav(page,'rooms');await page.locator('[data-poll-create-toggle]').click();
+  const form=page.locator('[data-poll-create-form]');await form.locator('[name="durationDays"]').selectOption('30');await form.locator('[name="allowUserOptions"]').check();await form.locator('[type="submit"]').scrollIntoViewIfNeeded();await expect(form.locator('[type="submit"]')).toBeInViewport();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  if(process.env.FW_POLL_QA_DIR)await page.screenshot({path:`${process.env.FW_POLL_QA_DIR}/poll-form-small.png`});
 });
 
 test('创建组队失败保留完整表单和申请开关',async({page})=>{
