@@ -8,7 +8,7 @@ Windows source files and release versions are not modified by this build.
 Browser adaptations provide optional sign-in, existing web session compatibility,
 normal browser routes/back/refresh, payment popup handling, and browser settings.
 The browser shell has its own horizontal site navigation, centered content,
-page headings, document scrolling, and shared footer in `web.css`. Interactive
+short page descriptions, document scrolling, and shared footer in `web.css`. Interactive
 two-column panels remain bounded within the page. The native sidebar and
 full-window layout are not used on the website. Layout changes belong only in
 `web-client/`, so the Windows application keeps its existing presentation.
