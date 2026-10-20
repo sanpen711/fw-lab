@@ -10,15 +10,14 @@ function pageHeading(view,mode){
   const intro=document.querySelector('[data-web-page-intro]');
   intro.hidden=view==='home'||['rules','moderation'].includes(view);
   const title=view==='square'&&mode==='echo'?'回声':(names[view]||'回声');
-  document.querySelector('[data-web-page-title]').textContent=title;
-  document.querySelector('[data-web-page-crumb]').textContent=title;
+  document.querySelector('#web-main').setAttribute('aria-label',title);
   document.querySelector('[data-web-page-description]').textContent=descriptions[view]||'';
   document.querySelectorAll('.web-nav [data-nav]').forEach(node=>{
     const navView=['activities','announcements'].includes(view)?'home':view==='shop'?'membership':view;
     if(node.dataset.nav===navView)node.setAttribute('aria-current','page');else node.removeAttribute('aria-current');
   });
 }
-// Existing feature headers retain their actions; the website supplies page titles.
+// Navigation identifies the page; retain only descriptions and feature actions.
 document.querySelectorAll('.section-heading').forEach(heading=>{
   const copy=heading.querySelector(':scope > div:first-child');
   if(copy?.querySelector('h1')){copy.classList.add('web-heading-copy');heading.classList.add('web-feature-toolbar');if(!heading.querySelector('button'))heading.classList.add('web-empty-toolbar');}

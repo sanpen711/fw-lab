@@ -110,7 +110,7 @@ export function adaptHtml(source){
       </div>
     </header>`+source.slice(sidebarEnd+'    </aside>'.length);
   source=once(source,'<main class="main-content">',`<main class="main-content" id="web-main" tabindex="-1">
-      <header class="web-page-intro" data-web-page-intro hidden><p>F.w 研究所 <span>/</span> <span data-web-page-crumb></span></p><h1 data-web-page-title></h1><div data-web-page-description></div></header>`,'website main');
+      <header class="web-page-intro" data-web-page-intro hidden><p data-web-page-description></p></header>`,'website main');
   source=once(source,'    </main>','    </main>\n    <footer class="web-site-footer"><div><strong>F.w 研究所</strong><span>允许低功耗运行</span></div><nav aria-label="网站信息"><a href="/privacy.html" target="_blank" rel="noopener">隐私政策</a><a href="/download/fw-lab-windows-latest.exe" download>客户端下载</a></nav><a class="web-filing" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">黑ICP备2026012853号-1</a></footer>','website footer');
   const start=source.indexOf('            <section class="settings-card">\n              <header><div><h2>应用显示'),end=source.indexOf('            <section class="settings-card settings-cache-card">',start);
   assert(start>=0&&end>start);source=source.slice(0,start)+source.slice(end);

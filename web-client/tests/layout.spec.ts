@@ -19,13 +19,14 @@ for(const viewport of [{width:760,height:560},{width:1440,height:900}]){
   });
   await page.locator('[data-sidebar-more-toggle]').click();await expect(page.locator('.sidebar-more-menu')).toBeInViewport();await page.keyboard.press('Escape');await expect(page.locator('[data-sidebar-more-toggle]')).toHaveAttribute('aria-expanded','false');
   await page.goto('/square.html');await page.locator('.square-post .post-meta').click();await expect(page.locator('[data-comment-form]')).toBeVisible();
+  await expect(page.locator('[data-web-page-intro]')).toHaveText('随时吐槽，围观日常。把想说的话留在这里。');await expect(page.locator('[data-web-page-crumb],[data-web-page-title]')).toHaveCount(0);
   const workspace=await page.locator('.square-page').boundingBox(),intro=await page.locator('[data-web-page-intro]').boundingBox();expect(workspace!.y).toBeGreaterThanOrEqual(intro!.y+intro!.height);expect(workspace!.x).toBeGreaterThanOrEqual(20);expect(workspace!.x+workspace!.width).toBeLessThanOrEqual(viewport.width-20);
   await page.locator('[data-comment-form] textarea').scrollIntoViewIfNeeded();await page.locator('[data-comment-form] textarea').fill('布局检查草稿');await expect(page.locator('[data-comment-form] textarea')).toHaveValue('布局检查草稿');
  });
 }
 
-test('商城和会员切换时，网页标题与地址同步',async({page})=>{
- await mock(page,{loggedIn:true});await page.goto('/shop.html');await expect(page.locator('[data-web-page-title]')).toHaveText('周边商城');
- await page.locator('[data-membership-tab="benefits"]').click();await expect(page).toHaveURL(/membership.html$/);await expect(page.locator('[data-web-page-title]')).toHaveText('会员');
- await page.locator('[data-membership-tab="shop"]').click();await expect(page).toHaveURL(/shop.html$/);await expect(page.locator('[data-web-page-title]')).toHaveText('周边商城');
+test('商城和会员切换时只显示简介，浏览器标题与地址同步',async({page})=>{
+ await mock(page,{loggedIn:true});await page.goto('/shop.html');await expect(page).toHaveTitle('周边商城｜F.w 研究所');await expect(page.locator('[data-web-page-intro]')).toHaveText('研究所的日常，也可以带回家。');
+ await page.locator('[data-membership-tab="benefits"]').click();await expect(page).toHaveURL(/membership.html$/);await expect(page).toHaveTitle('会员｜F.w 研究所');await expect(page.locator('[data-web-page-intro]')).toHaveText('查看会员权益与装扮。固定期限，不会自动续费。');
+ await page.locator('[data-membership-tab="shop"]').click();await expect(page).toHaveURL(/shop.html$/);await expect(page).toHaveTitle('周边商城｜F.w 研究所');await expect(page.locator('[data-web-page-intro]')).toHaveText('研究所的日常，也可以带回家。');await expect(page.locator('[data-web-page-crumb],[data-web-page-title]')).toHaveCount(0);
 });
