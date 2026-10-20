@@ -238,3 +238,7 @@ body.is-offline .app-main{padding-top:calc(env(safe-area-inset-top,0px) + 82px)}
 .install-actions{display:grid;gap:10px}
 @media(max-width:374px){.nav-grid{grid-template-columns:1fr}.post-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.split-actions{grid-template-columns:1fr}.app-hero h1{font-size:30px}.comment-form{grid-template-columns:minmax(0,1fr) 32px 32px 50px}.comment-tool{width:32px}}
 @media(min-width:520px){.app-shell{left:0;right:0;width:430px;margin:0 auto;box-shadow:0 0 0 1px rgba(16,23,15,.12)}}
+
+.app-filing{margin:24px 0 8px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
+.app-filing a{display:inline-block;padding:12px;color:inherit;text-underline-offset:3px}
+.app-filing a:focus-visible{outline:2px solid currentColor;outline-offset:2px}

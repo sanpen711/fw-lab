@@ -573,6 +573,11 @@ input{height:52px;padding:0 16px}
   gap:24px;
   font-weight:800;
 }
+.footer-with-filing{flex-wrap:wrap}
+.footer-filing{flex-basis:100%;margin:0;text-align:center;font-size:12px;font-weight:600;line-height:1.6}
+.footer-filing a{display:inline-block;padding:8px;color:inherit;text-underline-offset:3px}
+.footer-filing a:hover{text-decoration:underline}
+.footer-filing a:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 .empty{
   padding:30px;
   background:var(--card);
