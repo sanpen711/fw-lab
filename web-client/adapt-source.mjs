@@ -15,6 +15,9 @@ export function adaptModule(name,source){
     change("detectSessionInUrl:false, storageKey:'fw-lab-auth-token'","detectSessionInUrl:true, storageKey:'sb-ekbovsmxbiplhyrzxoyw-auth-token'");
     change("platform:'windows'","platform:'web'");
   }
+  if(name==='alignment-nav-fix.js'){
+    change("import './square-scroll-fix.js';",'// Browser document scrolling is managed by web.css.');
+  }
   if(name==='desktop-persistent-cache.js'){
     change("if(typeof invoke!=='function')return{enabled:false,entries:0,bytes:0,path:'',fallback:true};","if(typeof invoke!=='function')return{enabled:true,entries:memory.size,bytes:[...memory.values()].reduce((total,value)=>total+new TextEncoder().encode(JSON.stringify(value)).byteLength,0),path:'',fallback:true};");
   }
@@ -84,12 +87,37 @@ export function adaptHtml(source){
   source=once(source,'<body class="auth-required">','<body class="fw-browser">','body');
   source=once(source,'<div class="modal auth-gate-modal auth-gate-checking" data-account-modal data-auth-locked="true">','<div class="modal" data-account-modal data-auth-locked="false" hidden>','optional sign-in dialog');
   source=once(source,'hidden inert aria-hidden="true"','aria-hidden="false"','guest shell');
+  // Keep the shared feature hooks, but give the website its own horizontal shell.
+  const sidebarStart=source.indexOf('    <aside class="sidebar"'),sidebarEnd=source.indexOf('    </aside>',sidebarStart);
+  assert(sidebarStart>=0&&sidebarEnd>sidebarStart);
+  const sidebar=source.slice(sidebarStart,sidebarEnd);
+  const nav=sidebar.match(/<nav class="nav-list">[\s\S]*?<\/nav>/)?.[0];
+  const account=sidebar.slice(sidebar.indexOf('      <div class="account-menu-wrap">'));
+  assert(nav&&account.includes('data-open-account'));
+  source=source.slice(0,sidebarStart)+`    <a class="web-skip-link" href="#web-main">跳到主要内容</a>
+    <header class="web-header">
+      <div class="web-header-inner">
+        <div class="web-header-top">
+          <button class="brand web-brand" type="button" data-nav="home" aria-label="F.w 研究所首页"><strong>F.W</strong><span>研究所</span></button>
+          <span class="web-brand-note">允许低功耗运行的精神休息室</span>
+          <div class="web-header-actions">
+            <a class="web-download" href="/download/fw-lab-windows-latest.exe" download>下载客户端 ↗</a>
+            <button class="primary web-compose" type="button" data-nav="compose">＋ 发牢骚</button>
+            ${account}
+          </div>
+        </div>
+        ${nav.replace('<nav class="nav-list">','<nav class="nav-list web-nav" aria-label="网站主导航">')}
+      </div>
+    </header>`+source.slice(sidebarEnd+'    </aside>'.length);
+  source=once(source,'<main class="main-content">',`<main class="main-content" id="web-main" tabindex="-1">
+      <header class="web-page-intro" data-web-page-intro hidden><p>F.w 研究所 <span>/</span> <span data-web-page-crumb></span></p><h1 data-web-page-title></h1><div data-web-page-description></div></header>`,'website main');
+  source=once(source,'    </main>','    </main>\n    <footer class="web-site-footer"><div><strong>F.w 研究所</strong><span>允许低功耗运行</span></div><nav aria-label="网站信息"><a href="/privacy.html" target="_blank" rel="noopener">隐私政策</a><a href="/download/fw-lab-windows-latest.exe" download>客户端下载</a></nav><a class="web-filing" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">黑ICP备2026012853号-1</a></footer>','website footer');
   const start=source.indexOf('            <section class="settings-card">\n              <header><div><h2>应用显示'),end=source.indexOf('            <section class="settings-card settings-cache-card">',start);
   assert(start>=0&&end>start);source=source.slice(0,start)+source.slice(end);
   source=source.replace('管理当前账号和这台电脑上的客户端显示。','管理个人资料和当前浏览器。')
     .replace('清理帖子、图片等本机临时缓存，不会删除账号、登录状态、表情、游戏文件或应用显示设置。','清理网页临时缓存，保留登录状态、个人资料和已上传的表情。')
     .replace('软件说明','网站说明').replace('data-check-updates>检查更新','data-web-reload>刷新网页')
-    .replace(/<p class="phase-note">[^<]*<\/p>/,'<footer class="web-site-footer"><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">黑ICP备2026012853号-1</a><span><a href="/privacy.html" target="_blank" rel="noopener">隐私政策</a> · <a href="/download/fw-lab-windows-latest.exe" download>客户端下载</a></span></footer>');
+    .replace(/<p class="phase-note">[^<]*<\/p>/,'');
   source=source.replace(/<button[^>]+data-game-open="contra"[^>]*>[\s\S]*?<\/button>/,'');
   source=source.replace(/<script type="module" src="\/src\/(app|alignment-nav-fix|feature-alignment|game-center)\.js"><\/script>\s*/g,'');
   source=source.replace('</head>',`<meta name="description" content="F.w 研究所：允许低功耗运行的精神休息室。"><link rel="icon" href="/assets/icons/icon-192.png"><link rel="stylesheet" href="/web.css"></head>`)
