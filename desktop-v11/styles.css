@@ -198,3 +198,5 @@ html body [data-view-panel="compose"] .compose-page{display:grid;grid-template-r
 .chat-history{display:grid;justify-items:center;gap:7px;color:var(--muted);font-size:11px;text-align:center}.chat-history p{margin:0;color:#ad5363}
 
 .settings-version-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 0 12px}.settings-version-row>div{display:grid;gap:5px}.settings-version-row span{font-size:12px;color:var(--muted)}.settings-version-row strong{font-size:18px}.settings-version-row button{flex:none}
+
+.settings-filing{display:grid;gap:8px;padding-top:16px;border-top:1px solid var(--line);font-size:12px}.settings-filing>span{color:var(--muted)}.settings-filing a{justify-self:start;color:var(--deep);text-decoration:underline;text-underline-offset:3px}.settings-filing a:focus-visible{outline:2px solid var(--deep);outline-offset:3px}
