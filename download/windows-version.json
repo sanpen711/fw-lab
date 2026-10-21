@@ -1,11 +1,11 @@
 {
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.30-setup.exe",
-  "notes": "Windows 1.3.30：设置中的软件说明新增网站备案信息，可通过默认浏览器前往工信部备案查询。",
+  "platform": "Windows 10/11 64 位",
   "rollbackVersion": "1.0.5",
   "available": true,
+  "version": "1.3.31",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.31-setup.exe",
+  "sha256": "55d8a1f888882623fb618bcb9b5b69975e1ec6622f0ebffe01dad5096afd3e10",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "publishedAt": "2026-10-20T07:18:08.6694361Z",
-  "version": "1.3.30",
-  "platform": "Windows 10/11 64 位",
-  "sha256": "6a39399ebd327bc38504a2907e9ead6c6b16562781e8b5d8996bc40130f13341"
+  "notes": "Windows 1.3.31：新增内容举报入口，支持举报隐藏、人工复核和发言限制；同步清理被隐藏内容的页面缓存。",
+  "publishedAt": "2026-10-21T07:52:24.8862540Z"
 }

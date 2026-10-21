@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-10-20T07:18:08.6694361Z",
-  "version": "1.3.30",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmFjcDB2YXVmb2tab2FBQUFHeVR3OFRqWFJaZjVSc1IvQmZLamJ2MEl6TExvZVJJK2tKckpJUXBET1E4TnVUamZWRm1hL3hEL0x0ZGpCVEJyM2xBclFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyNDgwNjc5CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzBfeDY0LXNldHVwLmV4ZQpVQ1Z6bDZIejVhUEdvbWR4akF3Y28reUY3RDlZNzN3VVVQNnpCRTUxZFNRWlE3RmlZSVFTUjhFQjFWTUVGQVU3THBhcFZVT3NXUGNIV3JWQVBsd1dCZz09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.30-setup.exe"
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.31-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmJHaXNkRzdDVGlCRmFveE5sa1NucDhaM2ptYzFJRmJBNDZFb3dSd0ZSemxBZy85KzUzTndibU9vOW1Pa1pKaXJYaTBiK1hLaFo5M2VnbnhqUWlYK2c0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyNTY5MTM1CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzFfeDY0LXNldHVwLmV4ZQp1dkJsanVSL1ZPODBIUkNFd3BqVXpGVXRleWNMSEVkU1krcTlQTlhtbXREdGc4N2R6czBWMlRTK29zL1Z1WGRvUzQvdis4amVTWFk4VENqZmZuSkdCQT09Cg=="
     }
   },
-  "notes": "Windows 1.3.30：设置中的软件说明新增网站备案信息，可通过默认浏览器前往工信部备案查询。"
+  "version": "1.3.31",
+  "pub_date": "2026-10-21T07:52:24.8862540Z",
+  "notes": "Windows 1.3.31：新增内容举报入口，支持举报隐藏、人工复核和发言限制；同步清理被隐藏内容的页面缓存。"
 }
