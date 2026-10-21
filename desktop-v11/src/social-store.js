@@ -484,3 +484,5 @@ export const socialStore={
   state,ECHO_TYPES,refreshBadges,loadEcho,markEchoRead,markAllEchoRead,loadBuddy,setBuddyTab,searchProfiles,sendFriendRequest,respondFriendship,removeFriendship,openChat,loadEarlierChat,closeChat,sendMessage,markPrivateRead,loadStickers,uploadSticker,deleteSticker,
   subscribe(listener){listeners.add(listener);listener({...state,badges:{...state.badges}});return()=>listeners.delete(listener);}
 };
+
+window.addEventListener('fw:content-review-change',event=>{const e=event.detail;if(e.kind!=='private_message')return;if(!e.visible){state.chat.rows=state.chat.rows.filter(r=>String(r.id)!==String(e.target_id));for(const [id,row]of Object.entries(state.buddy.latest))if(String(row.id)===String(e.target_id))delete state.buddy.latest[id];emit();if(currentUser())persistBuddyCache(currentUser().id).catch(()=>{});}if(state.chat.targetId)openChat(state.chat.targetId).catch(()=>{});});

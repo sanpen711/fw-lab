@@ -52,7 +52,7 @@ jobs:
           npm ci
           npm --prefix desktop-v11 ci
 
-      - name: Verify Windows 1.3.30 local frontend
+      - name: Verify Windows 1.3.31 local frontend
         run: npm --prefix desktop-v11 run test:static
 
       - name: Install Playwright Chromium
@@ -63,7 +63,7 @@ jobs:
         working-directory: desktop-v11
         run: npx playwright test --config playwright.config.ts
 
-      - name: Build Windows 1.3.30 NSIS installer
+      - name: Build Windows 1.3.31 NSIS installer
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: npx tauri build --config src-tauri/tauri.v11.conf.json --bundles nsis
@@ -77,27 +77,27 @@ jobs:
         shell: pwsh
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
-          if (-not $installer) { throw 'Windows 1.3.30 NSIS installer was not generated.' }
-          if ($installer.Name -notmatch '1\.3\.30') { throw "Unexpected installer name: $($installer.Name)" }
+          if (-not $installer) { throw 'Windows 1.3.31 NSIS installer was not generated.' }
+          if ($installer.Name -notmatch '1\.3\.31') { throw "Unexpected installer name: $($installer.Name)" }
 
           $signatureFile = Get-Item "$($installer.FullName).sig" -ErrorAction SilentlyContinue
           if (-not $signatureFile) { throw 'Windows updater signature was not generated.' }
 
           Copy-Item $installer.FullName 'download/fw-lab-windows-latest.exe' -Force
           Copy-Item $signatureFile.FullName 'download/fw-lab-windows-latest.exe.sig' -Force
-          Copy-Item $installer.FullName 'download/fw-lab-windows-1.3.30-setup.exe' -Force
-          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.3.30-setup.exe.sig' -Force
+          Copy-Item $installer.FullName 'download/fw-lab-windows-1.3.31-setup.exe' -Force
+          Copy-Item $signatureFile.FullName 'download/fw-lab-windows-1.3.31-setup.exe.sig' -Force
 
           $hash = (Get-FileHash 'download/fw-lab-windows-latest.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
           $publishedAt = (Get-Date).ToUniversalTime().ToString('o')
           $signature = (Get-Content $signatureFile.FullName -Raw).Trim()
-          $notes = 'Windows 1.3.30：设置中的软件说明新增网站备案信息，可通过默认浏览器前往工信部备案查询。'
+          $notes = 'Windows 1.3.31：新增内容举报入口，支持举报隐藏、人工复核和发言限制；同步清理被隐藏内容的页面缓存。'
 
           $metadata = @{
             available = $true
-            version = '1.3.30'
+            version = '1.3.31'
             platform = 'Windows 10/11 64 位'
-            downloadUrl = 'https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.30-setup.exe'
+            downloadUrl = 'https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.31-setup.exe'
             publishedAt = $publishedAt
             sha256 = $hash
             notes = $notes
@@ -107,13 +107,13 @@ jobs:
           $metadata | ConvertTo-Json | Set-Content 'download/windows-version.json' -Encoding utf8
 
           $updaterMetadata = @{
-            version = '1.3.30'
+            version = '1.3.31'
             notes = $notes
             pub_date = $publishedAt
             platforms = @{
               'windows-x86_64' = @{
                 signature = $signature
-                url = 'https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.30-setup.exe'
+                url = 'https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.31-setup.exe'
               }
             }
           }
@@ -122,10 +122,10 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fw-lab-windows-1.3.30
+          name: fw-lab-windows-1.3.31
           path: |
-            download/fw-lab-windows-1.3.30-setup.exe
-            download/fw-lab-windows-1.3.30-setup.exe.sig
+            download/fw-lab-windows-1.3.31-setup.exe
+            download/fw-lab-windows-1.3.31-setup.exe.sig
             download/fw-lab-windows-latest.exe
             download/fw-lab-windows-latest.exe.sig
             download/windows-updater.json
@@ -137,14 +137,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag='windows-v1.3.30'
-          asset='download/fw-lab-windows-1.3.30-setup.exe'
-          signature='download/fw-lab-windows-1.3.30-setup.exe.sig'
+          tag='windows-v1.3.31'
+          asset='download/fw-lab-windows-1.3.31-setup.exe'
+          signature='download/fw-lab-windows-1.3.31-setup.exe.sig'
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" "$signature" --clobber
           else
-            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.3.30' --notes '设置中的软件说明新增网站备案信息，可通过默认浏览器前往工信部备案查询。'
+            gh release create "$tag" "$asset" "$signature" --target '${{ github.sha }}' --title 'F.w 研究所 Windows 1.3.31' --notes '新增内容举报入口，支持举报隐藏、人工复核和发言限制；同步清理被隐藏内容的页面缓存。'
           fi
 
       - name: Mirror installer to Supabase Storage
@@ -156,7 +156,7 @@ jobs:
             --request POST 'https://ekbovsmxbiplhyrzxoyw.supabase.co/functions/v1/sync-windows-release' \
             --header "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
             --header 'Content-Type: application/json' \
-            --data '{"version":"1.3.30"}')"
+            --data '{"version":"1.3.31"}')"
           node -e "const result=JSON.parse(process.argv[1]); if(!result.publicUrl) throw new Error(result.error || 'Supabase release sync returned no URL'); console.log('Supabase installer ready:', result.publicUrl);" "$response"
 
       - name: Publish installer to website
@@ -191,6 +191,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Windows installer changes to commit."
           else
-            git commit -m "Release Windows 1.3.30"
+            git commit -m "Release Windows 1.3.31"
             git push origin HEAD:main
           fi

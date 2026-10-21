@@ -55,7 +55,7 @@ jobs:
       - name: Upload unpublished management candidate
         uses: actions/upload-artifact@v4
         with:
-          name: fw-admin-windows-6.0.4-release-candidate
+          name: fw-admin-windows-6.0.5-release-candidate
           path: |
             admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
             admin-desktop/src-tauri/target/release/bundle/nsis/*-setup.exe.sig

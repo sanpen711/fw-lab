@@ -53,3 +53,5 @@ async function load(force=false){
 }
 
 export const archiveStore={state,load,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};
+
+window.addEventListener('fw:content-review-change',event=>{if(event.detail.kind==='post'&&state.loaded)load(true).catch(()=>{});});

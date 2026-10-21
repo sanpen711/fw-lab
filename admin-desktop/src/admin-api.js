@@ -203,7 +203,7 @@ async function deleteUserAccount({targetUserId,confirmCode,confirmText,reason}){
 }
 
 export const adminApi={
-  client,restoreAdmin,signIn,signOut,listUsers,listReports,listFeedback,listMemberships,listPosts,listComments,listChats,listParties,
+  rpc,client,restoreAdmin,signIn,signOut,listUsers,listReports,listFeedback,listMemberships,listPosts,listComments,listChats,listParties,
   listBirdPosts,listBirdComments,listPolls,listPartyMessages,listLogs,
   moderateUser,moderatePost,moderateComment,moderateChat,resolveReport,updateFeedback,moderateParty,
   moderateBirdPost,moderateBirdComment,moderatePoll,deletePartyMessage,deleteUserAccount,grantMembership,cancelMembership,

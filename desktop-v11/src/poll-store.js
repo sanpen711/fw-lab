@@ -75,3 +75,5 @@ async function promote(pollId){const user=requireUser();if(user.role!=='admin')t
 
 authStore.subscribe(auth=>{if(!auth.ready)return;if(!auth.user){deactivate();hydratedCacheUser='';state.loaded=false;state.loading=false;state.polls=[];state.profiles={};state.dailyCount=null;emit();return;}const key=cacheUser();if(hydratedCacheUser&&hydratedCacheUser!==key){hydratedCacheUser='';state.loaded=false;state.loading=false;state.polls=[];state.profiles={};state.dailyCount=null;state.error='';emit();}if(active)load(false).catch(()=>{});});
 export const pollStore={state,activate,deactivate,load,createPoll,vote,addOption,deleteOption,promote,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};
+
+window.addEventListener('fw:content-review-change',event=>{const e=event.detail;if(!['poll','poll_option'].includes(e.kind))return;if(!e.visible){if(e.kind==='poll')state.polls=state.polls.filter(p=>String(p.id)!==String(e.target_id));else state.polls=state.polls.map(p=>({...p,options:p.options.filter(o=>String(o.id)!==String(e.target_id))}));emit();}if(active)load(true).catch(()=>{});});

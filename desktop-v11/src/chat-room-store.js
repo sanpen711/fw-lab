@@ -99,3 +99,5 @@ async function send({text='',file=null,stickerUrl=''}){
 }
 let userId='';authStore.subscribe(auth=>{const next=String(auth.user?.id||'');if(next!==userId){userId=next;generation++;listToken++;openToken++;deactivate();signed.clear();Object.assign(state,{rooms:[],filter:'all',offset:0,hasMore:false,loading:false,loaded:false,error:'',busy:false,selectedId:'',detail:null,detailLoading:false,detailError:'',connection:''});emit();}});
 export const chatRoomStore={state,activate,deactivate,loadRooms,readRoom,closeRoom,mutate,send,subscribe(fn){listeners.add(fn);fn(snapshot());return()=>listeners.delete(fn);}};
+
+window.addEventListener('fw:content-review-change',event=>{const e=event.detail;if(!['room','room_message'].includes(e.kind))return;if(!e.visible){if(e.kind==='room'){state.rooms=state.rooms.filter(r=>String(r.id)!==String(e.target_id));if(state.selectedId===String(e.target_id))closeRoom('房间正在审核。');}else if(state.detail)state.detail.messages=state.detail.messages.filter(m=>String(m.id)!==String(e.target_id));emit();}if(active)refreshSoon();});

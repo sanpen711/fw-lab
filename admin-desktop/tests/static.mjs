@@ -46,7 +46,7 @@ assert.match(api,/admin-delete-user/,'账号删除必须走受控服务端函数
 assert.doesNotMatch(api,/service[_-]?role/i,'安装包不得包含 service role 密钥');
 assert.match(css,/--bg:#f4f5f7/,'管理台必须使用白色浅灰管理界面');
 assert.equal(tauri.productName,'FW管理台');
-assert.equal(tauri.version,'6.0.4');
+assert.equal(tauri.version,'6.0.5');
 assert.equal(tauri.identifier,'com.fwyanjiusuo.admin');
 assert.equal(tauri.app.windows[0].minWidth,1080);
 assert.notEqual(tauri.identifier,'com.fwyanjiusuo.desktop','管理台必须使用独立应用标识');

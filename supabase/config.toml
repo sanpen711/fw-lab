@@ -19,3 +19,7 @@ verify_jwt = true
 [functions.shop-alipay-notify]
 # Alipay callbacks are authenticated by RSA2 plus app/seller/order/amount checks.
 verify_jwt = false
+
+[functions.fw-content-review]
+# Authenticated by a private random job revision checked against the service-only RPC.
+verify_jwt = false
