@@ -1,11 +1,11 @@
 {
-  "version": "6.0.5",
-  "pub_date": "2026-10-21T07:49:11.5827633Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlVtOUtBN2t2TnRBOG5OdmlIWVlYYWFYZ25kREVpN0N2NFVoQkE2cDFENEdYaUxJbm1uNDVTRThlTGtxY0xjSlM5YThmQzJpZXhSRWxzcFVFdEVVbHc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyNTY4OTQxCWZpbGU6RlfnrqHnkIblj7BfNi4wLjVfeDY0LXNldHVwLmV4ZQo4R1VkTTNoaklGVE80dzhCNlMrcE96VzF2aXI4K1ZGRXRTQWc1WXRxNW1TQnM0MCtud1k1U1JuYW1zMzJTODFxcGJKcG1VNkIrcDdMbGRhNTYyQjZEZz09Cg==",
-      "url": "https://github.com/sanpen711/fw-lab/releases/download/fw-admin-v6.0.5/FW-Admin-6.0.5-Windows-x64-Setup.exe"
+      "url": "https://github.com/sanpen711/fw-lab/releases/download/fw-admin-v6.0.5/FW-Admin-6.0.5-Windows-x64-Setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlVkZFBnbyswRGZWa3JTdDloNjVDYm14Ym9UbFE3K1RIMzBqQ3BVVU9zZ29uSXRidFFaSHd4dlhIYXN5ZzNtc1dVbkx0aHlXdW1JZEVObHB6NGw2Z1FRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyNTY5MjgyCWZpbGU6RlfnrqHnkIblj7BfNi4wLjVfeDY0LXNldHVwLmV4ZQpXcU1aTDg1T2xDTWdCT0xjVWFqRHk4bW9mNW5ldlprYmJMNXFwbFAyaTRlekIvK1JxZ3phWDlyQ2JGUlFDdkhQdjBSeForNU93ay9sN21sNG96N3BDQT09Cg=="
     }
   },
+  "version": "6.0.5",
+  "pub_date": "2026-10-21T07:54:53.9186804Z",
   "notes": "新增待审核：审核被举报内容和暂停发言账号，支持恢复、移除、永久禁言、附件预览和记录导出。"
 }
