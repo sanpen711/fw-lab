@@ -287,3 +287,5 @@ authStore.subscribe(auth=>{
 });
 
 export const feedStore={state,activate,deactivate,load,loadMine,getPost,openPost,openPostById,closePost,setReply,clearReply,createPost,createComment,toggleReaction,deletePost,deleteComment,report,uploadImage,uploadMedia,composeContent,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};
+
+window.addEventListener('fw:content-review-change',event=>{const e=event.detail;if(!['post','comment'].includes(e.kind))return;if(!e.visible){const keep=post=>e.kind!=='post'||String(post.id)!==String(e.target_id);const clean=post=>({...post,comments:(post.comments||[]).filter(c=>e.kind!=='comment'||String(c.id)!==String(e.target_id))});state.posts=state.posts.filter(keep).map(clean);state.mine.posts=state.mine.posts.filter(keep).map(clean);if(e.kind==='post'&&String(state.openPostId)===String(e.target_id))state.openPostId='';persistSquareCache().catch(()=>{});emit();}if(active)load(true).catch(()=>{});});

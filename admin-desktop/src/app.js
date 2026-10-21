@@ -1,3 +1,4 @@
+import {contentReview} from './content-review.js';
 import {adminApi} from './admin-api.js';
 import {APP_VERSION} from './config.js';
 import {shopAdmin} from './shop-admin.js';
@@ -13,6 +14,7 @@ let dialogSubmit=null;
 
 const viewMeta={
   dashboard:['工作台','优先处理举报和用户反馈'],
+  review:['待审核','复核被隐藏的内容和暂停发言的账号'],
   reports:['举报中心','统一处理用户、帖子、评论和房间消息举报'],
   feedback:['问题反馈','接收问题和建议，记录内部处理结果'],
   users:['用户管理','搜索账号并处理禁言和封禁'],
@@ -33,7 +35,7 @@ const actionText={
   delete_account:'永久删除账号',ignore_report:'忽略举报',delete_game_party:'删除组队房间',feedback_update:'更新反馈',
   grant_membership:'增加会员时间',cancel_membership:'取消会员',system_note:'系统记录'
 };
-const reportTypeText={post:'精神广场帖子',comment:'精神广场评论',user:'用户 / 搭子',chat_message:'房间消息'};
+const reportTypeText={room_message:'闲聊消息',private_message:'私聊消息',room:'闲聊房间',poll:'投票',poll_option:'投票选项',game_party:'组队',party_message:'组队留言',sticker:'用户表情',bird_post:'树洞帖子',bird_comment:'树洞评论',post:'精神广场帖子',comment:'精神广场评论',user:'用户 / 搭子',chat_message:'房间消息'};
 const feedbackStatusText={new:'未处理',in_progress:'处理中',waiting_user:'处理中',resolved:'已解决',closed:'已关闭'};
 const priorityText={low:'低',normal:'普通',medium:'中',high:'高'};
 const membershipStatusText={none:'未开通',active:'有效会员',expired:'已到期',cancelled:'已取消'};
@@ -105,6 +107,7 @@ function shellView(){
         <div class="sidebar-brand"><div class="brand-mark">FW</div><div><strong>FW管理台</strong><span>管理员专用</span></div></div>
         <nav class="nav-list" aria-label="管理功能">
           ${navButton('dashboard','01','工作台',reportCount+feedbackCount,reportCount+feedbackCount>0)}
+          ${navButton('review','02','待审核',contentReview.count(),contentReview.count()>0)}
           ${navButton('reports','02','举报中心',reportCount,reportCount>0)}
           ${navButton('feedback','03','问题反馈',feedbackCount,feedbackCount>0)}
           ${navButton('users','04','用户管理')}
@@ -127,6 +130,7 @@ function shellView(){
 }
 
 function renderPage(){
+  if(state.view==='review')return contentReview.content();
   if(state.view==='dashboard')return renderDashboard();
   if(state.view==='reports')return renderReports();
   if(state.view==='feedback')return renderFeedback();
@@ -289,7 +293,7 @@ function renderReportDetail(row){
     <div class="detail-block"><h3>被举报内容</h3><div class="detail-content">${esc(row.message_content||'没有内容预览')}</div></div>
     <div class="detail-block"><h3>举报人</h3><p>${esc(row.reporter_name||'未知')} · ${esc(fmt(row.created_at))}</p></div>`;
   const actions=(row.status||'pending')==='pending'?`<button class="button danger-solid" type="button" data-action="report" data-id="${esc(row.id)}">处理这条举报</button>`:'<button class="button" type="button" data-action="report" data-id="'+esc(row.id)+'">重新处理</button>';
-  return detailShell(`举报 #${row.id}`,reportTypeText[type]||type,body,actions);
+  return detailShell(`举报 #${row.id}`,reportTypeText[type]||type,body,actions+(Number(row.id)<0&&type!=='user'?`<button class="button" data-review-flag-report="${esc(row.id)}">先隐藏并送入待审核</button>`:''));
 }
 
 function renderFeedbackDetail(row){
@@ -465,7 +469,7 @@ async function loadAll({quiet=false}={}){
   }finally{if(!quiet)setBusy(false);}
 }
 
-async function refresh(){if(state.view==='shop'){await shopAdmin.load();return;}if(state.view==='siteContent'){await siteContentAdmin.load();return;}await loadAll();toast('管理数据已刷新。');}
+async function refresh(){if(state.view==='review'){await contentReview.load();return;}if(state.view==='shop'){await shopAdmin.load();return;}if(state.view==='siteContent'){await siteContentAdmin.load();return;}await loadAll();toast('管理数据已刷新。');}
 
 document.addEventListener('submit',async event=>{
   const login=event.target.closest('[data-login-form]');
@@ -488,10 +492,12 @@ document.addEventListener('submit',async event=>{
 
 document.addEventListener('click',async event=>{
   const nav=event.target.closest('[data-nav]');
-  if(nav){state.view=nav.dataset.nav;state.query='';state.filter=state.view==='feedback'||state.view==='reports'?'pending':'all';state.selection=null;shellView();if(state.view==='shop')shopAdmin.load();if(state.view==='siteContent')siteContentAdmin.load();return;}
+  if(nav){state.view=nav.dataset.nav;state.query='';state.filter=state.view==='feedback'||state.view==='reports'?'pending':'all';state.selection=null;shellView();if(state.view==='shop')shopAdmin.load();if(state.view==='siteContent')siteContentAdmin.load();if(state.view==='review')contentReview.load();return;}
   if(event.target.closest('[data-refresh]')){refresh().catch(error=>toast(error.message||'刷新失败。',true));return;}
   if(event.target.closest('[data-toggle-tests]')){state.showTestData=!state.showTestData;state.selection=null;shellView();return;}
-  if(event.target.closest('[data-logout]')){setBusy(true,'正在退出…');try{await adminApi.signOut();shopAdmin.reset();siteContentAdmin.reset();state.admin=null;state.rows=emptyRows();loginView();}catch(error){toast(error.message,true);}finally{setBusy(false);}return;}
+  if(event.target.closest('[data-logout]')){setBusy(true,'正在退出…');try{await adminApi.signOut();shopAdmin.reset();siteContentAdmin.reset();contentReview.reset();state.admin=null;state.rows=emptyRows();loginView();}catch(error){toast(error.message,true);}finally{setBusy(false);}return;}
+  const escalate=event.target.closest('[data-review-flag-report]');if(escalate){openDialog({title:'隐藏并送入待审核',description:'严重风险内容可以立即处理，无需等待5人举报。',body:'<label class="field">原因<textarea name="reason" required minlength="2" maxlength="500"></textarea></label>',onSubmit:async fd=>{await adminApi.rpc('admin_content_review_flag_report',{p_report_id:Number(escalate.dataset.reviewFlagReport),p_reason:String(fd.get('reason')||'')},'暂时隐藏失败');state.view='review';await contentReview.load();}});return;}
+  if(state.view==='review'&&contentReview.click(event))return;
   const filter=event.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;state.selection=null;shellView();return;}
   const content=event.target.closest('[data-content-type]');if(content){state.contentType=content.dataset.contentType;state.selection=null;shellView();return;}
   const selected=event.target.closest('[data-select-type]');if(selected){selectRow(selected.dataset.selectType,selected.dataset.selectId,selected.dataset.selectKind||'');return;}
@@ -521,11 +527,12 @@ async function boot(){
 }
 
 adminApi.onAuthStateChange(event=>{
-  if(event==='SIGNED_OUT'&&state.admin){shopAdmin.reset();siteContentAdmin.reset();dialog.close();dialog.replaceChildren();dialogSubmit=null;state.admin=null;state.rows=emptyRows();loginView();}
+  if(event==='SIGNED_OUT'&&state.admin){shopAdmin.reset();siteContentAdmin.reset();contentReview.reset();dialog.close();dialog.replaceChildren();dialogSubmit=null;state.admin=null;state.rows=emptyRows();loginView();}
 });
 
 shopAdmin.init({client:adminApi.client,render:()=>{if(state.admin&&state.view==='shop')shellView();},toast,admin:()=>state.admin,openDialog});
 siteContentAdmin.init({client:adminApi.client,render:()=>{if(state.admin&&state.view==='siteContent')shellView();},toast,admin:()=>state.admin,openDialog});
+contentReview.init({api:adminApi,render:()=>{if(state.admin)shellView();},toast,openDialog});
 boot();
 
 window.__FW_ADMIN_APP__={version:APP_VERSION};

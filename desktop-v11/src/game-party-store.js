@@ -52,3 +52,5 @@ async function sendMessage(partyId,content){return mutate(async()=>fail(await cl
 
 authStore.subscribe(auth=>{if(!auth.ready)return;state.members=[];state.contacts=[];state.messages=[];state.applicationAlerts=[];state.loaded=false;if(channel){client.removeChannel(channel);channel=null;}emit();if(active)activate().catch(()=>{});});
 export const gamePartyStore={state,activate,deactivate,load,openParty,closePartyDetail,createParty,applyToParty,decideApplication,leaveParty,closeParty,sendMessage,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);}};
+
+window.addEventListener('fw:content-review-change',event=>{const e=event.detail;if(!['game_party','party_message'].includes(e.kind))return;if(!e.visible){if(e.kind==='game_party')state.parties=state.parties.filter(p=>String(p.id)!==String(e.target_id));else state.messages=state.messages.filter(m=>String(m.id)!==String(e.target_id));emit();}if(active)load(true).catch(()=>{});});
