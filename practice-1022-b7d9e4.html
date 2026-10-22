@@ -1,0 +1,2953 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>我的刷题本 · 个人练习</title>
+  <meta name="description" content="个人专属题库，顺序练习、随机练习与错题复习。">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <style>
+:root{--bg:#f7f7f3;--paper:#fff;--ink:#272c28;--muted:#7c817b;--border:#e7e8e2;--accent:#db7245;--accent-light:#fcf0e8;--green:#52765a;--green-light:#eff5ed;--red:#b6544a;--red-light:#fff0ed;--radius:16px;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-size:14px}button,input,select{font:inherit}button,a,input{outline-offset:4px}button{cursor:pointer}button{color:inherit}button:disabled{cursor:default;opacity:.4}svg{width:20px;height:20px;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;fill:none;flex-shrink:0}button{border:0;background:none}a{color:inherit;text-decoration:none}.app-shell{display:flex;min-height:100vh}.sidebar{width:232px;flex-shrink:0;background:#fcfcf9;border-right:1px solid var(--border);padding:35px 22px 22px;position:fixed;inset:0 auto 0 0;display:flex;flex-direction:column;z-index:4}.brand{display:flex;align-items:center;gap:12px;font-size:19px;font-weight:650;letter-spacing:.3px}.brand-icon{height:42px;width:42px;display:grid;place-items:center;background:var(--ink);border-radius:12px;color:#fff}.brand-icon svg{width:27px;height:27px}.brand small{display:block;color:var(--muted);font-weight:400;font-size:10px;margin-top:6px;letter-spacing:1px}.nav-label{font-size:11px;color:#999d95;margin:51px 12px 14px;letter-spacing:1.5px}.nav-button{width:100%;display:flex;align-items:center;gap:12px;border-radius:9px;padding:14px 13px;margin:5px 0;font-size:14px;white-space:nowrap;text-align:left;color:#6f756e;transition:background .15s}.nav-button:hover{background:#f0f0e9}.nav-button.active{background:#eaece4;color:#333f2e;font-weight:600}.nav-button.active::before{content:'';position:absolute;left:0;width:3px;height:22px;border-radius:0 3px 3px 0;background:#526445}.nav-count{margin-left:auto;min-width:22px;border-radius:5px;background:#eceee7;font-size:11px;padding:2px 5px;text-align:center}.sidebar-progress{margin:32px 12px 0}.small-label{font-size:11px;color:#7a8075;display:flex;justify-content:space-between;gap:8px}.progress-track{height:5px;background:#e7e9e1;border-radius:8px;overflow:hidden;margin-top:12px}.progress-track i{display:block;height:100%;background:#6d7d5c;transition:width .3s;border-radius:8px}.sidebar-progress p{font-size:11px;color:#95998e;margin-top:12px}.sidebar-bottom{margin-top:auto;padding-top:50px}.backup-trigger{display:flex;align-items:center;gap:10px;color:#7b8175;padding:10px 12px;width:100%;font-size:12px}.backup-trigger:hover{color:var(--ink)}.private-note{display:flex;align-items:center;gap:6px;font-size:10px;color:#a0a496;padding:14px 12px 0}.private-note svg{width:13px;height:13px}.main-shell{margin-left:232px;min-width:0;flex:1}.topbar{height:75px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 44px;background:#fcfcf9}.breadcrumb{font-size:12px;color:#6f766c}.breadcrumb span{margin:0 12px;color:#c6c9bf}.saved-state{font-size:11px;color:#8b9285;display:flex;align-items:center;gap:7px}.saved-state i{width:5px;height:5px;border-radius:50%;background:#9ba78e}main{max-width:1450px;padding:38px 44px 22px;margin:0 auto}.page-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px}.eyebrow{font-size:9px;letter-spacing:2.5px;color:#979c91;margin-bottom:8px}h1{font-size:29px;letter-spacing:-.8px;line-height:1.4;margin:0;font-weight:650}.page-heading p{font-size:12px;color:var(--muted);margin:9px 0 0}.today-pill{display:flex;gap:9px;align-items:center;border:1px solid var(--border);background:#fafbf6;border-radius:25px;padding:11px 15px;font-size:11px;color:#818975}.today-pill svg{color:#9caa80;width:17px;height:17px}.today-pill b{font-size:13px;color:#505b43;margin:0 3px}.stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:var(--radius);background:var(--paper);padding:25px 0;margin-bottom:30px}.stat{padding:0 26px;border-left:1px solid var(--border)}.stat:first-child{border-left:0}.stat-label{display:block;color:#8a9086;font-size:11px;margin-bottom:12px}.stat strong{font-size:30px;font-weight:550;letter-spacing:-1.3px;font-variant-numeric:tabular-nums}.stat div>span{font-size:11px;color:#92998b;margin-left:8px}.stat p{font-size:10px;color:#a0a595;margin:9px 0 0}.text-link{padding:0;color:#879478;font-size:10px;margin-top:10px}.text-link span{margin-left:8px}.practice-toolbar{display:flex;align-items:center;justify-content:space-between;margin:0 0 18px;gap:12px}.filters{display:flex;gap:5px;background:#ecede6;padding:4px;border-radius:9px}.filter-button{padding:8px 13px;font-size:11px;border-radius:6px;color:#92988a;white-space:nowrap}.filter-button.active{background:#fff;color:#3e4838;box-shadow:0 1px 4px #00000007}.filter-button small{font-size:9px;margin-left:6px;opacity:.65}.subtle-button{display:flex;gap:6px;align-items:center;font-size:11px;color:#8a9280}.subtle-button svg{width:15px;height:15px}.quiz-layout{display:grid;grid-template-columns:minmax(0,1fr) 252px;gap:22px;align-items:start}.question-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:28px 30px 22px;min-width:0;min-height:480px;position:relative}.question-meta{display:flex;justify-content:space-between;align-items:center;padding-bottom:24px;gap:10px}.question-tags{display:flex;align-items:center;gap:9px}.type-tag{font-size:10px;color:#9c6c42;background:#fcf2e7;padding:5px 9px;border-radius:5px;letter-spacing:.5px}.question-difficulty{font-size:10px;color:#a4aa9b}.favorite-button{display:flex;align-items:center;gap:5px;color:#a0a793;font-size:10px;padding:4px}.favorite-button svg{height:17px;width:17px}.favorite-button.is-favorite{color:#c28a3e}.favorite-button.is-favorite svg{fill:#f1d5a2}.question-counter{font-size:11px;color:#a8ad9f;margin-bottom:13px;letter-spacing:1px}.question-counter b{font-size:18px;color:#68745c;font-weight:500;letter-spacing:-.7px}.question-text{font-size:18px;line-height:1.8;font-weight:550;letter-spacing:.1px;margin:0 0 9px;white-space:pre-wrap;overflow-wrap:anywhere}.answer-hint{font-size:10px;color:#a0a694;margin-bottom:23px}.options{display:grid;gap:11px}.option{display:flex;align-items:center;gap:14px;width:100%;padding:15px 17px;border:1px solid #e7e9e1;border-radius:9px;background:#fff;text-align:left;transition:background .12s,border .12s;min-height:53px}.option:hover:not(:disabled){background:#f9faf6;border-color:#b6c0a6}.option-letter{display:grid;place-items:center;flex-shrink:0;width:24px;height:24px;border:1px solid #e1e4d9;border-radius:6px;font-size:11px;color:#8f9882;background:#fcfcfa}.option-text{font-size:12px;color:#6c7561;line-height:1.7;flex:1;overflow-wrap:anywhere}.option.selected{background:#f6f8ef;border-color:#9ba98a}.option.selected .option-letter{background:#657a50;border-color:#657a50;color:#fff}.option.selected .option-text{color:#47573b}.option:disabled{opacity:1}.option.correct{background:var(--green-light);border-color:#a1ba9d}.option.correct .option-letter{background:#5d8059;border-color:#5d8059;color:#fff}.option.incorrect{background:var(--red-light);border-color:#dfb0a9}.option.incorrect .option-letter{background:#b96d60;border-color:#b96d60;color:#fff}.answer-mark{font-size:16px;color:#65865d}.option.incorrect .answer-mark{color:#be766a}.question-actions{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #f0f1eb;margin-top:28px;padding-top:20px;gap:10px}.nav-action{font-size:11px;padding:10px 0;color:#929a86;display:flex;align-items:center;gap:6px}.nav-action svg{width:15px;height:15px}.primary-button{background:#343f2d;color:#fff;border-radius:8px;padding:12px 24px;font-size:11px;display:inline-flex;gap:9px;align-items:center;justify-content:center;min-height:40px}.primary-button:hover{background:#4b5940}.primary-button:disabled{background:#9aa18e;opacity:.65}.primary-button svg{width:14px;height:14px}.practice-tip{text-align:center;color:#a9ae9f;font-size:10px;margin:18px 0 0}.feedback{margin-top:20px;border-radius:10px;padding:17px 18px;background:var(--green-light);border:1px solid #dfe9db}.feedback.wrong{background:#fcf3ef;border-color:#f0ded5}.feedback-title{display:flex;align-items:center;gap:8px;font-size:12px;color:#5c7951;font-weight:600}.feedback.wrong .feedback-title{color:#b17157}.feedback p{font-size:11px;color:#7e876f;line-height:1.9;margin:8px 0 0;overflow-wrap:anywhere}.feedback .correct-answer{color:#505e46}.feedback .answer-note{font-size:10px;color:#a6aa9b}.feedback-title svg{width:17px;height:17px}.feedback small{font-weight:400;font-size:10px;opacity:.8;margin-left:auto}.retry-button{font-size:10px;text-decoration:underline;padding:10px 0 0;color:#7d876e}.answer-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:22px 19px}.panel-heading{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:550}.panel-heading span{font-size:10px;color:#a8ad9e;font-weight:400}.round-progress-label{display:flex;justify-content:space-between;font-size:10px;color:#a0a693;margin:21px 0 8px}.answer-panel .progress-track{margin-top:0;height:4px}.question-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-top:22px;max-height:380px;overflow:auto;padding:2px}.grid-number{padding:0;height:28px;border:1px solid #eceee5;border-radius:5px;font-size:10px;color:#9ba38f;font-variant-numeric:tabular-nums;background:#fff}.grid-number:hover{border-color:#9faa8c}.grid-number.current{outline:1px solid #7a8b65;border-color:#7a8b65;color:#526440;font-weight:600}.grid-number.is-correct{background:#eaf1e4;border-color:#e0ead7;color:#6b8653}.grid-number.is-wrong{background:#faece5;border-color:#f3ddd0;color:#bd7f63}.grid-number.has-draft{background:#f6f3de;border-color:#e8dfaf;color:#988b4b}.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;padding-top:17px;border-top:1px solid #eef0e8;font-size:9px;color:#a3aa96}.legend span{display:flex;align-items:center;gap:5px}.legend i{width:6px;height:6px;display:inline-block;border:1px solid #e4e8d9;border-radius:2px}.legend .good{background:#eaf1e4}.legend .bad{background:#faece5}.panel-note{font-size:10px;line-height:1.8;color:#a0a793;margin:18px 0 0}.page-footer{display:flex;justify-content:space-between;gap:20px;color:#a4aa98;font-size:9px;padding-top:30px;line-height:1.8}.empty-state{border:1px dashed #dce1d2;background:#fcfdf8;border-radius:16px;padding:65px 20px;text-align:center}.empty-icon{display:grid;place-items:center;width:56px;height:56px;background:#edf1e5;border-radius:18px;margin:0 auto 20px;color:#7b8e60}.empty-icon svg{width:28px;height:28px}.empty-state h2{font-size:19px;font-weight:550}.empty-state p{font-size:12px;color:#98a187;line-height:1.9}.empty-state .primary-button{margin-top:12px}.browser-tools{display:flex;gap:10px;margin-bottom:18px}.search-field{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);padding:12px 15px;border-radius:9px;flex:1;color:#a5ad96}.search-field input{outline:none;border:0;flex:1;min-width:0;color:#606d4f;background:none;font-size:12px}.search-field input::placeholder{color:#acb49d}.browse-count{font-size:11px;color:#949e83;margin:16px 0}.browse-list{display:grid;gap:11px}.browse-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px 24px}.browse-card summary{font-size:13px;line-height:1.9;cursor:pointer;list-style:none;display:flex;gap:12px;align-items:start}.browse-card summary::-webkit-details-marker{display:none}.browse-card summary::after{content:'＋';color:#aab199;margin-left:auto;flex-shrink:0}.browse-card[open] summary::after{content:'−'}.browse-number{font-size:11px;color:#a9b294;font-variant-numeric:tabular-nums;padding-top:1px}.browse-card .type-tag{white-space:nowrap;padding:0 6px;font-size:9px;margin-top:2px}.browse-options{margin:15px 0 0 36px;font-size:12px;line-height:2;color:#8c967b}.browse-answer{margin:12px 0 0 36px;border-top:1px solid #f0f2e9;padding-top:12px;font-size:11px;color:#6f8357}.browse-actions{display:flex;gap:18px;margin:12px 0 0 36px}.browse-actions button{font-size:10px;color:#97a184;padding:0}.toast{position:fixed;bottom:30px;left:calc(50% + 110px);transform:translateX(-50%);z-index:20;border-radius:10px;background:#343e2d;color:white;padding:13px 22px;font-size:12px;box-shadow:0 8px 30px #0001;max-width:calc(100vw - 40px)}.toast[hidden]{display:none}dialog{border:1px solid #e7eade;border-radius:18px;box-shadow:0 25px 100px #1d291d26;padding:30px;max-width:480px;width:calc(100% - 32px);color:var(--ink)}dialog::backdrop{background:#27342355;backdrop-filter:blur(3px)}.dialog-header{display:flex;justify-content:space-between;align-items:center}.dialog-header h2{margin:0;font-size:20px;font-weight:550}.dialog-close{font-size:21px;color:#a1aa90}.dialog-description{color:#939e80;font-size:12px;line-height:1.9;margin:16px 0 22px}.backup-choice{padding:18px 0;display:flex;align-items:center;justify-content:space-between;gap:20px;border-top:1px solid #ebeee3}.backup-choice b{font-size:12px;font-weight:500}.backup-choice p{font-size:10px;color:#a0ab8e;margin:7px 0 0}.secondary-button{border:1px solid #dfe6d2;background:#f8faf4;padding:10px 15px;border-radius:7px;font-size:11px;white-space:nowrap;color:#7a8c61}.import-note{font-size:10px;color:#a4ad95;line-height:1.9;margin-bottom:0}.summary-stats{display:flex;justify-content:space-between;text-align:center;border:1px solid #e5eadb;border-radius:12px;padding:22px 15px;margin:20px 0}.summary-stats strong{font-size:26px;font-weight:500;display:block;color:#657a50}.summary-stats span{font-size:10px;color:#a0ad8b;display:block;margin-top:7px}.summary-actions{display:flex;flex-wrap:wrap;gap:9px}.storage-warning{color:#b5805c!important}.icon-button{padding:0;display:flex;align-items:center;justify-content:center}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(min-width:1600px){main{padding-top:48px}.quiz-layout{grid-template-columns:minmax(0,1fr) 280px}.question-text{font-size:20px}.option-text{font-size:14px}.option{padding:17px}.question-card{padding:32px 36px}.question-grid{max-height:460px}.grid-number{height:32px}}
+@media(max-width:1180px){.sidebar{width:205px;padding:30px 16px 20px}.main-shell{margin-left:205px}main{padding:30px 26px 22px}.topbar{padding:0 26px}.quiz-layout{grid-template-columns:minmax(0,1fr) 208px;gap:16px}.answer-panel{padding:20px 14px}.question-grid{gap:5px}.stat{padding:0 19px}.stat strong{font-size:27px}.question-card{padding:25px 24px 20px}.question-text{font-size:17px}.brand{font-size:17px;gap:9px}.brand small{font-size:9px}.question-grid{grid-template-columns:repeat(5,1fr)}}
+@media(max-width:980px){.quiz-layout{grid-template-columns:1fr}.answer-panel{display:none}.sidebar{width:190px}.main-shell{margin-left:190px}.brand{font-size:16px}.brand-icon{width:35px;height:38px}.stat{padding:0 15px}.stat p,.stat .text-link{font-size:9px}.stat strong{font-size:25px}.stat-label{font-size:10px}.page-footer{flex-direction:column;gap:4px}.today-pill{padding:10px 12px;font-size:10px}}
+@media(max-width:720px){.app-shell{display:block}.sidebar{position:relative;width:100%;padding:19px 20px 0;border-right:0;border-bottom:1px solid var(--border);display:block}.brand{font-size:18px}.brand-icon{height:37px;width:37px}.brand small{font-size:9px;margin-top:4px}.nav-label,.sidebar-progress,.sidebar-bottom{display:none}#navigation{display:flex;gap:4px;overflow:auto;margin:18px -20px 0;padding:0 14px;scrollbar-width:none}.nav-button{width:auto;flex:0 0 auto;gap:5px;padding:13px 10px;margin:0;border-radius:8px 8px 0 0;font-size:11px}.nav-button.active::before{display:none}.nav-button svg{width:14px;height:14px}.nav-count{min-width:15px;font-size:9px;background:transparent;padding:0;margin-left:0}.main-shell{margin:0}.topbar{height:44px;padding:0 20px}.breadcrumb,.saved-state{font-size:9px}.breadcrumb span{margin:0 7px}main{padding:25px 18px 20px}.page-heading{margin-bottom:22px;align-items:flex-start}.eyebrow{font-size:8px;letter-spacing:1.7px}h1{font-size:25px}.page-heading p{font-size:10px;margin-top:7px;max-width:220px;line-height:1.7}.today-pill{background:none;border:0;padding:4px 0;gap:5px;font-size:9px}.today-pill svg{width:14px;height:14px}.today-pill b{font-size:11px}.stats{padding:18px 0;margin-bottom:24px;border-radius:12px;grid-template-columns:repeat(2,1fr);row-gap:21px}.stat{padding:0 22px}.stat:nth-child(3){border:0}.stat-label{font-size:10px;margin-bottom:6px}.stat strong{font-size:26px}.stat p{font-size:9px;margin-top:5px}.stat div>span{font-size:9px}.practice-toolbar{align-items:center;gap:6px}.filter-button{padding:8px 9px;font-size:10px}.filter-button small{display:none}.subtle-button{font-size:9px;gap:4px}.subtle-button svg{width:12px;height:12px}.question-card{padding:22px 20px 20px;border-radius:13px;min-height:440px}.question-meta{padding-bottom:20px}.question-text{font-size:17px;line-height:1.8}.question-counter{margin-bottom:10px}.option{padding:13px 12px;gap:11px}.option-text{font-size:12px}.option-letter{width:23px;height:23px}.question-actions{gap:7px;margin-top:22px}.primary-button{padding:12px 20px}.nav-action{font-size:10px}.practice-tip{font-size:9px}.page-footer{font-size:8px;padding-top:23px}.toast{left:50%;font-size:11px}.browser-tools{margin-top:0}.browse-card{padding:17px 15px}.browse-card summary{font-size:12px;gap:8px}.browse-card .type-tag{display:none}.browse-options,.browse-answer,.browse-actions{margin-left:25px}.mobile-backup{display:inline-flex}.feedback{padding:15px}.feedback small{display:none}}
+@media(min-width:981px) and (max-height:1000px){.topbar{height:61px}main{padding-top:27px}.page-heading{margin-bottom:23px}.eyebrow{margin-bottom:5px}h1{font-size:27px}.stats{padding:19px 0;margin-bottom:23px}.stat strong{font-size:27px}.stat-label{margin-bottom:8px}.stat p{margin-top:7px}.question-card{padding:23px 26px 19px}.question-meta{padding-bottom:17px}.question-counter{margin-bottom:10px}.answer-hint{margin-bottom:17px}.option{padding:11px 14px;min-height:48px}.options{gap:9px}.question-actions{margin-top:21px;padding-top:17px}.question-grid{max-height:327px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+/* Bright, high-contrast palette and phone-first controls. */
+:root{--bg:#fff8f3;--paper:#fff;--ink:#1c2026;--muted:#606875;--border:#e6e7eb;--accent:#ed6035;--accent-light:#fff0e8;--green:#16804a;--green-light:#edf9f1;--red:#bf3f36;--red-light:#fff0ed;color-scheme:light}
+body{color:#20252c;-webkit-text-size-adjust:100%}button,a{-webkit-tap-highlight-color:transparent}button{touch-action:manipulation}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #ed6035;outline-offset:3px}
+.sidebar,.topbar{background:#fff}.brand-icon{background:#ed6035}.brand small,.nav-label,.sidebar-progress p,.private-note{color:#6e7580}.nav-button{color:#535c68}.nav-button:hover{background:#fff5ef}.nav-button.active{color:#d74c26;background:#fff0e8}.nav-button.active::before{background:#ed6035}.nav-count{background:#fff1e9;color:#b74625}.small-label,.breadcrumb,.saved-state{color:#626c78}.saved-state i{background:#ed6035}.progress-track{background:#f1eee9}.progress-track i{background:#ed6035}.backup-trigger{color:#5c6674}.eyebrow{color:#dd6c47}.page-heading p{color:#616a77}.today-pill{color:#8d4b2e;background:#fff0e5;border-color:#f7dccb}.today-pill b,.today-pill svg{color:#d65b2c}.stat-label{color:#5b6572}.stat p,.stat div>span{color:#6d7682}.text-link{color:#d3552d}.filters{background:#fff0e6}.filter-button{color:#755c50}.filter-button.active{background:#ed6035;color:#fff}.filter-button small{opacity:.9}.subtle-button{color:#6b594e}.type-tag{background:#fff0e5;color:#bf4e20}.question-difficulty,.question-counter{color:#65707d}.question-counter b{color:#e3582e}.favorite-button{color:#6b717a}.favorite-button.is-favorite{color:#cf7319}.question-text{color:#1c222a}.answer-hint{color:#6e7580}.option{border-color:#dce0e6;background:#fff}.option:hover:not(:disabled){background:#fff8f3;border-color:#efa17f}.option-letter{background:#f7f8fa;border-color:#dbe0e7;color:#535d6b}.option-text{color:#282f39}.option.selected{background:#fff2e8;border-color:#ed6035}.option.selected .option-letter{background:#ed6035;border-color:#ed6035;color:#fff}.option.selected .option-text{color:#b1401f}.option.correct{background:#edf9f1;border-color:#88c6a3}.option.correct .option-letter{background:#16804a;border-color:#16804a}.option.correct .option-text{color:#176a40}.option.incorrect{border-color:#e29b92}.option.incorrect .option-text{color:#a5372f}.primary-button{background:#ed6035;font-size:13px;font-weight:600}.primary-button:hover{background:#d94e26}.primary-button:disabled{background:#ffe0d0;color:#a04b2b;opacity:1}.nav-action{color:#5e6875}.question-actions{border-color:#e9ebef}.practice-tip,.panel-note{color:#6c7684}.panel-heading span,.round-progress-label,.legend{color:#737d88}.grid-number{color:#626d7b;border-color:#e2e5e9}.grid-number.current{outline-color:#ed6035;border-color:#ed6035;color:#cb4820}.grid-number.is-correct{background:#e4f6eb;color:#176a40;border-color:#c7e6d3}.grid-number.is-wrong{background:#fff0e9;color:#be492a;border-color:#f3cdbf}.page-footer{color:#737c88}.feedback{background:#edf9f1;border-color:#cde6d5}.feedback-title,.feedback .correct-answer{color:#176a40}.feedback.wrong{background:#fff3ed;border-color:#f3d2bf}.feedback.wrong .feedback-title{color:#b24d26}.feedback p,.feedback .answer-note{color:#616c75}.retry-button{color:#bd542b}.empty-state{background:#fff;border-color:#e9cfbb}.empty-state p{color:#68717e}.empty-icon{background:#fff0e5;color:#df683a}.search-field,.browse-card{background:#fff}.search-field input{color:#202833}.search-field input::placeholder,.browse-count,.browse-options{color:#606b79}.browse-card summary{color:#262d37}.browse-number{color:#c45b32}.browse-answer{color:#167545}.browse-actions button{color:#c6532a}.toast{background:#282c32}.dialog-description,.backup-choice p,.import-note{color:#626d7c}.dialog-close{color:#697484}.secondary-button{border-color:#f2d3bd;background:#fff6ee;color:#bd5029}.summary-stats strong{color:#e05c2c}.summary-stats span{color:#65707c}.mobile-nav-label,.mobile-backup-button,.mobile-card-button{display:none}.toolbar-actions{display:flex;gap:16px;align-items:center}.mobile-dialog-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;max-height:55dvh;overflow:auto;padding:3px}.mobile-dialog-grid .grid-number{height:40px;font-size:13px}.dialog-description{font-size:13px}.dialog-close{min-width:40px;min-height:40px}.secondary-button{min-height:42px}
+@media(max-width:720px){
+ body{background:#fff7f1;font-size:15px}.sidebar{position:relative;display:flex;align-items:center;justify-content:space-between;width:100%;height:70px;padding:14px 20px;background:#fff;border-bottom:1px solid #f0e6df;z-index:6}.brand{font-size:20px;gap:10px}.brand-icon{width:39px;height:39px;border-radius:11px}.brand small{font-size:10px;color:#747d89}.mobile-backup-button{display:flex;align-items:center;justify-content:center;color:#555f6e;border:1px solid #e5e7eb;border-radius:11px;width:41px;height:41px}.mobile-backup-button svg{width:20px;height:20px}.topbar{display:none}.nav-label,.sidebar-progress,.sidebar-bottom{display:none}
+ #navigation{position:fixed;inset:auto 0 0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin:0;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid #e8e9ee;box-shadow:0 -4px 24px #6b382b06;overflow:visible;z-index:12;min-height:66px}.nav-button{position:relative;display:flex;flex-direction:column;gap:5px;align-items:center;justify-content:center;width:100%;padding:5px 0;margin:0;min-height:52px;border-radius:10px;font-size:10px;font-weight:500;line-height:1.3;color:#6a7280}.nav-button svg{width:22px;height:22px}.nav-button.active{color:#e2532c;background:#fff3eb}.desktop-nav-label{display:none}.mobile-nav-label{display:block}.nav-count{position:absolute;top:1px;left:calc(50% + 8px);font-size:9px;line-height:14px;min-width:14px;min-height:14px;padding:0 3px;border-radius:8px;background:#fff0e7;color:#c5522d}.nav-count:has(+span){display:none}
+ main{padding:20px 16px calc(180px + env(safe-area-inset-bottom))}.page-heading{margin:0 2px 18px;align-items:center}.eyebrow{display:none}h1{font-size:24px;line-height:1.3;letter-spacing:0}.page-heading p{font-size:12px;line-height:1.6;max-width:245px;margin-top:7px;color:#626c79}.today-pill{font-size:10px;padding:7px 9px;border:1px solid #f2d7c3;border-radius:18px;gap:5px;white-space:nowrap}.today-pill svg{width:14px;height:14px}.today-pill b{font-size:12px;margin:0 1px}
+ .stats{padding:15px 0;margin-bottom:19px;border:1px solid #f0e1d7;border-radius:13px;grid-template-columns:repeat(4,minmax(0,1fr));row-gap:0}.stat{padding:0 10px;text-align:center;border-left:1px solid #f1e7e0}.stat:nth-child(3){border-left:1px solid #f1e7e0}.stat:first-child{border-left:0}.stat-label{font-size:10px;white-space:nowrap;margin-bottom:8px;color:#69717e}.stat strong{font-size:23px;color:#262c35;line-height:1;font-weight:650;letter-spacing:-.6px}.stat:first-child strong,.stat:last-child strong{color:#e45d32}.stat div>span{display:none}.stat p,.stat .text-link{display:none}
+ .practice-toolbar{display:flex;flex-wrap:wrap;align-items:center;margin-bottom:15px;gap:10px}.filters{flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:4px;gap:2px;border-radius:10px;min-width:230px}.filter-button{padding:9px 5px;font-size:12px;min-height:34px;border-radius:7px}.filter-button small{display:none}.toolbar-actions{gap:0;display:flex;align-items:center}.subtle-button{display:none}.mobile-card-button{display:block;font-size:12px;min-width:54px;min-height:42px;padding:8px;color:#b94e2a;background:#fff;border:1px solid #efd9ca;border-radius:9px}.mobile-card-button[hidden]{display:none}
+ .question-card{padding:20px 18px 24px;min-height:0;border:1px solid #efddd1;border-radius:15px;box-shadow:0 5px 20px #b9673004}.question-meta{padding-bottom:19px}.question-tags{gap:8px}.type-tag{font-size:11px;padding:5px 9px}.question-difficulty{font-size:11px}.favorite-button{font-size:12px;min-height:30px;gap:5px;padding:2px}.favorite-button svg{width:19px;height:19px}.question-counter{font-size:12px;margin-bottom:12px;letter-spacing:.5px}.question-counter b{font-size:23px;font-weight:650}.question-text{font-size:19px;font-weight:600;line-height:1.8;letter-spacing:.2px;margin-bottom:11px}.answer-hint{font-size:12px;line-height:1.7;margin-bottom:20px}.options{gap:12px}.option{padding:14px 13px;min-height:56px;gap:12px;border-radius:11px}.option-letter{height:27px;width:27px;font-size:13px;border-radius:7px}.option-text{font-size:16px;line-height:1.75;min-width:0}.answer-mark{font-size:19px}.feedback{margin-top:23px;padding:16px;border-radius:11px}.feedback-title{font-size:14px}.feedback p{font-size:13px;line-height:1.85}.feedback .answer-note{font-size:12px}.retry-button{font-size:13px;min-height:38px}.feedback small{display:none}
+ .question-actions{position:fixed;left:0;right:0;bottom:calc(66px + env(safe-area-inset-bottom));display:grid;grid-template-columns:74px minmax(0,1fr) 74px;align-items:center;gap:9px;padding:12px 16px;margin:0;background:#fff;border-top:1px solid #ede3dc;z-index:10;box-shadow:0 -4px 18px #88512f05;min-height:75px}.question-actions .sr-only{position:static;width:auto;height:auto;padding:0;margin:0;clip:auto;overflow:visible;white-space:normal;display:block;color:#16804a;text-align:center;font-size:13px}.question-actions .nav-action{justify-content:center;font-size:13px;min-height:46px;color:#656d7a;padding:8px 0;gap:3px}.question-actions .primary-button{min-height:47px;font-size:15px;padding:12px 10px;border-radius:10px}.question-actions .primary-button[data-action=next]{grid-column:3;padding:10px 2px;font-size:13px;gap:2px}.question-actions .primary-button svg{width:15px;height:15px}.question-actions .nav-action svg{width:13px;height:13px}.practice-tip{display:none}.answer-panel{display:none}.page-footer{padding:18px 4px 0;font-size:10px;line-height:1.9;gap:4px;color:#737d8a}.page-footer span:first-child{display:none}.toast{bottom:calc(154px + env(safe-area-inset-bottom));font-size:13px;border-radius:12px;line-height:1.7;max-width:calc(100% - 40px);width:max-content}.empty-state{padding:45px 20px}.empty-state h2{font-size:20px}.empty-state p{font-size:14px;line-height:1.8}.empty-state .primary-button{min-height:46px;font-size:14px}.is-browsing main{padding-bottom:calc(95px + env(safe-area-inset-bottom))}.browser-tools{gap:8px}.search-field{padding:13px 12px;border-radius:11px}.search-field input{font-size:16px}.search-field svg{width:19px;height:19px}.browser-tools .secondary-button{display:none}.browse-count{font-size:12px;line-height:1.7}.browse-card{padding:18px 16px;border-radius:13px}.browse-card summary{font-size:16px;line-height:1.8;gap:9px}.browse-number{font-size:12px;padding-top:3px}.browse-options{font-size:14px;line-height:2;margin-left:23px}.browse-answer{font-size:14px;margin-left:23px;line-height:1.8}.browse-actions{gap:24px;margin-left:23px}.browse-actions button{font-size:13px;min-height:40px}.browse-list{gap:12px}
+ dialog{padding:22px;max-height:85dvh;overflow:auto;border-radius:17px}.dialog-header h2{font-size:20px}.dialog-description{font-size:14px;line-height:1.8}.backup-choice{gap:12px}.backup-choice b{font-size:14px}.backup-choice p{font-size:12px;line-height:1.7}.secondary-button{font-size:13px;padding:11px 14px;min-height:44px}.import-note{font-size:12px;line-height:1.8}.summary-actions .primary-button{font-size:14px;min-height:44px}.summary-stats span{font-size:12px}.mobile-dialog-grid{gap:8px;grid-template-columns:repeat(6,minmax(0,1fr))}.mobile-dialog-grid .grid-number{font-size:13px;height:39px}.legend{font-size:11px;gap:18px}
+}
+@media(max-width:370px){main{padding-left:12px;padding-right:12px}.sidebar{padding-left:16px;padding-right:16px}.brand{font-size:18px}.page-heading p{font-size:11px;max-width:210px}.today-pill{font-size:9px;padding:6px}.question-card{padding-left:16px;padding-right:16px}.question-actions{padding-left:12px;padding-right:12px;grid-template-columns:67px minmax(0,1fr) 67px}.filter-button{font-size:11px}.filters{min-width:218px}.mobile-card-button{min-width:48px;padding:7px;font-size:11px}}
+
+@media(max-width:720px){.question-actions.has-result{grid-template-columns:90px minmax(0,1fr)}.question-actions.has-result .sr-only{display:none}.question-actions.has-result .primary-button[data-action=next]{grid-column:auto;font-size:15px;padding:12px 20px;gap:9px}}
+
+@media(max-width:720px){.sidebar{flex-direction:row}.page-heading{margin-bottom:16px}.page-heading p{display:none}.today-pill{margin-top:0}.stats{padding-top:13px;padding-bottom:13px}.question-card .question-meta{padding-bottom:14px}}
+
+@media(max-width:720px){.question-card{scroll-margin-top:16px}}
+
+</style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="./" aria-label="我的刷题本首页"><span class="brand-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h11a2 2 0 0 1 2 2v14H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z"/><path d="M7 4v16M11 9h5M11 13h4"/></svg></span><span>我的刷题本<small>一点一滴，慢慢掌握</small></span></a>
+      <button class="mobile-backup-button" data-action="backup" aria-label="备份练习进度"><span data-icon="backup"></span></button>
+      <div class="nav-label">我的练习</div><nav id="navigation" aria-label="练习模式"></nav>
+      <div class="sidebar-progress"><div class="small-label">题库掌握进度<span id="sideProgressLabel">0 / 96</span></div><div class="progress-track"><i id="sideProgress"></i></div><p>每一次练习，都算数。</p></div>
+      <div class="sidebar-bottom"><button class="backup-trigger" data-action="backup"><span data-icon="backup"></span>进度备份</button><div class="private-note"><span data-icon="check"></span><span>免登录 · 进度保存在本机</span></div></div>
+    </aside>
+    <div class="main-shell">
+      <header class="topbar"><span class="breadcrumb">个人题库 <span>/</span> 营销费用管理</span><span class="saved-state" id="saveState"><i></i>进度自动保存</span></header>
+      <main>
+        <section class="page-heading"><div><div class="eyebrow">个人专属题库</div><h1 id="pageTitle">顺序练习</h1><p id="pageSubtitle">按题库顺序，踏实练好每一道题。</p></div><div class="today-pill"><span data-icon="sun"></span><span>今日已练 <b id="todayCount">0</b> 题</span></div></section>
+        <section class="stats" aria-label="练习统计"><div class="stat"><span class="stat-label">题库总量</span><div><strong>96</strong><span>题</span></div><p>46 单选 · 20 多选 · 30 判断</p></div><div class="stat"><span class="stat-label">累计已练</span><div><strong id="doneCount">0</strong><span>/ 96 题</span></div><p id="doneHint">从第一道题开始</p></div><div class="stat"><span class="stat-label">答题正确率</span><div><strong id="accuracy">—</strong></div><p>按累计提交次数计算</p></div><div class="stat"><span class="stat-label">待复习错题</span><div><strong id="wrongCount">0</strong><span>题</span></div><button data-action="mode" data-mode="wrong" class="text-link">去复习 <span>↗</span></button></div></section>
+        <section class="practice-area"><div class="practice-toolbar"><div class="filters" id="filters" role="group" aria-label="题型筛选"></div><div class="toolbar-actions"><button id="mobileCardButton" class="mobile-card-button" data-action="answer-card">答题卡</button><button id="restartButton" class="subtle-button" data-action="restart"><span data-icon="refresh"></span><span id="restartLabel">新一轮练习</span></button></div></div><div id="practiceContent"></div></section>
+        <footer class="page-footer"><span>题库更新于 2026.10.22 · 已排除模板示例</span><span>进度保存在当前浏览器，可通过「进度备份」迁移</span></footer>
+      </main>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <dialog id="utilityDialog" aria-labelledby="dialogTitle"><div id="dialogContent"></div></dialog>
+  <script type="module">
+const QUESTIONS = [
+  {
+    "id": "q001",
+    "number": 1,
+    "type": "单选",
+    "text": "传统通路陈列我司营销代表每月检核门店数量不低于多少家，不足的需全检。",
+    "options": [
+      {
+        "key": "A",
+        "text": "20家"
+      },
+      {
+        "key": "B",
+        "text": "30家"
+      },
+      {
+        "key": "C",
+        "text": "40家"
+      },
+      {
+        "key": "D",
+        "text": "50家"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 3 行"
+  },
+  {
+    "id": "q002",
+    "number": 2,
+    "type": "单选",
+    "text": "营销费用管理的第一责任人是指哪个体系？",
+    "options": [
+      {
+        "key": "A",
+        "text": "营销财务"
+      },
+      {
+        "key": "B",
+        "text": "行销"
+      },
+      {
+        "key": "C",
+        "text": "经销商及供应商"
+      },
+      {
+        "key": "D",
+        "text": "业务体系"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 4 行"
+  },
+  {
+    "id": "q003",
+    "number": 3,
+    "type": "单选",
+    "text": "销售区域每月15日前必须结清上月结束的营销活动为",
+    "options": [
+      {
+        "key": "A",
+        "text": "推广类活动"
+      },
+      {
+        "key": "B",
+        "text": "效期领先活动"
+      },
+      {
+        "key": "C",
+        "text": "常规陈列"
+      },
+      {
+        "key": "D",
+        "text": "供应部广促物料采购"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 5 行"
+  },
+  {
+    "id": "q004",
+    "number": 4,
+    "type": "单选",
+    "text": "新鲜度处理费用，依照排期完成新鲜度处理后（）天内由我司营销代表业务sfa检核关联至中台系统作为结案依据。",
+    "options": [
+      {
+        "key": "A",
+        "text": "7天"
+      },
+      {
+        "key": "B",
+        "text": "8天"
+      },
+      {
+        "key": "C",
+        "text": "9天"
+      },
+      {
+        "key": "D",
+        "text": "10天"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 6 行"
+  },
+  {
+    "id": "q005",
+    "number": 5,
+    "type": "单选",
+    "text": "新鲜度处理活动结束后，新鲜度检核门店数量不低于多少家，不足则全检。",
+    "options": [
+      {
+        "key": "A",
+        "text": "20家"
+      },
+      {
+        "key": "B",
+        "text": "30家"
+      },
+      {
+        "key": "C",
+        "text": "40家"
+      },
+      {
+        "key": "D",
+        "text": "50家"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 7 行"
+  },
+  {
+    "id": "q006",
+    "number": 6,
+    "type": "单选",
+    "text": "新鲜度清点，终端执行（或折合）不大于买一赠一力度，包含统案在内，单提补贴力度不大于产品到岸价的百分之几？",
+    "options": [
+      {
+        "key": "A",
+        "text": "0.1"
+      },
+      {
+        "key": "B",
+        "text": "0.15"
+      },
+      {
+        "key": "C",
+        "text": "0.2"
+      },
+      {
+        "key": "D",
+        "text": "0.25"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 8 行"
+  },
+  {
+    "id": "q007",
+    "number": 7,
+    "type": "单选",
+    "text": "现代渠道消费者买赠类促销，赠品量按不高于往期或同期促销POS多少进行规划？力度不大于一赠一。",
+    "options": [
+      {
+        "key": "A",
+        "text": "POS×1.2"
+      },
+      {
+        "key": "B",
+        "text": "POS×1.5"
+      },
+      {
+        "key": "C",
+        "text": "POS×1.8"
+      },
+      {
+        "key": "D",
+        "text": "POS×2.0"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 9 行"
+  },
+  {
+    "id": "q008",
+    "number": 8,
+    "type": "单选",
+    "text": "XX经销商提报大日期产品数量5366提，巡查现场实际清点数量为5348提，差异18提，应考核直管业务、地区经理多少元 。",
+    "options": [
+      {
+        "key": "A",
+        "text": "200元"
+      },
+      {
+        "key": "B",
+        "text": "300元"
+      },
+      {
+        "key": "C",
+        "text": "400元"
+      },
+      {
+        "key": "D",
+        "text": "0元"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 10 行"
+  },
+  {
+    "id": "q009",
+    "number": 9,
+    "type": "单选",
+    "text": "清点过程中如发现经销商通过相互借调产品、拒不配合复核等不诚信行为的，对涉及经销商考核不低于10万元，经销商直管业务人员如何处理？",
+    "options": [
+      {
+        "key": "A",
+        "text": "考核2000元"
+      },
+      {
+        "key": "B",
+        "text": "考核3000元"
+      },
+      {
+        "key": "C",
+        "text": "考核5000元"
+      },
+      {
+        "key": "D",
+        "text": "降级处理"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 11 行"
+  },
+  {
+    "id": "q010",
+    "number": 10,
+    "type": "单选",
+    "text": "除全场类折扣、返券类活动以外，做任何一档促销规划时必须把什么核算在内？",
+    "options": [
+      {
+        "key": "A",
+        "text": "统案搭赠"
+      },
+      {
+        "key": "B",
+        "text": "进货返利"
+      },
+      {
+        "key": "C",
+        "text": "进货激励"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 12 行"
+  },
+  {
+    "id": "q011",
+    "number": 11,
+    "type": "单选",
+    "text": "关于非物码产品出货类促销结案以下说法正确的是？",
+    "options": [
+      {
+        "key": "A",
+        "text": "每个执行网点需提供促销产品执行照片。"
+      },
+      {
+        "key": "B",
+        "text": "有自有系统经销商以自有系统出货数据为核心结案依据。结案金额 = 档期促销品项实际出货量（剔除退货）× 对应补贴力度。"
+      },
+      {
+        "key": "C",
+        "text": "无云商或无自有系统数据的，要求提供产品出货单。体现出货日期、出货价格、出货数量及出货网点，出货单需经销商盖章。   "
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 13 行"
+  },
+  {
+    "id": "q012",
+    "number": 12,
+    "type": "单选",
+    "text": "关于物码产品出货类促销结案以下说法正确的是？",
+    "options": [
+      {
+        "key": "A",
+        "text": "每个执行网点需提供促销产品执行照片。"
+      },
+      {
+        "key": "B",
+        "text": "系统导出并核准后的电子版表格备档销售区域即可，无需提供纸质结案材料，保存年限与纸质版材料一致。"
+      },
+      {
+        "key": "C",
+        "text": "系统导出并核准后的电子版表格备档销售区域，同时需提供纸质结案材料。"
+      },
+      {
+        "key": "D",
+        "text": "结案核算时，\n剔除追溯码重复的数据，避免重复结案，同一追溯码结案以首次出库月有效出库数据结案，后续月份产品状态发生变化需重新计算费用"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 14 行"
+  },
+  {
+    "id": "q013",
+    "number": 13,
+    "type": "单选",
+    "text": "冲销申请需签批至什么部门？补录申请按“审批权限”执行。同时对活动相关责任人按100/案进行考核。上级50%连带。",
+    "options": [
+      {
+        "key": "A",
+        "text": "营销总部"
+      },
+      {
+        "key": "B",
+        "text": "冲销申请签批终点与原申请保持一致"
+      },
+      {
+        "key": "C",
+        "text": "销售部总监"
+      },
+      {
+        "key": "D",
+        "text": "补录申请应与原申请应在同一预算周期内，冲销申请签批终点与原申请保持一致，否则冲销申请签批至销售部负责人。"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 15 行"
+  },
+  {
+    "id": "q014",
+    "number": 14,
+    "type": "单选",
+    "text": "累计追加金额大于10万且累计追加比例大于20%，对超出10万以上部分按1%执行考核，同一个预算占用月下，所有申请的单人通报上限是多少？",
+    "options": [
+      {
+        "key": "A",
+        "text": "2000"
+      },
+      {
+        "key": "B",
+        "text": "3000"
+      },
+      {
+        "key": "C",
+        "text": "4000"
+      },
+      {
+        "key": "D",
+        "text": "1000"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 16 行"
+  },
+  {
+    "id": "q015",
+    "number": 15,
+    "type": "单选",
+    "text": "累计追加金额大于20万且累计追加比例大于50%，对超出10万以上部分按1%执行考核，同一个预算占用月下，所有申请的单人通报上限是多少？",
+    "options": [
+      {
+        "key": "A",
+        "text": "2000"
+      },
+      {
+        "key": "B",
+        "text": "3000"
+      },
+      {
+        "key": "C",
+        "text": "5000"
+      },
+      {
+        "key": "D",
+        "text": "1000"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 17 行"
+  },
+  {
+    "id": "q016",
+    "number": 16,
+    "type": "单选",
+    "text": "累计追加金额大于40万且累计追加比例大于100%，对超出10万以上部分按1%执行考核，单个批复通报上限是多少？",
+    "options": [
+      {
+        "key": "A",
+        "text": "5000"
+      },
+      {
+        "key": "B",
+        "text": "8000"
+      },
+      {
+        "key": "C",
+        "text": "10000"
+      },
+      {
+        "key": "D",
+        "text": "20000"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 18 行"
+  },
+  {
+    "id": "q017",
+    "number": 17,
+    "type": "单选",
+    "text": "单个促销申请批复下，以追加及原批复合计额判断审批权限。金额低于300万（含）的授权谁签批？",
+    "options": [
+      {
+        "key": "A",
+        "text": "营销总经理"
+      },
+      {
+        "key": "B",
+        "text": "南北区负责人"
+      },
+      {
+        "key": "C",
+        "text": "销售部总监"
+      },
+      {
+        "key": "D",
+        "text": "事业部"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 19 行"
+  },
+  {
+    "id": "q018",
+    "number": 18,
+    "type": "单选",
+    "text": "追加申请的结案时限是（）",
+    "options": [
+      {
+        "key": "A",
+        "text": "同原批复结案时间"
+      },
+      {
+        "key": "B",
+        "text": "N+1"
+      },
+      {
+        "key": "C",
+        "text": "N+2"
+      },
+      {
+        "key": "D",
+        "text": "N+3"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 20 行"
+  },
+  {
+    "id": "q019",
+    "number": 19,
+    "type": "单选",
+    "text": "未批复先执行，按涉及金额的1%落实区域经理（含直营分公司总经理、电商分销区域负责人）追责，通报上限多少元？",
+    "options": [
+      {
+        "key": "A",
+        "text": "1000"
+      },
+      {
+        "key": "B",
+        "text": "2000"
+      },
+      {
+        "key": "C",
+        "text": "3000"
+      },
+      {
+        "key": "D",
+        "text": "5000"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 21 行"
+  },
+  {
+    "id": "q020",
+    "number": 20,
+    "type": "单选",
+    "text": "超预算执行，按涉及金额的（）%多少落实区域经理考核，通报上限20000元。",
+    "options": [
+      {
+        "key": "A",
+        "text": "0.03"
+      },
+      {
+        "key": "B",
+        "text": "0.04"
+      },
+      {
+        "key": "C",
+        "text": "0.05"
+      },
+      {
+        "key": "D",
+        "text": "0.1"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 22 行"
+  },
+  {
+    "id": "q021",
+    "number": 21,
+    "type": "单选",
+    "text": "销售区域每月多少日前必须结清上月结束活动的资料收集、审核及数据核算工作？",
+    "options": [
+      {
+        "key": "A",
+        "text": "8日"
+      },
+      {
+        "key": "B",
+        "text": "10日"
+      },
+      {
+        "key": "C",
+        "text": "15日"
+      },
+      {
+        "key": "D",
+        "text": "18日"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 23 行"
+  },
+  {
+    "id": "q022",
+    "number": 22,
+    "type": "单选",
+    "text": "推广类活动、效期领先、供应部广促物料采购，O2O发票类活动结案时限（）（N为活动结束时间所属月）",
+    "options": [
+      {
+        "key": "A",
+        "text": "N+1"
+      },
+      {
+        "key": "B",
+        "text": "N+2"
+      },
+      {
+        "key": "C",
+        "text": "N+3"
+      },
+      {
+        "key": "D",
+        "text": "N+4"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 24 行"
+  },
+  {
+    "id": "q023",
+    "number": 23,
+    "type": "单选",
+    "text": "销售区域每月（）日17:00前必须将截止上月已结束活动的结案资料/数据报至营销财务审核。",
+    "options": [
+      {
+        "key": "A",
+        "text": "15日"
+      },
+      {
+        "key": "B",
+        "text": "18日"
+      },
+      {
+        "key": "C",
+        "text": "20日"
+      },
+      {
+        "key": "D",
+        "text": "25日"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 25 行"
+  },
+  {
+    "id": "q024",
+    "number": 24,
+    "type": "单选",
+    "text": "卖场消费者促销类活动结案时限（）（N为活动结束时间所属月）",
+    "options": [
+      {
+        "key": "A",
+        "text": "N+1"
+      },
+      {
+        "key": "B",
+        "text": "N+2"
+      },
+      {
+        "key": "C",
+        "text": "N+3"
+      },
+      {
+        "key": "D",
+        "text": "N+4"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 26 行"
+  },
+  {
+    "id": "q025",
+    "number": 25,
+    "type": "单选",
+    "text": "超期结案问题按多少元调整责任人绩效工资？",
+    "options": [
+      {
+        "key": "A",
+        "text": "100元"
+      },
+      {
+        "key": "B",
+        "text": "200元"
+      },
+      {
+        "key": "C",
+        "text": "500元"
+      },
+      {
+        "key": "D",
+        "text": "1000元"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 27 行"
+  },
+  {
+    "id": "q026",
+    "number": 26,
+    "type": "单选",
+    "text": "经销商执行的订货会、热卖及路演等综合类营销活动，涉及临促人员工资类结案材料除评估表、相关费用批复件、结案信息汇总表外还需包括哪些?",
+    "options": [
+      {
+        "key": "A",
+        "text": "临促人员活动照片、打款凭证。"
+      },
+      {
+        "key": "B",
+        "text": "临促人员身份证复印件、钉钉打卡记录。"
+      },
+      {
+        "key": "C",
+        "text": "临促人员电话号码、工资回执单。"
+      },
+      {
+        "key": "D",
+        "text": "非外包类：临促人员身份证复印件、工资回执单、考勤表。"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 28 行"
+  },
+  {
+    "id": "q027",
+    "number": 27,
+    "type": "单选",
+    "text": "考核办法中，费用执行真实但结案材料不规范,属于经销商原因，扣除不规范资料涉及结案金额的多少？ ",
+    "options": [
+      {
+        "key": "A",
+        "text": "0.1"
+      },
+      {
+        "key": "B",
+        "text": "0.15"
+      },
+      {
+        "key": "C",
+        "text": "0.2"
+      },
+      {
+        "key": "D",
+        "text": "0.3"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 29 行"
+  },
+  {
+    "id": "q028",
+    "number": 28,
+    "type": "单选",
+    "text": "线下产品派饮活动结案要求为：（）",
+    "options": [
+      {
+        "key": "A",
+        "text": "经销商出库单、人员签收单、物料告知照片、不少于3张赠饮现场照片"
+      },
+      {
+        "key": "B",
+        "text": "以赠饮接收记录及对应产品数量作为核心结案依据。可采用问卷星、小拓、小牌等小程序扫码、电子签章等的形式统计派饮数量（信息脱敏）"
+      },
+      {
+        "key": "C",
+        "text": "产品签收单：经销商出具产品出库单，体现品项、数量、日期。执行公司业务负责人、推广专员签字确认"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 30 行"
+  },
+  {
+    "id": "q029",
+    "number": 29,
+    "type": "单选",
+    "text": "在销售部营销费用管理制度考核办法中，费用真实但材料不规范，属于经销商原因，对于业务人员如何考核？",
+    "options": [
+      {
+        "key": "A",
+        "text": "连带不规范金额的50%"
+      },
+      {
+        "key": "B",
+        "text": "按200元／案"
+      },
+      {
+        "key": "C",
+        "text": "按100元/案"
+      },
+      {
+        "key": "D",
+        "text": "按500元/案"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 31 行"
+  },
+  {
+    "id": "q030",
+    "number": 30,
+    "type": "单选",
+    "text": "现代通路买赠类促销结案材料描述错误的是？",
+    "options": [
+      {
+        "key": "A",
+        "text": "卖场的赠品的入库单不可以作为赠品接收证明"
+      },
+      {
+        "key": "B",
+        "text": "促销产品POS要求必须提供档期内促销产品实销数量"
+      },
+      {
+        "key": "C",
+        "text": "执行照片要求每个促销门店提供一张，体现绑赠力度及绑赠品项"
+      },
+      {
+        "key": "D",
+        "text": "档期内POS证明赠品未使用完毕，则可通过申请活动延期、另案申请等方式将赠品消化完毕"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 32 行"
+  },
+  {
+    "id": "q031",
+    "number": 31,
+    "type": "单选",
+    "text": "以下结案类型中，不可隔月结案的是？",
+    "options": [
+      {
+        "key": "A",
+        "text": "重点系统档期促销"
+      },
+      {
+        "key": "B",
+        "text": "执行类活动"
+      },
+      {
+        "key": "C",
+        "text": "现代通路陈列"
+      },
+      {
+        "key": "D",
+        "text": "供应部广促物料采购"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "低",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 33 行"
+  },
+  {
+    "id": "q032",
+    "number": 32,
+    "type": "单选",
+    "text": "进货激励促销活动，A经销商进货目标量达成率为92%，结案核算办法是？",
+    "options": [
+      {
+        "key": "A",
+        "text": "不予结案"
+      },
+      {
+        "key": "B",
+        "text": "全额结案"
+      },
+      {
+        "key": "C",
+        "text": "按[ 1-（达成率-10%）] 扣减结案费用"
+      },
+      {
+        "key": "D",
+        "text": "按（1-达成率）扣减结案费用"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 34 行"
+  },
+  {
+    "id": "q033",
+    "number": 33,
+    "type": "单选",
+    "text": "进货激励促销活动，A经销商进货目标量达成率为70%，结案核算办法是？",
+    "options": [
+      {
+        "key": "A",
+        "text": "不予结案"
+      },
+      {
+        "key": "B",
+        "text": "全额结案"
+      },
+      {
+        "key": "C",
+        "text": "按[ 1-（达成率-10%）] 扣减结案费用"
+      },
+      {
+        "key": "D",
+        "text": "按（1-达成率）扣减结案费用"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 35 行"
+  },
+  {
+    "id": "q034",
+    "number": 34,
+    "type": "单选",
+    "text": "进货激励促销活动，A经销商进货目标量达成率为85%，结案核算办法是？",
+    "options": [
+      {
+        "key": "A",
+        "text": "不予结案"
+      },
+      {
+        "key": "B",
+        "text": "全额结案"
+      },
+      {
+        "key": "C",
+        "text": "按[ 1-（达成率-10%）] 扣减结案费用"
+      },
+      {
+        "key": "D",
+        "text": "按（1-达成率）扣减结案费用"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 36 行"
+  },
+  {
+    "id": "q035",
+    "number": 35,
+    "type": "单选",
+    "text": "活动结束在N月的活动，最迟通过（）月内完成追加预算及备档。消费者促销最迟通过（）月内完成追加预算及备档。超过以上时限的，相关费用需参照“超预算执行。",
+    "options": [
+      {
+        "key": "A",
+        "text": "N；N+1"
+      },
+      {
+        "key": "B",
+        "text": "N+1；N+1"
+      },
+      {
+        "key": "C",
+        "text": "N+1；N+2"
+      },
+      {
+        "key": "D",
+        "text": "N+2；N+2"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 37 行"
+  },
+  {
+    "id": "q036",
+    "number": 36,
+    "type": "单选",
+    "text": "制作项目验收中单个高级制作物超过（  ）元，必须通过实地、远程等有效方式对投放情况进行核实？",
+    "options": [
+      {
+        "key": "A",
+        "text": "3000元"
+      },
+      {
+        "key": "B",
+        "text": "4000元"
+      },
+      {
+        "key": "C",
+        "text": "5000元"
+      },
+      {
+        "key": "D",
+        "text": "10000元"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 38 行"
+  },
+  {
+    "id": "q037",
+    "number": 37,
+    "type": "单选",
+    "text": "某市场提报大日期产品，回调品项为全品项，提报大日期产品数量1665提，经公司人员清点，实际数量为1235提，差异430提，根据26年营销费用管理制度，对经销商考核（  ），直管业务、地区经理考核（    ）？",
+    "options": [
+      {
+        "key": "A",
+        "text": "不低于3000元；500元"
+      },
+      {
+        "key": "B",
+        "text": "不低于20000元；2000元"
+      },
+      {
+        "key": "C",
+        "text": "不低于30000元；3000元"
+      },
+      {
+        "key": "D",
+        "text": "不低于50000元；5000元"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "difficulty": "高",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 39 行"
+  },
+  {
+    "id": "q038",
+    "number": 38,
+    "type": "单选",
+    "text": "清点过程中如发现经销商通过相互借调产品、拒不配合复核等不诚信行为的，对涉及经销商考核不低于（）万元，经销商直管业务人员降级处理。",
+    "options": [
+      {
+        "key": "A",
+        "text": "5万"
+      },
+      {
+        "key": "B",
+        "text": "8万"
+      },
+      {
+        "key": "C",
+        "text": "10万"
+      },
+      {
+        "key": "D",
+        "text": "15万"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 40 行"
+  },
+  {
+    "id": "q039",
+    "number": 39,
+    "type": "单选",
+    "text": "新鲜度处理：某市场活动名称为“XX销售区域1月日期产品新鲜度费用申请-清点”的促销申请活动时间为2026年3月15日-2026年3月31日，检核时间为（）？",
+    "options": [
+      {
+        "key": "A",
+        "text": "3月1日-3月10日"
+      },
+      {
+        "key": "B",
+        "text": "4月1日-4月10日"
+      },
+      {
+        "key": "C",
+        "text": "3月15日-3月31日"
+      },
+      {
+        "key": "D",
+        "text": "4月23日-4月30日"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 41 行"
+  },
+  {
+    "id": "q040",
+    "number": 40,
+    "type": "单选",
+    "text": "（不考虑其他因素）金典纯+安慕希原味组合价99，补贴2元/提。档期内金典实销200提，安慕希实销210提，经销商金典和安慕希各配送230提，在计算组合促销补贴时，取值多少组进行结案，补贴金额多少元？",
+    "options": [
+      {
+        "key": "A",
+        "text": "200组，200组*2=400元"
+      },
+      {
+        "key": "B",
+        "text": "210组，210组*2=420元"
+      },
+      {
+        "key": "C",
+        "text": "230组、230组*2=460元"
+      },
+      {
+        "key": "D",
+        "text": "200组，200组*2*2=800元"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "difficulty": "高",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 42 行"
+  },
+  {
+    "id": "q041",
+    "number": 41,
+    "type": "单选",
+    "text": "销售部划拨费用不得跨（）备档。促销档期跨月设置的，按照档期开始月份确定备档月。结案差由（）统筹，各区域不得直接使用。",
+    "options": [
+      {
+        "key": "A",
+        "text": "自然月、销售部"
+      },
+      {
+        "key": "B",
+        "text": "2月内、营销总部"
+      },
+      {
+        "key": "C",
+        "text": "自然月、营销总部"
+      },
+      {
+        "key": "D",
+        "text": "2月内、销售部"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 43 行"
+  },
+  {
+    "id": "q042",
+    "number": 42,
+    "type": "单选",
+    "text": "员工本人与终端门店收款人存在关联关系按什么措施处理？",
+    "options": [
+      {
+        "key": "A",
+        "text": "考核5000"
+      },
+      {
+        "key": "B",
+        "text": "降级"
+      },
+      {
+        "key": "C",
+        "text": "降职"
+      },
+      {
+        "key": "D",
+        "text": "按人员舞弊问题落实处理。"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 44 行"
+  },
+  {
+    "id": "q043",
+    "number": 43,
+    "type": "单选",
+    "text": "物料制作分为基础制作物、高级制作物、综合类形象改装三种类型，结案时照片分别提供多少张？",
+    "options": [
+      {
+        "key": "A",
+        "text": "1张、3张、2张"
+      },
+      {
+        "key": "B",
+        "text": "2张、3张、2张"
+      },
+      {
+        "key": "C",
+        "text": "3张、2张、2张"
+      },
+      {
+        "key": "D",
+        "text": "1张、3张、3张"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 45 行"
+  },
+  {
+    "id": "q044",
+    "number": 44,
+    "type": "单选",
+    "text": "经销商激励方案、激励通报须经销售部总监签批后执行。其中激励通过营销费用预算兑现的要求是（），费用申请在通报签发后（）天内完成审批备档",
+    "options": [
+      {
+        "key": "A",
+        "text": "费用申请在通报签发后15天内完成审批备档"
+      },
+      {
+        "key": "B",
+        "text": "费用申请在通报签发后10天内完成审批备档"
+      },
+      {
+        "key": "C",
+        "text": "费用申请在通报签发后当月完成审批备档"
+      },
+      {
+        "key": "D",
+        "text": "当月20日前归档的通报须在当月预算列支签批归档。当月20日之后归档的通报，须在次月预算列支签批归档。"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 46 行"
+  },
+  {
+    "id": "q045",
+    "number": 45,
+    "type": "单选",
+    "text": "应急促销审批机制：因紧急情况需立即执行促销活动而后补申请的，则必须在执行前征得活动最终审批人的同意，并在（）个工作日内完成申请的补签及备档。申请发起时需附与审批人的请示、沟通凭证，包括信息、邮件记录等。",
+    "options": [
+      {
+        "key": "A",
+        "text": "2个"
+      },
+      {
+        "key": "B",
+        "text": "3个"
+      },
+      {
+        "key": "C",
+        "text": "4个"
+      },
+      {
+        "key": "D",
+        "text": "5个"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 47 行"
+  },
+  {
+    "id": "q046",
+    "number": 46,
+    "type": "单选",
+    "text": "窜货经销商促销管控机制（P6M）：在销售部产品促销指引基础上，基于特定业务场景给予的特殊渠道激励补贴，如需引入窜货问题促销管控机制，则统一以经销商过往（）个月内单位销售额对应的窜货次数为依据，高于约定值的（当前执行以0.1作为标线），在次月申请端对其促销进行管控干预。管控细则以具体促销方案为准。",
+    "options": [
+      {
+        "key": "A",
+        "text": "3月"
+      },
+      {
+        "key": "B",
+        "text": "4月"
+      },
+      {
+        "key": "C",
+        "text": "6月"
+      },
+      {
+        "key": "D",
+        "text": "5月"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "difficulty": "中",
+    "points": 2.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 48 行"
+  },
+  {
+    "id": "q047",
+    "number": 47,
+    "type": "多选",
+    "text": "特供价结案材料需要提供哪两种核心结案材料？",
+    "options": [
+      {
+        "key": "A",
+        "text": "产品配送/库存变价数量"
+      },
+      {
+        "key": "B",
+        "text": "档期海报"
+      },
+      {
+        "key": "C",
+        "text": "促销产品POS"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "difficulty": "中",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 49 行"
+  },
+  {
+    "id": "q048",
+    "number": 48,
+    "type": "多选",
+    "text": "按销补差价结案材料需要提供哪两种核心结案材料？",
+    "options": [
+      {
+        "key": "A",
+        "text": "产品配送/库存变价数量"
+      },
+      {
+        "key": "B",
+        "text": "促销产品POS"
+      },
+      {
+        "key": "C",
+        "text": "档期海报"
+      }
+    ],
+    "answer": [
+      "B",
+      "C"
+    ],
+    "difficulty": "中",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 50 行"
+  },
+  {
+    "id": "q049",
+    "number": 49,
+    "type": "多选",
+    "text": "买赠类结案材料需要提供哪三种核心结案材料？",
+    "options": [
+      {
+        "key": "A",
+        "text": "赠品接收证明"
+      },
+      {
+        "key": "B",
+        "text": " 促销产品POS"
+      },
+      {
+        "key": "C",
+        "text": "执行照片"
+      },
+      {
+        "key": "D",
+        "text": "档期海报"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "difficulty": "中",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 51 行"
+  },
+  {
+    "id": "q050",
+    "number": 50,
+    "type": "多选",
+    "text": "营销总部自采（京东惠采、智采、锦礼）结案核心材料有哪2种？",
+    "options": [
+      {
+        "key": "A",
+        "text": "订单电子签收单"
+      },
+      {
+        "key": "B",
+        "text": "发票"
+      },
+      {
+        "key": "C",
+        "text": "合同"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "difficulty": "中",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 52 行"
+  },
+  {
+    "id": "q051",
+    "number": 51,
+    "type": "多选",
+    "text": "广宣品制作结案核心材料有哪些？",
+    "options": [
+      {
+        "key": "A",
+        "text": "制作合同"
+      },
+      {
+        "key": "B",
+        "text": "制作物照片"
+      },
+      {
+        "key": "C",
+        "text": "制作明细表"
+      },
+      {
+        "key": "D",
+        "text": "发票"
+      }
+    ],
+    "answer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "difficulty": "中",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 53 行"
+  },
+  {
+    "id": "q052",
+    "number": 52,
+    "type": "多选",
+    "text": "线下形象发布结案核心材料有哪些？",
+    "options": [
+      {
+        "key": "A",
+        "text": "发布合同"
+      },
+      {
+        "key": "B",
+        "text": "发布照片"
+      },
+      {
+        "key": "C",
+        "text": "形象明细"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "difficulty": "中",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 54 行"
+  },
+  {
+    "id": "q053",
+    "number": 53,
+    "type": "多选",
+    "text": "线上形象发布结案核心材料有哪些？",
+    "options": [
+      {
+        "key": "A",
+        "text": "资源位采买确认资料"
+      },
+      {
+        "key": "B",
+        "text": "发布照片/截图"
+      },
+      {
+        "key": "C",
+        "text": "形象明细"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "difficulty": "中",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 55 行"
+  },
+  {
+    "id": "q054",
+    "number": 54,
+    "type": "多选",
+    "text": "关于进货激励促销活动，以下说法正确的是？",
+    "options": [
+      {
+        "key": "A",
+        "text": "在统案搭赠基础上额外支持的进货激励促销费用，以费用申请中约定的单个经销商目标量达成率进行考核。 "
+      },
+      {
+        "key": "B",
+        "text": "达成80%以下不予结案"
+      },
+      {
+        "key": "C",
+        "text": "达成80%-90%（包含80%），按[ 1-（达成率-10%）] 扣减结案费用"
+      },
+      {
+        "key": "D",
+        "text": "达成90%-100%（包含90%），按（1-达成率）扣减结案费用"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "difficulty": "低",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 56 行"
+  },
+  {
+    "id": "q055",
+    "number": 55,
+    "type": "多选",
+    "text": "追加申请适用于哪几种促销类型？",
+    "options": [
+      {
+        "key": "A",
+        "text": "进货激励补贴"
+      },
+      {
+        "key": "B",
+        "text": "价格类消费者"
+      },
+      {
+        "key": "C",
+        "text": "买赠促销"
+      },
+      {
+        "key": "D",
+        "text": "出库促销"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "difficulty": "中",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 57 行"
+  },
+  {
+    "id": "q056",
+    "number": 56,
+    "type": "多选",
+    "text": "已批复的营销费用申请，那些形式（   ）不允许变更？",
+    "options": [
+      {
+        "key": "A",
+        "text": "执行渠道"
+      },
+      {
+        "key": "B",
+        "text": "执行客户"
+      },
+      {
+        "key": "C",
+        "text": "活动方式"
+      },
+      {
+        "key": "D",
+        "text": "批复总费用"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "difficulty": "中",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 58 行"
+  },
+  {
+    "id": "q057",
+    "number": 57,
+    "type": "多选",
+    "text": "费用申请须从当月1日起执行的活动类型有",
+    "options": [
+      {
+        "key": "A",
+        "text": "常规陈列"
+      },
+      {
+        "key": "B",
+        "text": "常规人员"
+      },
+      {
+        "key": "C",
+        "text": "进货激励"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "difficulty": "",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 59 行"
+  },
+  {
+    "id": "q058",
+    "number": 58,
+    "type": "多选",
+    "text": "账扣类（多见于现代卖场）陈列结案资料规范性要求（）",
+    "options": [
+      {
+        "key": "A",
+        "text": "陈列协议"
+      },
+      {
+        "key": "B",
+        "text": " 卖场陈列照片3张"
+      },
+      {
+        "key": "C",
+        "text": " 堆头、端架陈列照片应为全景照，单门店陈列照片需清晰展示结案内所有陈列堆码"
+      },
+      {
+        "key": "D",
+        "text": "门店中心的门店验真结果"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "difficulty": "低",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 60 行"
+  },
+  {
+    "id": "q059",
+    "number": 59,
+    "type": "多选",
+    "text": "促销执行中涉及用我司产品作为赠品的，在费用申请时按赠品（）核算，在检验终端执行力度是否达标时以赠品（）判断。",
+    "options": [
+      {
+        "key": "A",
+        "text": "零售价"
+      },
+      {
+        "key": "B",
+        "text": "到岸价"
+      },
+      {
+        "key": "C",
+        "text": "供货价"
+      }
+    ],
+    "answer": [
+      "B",
+      "C"
+    ],
+    "difficulty": "高",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 61 行"
+  },
+  {
+    "id": "q060",
+    "number": 60,
+    "type": "多选",
+    "text": "以下哪几种促销类型适用于变更方式？",
+    "options": [
+      {
+        "key": "A",
+        "text": "执行档期"
+      },
+      {
+        "key": "B",
+        "text": "、活动产品"
+      },
+      {
+        "key": "C",
+        "text": "活动方式"
+      },
+      {
+        "key": "D",
+        "text": "执行渠道"
+      },
+      {
+        "key": "E",
+        "text": "经销商"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "difficulty": "中",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 62 行"
+  },
+  {
+    "id": "q061",
+    "number": 61,
+    "type": "多选",
+    "text": "陈列费用结案要求：以我司人员销售管家“（）”检核结果为依据，凡门店陈列执行当月检核识别结果显示“（）”的，结案不予兑现（相关门店当月存在多条检核记录，以能够佐证门店铺市情况的记录为准），次月不予申请费用。",
+    "options": [
+      {
+        "key": "A",
+        "text": "全场景图像识别"
+      },
+      {
+        "key": "B",
+        "text": "检核表"
+      },
+      {
+        "key": "C",
+        "text": "囤货"
+      },
+      {
+        "key": "D",
+        "text": "未铺市"
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "difficulty": "高",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 63 行"
+  },
+  {
+    "id": "q062",
+    "number": 62,
+    "type": "多选",
+    "text": "经销商人员补贴非外包类结案材料需提供那些？",
+    "options": [
+      {
+        "key": "A",
+        "text": "身份证复印件"
+      },
+      {
+        "key": "B",
+        "text": "工资回执单"
+      },
+      {
+        "key": "C",
+        "text": "经销商云商业务人员端口信息"
+      },
+      {
+        "key": "D",
+        "text": "发票"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "difficulty": "中",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 64 行"
+  },
+  {
+    "id": "q063",
+    "number": 63,
+    "type": "多选",
+    "text": "营销费用申请管理总则主要是什么？",
+    "options": [
+      {
+        "key": "A",
+        "text": "尊重预算"
+      },
+      {
+        "key": "B",
+        "text": "规划在先"
+      },
+      {
+        "key": "C",
+        "text": "合理分摊"
+      },
+      {
+        "key": "D",
+        "text": "精准入账"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "difficulty": "低",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 65 行"
+  },
+  {
+    "id": "q064",
+    "number": 64,
+    "type": "多选",
+    "text": "费用账务处理方式须与实际保持一致，主要有几种形式？",
+    "options": [
+      {
+        "key": "A",
+        "text": "发票"
+      },
+      {
+        "key": "B",
+        "text": "折价"
+      },
+      {
+        "key": "C",
+        "text": "成本"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "difficulty": "低",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 66 行"
+  },
+  {
+    "id": "q065",
+    "number": 65,
+    "type": "多选",
+    "text": "营销费用出处一般有哪几种形式？",
+    "options": [
+      {
+        "key": "A",
+        "text": "销售部总部费用"
+      },
+      {
+        "key": "B",
+        "text": "区域费用"
+      },
+      {
+        "key": "C",
+        "text": "营销总部专项划拨费用"
+      },
+      {
+        "key": "D",
+        "text": "销售部划拨费用"
+      },
+      {
+        "key": "E",
+        "text": "市场部费用"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "difficulty": "低",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 67 行"
+  },
+  {
+    "id": "q066",
+    "number": 66,
+    "type": "多选",
+    "text": "O2O优惠券类活动需提供那些结案资料？",
+    "options": [
+      {
+        "key": "A",
+        "text": "以平台方提供的线上POS/满减活动扣费/用券数量等作为核心结案依据"
+      },
+      {
+        "key": "B",
+        "text": "平台扣费发票"
+      },
+      {
+        "key": "C",
+        "text": "送货凭证"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "difficulty": "高",
+    "points": 4.0,
+    "explanation": "",
+    "source": "单选、多选题和不定项 · 第 68 行"
+  },
+  {
+    "id": "q067",
+    "number": 67,
+    "type": "判断",
+    "text": "促销活动未按方案、批复约定结算或核算错误。多见于销售区域统一结案的渠道激励、返利类申请，或特定渠道的促销补贴申请，按不低于1000元/起扣除结案主责人绩效奖金，直接上级50%连带追责。是否正确",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "中",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 3 行"
+  },
+  {
+    "id": "q068",
+    "number": 68,
+    "type": "判断",
+    "text": "当制度约定的细则、促销链路在特殊业务场景下不适用时，允许各级销售单位针对特殊场景进行报备，方案经营销总部巡查经理、营销总经理审核签批后方可生效是否正确。",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "中",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 4 行"
+  },
+  {
+    "id": "q069",
+    "number": 69,
+    "type": "判断",
+    "text": "结案时间要求：销售区域每月15日前必须结清上月结束的营销活动，现代渠道线下消费者促销要求在活动结束后N+2月内完成结案。是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "中",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 5 行"
+  },
+  {
+    "id": "q070",
+    "number": 70,
+    "type": "判断",
+    "text": "现代通路产品促销特供价类结案材料无档期海报信息，可通过卖场收银台POS记录等方式佐证活动执行档期是否正确?",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "中",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 6 行"
+  },
+  {
+    "id": "q071",
+    "number": 71,
+    "type": "判断",
+    "text": "《2026年销售部营销费用管理制度》规定销售区域每月15日17:00前必须将截止上月已结束的促销活动结案材料提供至营销财务处审核。是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "中",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 7 行"
+  },
+  {
+    "id": "q072",
+    "number": 72,
+    "type": "判断",
+    "text": "出货类激励费用申请可以不从1号起执行",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 8 行"
+  },
+  {
+    "id": "q073",
+    "number": 73,
+    "type": "判断",
+    "text": "虚构销售链路情况，对营销代表、地区经理按照单次通报上限考核，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 9 行"
+  },
+  {
+    "id": "q074",
+    "number": 74,
+    "type": "判断",
+    "text": "清点过程中如发现经销商通过互借调临期品等不诚信方式虚报临期品数量，则对涉及经销商考核不低于10万元，直管业务人员解聘处理。是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "中",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 10 行"
+  },
+  {
+    "id": "q075",
+    "number": 75,
+    "type": "判断",
+    "text": "涉及专项帮扶性质的经销商人车费用，一旦发现存在虚报、套取费用行为，则后续同类型费用一律不予支持，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "中",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 11 行"
+  },
+  {
+    "id": "q076",
+    "number": 76,
+    "type": "判断",
+    "text": "现代通路陈列：陈列协议需经销商签字并盖章，门店签字并盖章。是否准确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "高",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 12 行"
+  },
+  {
+    "id": "q077",
+    "number": 77,
+    "type": "判断",
+    "text": "现代通路促销：特供价类活动结案时允许使用加盖卖场公章的经销商出库单据，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "高",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 13 行"
+  },
+  {
+    "id": "q078",
+    "number": 78,
+    "type": "判断",
+    "text": "对于费用执行虚假的，经销商/供应商的考核办法是：扣除差异费用。视问题情节可追加扣除最高3倍差异金额的违约金，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 14 行"
+  },
+  {
+    "id": "q079",
+    "number": 79,
+    "type": "判断",
+    "text": "经销商员工、常规导理人员、终端门店老板作为临促人员报结临促人员费的参照“费用执行虚假”细则执行考核，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 15 行"
+  },
+  {
+    "id": "q080",
+    "number": 80,
+    "type": "判断",
+    "text": "买赠类活动，赠品数量匹配需结合往期或同期促销本品POS×1.5进行规划，力度不大于一赠一，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 16 行"
+  },
+  {
+    "id": "q081",
+    "number": 81,
+    "type": "判断",
+    "text": "经销商人员与终端门店收款人存在关联关系，落实情况属实的可以报审陈列费用",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 17 行"
+  },
+  {
+    "id": "q082",
+    "number": 82,
+    "type": "判断",
+    "text": "离职导购人员与终端门店收款人存在关联关系可以报审费用",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "高",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 18 行"
+  },
+  {
+    "id": "q083",
+    "number": 83,
+    "type": "判断",
+    "text": "促销指引范围内，所有门店大区权限内均可匹配消费者促销活动",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 19 行"
+  },
+  {
+    "id": "q084",
+    "number": 84,
+    "type": "判断",
+    "text": "陈列门店准入要求:无载体不陈列，无拜访无费用,是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 20 行"
+  },
+  {
+    "id": "q085",
+    "number": 85,
+    "type": "判断",
+    "text": "经销商直营牛奶店2026年度不再给予陈列/房屋租赁类费用支持，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 21 行"
+  },
+  {
+    "id": "q086",
+    "number": 86,
+    "type": "判断",
+    "text": "新鲜度回调：终端执行（或折合）不大于买一赠一力度。包含统案在内，单提补贴不大于产品到岸价的25%，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 22 行"
+  },
+  {
+    "id": "q087",
+    "number": 87,
+    "type": "判断",
+    "text": "以品牌（金典、安慕希、母品牌等）为单位，经销商单一月份产品清点回调率按上限35%进行管控，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 23 行"
+  },
+  {
+    "id": "q088",
+    "number": 88,
+    "type": "判断",
+    "text": "物码营销装产品效期管控，统一采用扫码盘点方式核算费用，相关产品销售额禁止纳入大包费用核算基数，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "高",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 24 行"
+  },
+  {
+    "id": "q089",
+    "number": 89,
+    "type": "判断",
+    "text": "进货激励：除全场类折扣、返券类活动以外，做任何一档促销规划时必须核算在内，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "F"
+    ],
+    "difficulty": "中",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 25 行"
+  },
+  {
+    "id": "q090",
+    "number": 90,
+    "type": "判断",
+    "text": "以品牌（金典、安慕希、母品牌等）为单位，经销商单一月份产品清点回调率按上限25%进行管控，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 26 行"
+  },
+  {
+    "id": "q091",
+    "number": 91,
+    "type": "判断",
+    "text": "涉及专项帮扶性质的经销商人员类费用，一旦发现存在虚报、套取费用行为，则后续同类型费用一律不予支持，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 27 行"
+  },
+  {
+    "id": "q092",
+    "number": 92,
+    "type": "判断",
+    "text": "现代通路促销：买赠类结案材料中赠品接收证明允许提供加盖卖场签收公章的入库单据，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "中",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 28 行"
+  },
+  {
+    "id": "q093",
+    "number": 93,
+    "type": "判断",
+    "text": "临促人员身份证复印件模糊无法辨认不允许结案，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 29 行"
+  },
+  {
+    "id": "q094",
+    "number": 94,
+    "type": "判断",
+    "text": "大包效期领先费用，与其他任何形式的促销活动均不计入费用重复补贴，是否正确？",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 30 行"
+  },
+  {
+    "id": "q095",
+    "number": 95,
+    "type": "判断",
+    "text": "针对传统通路陈列检核表描述：不得低于40家，根据门店数量做周期内全检是否正确?",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "低",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 31 行"
+  },
+  {
+    "id": "q096",
+    "number": 96,
+    "type": "判断",
+    "text": "线下回调清点结案材料要求5000提（含）以内由直管业务清点；5000提以上由地区经理业务代表及地区经理签字确认",
+    "options": [
+      {
+        "key": "T",
+        "text": "正确"
+      },
+      {
+        "key": "F",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "T"
+    ],
+    "difficulty": "中",
+    "points": 5.0,
+    "explanation": "",
+    "source": "判断题 · 第 32 行"
+  }
+];
+
+const STORAGE_KEY = 'my-study-notebook-1022-v1';
+const MODE_NAMES = {order:'顺序练习',random:'随机练习',wrong:'错题本',favorite:'收藏夹',browse:'题库浏览'};
+function emptyState() { return {version:1,records:{},wrong:[],favorites:[],daily:{},sessions:{},mode:'order',filter:'全部'}; }
+function equalAnswers(a,b) { return [...a].sort().join('|') === [...b].sort().join('|'); }
+function poolFor(questions,state,mode,filter='全部') {
+  return questions.filter(q => (filter==='全部'||q.type===filter) && (mode!=='wrong'||state.wrong.includes(q.id)) && (mode!=='favorite'||state.favorites.includes(q.id)));
+}
+function createSession(questions,state,mode,filter='全部',rng=Math.random) {
+  const ids=poolFor(questions,state,mode,filter).map(q=>q.id);
+  if(mode==='random') for(let i=ids.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}
+  return {ids,index:0,results:{},drafts:{},mode,filter};
+}
+function answerQuestion(state,session,q,selected,dateKey) {
+  if(session.results[q.id] || !selected.length) return null;
+  if(selected.some(k=>!q.options.some(o=>o.key===k))) return null;
+  const correct=equalAnswers(selected,q.answer);
+  const result={selected:[...selected].sort(),correct,answeredAt:new Date().toISOString()};
+  session.results[q.id]=result; delete session.drafts[q.id];
+  const record=state.records[q.id] || {attempts:0,correct:0};
+  state.records[q.id]={attempts:record.attempts+1,correct:record.correct+(correct?1:0),latestCorrect:correct};
+  if(correct) state.wrong=state.wrong.filter(id=>id!==q.id);
+  else if(!state.wrong.includes(q.id)) state.wrong.push(q.id);
+  state.daily[dateKey]=(state.daily[dateKey]||0)+1;
+  return result;
+}
+function readState(value,questions) {
+  const base=emptyState();
+  if(!value||value.version!==1||typeof value.records!=='object'||!value.records) return base;
+  const valid=new Set(questions.map(q=>q.id));
+  base.records=Object.fromEntries(Object.entries(value.records).filter(([id,r])=>valid.has(id)&&r&&Number.isInteger(r.attempts)&&r.attempts>0&&Number.isInteger(r.correct)&&r.correct>=0&&r.correct<=r.attempts));
+  for(const key of ['wrong','favorites']) base[key]=Array.isArray(value[key])?[...new Set(value[key].filter(id=>valid.has(id)))]:[];
+  base.daily=value.daily&&typeof value.daily==='object'?Object.fromEntries(Object.entries(value.daily).filter(([k,n])=>/^\d{4}-\d{2}-\d{2}$/.test(k)&&Number.isInteger(n)&&n>=0)):{};
+  base.mode=Object.hasOwn(MODE_NAMES,value.mode)?value.mode:'order';
+  base.filter=['全部','单选','多选','判断'].includes(value.filter)?value.filter:'全部';
+  if(value.sessions&&typeof value.sessions==='object') for(const [key,s] of Object.entries(value.sessions)) {
+    if(!s||!Array.isArray(s.ids)||!Object.hasOwn(MODE_NAMES,s.mode)||!['全部','单选','多选','判断'].includes(s.filter))continue;
+    const ids=[...new Set(s.ids.filter(id=>valid.has(id)))];
+    const results={};
+    for(const id of ids){const r=s.results?.[id],q=questions.find(q=>q.id===id); if(r&&Array.isArray(r.selected)&&r.selected.length&&r.selected.every(k=>q.options.some(o=>o.key===k))) results[id]={selected:[...new Set(r.selected)],correct:equalAnswers(r.selected,q.answer),answeredAt:String(r.answeredAt||'')};}
+    const drafts={};for(const id of ids)if(Array.isArray(s.drafts?.[id]))drafts[id]=s.drafts[id].filter(k=>questions.find(q=>q.id===id).options.some(o=>o.key===k));
+    base.sessions[key]={ids,index:Math.min(Math.max(0,Number.isInteger(s.index)?s.index:0),Math.max(ids.length-1,0)),results,drafts,mode:s.mode,filter:s.filter};
+  }
+  return base;
+}
+
+
+const icons={
+  order:'<path d="M8 6h12M8 12h12M8 18h12M3 6h.01M3 12h.01M3 18h.01"/>',
+  random:'<path d="m16 3 4 4-4 4M4 7h3c4 0 6 10 10 10h3M16 13l4 4-4 4M4 17h3c1 0 2-1 3-3M14 9c1-1 2-2 3-2h3"/>',
+  wrong:'<path d="M5 4h12a2 2 0 0 1 2 2v15H6a3 3 0 0 1-3-3V6a2 2 0 0 1 2-2ZM6 17h13M8 8l5 5M13 8l-5 5"/>',
+  favorite:'<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/>',
+  browse:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4M12 14v3"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/>',
+  refresh:'<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/>',
+  backup:'<path d="M5 4h12l3 3v13H4V4h1ZM8 4v6h8V4M8 20v-7h8v7"/>',
+  next:'<path d="m9 5 7 7-7 7"/>',prev:'<path d="m15 5-7 7 7 7"/>',
+  check:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
+  search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>'
+};
+const svg=name=>`<svg viewBox="0 0 24 24" aria-hidden="true">${icons[name]||icons.order}</svg>`;
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const byId=new Map(QUESTIONS.map(q=>[q.id,q]));
+const $=selector=>document.querySelector(selector);
+const today=()=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const key=()=>`${state.mode}:${state.filter}`;
+let storageAvailable=true,state=emptyState(),searchQuery='',toastTimer;
+try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)state=readState(JSON.parse(raw),QUESTIONS);}catch{storageAvailable=false;}
+function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));storageAvailable=true;}catch{storageAvailable=false;}renderSaveStatus();}
+function renderSaveStatus(){const el=$('#saveState');el.classList.toggle('storage-warning',!storageAvailable);el.innerHTML=storageAvailable?'<i></i>进度自动保存':'当前浏览器无法保存进度，请及时备份';}
+function toast(text){clearTimeout(toastTimer);$('#toast').textContent=text;$('#toast').hidden=false;toastTimer=setTimeout(()=>{$('#toast').hidden=true;},2800);}
+function currentSession(){if(!state.sessions[key()])state.sessions[key()]=createSession(QUESTIONS,state,state.mode,state.filter);return state.sessions[key()];}
+function currentQuestion(){const s=currentSession();return byId.get(s.ids[s.index]);}
+function startMode(mode,force=false){
+  state.mode=mode;searchQuery='';
+  if(force||['wrong','favorite'].includes(mode))state.sessions[key()]=createSession(QUESTIONS,state,mode,state.filter);
+  save();render();
+}
+function renderHeader(){
+  const subtitles={order:'按题库顺序，踏实练好每一道题。',random:'打乱题目顺序，看看自己真正掌握了多少。',wrong:'把没掌握的题，再认真练一遍。',favorite:'把值得多看一眼的题，收在这里。',browse:'按关键词查找，快速回顾题目和答案。'};
+  $('#pageTitle').textContent=MODE_NAMES[state.mode];$('#pageSubtitle').textContent=subtitles[state.mode];
+  const shortLabels={order:'顺序练习',random:'随机练习',wrong:'错题本',favorite:'收藏夹',browse:'题库'};
+  $('#navigation').innerHTML=Object.entries(MODE_NAMES).map(([mode,label])=>`<button class="nav-button ${state.mode===mode?'active':''}" data-action="mode" data-mode="${mode}" ${state.mode===mode?'aria-current="page"':''}>${svg(mode)}<span class="desktop-nav-label">${label}</span><span class="mobile-nav-label">${shortLabels[mode]}</span>${mode==='wrong'||mode==='favorite'?`<span class="nav-count">${mode==='wrong'?state.wrong.length:state.favorites.length}</span>`:''}</button>`).join('');
+  $('#filters').innerHTML=['全部','单选','多选','判断'].map(type=>`<button class="filter-button ${state.filter===type?'active':''}" data-action="filter" data-type="${type}" aria-pressed="${state.filter===type}">${type==='全部'?'全部题型':type+'题'}<small>${QUESTIONS.filter(q=>type==='全部'||q.type===type).length}</small></button>`).join('');
+  $('#restartLabel').textContent=state.mode==='random'?'重新打乱':state.mode==='browse'?'进度备份':'新一轮练习';
+  $('#mobileCardButton').hidden=state.mode==='browse';
+  document.body.classList.toggle('is-browsing',state.mode==='browse');
+  const records=Object.values(state.records),done=records.length,attempts=records.reduce((n,r)=>n+r.attempts,0),correct=records.reduce((n,r)=>n+r.correct,0),mastered=records.filter(r=>r.latestCorrect).length;
+  $('#doneCount').textContent=done;$('#doneHint').textContent=done?`已覆盖 ${Math.round(done/QUESTIONS.length*100)}% 的题目`:'从第一道题开始';
+  $('#accuracy').textContent=attempts?Math.round(correct/attempts*100)+'%':'—';$('#wrongCount').textContent=state.wrong.length;$('#todayCount').textContent=state.daily[today()]||0;
+  $('#sideProgressLabel').textContent=`${mastered} / 96`;$('#sideProgress').style.width=`${mastered/96*100}%`;
+  document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=svg(el.dataset.icon);});renderSaveStatus();
+}
+function render(){renderHeader();if(state.mode==='browse')renderBrowse();else renderQuiz();}
+function renderQuiz(){
+  const s=currentSession(),q=currentQuestion();
+  if(!q){
+    const messages={wrong:['还没有待复习的错题','答错的题会自动加入这里；再次答对后，会自动移出。'],favorite:['收藏夹还是空的','练习时点击题目右上角的「收藏」，方便以后回顾。']};
+    const [title,description]=messages[state.mode]||['这个题型暂时没有题目','试试切换其他题型。'];
+    $('#practiceContent').innerHTML=`<section class="empty-state"><div class="empty-icon">${svg(state.mode)}</div><h2>${title}</h2><p>${description}${state.filter!=='全部'?'<br>也可以切回「全部题型」查看。':''}</p><button class="primary-button" data-action="mode" data-mode="order">继续顺序练习 ${svg('next')}</button></section>`;return;
+  }
+  const result=s.results[q.id],selected=result?.selected||s.drafts[q.id]||[],favorite=state.favorites.includes(q.id);
+  const answered=s.ids.filter(id=>s.results[id]).length,correct=s.ids.filter(id=>s.results[id]?.correct).length;
+  const difficulty={低:'基础',中:'适中',高:'进阶'}[q.difficulty]||q.difficulty;
+  const answerText=q.answer.map(k=>{const o=q.options.find(o=>o.key===k);return q.type==='判断'?o.text:`${k}. ${o.text}`;}).join('；');
+  $('#practiceContent').innerHTML=`<div class="quiz-layout"><div><section class="question-card" aria-label="当前题目"><div class="question-meta"><div class="question-tags"><span class="type-tag">${q.type}题</span><span class="question-difficulty">${esc(difficulty)} · ${q.points} 分</span></div><button class="favorite-button ${favorite?'is-favorite':''}" data-action="favorite" data-id="${q.id}" aria-pressed="${favorite}" aria-label="${favorite?'取消收藏本题':'收藏本题'}">${svg('favorite')}${favorite?'已收藏':'收藏'}</button></div><div class="question-counter"><b>${String(s.index+1).padStart(2,'0')}</b> / ${s.ids.length} <span class="sr-only">原题库第 ${q.number} 题</span></div><h2 class="question-text" id="questionTitle">${esc(q.text)}</h2><div class="answer-hint">${q.type==='多选'?'本题为多选题，请选出所有正确选项，全部选对才计为正确。':q.type==='判断'?'请选择正确或错误，提交后查看结果。':'请选择一个最合适的答案。'}</div><div class="options" role="group" aria-labelledby="questionTitle">${q.options.map(o=>`<button class="option ${selected.includes(o.key)?'selected':''} ${result?(q.answer.includes(o.key)?'correct':selected.includes(o.key)?'incorrect':''):''}" data-action="option" data-key="${o.key}" aria-pressed="${selected.includes(o.key)}" ${result?'disabled':''}><span class="option-letter">${q.type==='判断'?(o.key==='T'?'✓':'×'):o.key}</span><span class="option-text">${esc(o.text)}</span>${result&&(q.answer.includes(o.key)||selected.includes(o.key))?`<span class="answer-mark">${q.answer.includes(o.key)?'✓':'×'}</span>`:''}</button>`).join('')}</div>${result?`<div class="feedback ${result.correct?'':'wrong'}" role="status"><div class="feedback-title">${svg(result.correct?'check':'info')}${result.correct?'回答正确，继续保持':'这题再记一记'}<small>${result.correct?'已记录本次练习':'已加入错题本'}</small></div><p class="correct-answer">正确答案：${esc(answerText)}</p>${!result.correct?`<p>你的选择：${esc(result.selected.map(k=>q.type==='判断'?q.options.find(o=>o.key===k).text:k).join('、'))}</p>`:''}<p class="answer-note">${q.explanation?esc(q.explanation):'原表未提供解析，请对照正确答案复习。'}</p><button class="retry-button" data-action="retry">重做本题</button></div>`:''}<div class="question-actions ${result?'has-result':''}"><button class="nav-action" data-action="previous" ${s.index===0?'disabled':''}>${svg('prev')}上一题</button>${!result?`<button class="primary-button" data-action="submit" ${!selected.length?'disabled':''}>提交答案 ${svg('next')}</button>`:'<span class="sr-only">已提交</span>'}<button class="${result?'primary-button':'nav-action'}" data-action="next">${s.index===s.ids.length-1?'本轮回顾':'下一题'}${svg('next')}</button></div></section><p class="practice-tip">选择后按 Enter 提交 · ← → 切换题目 · 自动记住练习进度</p></div><aside class="answer-panel" aria-label="本轮答题卡"><div class="panel-heading">答题卡<span>${s.ids.length} 道题</span></div><div class="round-progress-label"><span>本轮已答</span><span>${answered} / ${s.ids.length}</span></div><div class="progress-track"><i style="width:${answered/s.ids.length*100}%"></i></div><div class="question-grid">${s.ids.map((id,i)=>`<button class="grid-number ${i===s.index?'current':''} ${s.results[id]?(s.results[id].correct?'is-correct':'is-wrong'):s.drafts[id]?.length?'has-draft':''}" data-action="jump" data-index="${i}" aria-label="跳转第 ${i+1} 题${s.results[id]?(s.results[id].correct?'，已答对':'，已答错'):''}" ${i===s.index?'aria-current="true"':''}>${i+1}</button>`).join('')}</div><div class="legend"><span><i class="good"></i>答对</span><span><i class="bad"></i>答错</span><span><i></i>未答</span></div><p class="panel-note">本轮答对 ${correct} 题${answered?`，正确率 ${Math.round(correct/answered*100)}%`:'。'}<br>点击题号，可自由跳转。</p></aside></div>`;
+}
+function renderBrowse(){
+  $('#practiceContent').innerHTML=`<div class="browser-tools"><label class="search-field">${svg('search')}<input id="questionSearch" placeholder="搜索题干、选项或关键词…" aria-label="搜索题库" value="${esc(searchQuery)}"></label><button class="secondary-button" data-action="backup" aria-label="备份练习进度">进度备份</button></div><p class="browse-count" id="browseCount"></p><div class="browse-list" id="browseList"></div>`;
+  renderBrowseList();
+}
+function renderBrowseList(){
+  const query=searchQuery.trim().toLocaleLowerCase(),qs=QUESTIONS.filter(q=>(state.filter==='全部'||q.type===state.filter)&&(!query||[q.text,...q.options.map(o=>o.text)].join(' ').toLocaleLowerCase().includes(query)));
+  $('#browseCount').textContent=`共 ${qs.length} 道题 · 点击题目展开答案`;
+  $('#browseList').innerHTML=qs.length?qs.map(q=>`<details class="browse-card"><summary><span class="browse-number">${String(q.number).padStart(2,'0')}</span><span>${esc(q.text)}</span><span class="type-tag">${q.type}</span></summary><div class="browse-options">${q.options.map(o=>`<div>${q.type==='判断'?'':o.key+'. '}${esc(o.text)}</div>`).join('')}</div><div class="browse-answer">正确答案：${q.answer.map(k=>q.type==='判断'?q.options.find(o=>o.key===k).text:k).join('、')}</div><div class="browse-actions"><button data-action="favorite" data-id="${q.id}">${state.favorites.includes(q.id)?'★ 已收藏':'☆ 收藏本题'}</button><button data-action="practice-id" data-id="${q.id}">练习这道题 →</button></div></details>`).join(''):'<section class="empty-state"><h2>没有找到匹配的题目</h2><p>换一个关键词，或切换题型再试试。</p></section>';
+}
+function selectOption(k){const s=currentSession(),q=currentQuestion();if(!q||s.results[q.id])return;const values=s.drafts[q.id]||[];s.drafts[q.id]=q.type==='多选'?(values.includes(k)?values.filter(x=>x!==k):[...values,k]):[k];save();renderQuiz();}
+function submit(){const s=currentSession(),q=currentQuestion();if(!q)return;const result=answerQuestion(state,s,q,s.drafts[q.id]||[],today());if(!result)return;save();render();}
+function move(delta){const s=currentSession();if(delta>0&&s.index===s.ids.length-1){openSummary();return;}s.index=Math.max(0,Math.min(s.ids.length-1,s.index+delta));save();renderQuiz();if(window.matchMedia('(max-width:720px)').matches)document.querySelector('.question-card')?.scrollIntoView({block:'start',behavior:'instant'});}
+function dialog(html){$('#dialogContent').innerHTML=html;if(!$('#utilityDialog').open)$('#utilityDialog').showModal();}
+const dialogHeader=title=>`<div class="dialog-header"><h2 id="dialogTitle">${title}</h2><button class="dialog-close" data-action="close-dialog" aria-label="关闭">×</button></div>`;
+function openBackup(){dialog(`${dialogHeader('把练习进度带走')}<p class="dialog-description">进度保存在当前浏览器。更换设备、浏览器或清理缓存前，可以先导出一份备份。</p><div class="backup-choice"><div><b>导出进度</b><p>包含答题记录、错题、收藏和当前进度</p></div><button class="secondary-button" data-action="export">导出备份</button></div><div class="backup-choice"><div><b>恢复进度</b><p>从之前导出的备份文件恢复</p></div><button class="secondary-button" data-action="import">选择文件</button><input type="file" id="importFile" accept="application/json,.json" hidden></div><p class="import-note">恢复会替换当前浏览器的练习进度，请先导出现有进度。备份文件只在浏览器里读取。</p>`);}
+function openSummary(){const s=currentSession(),answered=s.ids.filter(id=>s.results[id]).length,correct=s.ids.filter(id=>s.results[id]?.correct).length,unanswered=s.ids.length-answered;dialog(`${dialogHeader(unanswered?'本轮练习回顾':'这一轮，练完了')}<p class="dialog-description">${unanswered?`还有 ${unanswered} 道题没有提交，可以继续补齐。`:'给认真练习的自己一个小小的肯定。错题已经自动收好。'}</p><div class="summary-stats"><div><strong>${answered}</strong><span>已答题目</span></div><div><strong>${correct}</strong><span>答对题目</span></div><div><strong>${answered?Math.round(correct/answered*100)+'%':'—'}</strong><span>本轮正确率</span></div></div><div class="summary-actions">${unanswered?'<button class="primary-button" data-action="continue-unanswered">继续未答题</button>':'<button class="primary-button" data-action="restart-confirmed">再练一轮</button>'}<button class="secondary-button" data-action="summary-wrong">复习错题</button></div>`);}
+function openAnswerCard(){const s=currentSession();dialog(`${dialogHeader('本轮答题卡')}<p class="dialog-description">已答 ${s.ids.filter(id=>s.results[id]).length} / ${s.ids.length} 题，点击题号跳转。</p><div class="mobile-dialog-grid">${s.ids.map((id,i)=>`<button class="grid-number ${i===s.index?'current':''} ${s.results[id]?(s.results[id].correct?'is-correct':'is-wrong'):s.drafts[id]?.length?'has-draft':''}" data-action="dialog-jump" data-index="${i}" aria-label="跳转第 ${i+1} 题">${i+1}</button>`).join('')}</div><div class="legend"><span><i class="good"></i>答对</span><span><i class="bad"></i>答错</span><span><i></i>未答</span></div>`);}
+function restart(){if(state.mode==='browse'){openBackup();return;}const s=currentSession();if(!Object.keys(s.results).length&&!Object.keys(s.drafts).length){restartConfirmed();return;}dialog(`${dialogHeader('开始新一轮练习')}<p class="dialog-description">本轮答题卡会重新开始。累计练习记录、错题和收藏都会保留。</p><div class="summary-actions"><button class="primary-button" data-action="restart-confirmed">开始新一轮</button><button class="secondary-button" data-action="close-dialog">继续这一轮</button></div>`);}
+function restartConfirmed(){state.sessions[key()]=createSession(QUESTIONS,state,state.mode,state.filter);$('#utilityDialog').close();save();render();toast(state.mode==='random'?'题目已重新打乱':'新一轮练习已准备好');}
+function exportBackup(){const data={...state,backupFor:'my-study-notebook-1022',exportedAt:new Date().toISOString()},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`刷题进度-${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);toast('已导出进度备份');}
+async function importBackup(file){if(!file)return;if(file.size>2000000){toast('文件过大，请选择正确的进度备份');return;}try{const raw=JSON.parse(await file.text());if(raw.backupFor!=='my-study-notebook-1022'||raw.version!==1||!raw.records)throw Error('invalid');const next=readState(raw,QUESTIONS);dialog(`${dialogHeader('恢复这份练习进度')}<p class="dialog-description">备份中有 ${Object.keys(next.records).length} 道已练题目、${next.wrong.length} 道错题和 ${next.favorites.length} 道收藏。恢复后会替换当前浏览器的进度。</p><div class="summary-actions"><button class="primary-button" id="restoreBackupButton">确认恢复</button><button class="secondary-button" data-action="close-dialog">取消</button></div>`);$('#restoreBackupButton').addEventListener('click',()=>{state=next;save();$('#utilityDialog').close();render();toast('练习进度已恢复');},{once:true});}catch{toast('无法识别文件，请选择本工具导出的 JSON 备份');}}
+document.addEventListener('click',event=>{const button=event.target.closest('[data-action]');if(!button||button.disabled)return;const action=button.dataset.action;
+  if(action==='mode'){startMode(button.dataset.mode);return;}
+  if(action==='filter'){state.filter=button.dataset.type;save();render();return;}
+  if(action==='option'){selectOption(button.dataset.key);return;}
+  if(action==='submit'){submit();return;}
+  if(action==='previous'){move(-1);return;}if(action==='next'){move(1);return;}
+  if(action==='jump'){currentSession().index=Number(button.dataset.index);save();renderQuiz();return;}
+  if(action==='answer-card'){openAnswerCard();return;}
+  if(action==='dialog-jump'){currentSession().index=Number(button.dataset.index);$('#utilityDialog').close();save();renderQuiz();window.scrollTo({top:0,behavior:'smooth'});return;}
+  if(action==='favorite'){const id=button.dataset.id;state.favorites=state.favorites.includes(id)?state.favorites.filter(x=>x!==id):[...state.favorites,id];save();if(state.mode==='browse'){const details=button.closest('details');button.textContent=state.favorites.includes(id)?'★ 已收藏':'☆ 收藏本题';renderHeader();}else render();return;}
+  if(action==='retry'){const s=currentSession(),q=currentQuestion();if(q){delete s.results[q.id];delete s.drafts[q.id];save();render();}return;}
+  if(action==='restart'){restart();return;}if(action==='restart-confirmed'){restartConfirmed();return;}
+  if(action==='close-dialog'){$('#utilityDialog').close();return;}if(action==='backup'){openBackup();return;}
+  if(action==='export'){exportBackup();return;}if(action==='import'){$('#importFile').click();return;}
+  if(action==='continue-unanswered'){const s=currentSession();s.index=s.ids.findIndex(id=>!s.results[id]);$('#utilityDialog').close();save();render();return;}
+  if(action==='summary-wrong'){$('#utilityDialog').close();state.filter='全部';startMode('wrong',true);return;}
+  if(action==='practice-id'){state.mode='order';state.filter='全部';const s=currentSession();s.index=s.ids.indexOf(button.dataset.id);save();render();window.scrollTo({top:0,behavior:'smooth'});return;}
+});
+document.addEventListener('input',event=>{if(event.target.id==='questionSearch'){searchQuery=event.target.value;renderBrowseList();}});
+document.addEventListener('change',event=>{if(event.target.id==='importFile')importBackup(event.target.files[0]);});
+document.addEventListener('keydown',event=>{if($('#utilityDialog').open||state.mode==='browse'||['INPUT','TEXTAREA','SELECT','BUTTON'].includes(event.target.tagName)||event.altKey||event.ctrlKey||event.metaKey)return;const q=currentQuestion();if(!q)return;if(event.key==='Enter'){event.preventDefault();if(currentSession().results[q.id])move(1);else submit();}else if(event.key==='ArrowRight'){event.preventDefault();move(1);}else if(event.key==='ArrowLeft'){event.preventDefault();move(-1);}else{const k=event.key.toUpperCase();if(q.options.some(o=>o.key===k))selectOption(k);}});
+$('#utilityDialog').addEventListener('click',event=>{if(event.target===$('#utilityDialog')){const r=event.target.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)event.target.close();}});
+render();save();
+
+</script>
+</body></html>
