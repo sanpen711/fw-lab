@@ -1,26 +1,26 @@
 import {test,expect} from '../../desktop-v11/node_modules/@playwright/test';
-import {mock} from './fixtures';
+import {mock,expectLoginHint} from './fixtures';
 
 test('游客首页可直接浏览，活动详情要求登录',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));const calls=await mock(page);
  await page.goto('/');await expect(page.locator('[data-home-announcement]')).toContainText('欢迎来研究所');await expect(page.locator('[data-account-modal]')).toBeHidden();
- await page.locator('[data-nav="activities"]').click();await expect(page.locator('[data-account-modal]')).toBeVisible();await expect(page.locator('#app')).toHaveAttribute('data-view','home');
+ await page.locator('[data-nav="activities"]').click();await expectLoginHint(page);await expect(page.locator('#app')).toHaveAttribute('data-view','home');
  expect(calls.filter(c=>/\/(shop_orders|private_messages|membership_orders|notifications)$/.test(c.path))).toEqual([]);expect(errors).toEqual([]);
 });
 test('游客可读广场和评论数量，投票板块与互动提示登录',async({page})=>{
- const calls=await mock(page);await page.goto('/square.html');await expect(page.locator('[data-square-feed]')).toContainText('今天也在低功耗运行');await expect(page.locator('.post-comment-button')).toHaveText('评论 1');await page.locator('[data-react]').first().click();await expect(page.locator('[data-account-modal]')).toBeVisible();await page.locator('[data-close-account]').click();
- await page.locator('[data-nav="rooms"]').click();await expect(page.locator('[data-account-modal]')).toBeVisible();await expect(page.locator('#app')).toHaveAttribute('data-view','square');
+ const calls=await mock(page);await page.goto('/square.html');await expect(page.locator('[data-square-feed]')).toContainText('今天也在低功耗运行');await expect(page.locator('.post-comment-button')).toHaveText('评论 1');await page.locator('[data-react]').first().click();await expectLoginHint(page);
+ await page.locator('[data-nav="rooms"]').click();await expectLoginHint(page);await expect(page.locator('#app')).toHaveAttribute('data-view','square');
  expect(calls.filter(c=>/\/(fw_vote_poll|fw_create_poll_v2|polls|comments)$/.test(c.path))).toEqual([]);
 });
 test('游客商城直链先提示登录，不读取商品和订单',async({page})=>{
- const calls=await mock(page);await page.goto('/shop.html');await expect(page.locator('[data-account-modal]')).toBeVisible();await expect(page.locator('#app')).toHaveAttribute('data-view','home');await expect(page.locator('.shop-product-card:visible')).toHaveCount(0);expect(calls.some(c=>/\/(shop_products|shop_orders)$/.test(c.path))).toBe(false);
+ const calls=await mock(page);await page.goto('/shop.html');await expectLoginHint(page);await expect(page.locator('#app')).toHaveAttribute('data-view','home');await expect(page.locator('.shop-product-card:visible')).toHaveCount(0);expect(calls.some(c=>/\/(shop_products|shop_orders)$/.test(c.path))).toBe(false);
 });
 test('登录用户可发布新版投票并保留补充权限',async({page})=>{
  const calls=await mock(page,{loggedIn:true});await page.goto('/rooms.html');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');await form.locator('[name="title"]').fill('网页研究');await form.locator('[name="option1"]').fill('甲');await form.locator('[name="option2"]').fill('乙');await form.locator('[name="durationDays"]').selectOption('30');await form.locator('[name="allowUserOptions"]').check();await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('已发布');expect(calls.find(c=>c.path.endsWith('/fw_create_poll_v2'))?.body).toEqual({p_title:'网页研究',p_options:['甲','乙'],p_is_official:false,p_duration_days:30,p_allow_user_options:true});
 });
 
-test('游客房间和搭子入口弹登录，关闭后继续浏览首页',async({page})=>{
- const calls=await mock(page);await page.goto('/chatrooms.html');await expect(page.locator('[data-account-modal]')).toBeVisible();await expect(page.locator('#app')).toHaveAttribute('data-view','home');await page.locator('[data-close-account]').click();await page.locator('[data-nav="buddy"]').click();await expect(page.locator('[data-account-modal]')).toBeVisible();await expect(page.locator('#app')).toHaveAttribute('data-view','home');expect(calls.some(c=>c.path.endsWith('/fw_chat_room_list'))).toBe(false);
+test('游客房间和搭子入口只显示登录轻提示，继续浏览首页',async({page})=>{
+ const calls=await mock(page);await page.goto('/chatrooms.html');await expectLoginHint(page);await expect(page.locator('#app')).toHaveAttribute('data-view','home');await page.locator('[data-nav="buddy"]').click();await expectLoginHint(page);await expect(page.locator('#app')).toHaveAttribute('data-view','home');expect(calls.some(c=>c.path.endsWith('/fw_chat_room_list'))).toBe(false);
 });
 test('网页保留访客浏览，登录后可退出返回访客状态',async({page})=>{
  await mock(page);await page.goto('/');await page.locator('[data-open-account]').first().click();const form=page.locator('[data-auth-view="login"]');await form.locator('[name="email"]').fill('web-test@example.com');await form.locator('[name="password"]').fill('test-password');await form.locator('[type="submit"]').click();await expect(page.locator('[data-account-label]')).toHaveText('网页研究员');await expect(page.locator('[data-account-modal]')).toBeHidden();await page.locator('[data-open-account]').first().click();page.once('dialog',dialog=>dialog.accept());await page.locator('[data-sign-out]').click();await expect(page.locator('[data-account-label]')).toHaveText('注册 / 登录');await expect(page.locator('[data-account-modal]')).toBeHidden();await expect(page.locator('#app')).toBeVisible();

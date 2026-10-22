@@ -1,5 +1,5 @@
 import {test,expect} from '../../desktop-v11/node_modules/@playwright/test';
-import {mock,me,other,profiles} from './fixtures';
+import {mock,me,other,profiles,expectLoginHint} from './fixtures';
 
 test('会员与商城的返回、前进及刷新保持内容和子栏目一致',async({page})=>{
  await mock(page,{loggedIn:true});await page.goto('/membership.html');
@@ -35,9 +35,9 @@ test('活动详情的返回和刷新保留对应活动，返回列表恢复阅�
  await page.reload();await expect(page.locator('.site-content-detail')).toContainText('活动 10');await page.goBack();await expect(page).toHaveURL(/activities.html$/);await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThan(before-5);
 });
 
-test('游客举报和点赞都需要登录，关闭提示后仍停在帖子',async({page})=>{
- await mock(page);await page.goto('/square.html');await page.locator('[data-open-post]').first().click();await page.locator('.detail-head .web-action-menu summary').click();await page.locator('[data-review-report="post"]').click();await expect(page.locator('[data-account-modal]')).toBeVisible();await page.locator('[data-close-account]').click();await expect(page.locator('[data-post-detail]')).toBeVisible();
- await page.locator('.detail-post [data-react]').click();await expect(page.locator('[data-account-modal]')).toBeVisible();
+test('游客举报和点赞只提示登录，不弹窗且仍停在帖子',async({page})=>{
+ await mock(page);await page.goto('/square.html');await page.locator('[data-open-post]').first().click();await page.locator('.detail-head .web-action-menu summary').click();await page.locator('[data-review-report="post"]').click();await expectLoginHint(page);await expect(page.locator('[data-post-detail]')).toBeVisible();
+ await page.locator('.detail-post [data-react]').click();await expectLoginHint(page);
 });
 
 test('文字草稿跨页面、刷新恢复，清空和成功发布后不再恢复',async({page})=>{
