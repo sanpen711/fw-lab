@@ -22,6 +22,7 @@ export function adaptModule(name,source){
     change("if(typeof invoke!=='function')return{enabled:false,entries:0,bytes:0,path:'',fallback:true};","if(typeof invoke!=='function')return{enabled:true,entries:memory.size,bytes:[...memory.values()].reduce((total,value)=>total+new TextEncoder().encode(JSON.stringify(value)).byteLength,0),path:'',fallback:true};");
   }
   if(name==='app.js'){
+    source="import {webAccess,webCommentCount} from './web-access.js';\n"+source;
     change("import {installContentReviewUi,reportButton} from './content-review-ui.js';",`import {installContentReviewUi} from './content-review-ui.js';
 import {webReportButton as reportButton,webMessages} from './web-ux.js';
 import {webDraft} from './web-draft.js';`);
@@ -43,7 +44,14 @@ function renderAuthGate(next){
     change('feedStore.openPost(pending.id);',"feedStore.openPostById(pending.id).catch(error=>toast(error.message||'帖子读取失败。'));");
     change("if(view==='settings')desktopSettings.activate();","if(view==='settings')desktopSettings.activate();\n  window.dispatchEvent(new CustomEvent('fw:web-view',{detail:{view,mode:squareMode}}));");
     change('function navigate(view){',`function navigate(view){
+  if(!webAccess.allow(view)){webAccess.request(view);return;}
   window.dispatchEvent(new CustomEvent('fw:web-before-view'));`);
+    change("function closeAccount(){if(authGateLocked)return;", "function closeAccount(){if(authGateLocked)return;webAccess.clearPending();");
+    const commentCount='${(post.comments||[]).length}';
+    assert.equal(source.split(commentCount).length-1,2,'Web comment count contract');
+    source=source.replaceAll(commentCount,'${webCommentCount(post)}');
+    change('<div class="comment-list">${comments}</div>${signIn}', '<div class="comment-list">${webAccess.signed()?comments:\'\'}</div>${signIn}');
+    change("const signIn=accountState.user?'':'<div class=\"state-card small\"><b>登录后参与评论</b>", "const signIn=webAccess.signed()?'':'<div class=\"state-card small web-comments-locked\"><b>登录后查看评论</b>");
     change('if(nav){navigate(nav.dataset.nav);return;}',"if(nav){if(nav.dataset.nav==='membership')membershipTab='benefits';navigate(nav.dataset.nav);return;}");
     change('function renderMembershipContent(){',`function renderMembershipContent(){
   if(currentView==='membership')window.dispatchEvent(new CustomEvent('fw:web-membership'));`);
@@ -86,6 +94,25 @@ window.__FW_WEB_APP__={navigate,openAccount,openPost:id=>feedStore.openPostById(
   }
 };\n`;
   }
+  if(name==='feed-store.js'){
+    source="import {webAccess,webCommentCount} from './web-access.js';\n"+source;
+    change('comments:[...(post.comments||[])]','commentCount:webCommentCount(post),comments:webAccess.signed()?[...(post.comments||[])]:[]');
+    change("function squareCacheUser(){return authStore.state.user?.id||'public';}","function squareCacheUser(){return webAccess.signed()?authStore.state.user.id:'public-counts-v1';}");
+    change("if(cacheUser!=='public'){", "if(webAccess.signed()&&cacheUser!=='public'){");
+    change('posts:state.posts.slice(0,100),profiles:state.profiles', 'posts:copyPosts(state.posts.slice(0,100)),profiles:state.profiles');
+    change('async function readComments(postIds){', `async function readComments(postIds){
+  if(!webAccess.signed())return[];`);
+    source+=`\nasync function webReadCommentCounts(postIds){
+  if(webAccess.signed()||!postIds.length)return null;
+  const rows=fail(await client.rpc('fw_public_post_comment_counts',{p_post_ids:postIds}),'读取评论数量失败')||[];
+  return Object.fromEntries(rows.map(row=>[String(row.post_id),Math.max(0,Number(row.comment_count)||0)]));
+}\n`;
+    change("const reactions=fail(reactionResult,'读取互动失败')||[];\n    await fetchProfiles(posts.map", "const reactions=fail(reactionResult,'读取互动失败')||[];const webCounts=await webReadCommentCounts(ids);\n    await fetchProfiles(posts.map");
+    change('const nextPosts=posts.map(post=>({...post,comments:', 'const nextPosts=posts.map(post=>({...post,commentCount:webCounts?.[String(post.id)],comments:');
+    change('const hydrated={...post,comments,reactions};', 'const webCounts=await webReadCommentCounts([post.id]);const hydrated={...post,commentCount:webCounts?.[String(post.id)],comments,reactions};');
+    change("      .on('postgres_changes',{event:'*',schema:'public',table:'comments'},payload=>applyRealtime('comments',payload))\n",'');
+    change("      .on('postgres_changes',{event:'*',schema:'public',table:'reactions'},payload=>applyRealtime('reactions',payload))\n      .subscribe();", "      .on('postgres_changes',{event:'*',schema:'public',table:'reactions'},payload=>applyRealtime('reactions',payload));\n    if(webAccess.signed())squareChannel.on('postgres_changes',{event:'*',schema:'public',table:'comments'},payload=>applyRealtime('comments',payload));\n    squareChannel.subscribe();");
+  }
   if(name==='home-content.js'){
     change("String(auth.user.id):'';if(id===userId)","String(auth.user.id):'public';if(id===userId)");
     change("state[kind].scroll=$('.main-content').scrollTop;",'state[kind].scroll=window.scrollY;');
@@ -103,21 +130,13 @@ window.__FW_WEB_APP__={navigate,openAccount,openPost:id=>feedStore.openPostById(
     change("if(!state.userId||state.ordersLoading","if(!authStore.state.user?.id||state.ordersLoading");
     change('function paymentSection(product){',`function paymentSection(product){
   if(!authStore.state.user||authStore.state.user.cached)return '<div class="shop-payment-state"><p>登录后填写收货信息并下单。</p><button type="button" class="primary" data-open-account>登录后下单</button></div>';`);
-    change("String(auth.user.id):'';if(id===state.userId)","String(auth.user.id):'public';if(id===state.userId)");
     change('shopPayment.newOrder();shopPayment.loadConfig();','shopPayment.newOrder();if(authStore.state.user?.id)shopPayment.loadConfig();');
   }
-  if(name==='membership-store.js'){
-    change('if(!user?.id){reset();return snapshot();}',`if(!user?.id){
-    reset();const token=generation;
-    try{const result=await client.from('membership_plans').select('id,name,duration_months,price_cents,compare_at_price_cents,is_recommended,sort_order').eq('is_active',true).order('sort_order',{ascending:true});
-      if(token===generation&&!currentUser()){if(result.error)throw result.error;state.plans=result.data||[];emit();}
-    }catch{if(token===generation){state.error='会员套餐暂时无法读取，请刷新重试。';emit();}}
-    return snapshot();
-  }`);
-    change('if(!user){reset();return;}','if(!user){load().catch(()=>{});return;}');
-  }
   if(name==='feature-alignment.js'){
-    change('function showExtraView(name){',"function showExtraView(name){\n  window.dispatchEvent(new CustomEvent('fw:web-view',{detail:{view:name}}));");
+    source="import {webAccess} from './web-access.js';\n"+source;
+    change('function showExtraView(name){',"function showExtraView(name){\n  if(!webAccess.allow(name)){webAccess.request(name);return;}\n  window.dispatchEvent(new CustomEvent('fw:web-view',{detail:{view:name}}));");
+    change("button.textContent='查看入馆须知 / 隐私政策';", "button.textContent='查看隐私政策';");
+    change("if(event.target.closest?.('[data-align-open-rules]')){event.preventDefault();", "if(event.target.closest?.('[data-align-open-rules]')){event.preventDefault();window.open('/privacy.html','_blank','noopener,noreferrer');return;");
   }
   if(['membership-payment.js','shop-payment.js'].includes(name)){
     change("else if(!window.open(url,'_blank','noopener,noreferrer'))throw new Error('请点击“打开支付宝付款页”；浏览器可能拦截了新窗口。');",`else {

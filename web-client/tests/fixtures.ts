@@ -30,6 +30,7 @@ export async function mock(page:Page,options:{loggedIn?:boolean,fail?:string,mem
   else if(path.endsWith('/membership-alipay')||path.endsWith('/shop-alipay'))data={enabled:false,configured:true,max_amount_cents:5000};
   else if(path.endsWith('/shop_products'))data=[product];
   else if(path.endsWith('/posts'))data=[{id:101,user_id:other,content:'今天也在低功耗运行',created_at:new Date().toISOString()}];
+  else if(path.endsWith('/fw_public_post_comment_counts'))data=(body.p_post_ids||[]).map(id=>({post_id:id,comment_count:Number(id)===101?1:0}));
   else if(path.endsWith('/comments'))data=[{id:201,post_id:101,user_id:me,parent_comment_id:null,content:'评论测试内容',created_at:new Date().toISOString()}];
   else if(path.endsWith('/polls'))data=[{id:81,user_id:other,title:'今天的研究课题',allow_user_options:false,is_official:false,created_at:new Date().toISOString(),ends_at:'2099-01-01T00:00:00Z'}];
   else if(path.endsWith('/poll_options'))data=[{id:811,poll_id:81,label:'选项甲',source:'initial'},{id:812,poll_id:81,label:'选项乙',source:'initial'}];

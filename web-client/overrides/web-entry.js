@@ -2,12 +2,13 @@ import {authStore} from './auth-store.js';
 import {feedStore} from './feed-store.js';
 import {installWebNavigation} from './web-navigation.js';
 import {installWebUx} from './web-ux.js';
+import {webAccess} from './web-access.js';
 
 const paths={home:'index.html',square:'square.html',rooms:'rooms.html',chatrooms:'chatrooms.html',play:'play.html',games:'games.html',buddy:'buddy.html',compose:'compose.html',membership:'membership.html',shop:'shop.html',archive:'archive.html',settings:'settings.html',activities:'activities.html',announcements:'announcements.html',rules:'rules.html',moderation:'moderation.html'};
 const aliases={'bird.html':'chatrooms','echo.html':'echo','admin.html':'moderation'};
 const names={home:'首页',square:'精神广场',rooms:'学术研讨',chatrooms:'闲聊房间',play:'下班开黑',games:'小游戏',buddy:'搭子',compose:'发牢骚',membership:'会员',shop:'周边商城',archive:'档案',settings:'设置',activities:'活动',announcements:'公告',rules:'入馆须知',moderation:'处理公告'};
 const descriptions={square:'随时吐槽，围观日常。把想说的话留在这里。',rooms:'分享一个课题，看看大家怎么选。',chatrooms:'找个房间聊聊，让话题慢慢展开。',play:'下班以后，找队友一起开黑。',games:'休息一下，玩点轻松的。',buddy:'联系你的搭子，继续没聊完的话题。',compose:'文字、图片、视频和我的表情，发布到精神广场。',membership:'查看会员权益与装扮。固定期限，不会自动续费。',shop:'研究所的日常，也可以带回家。',archive:'自动整理精神广场里的点赞数据。',settings:'管理个人资料和当前浏览器。',activities:'查看研究所的各项活动与参与方式。',announcements:'研究所的新消息，都在这里。'};
-let current='home',identity=null,pendingView='';
+let current='home',identity=null;
 function pageHeading(view,mode){
   const intro=document.querySelector('[data-web-page-intro]');
   intro.hidden=view==='home'||['rules','moderation'].includes(view);
@@ -24,8 +25,8 @@ document.querySelectorAll('.section-heading').forEach(heading=>{
   const copy=heading.querySelector(':scope > div:first-child');
   if(copy?.querySelector('h1')){copy.classList.add('web-heading-copy');heading.classList.add('web-feature-toolbar');if(!heading.querySelector('button'))heading.classList.add('web-empty-toolbar');}
 });
-function signed(){const s=authStore.state;return s.ready&&s.user&&!s.user.cached&&!s.user.disabled&&s.session?.user?.id===s.user.id;}
-function login(){window.__FW_WEB_APP__?.openAccount();}
+const signed=webAccess.signed;
+function login(){webAccess.request();}
 function reservePaymentWindow(){
   const previous=window.__FW_WEB_PAYMENT_WINDOW__;if(previous&&!previous.closed)previous.close();
   const popup=window.open('about:blank','_blank');window.__FW_WEB_PAYMENT_WINDOW__=popup;
@@ -34,8 +35,18 @@ function reservePaymentWindow(){
 }
 const protectedClicks='[data-nav="compose"],[data-poll-create-toggle],[data-poll-vote],[data-react],[data-square-mine-toggle],[data-square-echo-toggle],[data-echo-mark-all],[data-party-create-toggle],[data-party-apply],[data-room-create],[data-room-join],[data-membership-purchase],[data-membership-tab="purchase"],[data-membership-tab="orders"],[data-shop-view="orders"],[data-profile-add],[data-profile-block],[data-profile-unblock],[data-profile-report],[data-fw-report-post],[data-report-post],[data-report-comment],[data-comment-reply],[data-reply-comment],[data-reply-post],[data-feedback-open]';
 document.addEventListener('click',event=>{
-  if(signed()){if(event.target.closest('[data-payment-create],[data-payment-resume],[data-payment-open],[data-shop-resume]'))reservePaymentWindow();return;}const button=event.target.closest(protectedClicks);if(!button)return;
-  event.preventDefault();event.stopImmediatePropagation();pendingView=button.dataset.nav||'';login();
+  if(signed()){if(event.target.closest('[data-payment-create],[data-payment-resume],[data-payment-open],[data-shop-resume]'))reservePaymentWindow();return;}
+  const nav=event.target.closest('[data-nav],[data-align-nav]');const view=nav?.dataset.nav||nav?.dataset.alignNav;
+  const site=event.target.closest('[data-site-open],[data-site-target]');
+  const comment=event.target.closest('.post-comment-button');
+  const button=event.target.closest(protectedClicks+', [data-review-report], [data-profile-user], [data-profile-anonymous]');
+  if(nav&&!webAccess.allow(view)||site||comment||button){
+    event.preventDefault();event.stopImmediatePropagation();
+    if(nav&&!webAccess.allow(view))webAccess.request(view);
+    else if(site)webAccess.request(site.dataset.siteTarget||site.dataset.siteKind,{item:site.dataset.siteOpen||''});
+    else if(comment)webAccess.request('square',{post:comment.dataset.openPost});
+    else webAccess.request();
+  }
 },true);
 document.addEventListener('submit',event=>{
   if(signed()){if(event.target.matches('[data-shop-checkout]'))reservePaymentWindow();return;}if(event.target.closest('[data-account-modal],[data-web-password-recovery]'))return;
@@ -72,9 +83,11 @@ document.querySelector('.membership-page-heading').remove();placeMembershipTools
 new MutationObserver(placeMembershipTools).observe(memberHost,{childList:true});
 installWebUx(feedStore);
 const navigation=installWebNavigation({paths,aliases,onView(view,mode){current=view;guestPanels();pageHeading(view,mode);document.title=`${names[view]||'回声'}｜F.w 研究所`;}});
+function resume(){const target=webAccess.takePending();if(target){current=target.view;history.pushState({view:current},'',navigation.address(current,target));}navigation.apply({keepMenu:true});}
+window.addEventListener('fw:web-resume',()=>{if(signed())resume();});
 authStore.subscribe(state=>{
   if(!state.ready)return;const next=signed()?state.user.id:'guest';if(identity===next)return;
-  identity=next;queueMicrotask(()=>{if(signed()&&pendingView){current=pendingView;pendingView='';history.pushState({view:current},'',navigation.address(current));}navigation.apply({keepMenu:true});});
+  identity=next;queueMicrotask(()=>{if(signed())resume();else navigation.apply({keepMenu:true});});
 });
 
 // Recovery links are consumed by Supabase; the password form stays separate from

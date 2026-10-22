@@ -15,10 +15,22 @@ full-window layout are not used on the website. Layout changes belong only in
 The original mobile PWA remains at `/app/`; phone visits continue to use that entry.
 NES is excluded from the browser game catalog and build assets.
 
-Public reads: posts, polls, archive, game rooms, published announcements/activities,
-active membership plans, and active products. Personal messages, chat rooms,
-membership data, and orders retain their original authenticated permissions.
-All mutations still require the existing server-side authentication and policies.
+Guests can browse only home and the public square feed. They see post content and
+comment counts; comment text, private square tabs, profiles, and all other sections
+require verified sign-in. Restricted navigation opens the account dialog and resumes
+the intended destination after sign-in. Direct routes and aliases use the same gate.
+Cancelling sign-in clears that destination. Privacy and client downloads stay public.
+
+Guest comment counts use `fw_public_post_comment_counts` (up to 100 visible posts).
+Anonymous comment reads are restricted to the RLS-protected `post_id` column; no
+comment body, author, ID, or timestamp is returned. Guest caches use a new namespace
+and do not reuse older public caches containing comments. Signed-in permissions stay
+unchanged. Published home announcements and activity summaries remain readable.
+
+Roll out the migrations in two stages: add `web_public_post_comment_counts` before
+deploying the frontend, then apply `web_guest_post_only_access` after the new version
+is live. Run `supabase/tests/web-guest-post-only.sql` to verify anonymous counts and
+permissions without writing application data.
 
 Build and stage the complete deployment:
 

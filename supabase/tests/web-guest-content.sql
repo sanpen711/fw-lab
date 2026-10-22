@@ -12,7 +12,7 @@ set local role anon;
 do $$ begin
  if (select count(*) from public.site_announcements where id::text like 'f0000000-2026-%')<>1 then raise exception 'guest announcement visibility'; end if;
  if (select count(*) from public.site_activities where id::text like 'f0000000-2026-%')<>1 then raise exception 'guest activity visibility'; end if;
- if (select count(*) from public.shop_products where id::text like 'f0000000-2026-%')<>1 then raise exception 'guest product visibility'; end if;
+ if has_table_privilege('anon','public.shop_products','select') then raise exception 'guest products exposed'; end if;
  if has_table_privilege('anon','public.shop_orders','select') then raise exception 'guest orders exposed'; end if;
  if has_table_privilege('anon','public.chat_room_messages','select') then raise exception 'guest chat exposed'; end if;
  if has_table_privilege('anon','public.site_announcements','insert,update,delete') then raise exception 'guest announcement write'; end if;
