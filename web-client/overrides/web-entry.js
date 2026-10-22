@@ -1,11 +1,13 @@
 import {authStore} from './auth-store.js';
 import {feedStore} from './feed-store.js';
+import {installWebNavigation} from './web-navigation.js';
+import {installWebUx} from './web-ux.js';
 
 const paths={home:'index.html',square:'square.html',rooms:'rooms.html',chatrooms:'chatrooms.html',play:'play.html',games:'games.html',buddy:'buddy.html',compose:'compose.html',membership:'membership.html',shop:'shop.html',archive:'archive.html',settings:'settings.html',activities:'activities.html',announcements:'announcements.html',rules:'rules.html',moderation:'moderation.html'};
 const aliases={'bird.html':'chatrooms','echo.html':'echo','admin.html':'moderation'};
 const names={home:'首页',square:'精神广场',rooms:'学术研讨',chatrooms:'闲聊房间',play:'下班开黑',games:'小游戏',buddy:'搭子',compose:'发牢骚',membership:'会员',shop:'周边商城',archive:'档案',settings:'设置',activities:'活动',announcements:'公告',rules:'入馆须知',moderation:'处理公告'};
 const descriptions={square:'随时吐槽，围观日常。把想说的话留在这里。',rooms:'分享一个课题，看看大家怎么选。',chatrooms:'找个房间聊聊，让话题慢慢展开。',play:'下班以后，找队友一起开黑。',games:'休息一下，玩点轻松的。',buddy:'联系你的搭子，继续没聊完的话题。',compose:'文字、图片、视频和我的表情，发布到精神广场。',membership:'查看会员权益与装扮。固定期限，不会自动续费。',shop:'研究所的日常，也可以带回家。',archive:'自动整理精神广场里的点赞数据。',settings:'管理个人资料和当前浏览器。',activities:'查看研究所的各项活动与参与方式。',announcements:'研究所的新消息，都在这里。'};
-let applying=false,current='home',identity=null,pendingView='';
+let current='home',identity=null,pendingView='';
 function pageHeading(view,mode){
   const intro=document.querySelector('[data-web-page-intro]');
   intro.hidden=view==='home'||['rules','moderation'].includes(view);
@@ -46,17 +48,6 @@ await import('./alignment-nav-fix.js');
 await import('./feature-alignment.js');
 await import('./game-center.js');
 
-function route(){
-  const file=location.pathname.split('/').pop()||'index.html';
-  if(file==='square.html'&&new URLSearchParams(location.search).get('tab')==='echo')return'echo';
-  return aliases[file]||Object.keys(paths).find(key=>paths[key]===file)||'home';
-}
-function address(view,mode){
-  const url=new URL(location.href);url.pathname='/'+(paths[view]||paths.home);
-  const desktop=url.searchParams.get('desktop');url.search='';if(desktop==='1')url.searchParams.set('desktop','1');
-  if(view==='square'&&mode==='echo')url.searchParams.set('tab','echo');
-  url.hash='';return url;
-}
 function guestPanels(){
   document.body.classList.toggle('is-guest',!signed());
   document.querySelector('[data-open-account]').setAttribute('aria-label',signed()?'账号菜单':'登录或注册');
@@ -69,30 +60,21 @@ function guestPanels(){
   if(!hint){hint=document.createElement('p');hint.dataset.webProfileLogin='';hint.innerHTML='登录后可以修改头像和昵称。 <button class="secondary compact" type="button" data-open-account>登录 / 注册</button>';form.before(hint);}hint.hidden=Boolean(signed());
   if(!signed())form.reset();
 }
-function apply({keepMenu=false}={}){
-  const more=document.querySelector('[data-sidebar-more-wrap]'),menuOpen=keepMenu&&more.classList.contains('open');
-  applying=true;const requested=route();current=requested;
-  const post=new URLSearchParams(location.search).get('post');if(current==='square'&&post)sessionStorage.setItem('fw:desktop:v11:pending-post',JSON.stringify({id:post}));
-  window.__FW_WEB_APP__.openView(requested);current=requested;guestPanels();pageHeading(current);document.title=`${names[current]||'回声'}｜F.w 研究所`;applying=false;
-  if(menuOpen){more.classList.add('open');document.querySelector('[data-sidebar-more-toggle]').setAttribute('aria-expanded','true');}
-}
-window.addEventListener('fw:web-view',event=>{
-  const {view,mode}=event.detail;const changed=current!==view;current=view;guestPanels();pageHeading(view,mode);if(changed)window.scrollTo({top:0,behavior:'instant'});
-  if(!applying){const url=address(view,mode);if(url.href!==location.href)history.pushState({view},'',url);document.title=`${names[view]||'F.w 研究所'}｜F.w 研究所`;}
-});
-window.addEventListener('popstate',apply);
-document.addEventListener('click',event=>{
-  const tab=event.target.closest('[data-membership-tab]');if(tab){current=tab.dataset.membershipTab==='shop'?'shop':'membership';pageHeading(current);const url=address(current);if(url.href!==location.href)history.pushState({view:current},'',url);document.title=`${names[current]}｜F.w 研究所`;}
-
-});
-feedStore.subscribe(state=>{
-  if(!['square','echo'].includes(current)||applying)return;
-  const url=new URL(location.href),id=String(state.openPostId||'');
-  if(id&&url.searchParams.get('post')!==id){url.searchParams.set('post',id);history.replaceState(history.state,'',url);}
-});
+// Feature controls share one compact bar on the website.
+const rooms=document.querySelector('.rooms-page'),pollActions=rooms.querySelector('.section-actions'),filters=rooms.querySelector('.poll-filters');
+filters.setAttribute('role','group');filters.setAttribute('aria-label','课题筛选');
+for(const [value,label] of [['mine','我发起的'],['voted','我参与的']]){const button=document.createElement('button');button.type='button';button.dataset.pollFilter=value;button.textContent=label;button.hidden=!signed();filters.append(button);}
+const pollBar=document.createElement('div');pollBar.className='web-poll-toolbar';pollBar.append(filters,pollActions);rooms.querySelector('.section-heading').remove();rooms.prepend(pollBar);
+const membershipTools=document.querySelector('.membership-page-heading .section-actions');
+const memberHost=document.querySelector('[data-membership-content]');
+function placeMembershipTools(){const tabs=memberHost.querySelector('.membership-tabs');if(tabs&&!tabs.contains(membershipTools))tabs.append(membershipTools);}
+document.querySelector('.membership-page-heading').remove();placeMembershipTools();
+new MutationObserver(placeMembershipTools).observe(memberHost,{childList:true});
+installWebUx(feedStore);
+const navigation=installWebNavigation({paths,aliases,onView(view,mode){current=view;guestPanels();pageHeading(view,mode);document.title=`${names[view]||'回声'}｜F.w 研究所`;}});
 authStore.subscribe(state=>{
   if(!state.ready)return;const next=signed()?state.user.id:'guest';if(identity===next)return;
-  identity=next;queueMicrotask(()=>{if(signed()&&pendingView){current=pendingView;pendingView='';history.pushState({view:current},'',address(current));}apply({keepMenu:true});});
+  identity=next;queueMicrotask(()=>{if(signed()&&pendingView){current=pendingView;pendingView='';history.pushState({view:current},'',navigation.address(current));}navigation.apply({keepMenu:true});});
 });
 
 // Recovery links are consumed by Supabase; the password form stays separate from
@@ -102,4 +84,4 @@ function showRecovery(){
   modal=document.createElement('div');modal.className='web-recovery';modal.dataset.webPasswordRecovery='';modal.innerHTML='<form role="dialog" aria-modal="true" aria-label="设置新密码"><h2>设置新密码</h2><label>新密码<input name="password" type="password" autocomplete="new-password" minlength="6" required></label><label>确认新密码<input name="confirm" type="password" autocomplete="new-password" minlength="6" required></label><p role="status"></p><button class="primary" type="submit">保存新密码</button></form>';document.body.append(modal);
   modal.querySelector('form').addEventListener('submit',async event=>{event.preventDefault();const data=new FormData(event.currentTarget),status=modal.querySelector('[role="status"]'),button=modal.querySelector('button');if(data.get('password')!==data.get('confirm')){status.textContent='两次密码不一致。';return;}button.disabled=true;try{const result=await authStore.client.auth.updateUser({password:data.get('password')});if(result.error)throw result.error;modal.remove();}catch(error){status.textContent=error.message||'保存失败，请重试。';}finally{button.disabled=false;}});
 }
-apply({keepMenu:true});
+navigation.apply({keepMenu:true});

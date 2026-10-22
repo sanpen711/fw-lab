@@ -1,13 +1,13 @@
 /* Website layout only. Shared Windows styles are copied, never edited. */
-html:has(body.fw-browser){scroll-padding-top:132px}
-html body.fw-browser{--web-width:1200px;--web-header-height:116px;min-width:760px;background:#f7f7f6!important;color:#202020!important}
+html:has(body.fw-browser){scroll-padding-top:112px}
+html body.fw-browser{--web-width:1200px;--web-header-height:97px;min-width:760px;background:#f7f7f6!important;color:#202020!important}
 html body.fw-browser .app-shell{display:flex;flex-direction:column;min-height:100vh;height:auto;padding:0!important;overflow:visible}
 html body.fw-browser .phase-note{display:none!important}
 .web-skip-link{position:fixed;z-index:20000;left:20px;top:-80px;padding:12px 18px;border-radius:8px;background:#202020;color:white}
 .web-skip-link:focus{top:12px}
 html body.fw-browser .web-header{position:sticky;z-index:60;top:0;flex:none;border-bottom:1px solid #e8e8e6;background:#fff}
 .web-header-inner{width:min(var(--web-width),calc(100% - 64px));margin:0 auto}
-.web-header-top{display:flex;align-items:center;gap:22px;height:68px}
+.web-header-top{display:flex;align-items:center;gap:22px;height:56px}
 html body.fw-browser .web-brand{display:flex;align-items:baseline;gap:9px;flex:none;width:auto;padding:0!important;color:#202020!important}
 html body.fw-browser .web-brand strong{font:900 28px/1 Georgia,serif!important;color:#202020!important;letter-spacing:-.08em!important}
 html body.fw-browser .web-brand span{display:inline!important;color:#202020;font-size:15px;font-weight:750;letter-spacing:.08em}
@@ -16,10 +16,10 @@ html body.fw-browser .web-brand span{display:inline!important;color:#202020;font
 .web-download{color:#73736e;text-decoration:none;font-size:12px;white-space:nowrap}
 .web-download:hover{color:#292929;text-decoration:underline;text-underline-offset:4px}
 html body.fw-browser .web-compose{min-height:36px;padding:0 16px;border:0;border-radius:8px;background:#ffe6e9!important;color:#393033!important;font-size:13px;white-space:nowrap}
-html body.fw-browser .web-nav{display:flex;flex-direction:row;flex:none;align-items:center;gap:4px;height:48px;margin:0!important;padding:0;overflow:visible}
+html body.fw-browser .web-nav{display:flex;flex-direction:row;flex:none;align-items:center;gap:4px;height:40px;margin:0!important;padding:0;overflow:visible}
 html body.fw-browser .web-nav .nav-primary-group,html body.fw-browser .web-nav .nav-lower-group{display:flex;flex-direction:row;align-items:center;gap:4px;margin:0;padding:0;border:0}
 html body.fw-browser .web-nav .nav-lower-group{margin-left:auto}
-html body.fw-browser .web-nav .nav-item{position:relative;display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px!important;width:auto;margin:0!important;padding:0 14px!important;border-radius:0!important;background:transparent!important;color:#6c6c68!important}
+html body.fw-browser .web-nav .nav-item{position:relative;display:flex;align-items:center;justify-content:center;gap:5px;min-height:38px!important;width:auto;margin:0!important;padding:0 14px!important;border-radius:0!important;background:transparent!important;color:#6c6c68!important}
 html body.fw-browser .web-nav .nav-item b{display:block!important;font-size:13px!important;font-weight:550}
 html body.fw-browser .web-nav .nav-item>span,html body.fw-browser .web-nav .sidebar-more-icon{display:none!important}
 html body.fw-browser .web-nav .nav-item:hover{color:#202020!important}
@@ -181,3 +181,54 @@ html body.fw-browser [data-game="contra"]{display:none!important}
  html body.fw-browser .game-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(prefers-reduced-motion:reduce){.fw-browser *{scroll-behavior:auto!important}}
+
+/* Browser interactions use the existing client colors and controls. */
+html body.fw-browser .web-poll-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;padding:12px 16px;border:1px solid #e6e6e2;border-radius:10px;background:#fff}
+html body.fw-browser .web-poll-toolbar .poll-filters{display:flex;flex:1;gap:6px;flex-wrap:wrap;width:auto;margin:0;padding:0}
+html body.fw-browser .web-poll-toolbar .section-actions{flex:none;gap:8px}
+html body.fw-browser .web-poll-toolbar .poll-filters button{white-space:nowrap;font-size:12px;padding:8px 12px}
+html body.fw-browser .web-poll-toolbar .poll-filters button[hidden]{display:none}
+html body.fw-browser .membership-tabs{display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:0 18px}
+html body.fw-browser .membership-tabs>.section-actions{display:flex;align-items:center;gap:10px;margin-left:auto;padding-block:8px}
+html body.fw-browser .membership-tabs .section-actions button{padding:7px 12px}
+.web-draft-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;color:var(--muted);font-size:12px;line-height:1.7}
+.web-draft-toolbar>span{flex:1}.web-draft-toolbar>button{flex:none}
+.web-poll-instruction{margin:12px 0;color:var(--muted);font-size:12px;line-height:1.7}
+.web-poll-my-choice{display:inline-block;margin-left:10px;font-size:11px;font-weight:500;font-style:normal;color:var(--ink)}
+html body.fw-browser .poll-option.selected{border-color:var(--accent);background:#fff0f2}
+.web-action-menu{position:relative;display:inline-block;flex:none;vertical-align:middle}
+.web-action-menu>summary{display:flex;align-items:center;justify-content:center;min-width:32px;min-height:30px;padding:0 6px;border-radius:7px;list-style:none;cursor:pointer;font-size:18px;line-height:1;color:var(--muted)}
+.web-action-menu>summary::-webkit-details-marker{display:none}
+.web-action-menu>summary:hover,.web-action-menu[open]>summary{background:var(--bg);color:var(--ink)}
+.web-action-menu>summary:focus-visible,.square-post:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.web-action-menu-panel{position:fixed;z-index:120;width:140px;padding:6px;border:1px solid var(--line);border-radius:9px;background:#fff;box-shadow:0 6px 24px #00000012}
+html body.fw-browser .web-action-menu-panel button{display:block;width:100%;margin:0;padding:9px 12px;border:0;border-radius:6px;background:transparent;text-align:left;font-size:12px}
+.web-action-menu-panel button:hover{background:var(--bg)}
+html body.fw-browser .poll-card>header{position:relative;padding-right:36px}
+html body.fw-browser .poll-card>.web-action-menu{position:absolute;top:18px;right:18px}
+html body.fw-browser .poll-card{position:relative}
+html body.fw-browser .poll-option-row>.web-action-menu{align-self:center}
+html body.fw-browser .square-page:not(.web-post-open){display:block;width:min(900px,100%);height:auto!important;min-height:440px;margin-inline:auto;border:0;background:transparent}
+html body.fw-browser .square-page:not(.web-post-open) .square-feed-column{height:auto;overflow:visible}
+html body.fw-browser .square-page:not(.web-post-open) .square-feed-column{border-right:0}
+html body.fw-browser #app[data-view="square"]:has(.square-page:not(.web-post-open)) .web-page-intro{max-width:900px;margin-inline:auto}
+html body.fw-browser .square-page:not(.web-post-open) .square-heading{border:1px solid #e4e4e0;border-radius:10px}
+html body.fw-browser .square-page:not(.web-post-open) .square-feed{height:auto;overflow:visible;padding:16px 0;background:transparent!important}
+html body.fw-browser .square-page:not(.web-post-open) .square-echo-panel{height:auto;overflow:visible;background:transparent}
+html body.fw-browser .square-page:not(.web-post-open) .square-echo-list{height:auto;overflow:visible}
+html body.fw-browser .square-page:not(.web-post-open) .post-detail-column{display:none}
+html body.fw-browser .square-page.web-post-open{height:max(440px,calc(100dvh - 180px))!important}
+.web-post-backdrop{display:none}
+.web-room-message-wrap{position:relative;display:flex;flex:1;min-height:0;flex-direction:column;overflow:hidden}
+html body.fw-browser .web-room-message-wrap .room-messages{height:auto;flex:1;min-height:0}
+html body.fw-browser .web-room-latest{position:absolute;right:16px;bottom:12px;z-index:3;box-shadow:0 4px 14px #00000012;background:#fff}
+.web-room-latest[hidden]{display:none!important}
+html body.fw-browser :is(.square-feed,.detail-content-scroll,.room-messages,.chat-messages){overscroll-behavior:contain}
+@media(max-width:1000px){
+ html body.fw-browser .square-page.web-post-open{display:block;height:auto!important;min-height:440px;border:0;background:transparent}
+ html body.fw-browser .square-page.web-post-open .square-feed-column{height:auto;overflow:visible}
+ html body.fw-browser .square-page.web-post-open .square-feed{height:auto;overflow:visible}
+ html body.fw-browser .square-page.web-post-open .post-detail-column{position:fixed;z-index:82;top:var(--web-header-height);right:0;bottom:0;width:min(680px,calc(100% - 48px));height:auto;overflow:hidden;border-left:1px solid var(--line);background:#fff;box-shadow:-8px 0 32px #00000012}
+ html body.fw-browser .web-post-backdrop:not([hidden]){display:block;position:fixed;z-index:81;inset:var(--web-header-height) 0 0;width:100%;height:auto;padding:0;border:0;border-radius:0;background:#0003}
+ html body.fw-browser.web-post-drawer-open{overflow:hidden}
+}

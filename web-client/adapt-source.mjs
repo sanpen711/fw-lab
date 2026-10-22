@@ -22,6 +22,9 @@ export function adaptModule(name,source){
     change("if(typeof invoke!=='function')return{enabled:false,entries:0,bytes:0,path:'',fallback:true};","if(typeof invoke!=='function')return{enabled:true,entries:memory.size,bytes:[...memory.values()].reduce((total,value)=>total+new TextEncoder().encode(JSON.stringify(value)).byteLength,0),path:'',fallback:true};");
   }
   if(name==='app.js'){
+    change("import {installContentReviewUi,reportButton} from './content-review-ui.js';",`import {installContentReviewUi} from './content-review-ui.js';
+import {webReportButton as reportButton,webMessages} from './web-ux.js';
+import {webDraft} from './web-draft.js';`);
     const start=source.indexOf('function renderAuthGate(next){'),end=source.indexOf('function renderAccount(next){',start);
     assert(start>=0&&end>start);
     source=source.slice(0,start)+`let webSignedIn=false;
@@ -39,10 +42,62 @@ function renderAuthGate(next){
     change("if(view==='chatrooms')chatRoomUi.activate()","if(view==='chatrooms'&&authenticatedUser())chatRoomUi.activate()");
     change('feedStore.openPost(pending.id);',"feedStore.openPostById(pending.id).catch(error=>toast(error.message||'帖子读取失败。'));");
     change("if(view==='settings')desktopSettings.activate();","if(view==='settings')desktopSettings.activate();\n  window.dispatchEvent(new CustomEvent('fw:web-view',{detail:{view,mode:squareMode}}));");
-    source+=`\nwindow.__FW_WEB_APP__={navigate,openAccount,openPost:id=>feedStore.openPost(id),openView(view){if(view==='shop'){membershipTab='shop';navigate('membership');return;}if(['rules','moderation'].includes(view)){document.querySelector('[data-align-nav="'+view+'"]').click();return;}navigate(view);}};\n`;
+    change('function navigate(view){',`function navigate(view){
+  window.dispatchEvent(new CustomEvent('fw:web-before-view'));`);
+    change('if(nav){navigate(nav.dataset.nav);return;}',"if(nav){if(nav.dataset.nav==='membership')membershipTab='benefits';navigate(nav.dataset.nav);return;}");
+    change('function renderMembershipContent(){',`function renderMembershipContent(){
+  if(currentView==='membership')window.dispatchEvent(new CustomEvent('fw:web-membership'));`);
+    change('function renderPolls(next=pollState){',`function renderPolls(next=pollState){
+  if(currentView==='rooms')window.dispatchEvent(new CustomEvent('fw:web-poll-filter'));`);
+    change('renderSquareFeed();syncSquarePostSelection();',`renderSquareFeed();syncSquarePostSelection();
+  window.dispatchEvent(new CustomEvent('fw:web-square-mode',{detail:{mode:squareMode}}));`);
+    change('function pollMatches(poll){const ended=pollEnded(poll);',`function pollMatches(poll){const ended=pollEnded(poll);
+  if(pollFilter==='mine')return String(poll.user_id)===String(accountState.user?.id);
+  if(pollFilter==='voted')return Boolean(poll.myVote);`);
+    change("button.classList.toggle('active',button.dataset.pollFilter===pollFilter)","(button.classList.toggle('active',button.dataset.pollFilter===pollFilter),button.setAttribute('aria-pressed',String(button.dataset.pollFilter===pollFilter)),button.hidden=['mine','voted'].includes(button.dataset.pollFilter)&&!accountState.user)");
+    change('<b>${esc(option.label)}</b><small>${votes}票', '<b>${esc(option.label)}${selected?\'<em class="web-poll-my-choice">我的选择</em>\':\'\'}</b><small>${votes}票');
+    change('${ended||pollState.busy?\'disabled\':\'\'}><span>', '${ended||pollState.busy?\'disabled\':\'\'} aria-pressed="${selected}"><span>');
+    change('<div class="poll-options">', '<p class="web-poll-instruction">${ended?\'投票已结束，以下为最终结果。\':\'点击选项投票，截止前可以改票。\'}</p><div class="poll-options">');
+    change('<article class="square-post ${open?', '<article tabindex="0" aria-label="查看帖子" class="square-post ${open?');
+    change("const host=$('[data-square-feed]');if(!host)return;", "const host=$('[data-square-feed]');if(!host)return;const webFeedTop=host.scrollTop,webFocusedPost=document.activeElement?.matches('.square-post')&&host.contains(document.activeElement)?document.activeElement.dataset.openPost:'';const restoreWebFeedFocus=()=>{if(webFocusedPost)host.querySelector(`[data-open-post=\"${CSS.escape(webFocusedPost)}\"]`)?.focus({preventScroll:true});};");
+    change('host.scrollTop=scrollTop;return;\n  }\n  host.dataset.feedMode', 'host.scrollTop=scrollTop;restoreWebFeedFocus();return;\n  }\n  host.dataset.feedMode');
+    // Restore the inner list position after public-feed refreshes, too.
+    const feedEnd="action:'<button class=\"primary compact\" type=\"button\" data-nav=\"compose\">发牢骚</button>'});\n}";
+    change(feedEnd,feedEnd.slice(0,-2)+'host.scrollTop=webFeedTop;restoreWebFeedFocus();\n}');
+    change("$('[data-chat-compose] input[name=\"message\"]').value='';}","$('[data-chat-compose] input[name=\"message\"]').value='';webDraft.restore(user?.id,composeDraft);webMessages.reset();}");
+    change('host.innerHTML=`<form class="compose-card" data-compose-form>', 'webDraft.save(accountState.user.id,composeDraft);\n  host.innerHTML=`<form class="compose-card" data-compose-form>');
+    change('<div class="compose-input-heading"><label', '<div class="web-draft-toolbar"><span data-web-draft-status role="status"></span><button type="button" class="secondary compact" data-web-clear-draft ${feedState.busy?\'disabled\':\'\'}>清空草稿</button></div><div class="compose-input-heading"><label');
+    change("restoreUiState(host,inputState);\n}\nfunction postCard", "restoreUiState(host,inputState);webDraft.paint(accountState.user?.id);\n}\nfunction postCard");
+    change('composeDraft.text=event.target.value;', 'composeDraft.text=event.target.value;webDraft.save(accountState.user?.id,composeDraft);');
+    change("const composePickerTab=event.target.closest('[data-compose-picker-tab]');",`if(event.target.closest('[data-web-clear-draft]')){if(!feedState.busy&&confirm('清空文字和附件草稿？')){releasePreview(composeDraft);composeDraft.text='';webDraft.clear(accountState.user?.id);renderCompose();}return;}
+    const composePickerTab=event.target.closest('[data-compose-picker-tab]');`);
+    change("toast('发布成功。');navigate('square');", "webDraft.clear(owner);toast('发布成功。');navigate('square');");
+    change("messages.innerHTML=history+chat.rows.map(messageBubble).join('');",`messages.innerHTML=history+chat.rows.map(messageBubble).join('');
+  webMessages.update('private',{context:target,rows:chat.rows,ownerField:'sender_id',ownId:accountState.user?.id,scroller:messages,button:notice,nearBottom,forceBottom:shouldScroll});`);
+    source+=`\nwindow.addEventListener('beforeunload',event=>{if(composeDraft.attachments.length){event.preventDefault();event.returnValue='';}});
+window.__FW_WEB_APP__={navigate,openAccount,openPost:id=>feedStore.openPostById(id),state:()=>({view:currentView,tab:membershipTab,mode:squareMode,filter:pollFilter}),
+  openView(view,{tab='benefits',mode='feed',item='',filter='all'}={}){
+    if(view==='membership'||view==='shop'){membershipTab=view==='shop'?'shop':(['benefits','appearance','orders','purchase'].includes(tab)?tab:'benefits');navigate('membership');return;}
+    if(['rules','moderation'].includes(view)){document.querySelector('[data-align-nav="'+view+'"]').click();return;}
+    if(view==='rooms')pollFilter=['all','official','user','ended','mine','voted'].includes(filter)?filter:'all';
+    navigate(view==='square'&&mode==='echo'?'echo':view);
+    if(view==='square'&&mode==='mine'){squareMode='mine';renderSquareMode();if(authenticatedUser())feedStore.loadMine().catch(error=>toast(error.message));}
+    if(['activities','announcements'].includes(view))homeContent.select(view,item);
+  }
+};\n`;
   }
   if(name==='home-content.js'){
     change("String(auth.user.id):'';if(id===userId)","String(auth.user.id):'public';if(id===userId)");
+    change("state[kind].scroll=$('.main-content').scrollTop;",'state[kind].scroll=window.scrollY;');
+    change("render();$('.main-content').scrollTop=0;const title=", "render();window.scrollTo(0,0);window.dispatchEvent(new CustomEvent('fw:web-content',{detail:{kind,id:b.dataset.siteOpen}}));const title=");
+    change("render();$('.main-content').scrollTop=state[k].scroll;", "render();window.scrollTo(0,state[k].scroll);window.dispatchEvent(new CustomEvent('fw:web-content',{detail:{kind:k,id:''}}));");
+    change('  setVisible(next){',`  select(kind,id){if(!state[kind])return;state[kind].selected=String(id||'');render();},
+  setVisible(next){`);
+  }
+  if(name==='chat-room-ui.js'){
+    change("import {reportButton} from './content-review-ui.js';","import {webReportButton as reportButton,webMessages} from './web-ux.js';");
+    change('<div class="room-messages" data-room-messages>${messagesHtml(d)}</div>${composeHtml()}', '<div class="web-room-message-wrap"><div class="room-messages" data-room-messages>${messagesHtml(d)}</div><button type="button" class="secondary compact web-room-latest" data-web-room-latest hidden>回到最新</button></div>${composeHtml()}');
+    change("if(focusedName){const next=", "webMessages.update('room',{context:state.selectedId,rows:state.detail?.messages||[],ownerField:'user_id',ownId:authStore.state.user?.id,scroller:scroll,button:host.querySelector('[data-web-room-latest]'),nearBottom,forceBottom:!same||nearBottom});\n if(focusedName){const next=");
   }
   if(name==='membership-shop.js'){
     change("if(!state.userId||state.ordersLoading","if(!authStore.state.user?.id||state.ordersLoading");
