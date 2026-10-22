@@ -17,9 +17,11 @@ NES is excluded from the browser game catalog and build assets.
 
 Guests can browse only home and the public square feed. They see post content and
 comment counts; comment text, private square tabs, profiles, and all other sections
-require verified sign-in. Restricted navigation opens the account dialog and resumes
-the intended destination after sign-in. Direct routes and aliases use the same gate.
-Cancelling sign-in clears that destination. Privacy and client downloads stay public.
+require verified sign-in. Restricted navigation shows a brief login hint without
+opening the account dialog or interrupting reading. Only an explicit login action
+opens that dialog, and sign-in can resume the intended destination. Direct routes
+and aliases return to home with the same hint. Cancelling sign-in or continuing to
+browse public content clears that destination. Privacy and downloads stay public.
 
 Guest comment counts use `fw_public_post_comment_counts` (up to 100 visible posts).
 Anonymous comment reads are restricted to the RLS-protected `post_id` column; no

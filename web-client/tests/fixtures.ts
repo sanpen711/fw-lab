@@ -1,4 +1,11 @@
 import type {Page} from '../../desktop-v11/node_modules/@playwright/test';
+import {expect} from '../../desktop-v11/node_modules/@playwright/test';
+export async function expectLoginHint(page:Page){
+ await expect(page.locator('[data-toast]')).toContainText('请先注册或登录');
+ await expect(page.locator('[data-toast]')).toHaveClass(/show/);
+ await expect(page.locator('[data-account-modal]')).toBeHidden();
+ await expect(page.locator('#app')).toHaveJSProperty('inert',false);
+}
 export const me='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-8222-222222222222';
 export const user={id:me,aud:'authenticated',role:'authenticated',email:'web-test@example.com',email_confirmed_at:'2026-01-01T00:00:00Z',app_metadata:{provider:'email'},user_metadata:{nickname:'网页研究员',lab_code:'FWTEST1'},created_at:'2026-01-01T00:00:00Z'};
 export const session={access_token:'web-test-access-token',refresh_token:'web-test-refresh-token',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,token_type:'bearer',user};

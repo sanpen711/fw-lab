@@ -46,7 +46,7 @@ document.addEventListener('click',event=>{
     else if(site)webAccess.request(site.dataset.siteTarget||site.dataset.siteKind,{item:site.dataset.siteOpen||''});
     else if(comment)webAccess.request('square',{post:comment.dataset.openPost});
     else webAccess.request();
-  }
+  }else if(nav||event.target.closest('[data-open-post],[data-close-post]'))webAccess.clearPending();
 },true);
 document.addEventListener('submit',event=>{
   if(signed()){if(event.target.matches('[data-shop-checkout]'))reservePaymentWindow();return;}if(event.target.closest('[data-account-modal],[data-web-password-recovery]'))return;

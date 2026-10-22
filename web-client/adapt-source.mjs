@@ -83,7 +83,7 @@ function renderAuthGate(next){
     change("messages.innerHTML=history+chat.rows.map(messageBubble).join('');",`messages.innerHTML=history+chat.rows.map(messageBubble).join('');
   webMessages.update('private',{context:target,rows:chat.rows,ownerField:'sender_id',ownId:accountState.user?.id,scroller:messages,button:notice,nearBottom,forceBottom:shouldScroll});`);
     source+=`\nwindow.addEventListener('beforeunload',event=>{if(composeDraft.attachments.length){event.preventDefault();event.returnValue='';}});
-window.__FW_WEB_APP__={navigate,openAccount,openPost:id=>feedStore.openPostById(id),state:()=>({view:currentView,tab:membershipTab,mode:squareMode,filter:pollFilter}),
+window.__FW_WEB_APP__={navigate,openAccount,notify:toast,openPost:id=>feedStore.openPostById(id),state:()=>({view:currentView,tab:membershipTab,mode:squareMode,filter:pollFilter}),
   openView(view,{tab='benefits',mode='feed',item='',filter='all'}={}){
     if(view==='membership'||view==='shop'){membershipTab=view==='shop'?'shop':(['benefits','appearance','orders','purchase'].includes(tab)?tab:'benefits');navigate('membership');return;}
     if(['rules','moderation'].includes(view)){document.querySelector('[data-align-nav="'+view+'"]').click();return;}

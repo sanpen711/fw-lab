@@ -16,7 +16,7 @@ export const webAccess={
     if(view)pending={view,...options};
     ready().then(()=>{
       if(signed())window.dispatchEvent(new Event('fw:web-resume'));
-      else window.__FW_WEB_APP__?.openAccount();
+      else window.__FW_WEB_APP__?.notify(view==='square'&&options.post?'查看评论需要登录，请先注册或登录。':view?'此板块需要登录，请先注册或登录。':'请先注册或登录后再操作。');
     });
   },
   takePending(){const value=pending;pending=null;return value;},
