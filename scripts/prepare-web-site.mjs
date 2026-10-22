@@ -10,5 +10,5 @@ await cp(resolve(root,'web-client/dist'),resolve(site,'web'),{recursive:true});
 const html=await readFile(resolve(root,'web-client/dist/index.html'),'utf8');
 for(const page of ['index','square','rooms','bird','chatrooms','play','games','buddy','echo','compose','membership','shop','archive','settings','activities','announcements','rules','moderation'])await writeFile(resolve(site,page+'.html'),html);
 const desktopVersion=(await readFile(resolve(root,'desktop-v11/src/config.js'),'utf8')).match(/APP_VERSION = '([^']+)'/)[1];
-await writeFile(resolve(site,'web/version.json'),JSON.stringify({version:'2026.10.20',desktopParity:desktopVersion,guestBrowsing:true,commit:process.env.GITHUB_SHA||''}));
+await writeFile(resolve(site,'web/version.json'),JSON.stringify({version:'2026.10.22',desktopParity:desktopVersion,guestBrowsing:true,commit:process.env.GITHUB_SHA||''}));
 console.log('Browser site prepared in .site');

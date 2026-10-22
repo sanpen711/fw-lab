@@ -3,6 +3,7 @@ import {mock} from './fixtures';
 test('登录用户可选择原因举报帖子，不重复公开举报人身份',async({page})=>{
  const calls=await mock(page,{loggedIn:true});await page.goto('/square.html');
  await page.locator('[data-open-post="101"]').first().click();
+ await page.locator('[data-post-detail] .detail-head .web-action-menu summary').click();
  await page.locator('[data-review-report="post"]').click();
  const dialog=page.locator('.review-report-dialog');await expect(dialog).toBeVisible();
  await dialog.locator('[name="category"]').selectOption({label:'泄露他人隐私'});
