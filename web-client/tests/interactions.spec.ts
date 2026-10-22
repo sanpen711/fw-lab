@@ -35,8 +35,8 @@ test('活动详情的返回和刷新保留对应活动，返回列表恢复阅�
  await page.reload();await expect(page.locator('.site-content-detail')).toContainText('活动 10');await page.goBack();await expect(page).toHaveURL(/activities.html$/);await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThan(before-5);
 });
 
-test('游客登录流程保持原样，举报仍只提示登录',async({page})=>{
- await mock(page);await page.goto('/square.html');await page.locator('[data-open-post]').first().click();await page.locator('.detail-head .web-action-menu summary').click();await page.locator('[data-review-report="post"]').click();await expect(page.locator('[data-toast]')).toContainText('请先登录');await expect(page.locator('[data-account-modal]')).toBeHidden();
+test('游客举报和点赞都需要登录，关闭提示后仍停在帖子',async({page})=>{
+ await mock(page);await page.goto('/square.html');await page.locator('[data-open-post]').first().click();await page.locator('.detail-head .web-action-menu summary').click();await page.locator('[data-review-report="post"]').click();await expect(page.locator('[data-account-modal]')).toBeVisible();await page.locator('[data-close-account]').click();await expect(page.locator('[data-post-detail]')).toBeVisible();
  await page.locator('.detail-post [data-react]').click();await expect(page.locator('[data-account-modal]')).toBeVisible();
 });
 
@@ -88,7 +88,10 @@ test('房间翻看历史时累积新消息，重复刷新和加载旧消息不�
   const messages=Array.from({length:older?5:total},(_,i)=>({id:older?i+1:i+10,user_id:other,author:profiles[1],content:'房间消息 '+i,created_at:new Date(Date.UTC(2026,9,20,10,0,older?i:i+10)).toISOString()}));
   return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({room,messages,members:[],requests:[],has_more:!older,server_time:new Date().toISOString()})});
  });
- await page.goto('/chatrooms.html');await page.locator('[data-room-open]').click();const scroll=page.locator('[data-room-messages]'),latest=page.locator('[data-web-room-latest]');await expect(page.locator('[data-room-message]')).toHaveCount(45);await scroll.evaluate(e=>e.scrollTop=0);await expect(latest).toContainText('回到最新');
+ await page.goto('/chatrooms.html');await page.locator('[data-room-open]').click();const scroll=page.locator('[data-room-messages]'),latest=page.locator('[data-web-room-latest]');await expect(page.locator('[data-room-message]')).toHaveCount(45);await expect(scroll).toBeVisible();
+ // Realtime connection status may replace the message element after it is found.
+ // Establish the actual reading position before testing subsequent new messages.
+ await expect(async()=>{await scroll.evaluate(e=>e.scrollTop=0);await expect(latest).toBeVisible({timeout:300});await expect.poll(()=>scroll.evaluate(e=>e.scrollTop),{timeout:300}).toBe(0);}).toPass();
  total=47;await page.locator('[data-room-refresh]').click();await expect(page.locator('[data-room-message]')).toHaveCount(47);await expect(latest).toHaveAttribute('data-new-count','2');expect(await scroll.evaluate(e=>e.scrollTop)).toBe(0);
  await page.locator('[data-room-refresh]').click();await expect(latest).toHaveAttribute('data-new-count','2');
  await page.locator('[data-room-history]').click();await expect(page.locator('[data-room-message]')).toHaveCount(52);await expect(latest).toHaveAttribute('data-new-count','2');

@@ -1,4 +1,5 @@
 import {feedStore} from './feed-store.js';
+import {webAccess} from './web-access.js';
 
 const scrollSelectors=['[data-square-feed]','[data-square-echo-panel]','.detail-content-scroll','[data-room-list]','[data-room-messages]','[data-chat-messages]','[data-buddy-list]','.party-list'];
 const newKey=()=>crypto.randomUUID();
@@ -43,6 +44,7 @@ export function installWebNavigation({paths,aliases,onView}){
   function show(route){onView(route.view,route.mode);}
   function commit(view,extra={}){
     if(applying)return;
+    if(!webAccess.allow(view,{mode:extra.mode||app().state().mode})){webAccess.request(view,extra);return;}
     const state=app().state();if(view==='membership'&&state.tab==='shop')view='shop';
     const route={view,tab:state.tab,mode:state.mode,filter:state.filter,...extra};
     if(view==='square')route.post=String(feedStore.state.openPostId||'');
@@ -64,7 +66,12 @@ export function installWebNavigation({paths,aliases,onView}){
   }
   async function apply({keepMenu=false,resetScroll=false}={}){
     const token=++generation;applying=true;pending=null;stopRestore();
-    const route=readRoute(),scroll=resetScroll?{y:0}:history.state?.web?.scroll||{y:0};
+    await webAccess.ready();if(token!==generation)return;
+    let route=readRoute();let scroll=resetScroll?{y:0}:history.state?.web?.scroll||{y:0};
+    if(!webAccess.allow(route.view,route)){
+      webAccess.request(route.view,route);route={view:'home',mode:'feed'};scroll={y:0};
+      history.replaceState({web:{key:newKey(),scroll}},'',address('home'));
+    }
     const more=document.querySelector('[data-sidebar-more-wrap]'),menuOpen=keepMenu&&more.classList.contains('open');
     feedStore.closePost();
     app().openView(route.view,route);show(route);

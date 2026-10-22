@@ -1,32 +1,32 @@
 import {test,expect} from '../../desktop-v11/node_modules/@playwright/test';
 import {mock} from './fixtures';
 
-test('访客直接浏览首页、公告和活动，不自动弹登录',async({page})=>{
+test('游客首页可直接浏览，活动详情要求登录',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));const calls=await mock(page);
- await page.goto('/');await expect(page.locator('#app')).toBeVisible();await expect(page.locator('[data-home-announcement]')).toContainText('欢迎来研究所');await expect(page.locator('[data-account-modal]')).toBeHidden();
- await page.locator('[data-nav="activities"]').click();await expect(page.locator('[data-site-content="activities"]')).toContainText('伏伏的摸鱼活动');await page.locator('[data-site-open="a2"]').click();await expect(page.locator('.site-content-detail')).toContainText('活动详细介绍');
+ await page.goto('/');await expect(page.locator('[data-home-announcement]')).toContainText('欢迎来研究所');await expect(page.locator('[data-account-modal]')).toBeHidden();
+ await page.locator('[data-nav="activities"]').click();await expect(page.locator('[data-account-modal]')).toBeVisible();await expect(page.locator('#app')).toHaveAttribute('data-view','home');
  expect(calls.filter(c=>/\/(shop_orders|private_messages|membership_orders|notifications)$/.test(c.path))).toEqual([]);expect(errors).toEqual([]);
 });
-test('访客可读广场和投票，互动要求登录且弹窗可关闭',async({page})=>{
- const calls=await mock(page);await page.goto('/square.html');await expect(page.locator('[data-square-feed]')).toContainText('今天也在低功耗运行');await page.locator('[data-react]').first().click();await expect(page.locator('[data-account-modal]')).toBeVisible();await page.locator('[data-close-account]').click();
- await page.locator('[data-nav="rooms"]').click();await expect(page.locator('[data-poll-list]')).toContainText('今天的研究课题');await page.locator('[data-poll-vote]').first().click();await expect(page.locator('[data-account-modal]')).toBeVisible();
- expect(calls.filter(c=>/\/(fw_vote_poll|fw_create_poll_v2|reactions)$/.test(c.path)&&c.method!=='GET')).toEqual([]);
+test('游客可读广场和评论数量，投票板块与互动提示登录',async({page})=>{
+ const calls=await mock(page);await page.goto('/square.html');await expect(page.locator('[data-square-feed]')).toContainText('今天也在低功耗运行');await expect(page.locator('.post-comment-button')).toHaveText('评论 1');await page.locator('[data-react]').first().click();await expect(page.locator('[data-account-modal]')).toBeVisible();await page.locator('[data-close-account]').click();
+ await page.locator('[data-nav="rooms"]').click();await expect(page.locator('[data-account-modal]')).toBeVisible();await expect(page.locator('#app')).toHaveAttribute('data-view','square');
+ expect(calls.filter(c=>/\/(fw_vote_poll|fw_create_poll_v2|polls|comments)$/.test(c.path))).toEqual([]);
 });
-test('访客商城展示商品和详情，下单提示登录',async({page})=>{
- const calls=await mock(page);await page.goto('/shop.html');await expect(page.locator('.shop-product-card')).toContainText('伏伏表情包贴纸');await page.locator('[data-shop-product]').click();await expect(page.locator('.shop-detail')).toContainText('¥10');await page.getByRole('button',{name:'登录后下单'}).click();await expect(page.locator('[data-account-modal]')).toBeVisible();expect(calls.some(c=>c.path.endsWith('/shop_orders'))).toBe(false);
+test('游客商城直链先提示登录，不读取商品和订单',async({page})=>{
+ const calls=await mock(page);await page.goto('/shop.html');await expect(page.locator('[data-account-modal]')).toBeVisible();await expect(page.locator('#app')).toHaveAttribute('data-view','home');await expect(page.locator('.shop-product-card:visible')).toHaveCount(0);expect(calls.some(c=>/\/(shop_products|shop_orders)$/.test(c.path))).toBe(false);
 });
 test('登录用户可发布新版投票并保留补充权限',async({page})=>{
  const calls=await mock(page,{loggedIn:true});await page.goto('/rooms.html');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');await form.locator('[name="title"]').fill('网页研究');await form.locator('[name="option1"]').fill('甲');await form.locator('[name="option2"]').fill('乙');await form.locator('[name="durationDays"]').selectOption('30');await form.locator('[name="allowUserOptions"]').check();await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('已发布');expect(calls.find(c=>c.path.endsWith('/fw_create_poll_v2'))?.body).toEqual({p_title:'网页研究',p_options:['甲','乙'],p_is_official:false,p_duration_days:30,p_allow_user_options:true});
 });
 
-test('访客房间和搭子入口展示登录说明，返回仍可浏览',async({page})=>{
- const calls=await mock(page);await page.goto('/chatrooms.html');await expect(page.locator('.web-guest-card:visible')).toContainText('登录后浏览闲聊房间');await expect(page.locator('[data-account-modal]')).toBeHidden();await page.locator('[data-nav="buddy"]').click();await expect(page.locator('.web-guest-card:visible')).toContainText('处理申请');await page.goBack();await expect(page.locator('#app')).toHaveAttribute('data-view','chatrooms');expect(calls.some(c=>c.path.endsWith('/fw_chat_room_list'))).toBe(false);
+test('游客房间和搭子入口弹登录，关闭后继续浏览首页',async({page})=>{
+ const calls=await mock(page);await page.goto('/chatrooms.html');await expect(page.locator('[data-account-modal]')).toBeVisible();await expect(page.locator('#app')).toHaveAttribute('data-view','home');await page.locator('[data-close-account]').click();await page.locator('[data-nav="buddy"]').click();await expect(page.locator('[data-account-modal]')).toBeVisible();await expect(page.locator('#app')).toHaveAttribute('data-view','home');expect(calls.some(c=>c.path.endsWith('/fw_chat_room_list'))).toBe(false);
 });
 test('网页保留访客浏览，登录后可退出返回访客状态',async({page})=>{
  await mock(page);await page.goto('/');await page.locator('[data-open-account]').first().click();const form=page.locator('[data-auth-view="login"]');await form.locator('[name="email"]').fill('web-test@example.com');await form.locator('[name="password"]').fill('test-password');await form.locator('[type="submit"]').click();await expect(page.locator('[data-account-label]')).toHaveText('网页研究员');await expect(page.locator('[data-account-modal]')).toBeHidden();await page.locator('[data-open-account]').first().click();page.once('dialog',dialog=>dialog.accept());await page.locator('[data-sign-out]').click();await expect(page.locator('[data-account-label]')).toHaveText('注册 / 登录');await expect(page.locator('[data-account-modal]')).toBeHidden();await expect(page.locator('#app')).toBeVisible();
 });
 test('旧新闻链接进入闲聊房间，网页版路径刷新和返回有效',async({page})=>{
- await mock(page);await page.goto('/bird.html');await expect(page.locator('#app')).toHaveAttribute('data-view','chatrooms');await page.locator('[data-nav="rooms"]').click();await expect(page).toHaveURL(/rooms.html$/);await page.reload();await expect(page.locator('[data-poll-list]')).toContainText('今天的研究课题');await page.goBack();await expect(page.locator('#app')).toHaveAttribute('data-view','chatrooms');
+ await mock(page,{loggedIn:true});await page.goto('/bird.html');await expect(page.locator('#app')).toHaveAttribute('data-view','chatrooms');await page.locator('[data-nav="rooms"]').click();await expect(page).toHaveURL(/rooms.html$/);await page.reload();await expect(page.locator('[data-poll-list]')).toContainText('今天的研究课题');await page.goBack();await expect(page.locator('#app')).toHaveAttribute('data-view','chatrooms');
 });
 test('广场“我的”和回声需要登录，登录用户可以使用',async({page})=>{
  await mock(page,{loggedIn:true});await page.goto('/square.html');await page.locator('[data-square-mine-toggle]').click();await expect(page.locator('[data-square-mine-toggle]')).toHaveAttribute('aria-pressed','true');await page.locator('[data-square-echo-toggle]').click();await expect(page.locator('[data-square-echo-panel]')).toBeVisible();
@@ -53,13 +53,13 @@ test('网页设置移除桌面伪装，清理缓存保留账号和手机缓存',
  await mock(page,{loggedIn:true});await page.goto('/settings.html');await expect(page.locator('[data-identity-form]')).toHaveCount(0);await expect(page.locator('[data-app-version]')).toContainText('网页');await page.evaluate(async()=>{await caches.open('fw-mobile-test');await caches.open('fw-web-assets-test');});await page.locator('[data-clear-cache]').click();await expect(page.locator('[data-toast]')).toContainText('登录状态已保留');expect(await page.evaluate(()=>!!localStorage.getItem('sb-ekbovsmxbiplhyrzxoyw-auth-token'))).toBe(true);expect(await page.evaluate(()=>caches.keys())).toContain('fw-mobile-test');expect(await page.evaluate(()=>caches.keys())).not.toContain('fw-web-assets-test');await expect(page.locator('.settings-filing a')).toHaveAttribute('href','https://beian.miit.gov.cn/');
 });
 test('六款H5游戏可以打开，NES仍仅在电脑版提供',async({page})=>{
- await mock(page);await page.goto('/games.html');await expect(page.locator('[data-game-open]')).toHaveCount(6);await expect(page.locator('[data-game-open="contra"]')).toHaveCount(0);await page.locator('[data-game-open="2048"]').click();await expect(page.locator('[data-game-frame]')).toHaveAttribute('src',/\/web\/games\/2048\/index.html/);await expect(page.frameLocator('[data-game-frame]').locator('body')).toContainText('2048');
+ await mock(page,{loggedIn:true});await page.goto('/games.html');await expect(page.locator('[data-game-open]')).toHaveCount(6);await expect(page.locator('[data-game-open="contra"]')).toHaveCount(0);await page.locator('[data-game-open="2048"]').click();await expect(page.locator('[data-game-frame]')).toHaveAttribute('src',/\/web\/games\/2048\/index.html/);await expect(page.frameLocator('[data-game-frame]').locator('body')).toContainText('2048');
 });
-test('公开规则和处理公告可通过更多打开，手机保留独立PWA',async({page})=>{
- await mock(page);await page.goto('/rules.html');await expect(page.locator('[data-align-view="rules"]')).toBeVisible();await page.locator('[data-sidebar-more-toggle]').click();await page.locator('[data-align-nav="moderation"]').click();await expect(page.locator('[data-align-view="moderation"]')).toBeVisible();
+test('登录后可通过更多打开规则和处理公告',async({page})=>{
+ await mock(page,{loggedIn:true});await page.goto('/rules.html');await expect(page.locator('[data-align-view="rules"]')).toBeVisible();await page.locator('[data-sidebar-more-toggle]').click();await page.locator('[data-align-nav="moderation"]').click();await expect(page.locator('[data-align-view="moderation"]')).toBeVisible();
 });
 for(const width of [760,1440])test(`浏览器${width}宽度的首页及设置无横向溢出`,async({page})=>{
- await mock(page);await page.setViewportSize({width,height:820});await page.goto('/');await expect(page.locator('.hero-card')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.goto('/settings.html');await expect(page.locator('[data-clear-cache]')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await mock(page,{loggedIn:true});await page.setViewportSize({width,height:820});await page.goto('/');await expect(page.locator('.hero-card')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.goto('/settings.html');await expect(page.locator('[data-clear-cache]')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 test('过期登录会回到访客状态，公开内容仍可浏览',async({page})=>{
  await mock(page,{loggedIn:true});await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({message:'expired',code:'bad_jwt'})}));await page.goto('/square.html');await expect(page.locator('[data-account-label]')).toHaveText('注册 / 登录');await expect(page.locator('[data-square-feed]')).toContainText('今天也在低功耗运行');await expect(page.locator('[data-account-modal]')).toBeHidden();
