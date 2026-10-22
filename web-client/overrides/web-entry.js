@@ -85,6 +85,9 @@ document.querySelector('.membership-page-heading').remove();placeMembershipTools
 new MutationObserver(placeMembershipTools).observe(memberHost,{childList:true});
 installWebUx(feedStore);
 const navigation=installWebNavigation({paths,aliases,onView(view,mode){current=view;guestPanels();pageHeading(view,mode);document.title=`${names[view]||'回声'}｜F.w 研究所`;}});
+// Keep navigation clicked while the feature modules were still loading.
+const waiting=webAccess.peekPending();
+if(waiting&&!webAccess.allow(waiting.view,waiting)){const url=navigation.address(waiting.view,waiting);if(url.href!==location.href)history.pushState({view:waiting.view},'',url);}
 function resume(){const target=webAccess.takePending();if(target){current=target.view;const url=navigation.address(current,target);if(url.href!==location.href)history.pushState({view:current},'',url);}navigation.apply({keepMenu:true});}
 window.addEventListener('fw:web-resume',()=>{if(signed())resume();});
 authStore.subscribe(state=>{

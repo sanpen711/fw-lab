@@ -4,6 +4,14 @@ import {mock,expectLoginHint,expectGuestGate} from './fixtures';
 const privateReads=/\/(polls|poll_options|shop_products|membership_plans|game_parties|private_messages|fw_chat_room_list)$/;
 async function signIn(page,entry='[data-open-account]'){await page.locator(entry).first().click();await expect(page.locator('[data-account-modal]')).toBeVisible();const form=page.locator('[data-auth-view="login"]');await form.locator('[name="email"]').fill('web-test@example.com');await form.locator('[name="password"]').fill('test-password');await form.locator('[type="submit"]').click();await expect(page.locator('[data-account-modal]')).toBeHidden();}
 
+test('页面尚在加载时点击受限板块，完成加载后进入该板块提示页',async({page})=>{
+ const calls=await mock(page);let resume;const waiting=new Promise(resolve=>resume=resolve);
+ await page.route('**/web/assets/feature-alignment-*.js',async route=>{await waiting;await route.continue();});
+ await page.goto('/',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>Boolean((window as any).__FW_WEB_APP__));
+ await expect(page.locator('[data-web-guest-gate]')).toHaveCount(0);await page.locator('.web-nav [data-nav="rooms"]').click();resume();
+ await expectGuestGate(page,'rooms');await expect(page).toHaveURL(/rooms.html$/);expect(calls.filter(c=>privateReads.test(c.path))).toEqual([]);
+});
+
 test('游客只读取帖子和精确评论数，不下载或显示评论正文',async({page})=>{
  const calls=await mock(page);await page.route('**/rest/v1/rpc/fw_public_post_comment_counts',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{post_id:101,comment_count:1234}])}));
  await page.goto('/square.html');await expect(page.locator('.post-comment-button')).toHaveText('评论 1234');await page.locator('.square-post .post-meta').click();
