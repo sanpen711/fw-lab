@@ -1,5 +1,15 @@
 import type {Page} from '../../desktop-v11/node_modules/@playwright/test';
 import {expect} from '../../desktop-v11/node_modules/@playwright/test';
+export async function expectGuestGate(page:Page,view?:string){
+ const gate=page.locator('[data-web-guest-gate]');
+ await expect(gate).toBeVisible();await expect(gate).toContainText('注册或登录后即可使用');
+ await expect(gate.getByRole('button',{name:'注册 / 登录',exact:true})).toBeVisible();
+ await expect(page.locator('#web-main>.view:visible')).toHaveCount(0);
+ await expect(page.locator('[data-web-page-intro]')).toBeHidden();
+ await expect(page.locator('[data-account-modal]')).toBeHidden();
+ await expect(page.locator('#app')).toHaveJSProperty('inert',false);
+ if(view)await expect(page.locator('#app')).toHaveAttribute('data-view',view);
+}
 export async function expectLoginHint(page:Page){
  await expect(page.locator('[data-toast]')).toContainText('请先注册或登录');
  await expect(page.locator('[data-toast]')).toHaveClass(/show/);

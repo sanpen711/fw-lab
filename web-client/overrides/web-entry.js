@@ -11,13 +11,14 @@ const descriptions={square:'随时吐槽，围观日常。把想说的话留在�
 let current='home',identity=null;
 function pageHeading(view,mode){
   const intro=document.querySelector('[data-web-page-intro]');
-  intro.hidden=view==='home'||['rules','moderation'].includes(view);
+  intro.hidden=!webAccess.allow(view,{mode})||view==='home'||['rules','moderation'].includes(view);
   const title=view==='square'&&mode==='echo'?'回声':(names[view]||'回声');
   document.querySelector('#web-main').setAttribute('aria-label',title);
   document.querySelector('[data-web-page-description]').textContent=descriptions[view]||'';
-  document.querySelectorAll('.web-nav [data-nav]').forEach(node=>{
+  document.querySelectorAll('.web-nav [data-nav],.web-nav [data-align-nav]').forEach(node=>{
     const navView=['activities','announcements'].includes(view)?'home':view==='shop'?'membership':view;
-    if(node.dataset.nav===navView)node.setAttribute('aria-current','page');else node.removeAttribute('aria-current');
+    const active=(node.dataset.nav||node.dataset.alignNav)===navView;node.classList.toggle('active',active);
+    if(active)node.setAttribute('aria-current','page');else node.removeAttribute('aria-current');
   });
 }
 // Navigation identifies the page; retain only descriptions and feature actions.
@@ -44,6 +45,8 @@ document.addEventListener('click',event=>{
     event.preventDefault();event.stopImmediatePropagation();
     if(nav&&!webAccess.allow(view))webAccess.request(view);
     else if(site)webAccess.request(site.dataset.siteTarget||site.dataset.siteKind,{item:site.dataset.siteOpen||''});
+    else if(button?.hasAttribute('data-square-mine-toggle'))webAccess.request('square',{mode:'mine'});
+    else if(button?.hasAttribute('data-square-echo-toggle'))webAccess.request('square',{mode:'echo'});
     else if(comment)webAccess.request('square',{post:comment.dataset.openPost});
     else webAccess.request();
   }else if(nav||event.target.closest('[data-open-post],[data-close-post]'))webAccess.clearPending();
@@ -59,17 +62,16 @@ await import('./alignment-nav-fix.js');
 await import('./feature-alignment.js');
 await import('./game-center.js');
 
+const guestGate=document.createElement('section');guestGate.className='web-guest-gate';guestGate.dataset.webGuestGate='';guestGate.hidden=true;
+guestGate.setAttribute('aria-labelledby','web-guest-gate-title');
+guestGate.innerHTML='<h2 id="web-guest-gate-title">注册或登录后即可使用</h2><button type="button" class="primary" data-open-account>注册 / 登录</button>';
+document.querySelector('#web-main').append(guestGate);
 function guestPanels(){
+  const locked=!webAccess.allow(current,{mode:window.__FW_WEB_APP__.state().mode});
+  document.body.classList.toggle('web-section-locked',locked);guestGate.hidden=!locked;
   document.body.classList.toggle('is-guest',!signed());
   document.querySelector('[data-open-account]').setAttribute('aria-label',signed()?'账号菜单':'登录或注册');
-  for(const view of ['buddy','chatrooms']){
-    const panel=document.querySelector(`[data-view-panel="${view}"]`);panel.toggleAttribute('data-web-guest',!signed());
-    let card=panel.querySelector('.web-guest-card');if(!card){card=document.createElement('div');card.className='web-guest-card';card.innerHTML=`<h1>${names[view]}</h1><p>${view==='buddy'?'登录后查看搭子、处理申请和发送私聊。':'登录后浏览闲聊房间、加入聊天或创建自己的房间。'}</p><button class="primary" type="button" data-open-account>登录 / 注册</button>`;panel.append(card);}
-    card.hidden=Boolean(signed());
-  }
-  const form=document.querySelector('[data-settings-profile]');let hint=document.querySelector('[data-web-profile-login]');
-  if(!hint){hint=document.createElement('p');hint.dataset.webProfileLogin='';hint.innerHTML='登录后可以修改头像和昵称。 <button class="secondary compact" type="button" data-open-account>登录 / 注册</button>';form.before(hint);}hint.hidden=Boolean(signed());
-  if(!signed())form.reset();
+  if(!signed())document.querySelector('[data-settings-profile]').reset();
 }
 // Feature controls share one compact bar on the website.
 const rooms=document.querySelector('.rooms-page'),pollActions=rooms.querySelector('.section-actions'),filters=rooms.querySelector('.poll-filters');
@@ -83,7 +85,7 @@ document.querySelector('.membership-page-heading').remove();placeMembershipTools
 new MutationObserver(placeMembershipTools).observe(memberHost,{childList:true});
 installWebUx(feedStore);
 const navigation=installWebNavigation({paths,aliases,onView(view,mode){current=view;guestPanels();pageHeading(view,mode);document.title=`${names[view]||'回声'}｜F.w 研究所`;}});
-function resume(){const target=webAccess.takePending();if(target){current=target.view;history.pushState({view:current},'',navigation.address(current,target));}navigation.apply({keepMenu:true});}
+function resume(){const target=webAccess.takePending();if(target){current=target.view;const url=navigation.address(current,target);if(url.href!==location.href)history.pushState({view:current},'',url);}navigation.apply({keepMenu:true});}
 window.addEventListener('fw:web-resume',()=>{if(signed())resume();});
 authStore.subscribe(state=>{
   if(!state.ready)return;const next=signed()?state.user.id:'guest';if(identity===next)return;

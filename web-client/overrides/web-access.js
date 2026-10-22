@@ -13,9 +13,11 @@ export const webAccess={
   signed,ready,
   allow(view,{mode='feed'}={}){return signed()||view==='home'||view==='square'&&mode==='feed';},
   request(view=null,options={}){
+    if(view==='echo'){view='square';options={...options,mode:'echo'};}
     if(view)pending={view,...options};
     ready().then(()=>{
       if(signed())window.dispatchEvent(new Event('fw:web-resume'));
+      else if(view&&!this.allow(view,options))window.dispatchEvent(new CustomEvent('fw:web-open-view',{detail:{view,...options}}));
       else window.__FW_WEB_APP__?.notify(view==='square'&&options.post?'查看评论需要登录，请先注册或登录。':view?'此板块需要登录，请先注册或登录。':'请先注册或登录后再操作。');
     });
   },
