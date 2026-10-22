@@ -84,6 +84,12 @@ function renderAuthGate(next){
   webMessages.update('private',{context:target,rows:chat.rows,ownerField:'sender_id',ownId:accountState.user?.id,scroller:messages,button:notice,nearBottom,forceBottom:shouldScroll});`);
     source+=`\nwindow.addEventListener('beforeunload',event=>{if(composeDraft.attachments.length){event.preventDefault();event.returnValue='';}});
 window.__FW_WEB_APP__={navigate,openAccount,notify:toast,openPost:id=>feedStore.openPostById(id),state:()=>({view:currentView,tab:membershipTab,mode:squareMode,filter:pollFilter}),
+  openGuestView(view,{mode='feed',tab='benefits',filter='all'}={}){
+    navigate('home');homeContent.setVisible('');
+    currentView=view;squareMode=mode;membershipTab=tab;pollFilter=filter;
+    $('#app').dataset.view=view;
+    $$('.view').forEach(panel=>panel.classList.remove('active'));
+  },
   openView(view,{tab='benefits',mode='feed',item='',filter='all'}={}){
     if(view==='membership'||view==='shop'){membershipTab=view==='shop'?'shop':(['benefits','appearance','orders','purchase'].includes(tab)?tab:'benefits');navigate('membership');return;}
     if(['rules','moderation'].includes(view)){document.querySelector('[data-align-nav="'+view+'"]').click();return;}

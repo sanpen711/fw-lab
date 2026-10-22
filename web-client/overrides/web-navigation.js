@@ -44,7 +44,7 @@ export function installWebNavigation({paths,aliases,onView}){
   function show(route){onView(route.view,route.mode);}
   function commit(view,extra={}){
     if(applying)return;
-    if(!webAccess.allow(view,{mode:extra.mode||app().state().mode})){webAccess.request(view,extra);return;}
+    if(!webAccess.allow(view,{mode:extra.mode||app().state().mode}))return;
     const state=app().state();if(view==='membership'&&state.tab==='shop')view='shop';
     const route={view,tab:state.tab,mode:state.mode,filter:state.filter,...extra};
     if(view==='square')route.post=String(feedStore.state.openPostId||'');
@@ -67,16 +67,14 @@ export function installWebNavigation({paths,aliases,onView}){
   async function apply({keepMenu=false,resetScroll=false}={}){
     const token=++generation;applying=true;pending=null;stopRestore();
     await webAccess.ready();if(token!==generation)return;
-    let route=readRoute();let scroll=resetScroll?{y:0}:history.state?.web?.scroll||{y:0};
-    if(!webAccess.allow(route.view,route)){
-      webAccess.request(route.view,route);route={view:'home',mode:'feed'};scroll={y:0};
-      history.replaceState({web:{key:newKey(),scroll}},'',address('home'));
-    }
+    const route=readRoute(),scroll=resetScroll?{y:0}:history.state?.web?.scroll||{y:0};
+    const locked=!webAccess.allow(route.view,route);
     const more=document.querySelector('[data-sidebar-more-wrap]'),menuOpen=keepMenu&&more.classList.contains('open');
     feedStore.closePost();
-    app().openView(route.view,route);show(route);
+    if(locked)app().openGuestView(route.view,route);else app().openView(route.view,route);
+    show(route);
     if(menuOpen){more.classList.add('open');document.querySelector('[data-sidebar-more-toggle]').setAttribute('aria-expanded','true');}
-    if(route.view==='square'&&route.post){
+    if(!locked&&route.view==='square'&&route.post){
       try{await app().openPost(route.post);}catch{if(token===generation){const url=address('square',{mode:route.mode});history.replaceState(history.state,'',url);}}
     }
     if(token!==generation)return;
@@ -85,6 +83,11 @@ export function installWebNavigation({paths,aliases,onView}){
     restore(scroll);
   }
   history.scrollRestoration='manual';
+  window.addEventListener('fw:web-open-view',event=>{
+    const {view,...options}=event.detail;save();const url=address(view,options);
+    if(url.href!==location.href)history.pushState({web:{key:newKey(),scroll:{y:0}}},'',url);
+    apply({resetScroll:true});
+  });
   window.addEventListener('fw:web-before-view',save);
   document.addEventListener('scroll',()=>{if(!saveTimer)saveTimer=setTimeout(save,120);},{capture:true,passive:true});
   for(const type of ['wheel','pointerdown','keydown'])document.addEventListener(type,()=>{stopRestore();save();},{capture:true,passive:true});
