@@ -5,7 +5,7 @@ import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'../..'),site=resolve(root,'.site');
 test('deployment routes reference complete built assets',()=>{
- for(const name of ['index','square','rooms','chatrooms','play','games','buddy','membership','shop','archive','settings','activities','announcements','rules','moderation']){
+ for(const name of ['index','square','rooms','chatrooms','play','games','buddy','membership','shop','archive','settings','activities','announcements','rules','moderation','feedback']){
   const html=readFileSync(resolve(site,name+'.html'),'utf8');
   assert.match(html,/\/web\/assets\//);assert.doesNotMatch(html,/assets\/app\.js|\/src\/app\.js|data-game-open="contra"/);
   for(const match of html.matchAll(/(?:src|href)="(\/[^"?#]+)(?:[?#][^"]*)?"/g)){
