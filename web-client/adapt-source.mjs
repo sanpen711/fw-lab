@@ -49,6 +49,7 @@ function renderAuthGate(next){
   window.dispatchEvent(new CustomEvent('fw:web-before-view'));`);
     change("const localViews=['home',", "const localViews=['feedback','home',");
     change("function closeAccount(){if(authGateLocked)return;", "function closeAccount(){if(authGateLocked)return;webAccess.clearPending();");
+    change('requestAnimationFrame(()=>{$(`[data-auth-view="${view}"] input:not([disabled])`)?.focus();});','$(`[data-auth-view="${view}"] input:not([disabled])`)?.focus({preventScroll:true});');
     const commentCount='${(post.comments||[]).length}';
     assert.equal(source.split(commentCount).length-1,2,'Web comment count contract');
     source=source.replaceAll(commentCount,'${webCommentCount(post)}');

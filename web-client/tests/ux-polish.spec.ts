@@ -80,6 +80,18 @@ test('注册可提前阅读规则和隐私，密码开关及提示可用，阅�
  await page.keyboard.press('Escape');await expect(page.locator('[data-web-terms]')).toBeHidden();await expect(form.locator('[name="email"]')).toHaveValue('review@example.com');await expect(form.locator('[name="password"]')).toHaveValue('review-password');await expect(form.locator('[data-align-open-rules]')).toHaveCount(1);
 });
 
+test('登录和注册窗口打开后不抢回用户已经移动的输入焦点',async({page})=>{
+ await mock(page);await page.goto('/');await page.locator('[data-web-guest-gate]').waitFor({state:'attached'});
+ for(const view of ['login','register']){
+  await page.evaluate(view=>{
+   document.querySelector<HTMLButtonElement>(view==='login'?'[data-open-account]':'[data-show-auth="register"]')!.click();
+   document.querySelector<HTMLInputElement>(`[data-auth-view="${view}"] [name="password"]`)!.focus();
+  },view);
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>resolve(null))));
+  await expect(page.locator(`[data-auth-view="${view}"] [name="password"]`)).toBeFocused();
+ }
+});
+
 test('商城列表图片与详情都是3比4，会员订单有独立名称',async({page})=>{
  await mock(page,{loggedIn:true});await page.goto('/shop.html');await expect(page.locator('.shop-product-card>img')).toHaveCSS('aspect-ratio','3 / 4');await expect(page.locator('[data-membership-tab="orders"]')).toHaveText('会员订单');await expect(page.locator('[data-shop-view="orders"]')).toHaveText('我的周边订单');
 });
