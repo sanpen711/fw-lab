@@ -240,6 +240,9 @@ html body.fw-browser :is(.square-feed,.detail-content-scroll,.room-messages,.cha
 /* Keep the feed in place while its details open above it. */
 html body.fw-browser .square-page.web-post-open{width:min(900px,100%);margin-inline:auto}
 html body.fw-browser .square-page.web-post-open .post-detail-column{display:block}
+/* The opaque drawer header needs no blur, which would make fixed menus use
+   the header as their containing block instead of the viewport. */
+html body.fw-browser .post-detail-column .detail-head{backdrop-filter:none}
 html body.fw-browser .square-page .square-feed-column{border-right:0}
 html body.fw-browser .square-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .web-square-tabs{display:flex;gap:6px;align-items:center}

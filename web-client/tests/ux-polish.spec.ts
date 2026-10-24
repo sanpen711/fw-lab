@@ -44,7 +44,7 @@ for(const width of [900,1440])test(`${width}px详情抽屉保持列表宽度、�
 
 test('首页显示真实活动，入口去广场，移除下班卡片及重复发帖按钮',async({page},testInfo)=>{
  await mock(page);await page.goto('/');await expect(page.locator('[data-home-activities-summary]')).toContainText('伏伏的摸鱼活动');await expect(page.locator('[data-home-activities-summary] time')).toContainText('2026');
- await expect(page.locator('.web-home-activity')).toHaveCSS('position','static');expect((await page.locator('.web-home-activity').boundingBox())!.width).toBeGreaterThan(200);
+ await expect(page.locator('.web-home-activity')).toHaveCSS('position','static');await expect(page.locator('.web-home-activity')).toBeVisible();await expect.poll(async()=>(await page.locator('.web-home-activity').boundingBox())?.width||0).toBeGreaterThan(200);
  await expect(page.locator('.offwork-card')).toHaveCount(0);await expect(page.locator('.hero-eyebrow')).toHaveCount(0);
  await page.screenshot({path:testInfo.outputPath('home.png'),fullPage:true});
  await page.getByRole('button',{name:'逛逛精神广场',exact:true}).click();await expect(page).toHaveURL(/square.html$/);await expect(page.locator('.web-compose')).toBeHidden();

@@ -2,6 +2,11 @@ import {reportButton} from './content-review-ui.js';
 import {openDialog,closeDialog} from './dialog-focus.js';
 
 const labels={post:'帖子',comment:'评论',poll:'课题',poll_option:'选项',private_message:'消息',room_message:'消息'};
+function placeMenu(menu){
+  const rect=menu.querySelector('summary').getBoundingClientRect(),panel=menu.querySelector('.web-action-menu-panel');
+  panel.style.left=`${Math.max(8,Math.min(innerWidth-148,rect.right-140))}px`;
+  panel.style.top=`${rect.bottom+56>innerHeight?Math.max(8,rect.top-52):rect.bottom+4}px`;
+}
 export function webReportButton(kind,id){
   return `<details class="web-action-menu"><summary aria-label="${labels[kind]||'内容'}的更多操作" title="更多操作">⋯</summary><div class="web-action-menu-panel">${reportButton(kind,id)}</div></details>`;
 }
@@ -84,6 +89,7 @@ export function installWebUx(feedStore){
     if(event.key==='Escape'){const menu=document.querySelector('.web-action-menu[open]');if(menu){menu.open=false;menu.querySelector('summary').focus();}}
   });
   document.addEventListener('click',event=>{
+    const summary=event.target.closest?.('.web-action-menu>summary');if(summary)placeMenu(summary.closest('details'));
     const report=event.target.closest?.('.web-action-menu [data-review-report]');
     if(report){const menu=report.closest('details');menu.querySelector('summary').focus({preventScroll:true});menu.open=false;}
     for(const menu of document.querySelectorAll('.web-action-menu[open]'))if(!menu.contains(event.target))menu.open=false;
@@ -91,9 +97,7 @@ export function installWebUx(feedStore){
   document.addEventListener('toggle',event=>{
     const menu=event.target;if(!menu.matches?.('.web-action-menu')||!menu.open)return;
     for(const other of document.querySelectorAll('.web-action-menu[open]'))if(other!==menu)other.open=false;
-    const rect=menu.querySelector('summary').getBoundingClientRect(),panel=menu.querySelector('.web-action-menu-panel');
-    panel.style.left=`${Math.max(8,Math.min(innerWidth-148,rect.right-140))}px`;
-    panel.style.top=`${rect.bottom+56>innerHeight?Math.max(8,rect.top-52):rect.bottom+4}px`;
+    placeMenu(menu);
   },true);
   document.addEventListener('scroll',event=>{if(!event.target.closest?.('.web-action-menu-panel'))for(const menu of document.querySelectorAll('.web-action-menu[open]'))menu.open=false;},true);
 }
