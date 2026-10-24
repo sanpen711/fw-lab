@@ -1,15 +1,5 @@
 import type {Page} from '../../desktop-v11/node_modules/@playwright/test';
-import {expect,test} from '../../desktop-v11/node_modules/@playwright/test';
-test.afterEach(async({page},info)=>{
- if(info.status===info.expectedStatus||page.isClosed())return;
- // Diagnose fast CI form/focus failures without printing input values or tokens.
- console.log('WEB_AUTH_DIAGNOSTICS',JSON.stringify(await page.evaluate(()=>({
-  route:location.pathname,status:document.querySelector('[data-form-status]')?.textContent,
-  modalHidden:document.querySelector<HTMLElement>('[data-account-modal]')?.hidden,
-  focus:document.activeElement?.getAttribute('name'),
-  fields:[...document.querySelectorAll<HTMLInputElement>('[data-auth-view="login"] input')].map(input=>({name:input.name,length:input.value.length,valid:input.validity.valid,disabled:input.disabled})),
- }))));
-});
+import {expect} from '../../desktop-v11/node_modules/@playwright/test';
 export async function expectGuestGate(page:Page,view?:string){
  const gate=page.locator('[data-web-guest-gate]');
  await expect(gate).toBeVisible();await expect(gate).toContainText('注册或登录后即可使用');

@@ -15,8 +15,8 @@ test('会员与商城的返回、前进及刷新保持内容和子栏目一致',
 
 test('广场返回关闭详情，前进重开，关闭按钮清理地址并恢复列表位置',async({page})=>{
  await mock(page,{loggedIn:true});
- await page.route('**/rest/v1/posts?**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(Array.from({length:20},(_,i)=>({id:101+i,user_id:other,content:'列表帖子 '+i,created_at:'2026-10-20T10:00:00Z'})))}));
- await page.goto('/square.html');await expect(page.locator('.square-post')).toHaveCount(20);
+ await page.route('**/rest/v1/posts?**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(Array.from({length:25},(_,i)=>({id:101+i,user_id:other,content:'列表帖子 '+i,created_at:'2026-10-20T10:00:00Z'})))}));
+ await page.goto('/square.html');await expect(page.locator('.square-post')).toHaveCount(25);
  await expect(async()=>{await page.locator('[data-open-post="111"]').first().scrollIntoViewIfNeeded();}).toPass();const before=await page.evaluate(()=>scrollY);expect(before).toBeGreaterThan(0);
  await page.locator('[data-open-post="111"]').first().click();await expect(page).toHaveURL(/post=111/);await expect(page.locator('[data-close-post]')).toBeVisible();
  await page.goBack();await expect(page).toHaveURL(/square.html$/);await expect(page.locator('.square-page')).not.toHaveClass(/web-post-open/);await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThan(before-5);

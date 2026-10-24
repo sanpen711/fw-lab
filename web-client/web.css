@@ -1,6 +1,6 @@
 /* Website layout only. Shared Windows styles are copied, never edited. */
-html:has(body.fw-browser){scroll-padding-top:112px;scrollbar-gutter:stable both-edges;min-width:0}
-html body.fw-browser{--web-width:1200px;--web-header-height:97px;min-width:0;background:#f7f7f6!important;color:#202020!important}
+html:has(body.fw-browser){scroll-padding-top:112px}
+html body.fw-browser{--web-width:1200px;--web-header-height:97px;min-width:760px;background:#f7f7f6!important;color:#202020!important}
 html body.fw-browser .app-shell{display:flex;flex-direction:column;min-height:100vh;height:auto;padding:0!important;overflow:visible}
 html body.fw-browser .phase-note{display:none!important}
 .web-skip-link{position:fixed;z-index:20000;left:20px;top:-80px;padding:12px 18px;border-radius:8px;background:#202020;color:white}
@@ -102,14 +102,14 @@ html body.fw-browser .membership-tabs{gap:28px;padding:0 22px;border:1px solid #
 html body.fw-browser .membership-page-grid{max-width:none;gap:22px}
 html body.fw-browser .shop-product-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:22px}
 html body.fw-browser .shop-product-card{padding:12px;border-color:#e6e6e2}
-html body.fw-browser .shop-product-card>img{aspect-ratio:3/4;object-fit:contain}
+html body.fw-browser .shop-product-card>img{aspect-ratio:1}
 html body.fw-browser .shop-product-card h4{font-size:14px}
 html body.fw-browser .archive-content{width:100%;padding:20px 0 0}
 html body.fw-browser .archive-page>.section-heading{border:1px solid #e6e6e2;border-radius:10px}
 html body.fw-browser .site-content-page{max-width:none;padding:0}
 html body.fw-browser .align-extra-page{padding:4px 0 0;overflow:visible}
 html body.fw-browser .align-extra-head h1{font-size:29px;letter-spacing:-.04em}
-html body.fw-browser .align-extra-head p{color:#686864;font-size:13px;font-weight:400}
+html body.fw-browser .align-extra-head p{color:#8a8a84;font-size:13px;font-weight:400}
 html body.fw-browser .align-card,html body.fw-browser .align-section{background:#fff}
 html body.fw-browser .compose-page{display:block!important;max-width:900px;margin:0 auto}
 html body.fw-browser .compose-page>.section-heading{border:1px solid #e6e6e2;border-radius:10px}
@@ -121,7 +121,7 @@ html body.fw-browser .game-hall{height:auto;overflow:visible;padding:0}
 html body.fw-browser .game-grid{width:100%;gap:20px}
 html body.fw-browser .game-card{min-height:155px;padding:24px;border-color:#e6e6e2;border-radius:12px;background:#fff!important;color:#333}
 html body.fw-browser .game-card b{font-size:17px}
-html body.fw-browser .game-card span{color:#686864}
+html body.fw-browser .game-card span{color:#92928b}
 html body.fw-browser .game-stage{height:max(480px,calc(100dvh - 206px));border:1px solid #e6e6e2;border-radius:12px;overflow:hidden}
 
 /* Interactive work areas stay bounded inside the page, below its title. */
@@ -149,7 +149,7 @@ html body.fw-browser [data-web-profile-login]{color:#737373;font-size:13px;line-
 html body.fw-browser [data-game="contra"]{display:none!important}
 
 /* One site footer, available on every page. */
-.web-site-footer{display:grid;justify-items:center;gap:14px;flex:none;padding:28px 24px 24px;border-top:1px solid #e7e7e4;background:#fff;color:#6e6e68;font-size:11px;line-height:1.6}
+.web-site-footer{display:grid;justify-items:center;gap:14px;flex:none;padding:28px 24px 24px;border-top:1px solid #e7e7e4;background:#fff;color:#9a9a94;font-size:11px;line-height:1.6}
 .web-site-footer>div{display:flex;align-items:center;gap:14px}.web-site-footer strong{color:#62625d;font-size:13px;font-weight:600}.web-site-footer>div>span{padding-left:14px;border-left:1px solid #e6e6e2}
 .web-site-footer nav{display:flex;gap:22px}.web-site-footer a{color:inherit;text-decoration:none;text-underline-offset:3px}.web-site-footer a:hover{color:#333;text-decoration:underline}.web-site-footer .web-filing{font-size:11px}
 .web-site-footer a:focus-visible,.web-download:focus-visible{outline:2px solid #e8a7b2;outline-offset:4px}
@@ -213,73 +213,27 @@ html body.fw-browser .poll-card>header{position:relative;padding-right:36px}
 html body.fw-browser .poll-card>.web-action-menu{position:absolute;top:18px;right:18px}
 html body.fw-browser .poll-card{position:relative}
 html body.fw-browser .poll-option-row>.web-action-menu{align-self:center}
-html body.fw-browser .square-page{display:block;width:min(900px,100%);height:auto!important;min-height:440px;margin-inline:auto;border:0;background:transparent}
-html body.fw-browser .square-page .square-feed-column{height:auto;overflow:visible}
-html body.fw-browser .square-page .square-feed-column{border-right:0}
-html body.fw-browser #app[data-view="square"]:has(.square-page) .web-page-intro{max-width:900px;margin-inline:auto}
-html body.fw-browser .square-page .square-heading{border:1px solid #e4e4e0;border-radius:10px}
-html body.fw-browser .square-page .square-feed{height:auto;overflow:visible;padding:16px 0;background:transparent!important}
-html body.fw-browser .square-page .square-echo-panel{height:auto;overflow:visible;background:transparent}
-html body.fw-browser .square-page .square-echo-list{height:auto;overflow:visible}
-html body.fw-browser .square-page .post-detail-column{display:none}
-
+html body.fw-browser .square-page:not(.web-post-open){display:block;width:min(900px,100%);height:auto!important;min-height:440px;margin-inline:auto;border:0;background:transparent}
+html body.fw-browser .square-page:not(.web-post-open) .square-feed-column{height:auto;overflow:visible}
+html body.fw-browser .square-page:not(.web-post-open) .square-feed-column{border-right:0}
+html body.fw-browser #app[data-view="square"]:has(.square-page:not(.web-post-open)) .web-page-intro{max-width:900px;margin-inline:auto}
+html body.fw-browser .square-page:not(.web-post-open) .square-heading{border:1px solid #e4e4e0;border-radius:10px}
+html body.fw-browser .square-page:not(.web-post-open) .square-feed{height:auto;overflow:visible;padding:16px 0;background:transparent!important}
+html body.fw-browser .square-page:not(.web-post-open) .square-echo-panel{height:auto;overflow:visible;background:transparent}
+html body.fw-browser .square-page:not(.web-post-open) .square-echo-list{height:auto;overflow:visible}
+html body.fw-browser .square-page:not(.web-post-open) .post-detail-column{display:none}
+html body.fw-browser .square-page.web-post-open{height:max(440px,calc(100dvh - 180px))!important}
 .web-post-backdrop{display:none}
 .web-room-message-wrap{position:relative;display:flex;flex:1;min-height:0;flex-direction:column;overflow:hidden}
 html body.fw-browser .web-room-message-wrap .room-messages{height:auto;flex:1;min-height:0}
 html body.fw-browser .web-room-latest{position:absolute;right:16px;bottom:12px;z-index:3;box-shadow:0 4px 14px #00000012;background:#fff}
 .web-room-latest[hidden]{display:none!important}
 html body.fw-browser :is(.square-feed,.detail-content-scroll,.room-messages,.chat-messages){overscroll-behavior:contain}
-
+@media(max-width:1000px){
  html body.fw-browser .square-page.web-post-open{display:block;height:auto!important;min-height:440px;border:0;background:transparent}
  html body.fw-browser .square-page.web-post-open .square-feed-column{height:auto;overflow:visible}
  html body.fw-browser .square-page.web-post-open .square-feed{height:auto;overflow:visible}
  html body.fw-browser .square-page.web-post-open .post-detail-column{position:fixed;z-index:82;top:var(--web-header-height);right:0;bottom:0;width:min(680px,calc(100% - 48px));height:auto;overflow:hidden;border-left:1px solid var(--line);background:#fff;box-shadow:-8px 0 32px #00000012}
  html body.fw-browser .web-post-backdrop:not([hidden]){display:block;position:fixed;z-index:81;inset:var(--web-header-height) 0 0;width:100%;height:auto;padding:0;border:0;border-radius:0;background:#0003}
  html body.fw-browser.web-post-drawer-open{overflow:hidden}
-
-/* Keep the feed in place while its details open above it. */
-html body.fw-browser .square-page.web-post-open{width:min(900px,100%);margin-inline:auto}
-html body.fw-browser .square-page.web-post-open .post-detail-column{display:block}
-/* The opaque drawer header needs no blur, which would make fixed menus use
-   the header as their containing block instead of the viewport. */
-html body.fw-browser .post-detail-column .detail-head{backdrop-filter:none}
-html body.fw-browser .square-page .square-feed-column{border-right:0}
-html body.fw-browser .square-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.web-square-tabs{display:flex;gap:6px;align-items:center}
-html body.fw-browser .web-square-tabs button{white-space:nowrap}
-html body.fw-browser .web-square-tabs button.active{background:#ffe6e9;color:#393033;border-color:#eab3bc}
-html body.fw-browser .square-heading .section-actions{margin-left:auto;gap:8px}
-html body.fw-browser .square-post{gap:10px;padding:16px 20px}
-html body.fw-browser .square-post .post-author{min-height:30px;margin:0;font-size:13px}
-.web-post-time{margin-left:auto;color:#6c6c68;font-size:12px;font-weight:400;white-space:nowrap}
-html body.fw-browser .square-post .rich-text{margin:0;min-height:0;font-size:14px;line-height:1.7}
-html body.fw-browser .square-post .post-stats{padding-top:9px;margin-top:0}
-html body.fw-browser .square-post .rich-text.emoji-only .emoji.inline{width:44px;height:44px}
-html body.fw-browser .square-post .rich-text.fufu-only .fufu-emoji.inline{width:88px;height:88px}
-.web-feed-footer{display:grid;justify-items:center;gap:12px;padding:18px 12px 8px;color:#666;font-size:13px;text-align:center}
-.web-feed-footer p{margin:0;line-height:1.6}
-html body.fw-browser .web-back-top{position:fixed;z-index:50;right:max(24px,calc((100vw - 1200px)/2));bottom:24px;padding:11px 16px;background:#fff;box-shadow:0 4px 20px #00000012;font-size:13px}
-.web-back-top[hidden],html body.fw-browser .web-compose[hidden]{display:none!important}
-html body.fw-browser .home-wrap .home-grid{grid-template-columns:minmax(0,1fr)!important}
-html body.fw-browser .home-tool-card{min-height:112px!important}
-html body.fw-browser .hero-card h1{margin-top:0!important}
-html body.fw-browser .home-activities-card p{display:grid;gap:12px;width:100%;margin-block:14px 0;color:#60605d!important;font-size:13px!important}
-html body.fw-browser .home-activities-card .web-home-activity{display:flex;position:static!important;width:100%!important;height:auto!important;overflow:visible!important;clip-path:none!important;white-space:normal!important;align-items:baseline;justify-content:space-between;gap:24px;line-height:1.6}
-.web-home-activity b{font-weight:550;overflow-wrap:anywhere}
-.web-home-activity time{flex:none;font-size:12px;color:#666}
-html body.fw-browser .web-brand-note,html body.fw-browser .web-page-intro>p{color:#686864}
-html body.fw-browser .post-meta time,html body.fw-browser .panel-copy,html body.fw-browser .form-links button{color:#666}
-.web-password-field{display:flex;position:relative;width:100%}
-html body.fw-browser .web-password-field input{width:100%;padding-right:66px}
-html body.fw-browser .web-password-field button{position:absolute;right:8px;top:50%;transform:translateY(-50%);min-height:32px;padding:6px 9px;border:0;background:transparent;color:#555;font-size:12px;cursor:pointer}
-.web-password-help{margin:-3px 0 0;color:#62625e;font-size:12px;line-height:1.6}
-html body.fw-browser .consent span{line-height:1.8;color:#555}
-html body.fw-browser .consent button,html body.fw-browser .consent a{display:inline;padding:0;border:0;background:transparent;color:#6d444c;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.web-terms{width:min(860px,calc(100vw - 80px));max-height:80dvh;padding:0;border:1px solid #ddd;border-radius:14px;background:#fff;color:#202020}
-.web-terms::backdrop{background:#0005}
-.web-terms>header{display:flex;position:sticky;z-index:1;top:0;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid #eee;background:#fff}
-html body.fw-browser .web-terms .align-extra-page{padding:24px}
-.web-terms .align-extra-head small{display:none}
-html body.fw-browser .web-feedback-page{max-width:640px;margin:0 auto;padding:28px;border:1px solid #e6e6e2;border-radius:12px;background:#fff}
-.web-feedback-page>.eyebrow{display:none}
-.web-feedback-page h2{margin-top:0;font-size:24px}
+}
