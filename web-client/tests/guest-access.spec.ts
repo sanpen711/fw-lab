@@ -14,14 +14,14 @@ test('页面尚在加载时点击受限板块，完成加载后进入该板块�
 
 test('游客只读取帖子和精确评论数，不下载或显示评论正文',async({page})=>{
  const calls=await mock(page);await page.route('**/rest/v1/rpc/fw_public_post_comment_counts',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{post_id:101,comment_count:1234}])}));
- await page.goto('/square.html');await expect(page.locator('.post-comment-button')).toHaveText('评论 1234');await page.locator('.square-post .post-meta').click();
+ await page.goto('/square.html');await expect(page.locator('.post-comment-button')).toHaveText('评论 1234');await page.locator('.square-post .web-post-time').click();
  await expect(page.locator('.comments-heading')).toContainText('1234 条');await expect(page.locator('.web-comments-locked')).toContainText('登录后查看评论');await expect(page.locator('.post-comment')).toHaveCount(0);await expect(page.locator('[data-comment-form]')).toHaveCount(0);expect(await page.content()).not.toContain('评论测试内容');expect(calls.some(c=>c.path.endsWith('/comments'))).toBe(false);
  await expect(page.locator('[data-account-modal]')).toBeHidden();
 });
 
-test('游客点击评论只显示轻提示，主动登录后打开对应帖子及评论',async({page})=>{
- const calls=await mock(page);await page.goto('/square.html');await page.locator('.post-comment-button').click();await expectLoginHint(page);expect(calls.some(c=>c.path.endsWith('/comments'))).toBe(false);
- await signIn(page);await expect(page).toHaveURL(/square.html\?post=101$/);await expect(page.locator('.post-comment')).toContainText('评论测试内容');await expect(page.locator('.web-comments-locked')).toHaveCount(0);
+test('游客点击评论进入帖子详情，主动登录后才显示评论正文',async({page})=>{
+ const calls=await mock(page);await page.goto('/square.html');await page.locator('.post-comment-button').click();await expect(page.locator('.web-comments-locked')).toBeVisible();await expect(page.locator('[data-account-modal]')).toBeHidden();expect(calls.some(c=>c.path.endsWith('/comments'))).toBe(false);
+ await signIn(page,'.web-comments-locked [data-open-account]');await expect(page).toHaveURL(/square.html\?post=101$/);await expect(page.locator('.post-comment')).toContainText('评论测试内容');await expect(page.locator('.web-comments-locked')).toHaveCount(0);
 });
 
 test('游客进入其他板块后只显示居中登录提示与按钮，不读取板块数据',async({page})=>{

@@ -1,6 +1,7 @@
 // Browser-only adaptations. The Windows sources remain the shared implementation.
 // Exact replacements fail the build when an upstream contract changes.
 import assert from 'node:assert/strict';
+import {adaptWebFeed} from './adapt-feed.mjs';
 
 function once(source, before, after, label){
   assert.equal(source.split(before).length-1,1,`Web adaptation no longer matches: ${label}`);
@@ -46,6 +47,7 @@ function renderAuthGate(next){
     change('function navigate(view){',`function navigate(view){
   if(!webAccess.allow(view)){webAccess.request(view);return;}
   window.dispatchEvent(new CustomEvent('fw:web-before-view'));`);
+    change("const localViews=['home',", "const localViews=['feedback','home',");
     change("function closeAccount(){if(authGateLocked)return;", "function closeAccount(){if(authGateLocked)return;webAccess.clearPending();");
     const commentCount='${(post.comments||[]).length}';
     assert.equal(source.split(commentCount).length-1,2,'Web comment count contract');
@@ -67,6 +69,10 @@ function renderAuthGate(next){
     change('${ended||pollState.busy?\'disabled\':\'\'}><span>', '${ended||pollState.busy?\'disabled\':\'\'} aria-pressed="${selected}"><span>');
     change('<div class="poll-options">', '<p class="web-poll-instruction">${ended?\'投票已结束，以下为最终结果。\':\'点击选项投票，截止前可以改票。\'}</p><div class="poll-options">');
     change('<article class="square-post ${open?', '<article tabindex="0" aria-label="查看帖子" class="square-post ${open?');
+    change('<div class="post-meta time-only"><time>${esc(timeText(post.created_at))}</time></div><div class="post-author">','<div class="post-author">');
+    change("${vipBadgeHtml(post.user_id)}</div>${richContent(post.content)}<div class=\"post-stats\">", "${vipBadgeHtml(post.user_id)}<time class=\"web-post-time\">${esc(timeText(post.created_at))}</time></div>${richContent(post.content)}<div class=\"post-stats\">");
+    change("['orders','订单记录']","['orders','会员订单']");
+    change("host.innerHTML=feedState.posts.length?feedState.posts.map(postCard).join(''):","const webPage=feedState.webPage||{};const webFooter=feedState.posts.length?`<div class=\"web-feed-footer\" role=\"status\">${webPage.error||feedState.error?`<p>${esc(webPage.error||feedState.error)}</p>`:''}${webPage.hasMore!==false?`<button type=\"button\" class=\"secondary\" data-web-feed-more ${feedState.loading||webPage.loadingMore?'disabled':''}>${webPage.loadingMore?'正在加载…':webPage.error?'重试加载':'加载更早的帖子'}</button>`:'<span>已经到底了</span>'}</div>`:'';\n  host.innerHTML=feedState.posts.length?feedState.posts.map(postCard).join('')+webFooter:");
     change("const host=$('[data-square-feed]');if(!host)return;", "const host=$('[data-square-feed]');if(!host)return;const webFeedTop=host.scrollTop,webFocusedPost=document.activeElement?.matches('.square-post')&&host.contains(document.activeElement)?document.activeElement.dataset.openPost:'';const restoreWebFeedFocus=()=>{if(webFocusedPost)host.querySelector(`[data-open-post=\"${CSS.escape(webFocusedPost)}\"]`)?.focus({preventScroll:true});};");
     change('host.scrollTop=scrollTop;return;\n  }\n  host.dataset.feedMode', 'host.scrollTop=scrollTop;restoreWebFeedFocus();return;\n  }\n  host.dataset.feedMode');
     // Restore the inner list position after public-feed refreshes, too.
@@ -118,8 +124,10 @@ window.__FW_WEB_APP__={navigate,openAccount,notify:toast,openPost:id=>feedStore.
     change('const hydrated={...post,comments,reactions};', 'const webCounts=await webReadCommentCounts([post.id]);const hydrated={...post,commentCount:webCounts?.[String(post.id)],comments,reactions};');
     change("      .on('postgres_changes',{event:'*',schema:'public',table:'comments'},payload=>applyRealtime('comments',payload))\n",'');
     change("      .on('postgres_changes',{event:'*',schema:'public',table:'reactions'},payload=>applyRealtime('reactions',payload))\n      .subscribe();", "      .on('postgres_changes',{event:'*',schema:'public',table:'reactions'},payload=>applyRealtime('reactions',payload));\n    if(webAccess.signed())squareChannel.on('postgres_changes',{event:'*',schema:'public',table:'comments'},payload=>applyRealtime('comments',payload));\n    squareChannel.subscribe();");
+    source=adaptWebFeed(source);
   }
   if(name==='home-content.js'){
+    change("if(summary)summary.textContent=state.activities.count?`共有 ${state.activities.count} 项活动，点开查看详情`:'查看各项活动与参与方式';", "if(summary){const s=state.activities;summary.innerHTML=s.rows.length?s.rows.slice(0,2).map(row=>`<span class=\"web-home-activity\"><b>${esc(row.title)}</b><time>${esc(siteTime(row.starts_at).split(' ')[0])} · ${esc(activityStatus(row))}</time></span>`).join(''):s.error?'活动暂时无法读取，点击重试':s.loaded?'暂无活动':'正在读取活动…';}");
     change("String(auth.user.id):'';if(id===userId)","String(auth.user.id):'public';if(id===userId)");
     change("state[kind].scroll=$('.main-content').scrollTop;",'state[kind].scroll=window.scrollY;');
     change("render();$('.main-content').scrollTop=0;const title=", "render();window.scrollTo(0,0);window.dispatchEvent(new CustomEvent('fw:web-content',{detail:{kind,id:b.dataset.siteOpen}}));const title=");
@@ -141,8 +149,11 @@ window.__FW_WEB_APP__={navigate,openAccount,notify:toast,openPost:id=>feedStore.
   if(name==='feature-alignment.js'){
     source="import {webAccess} from './web-access.js';\n"+source;
     change('function showExtraView(name){',"function showExtraView(name){\n  if(!webAccess.allow(name)){webAccess.request(name);return;}\n  window.dispatchEvent(new CustomEvent('fw:web-view',{detail:{view:name}}));");
-    change("button.textContent='查看入馆须知 / 隐私政策';", "button.textContent='查看隐私政策';");
-    change("if(event.target.closest?.('[data-align-open-rules]')){event.preventDefault();", "if(event.target.closest?.('[data-align-open-rules]')){event.preventDefault();window.open('/privacy.html','_blank','noopener,noreferrer');return;");
+    change("if(event.target.closest?.('[data-align-open-rules]')){event.preventDefault();", "if(event.target.closest?.('[data-align-open-rules]')){event.preventDefault();window.dispatchEvent(new CustomEvent('fw:web-terms',{detail:{html:rulesViewHtml()}}));return;");
+  }
+  if(name==='home-widgets.js'){
+    change('renderCountdown();setInterval(renderCountdown,1000);','// The website homepage shows activities instead of the off-work timer.');
+    change('function openTool(view){',"function openTool(view){if(view==='feedback'){setStatus('');window.dispatchEvent(new CustomEvent('fw:web-open-view',{detail:{view:'feedback'}}));return;}");
   }
   if(['membership-payment.js','shop-payment.js'].includes(name)){
     change("else if(!window.open(url,'_blank','noopener,noreferrer'))throw new Error('请点击“打开支付宝付款页”；浏览器可能拦截了新窗口。');",`else {
@@ -164,6 +175,12 @@ window.__FW_WEB_APP__={navigate,openAccount,notify:toast,openPost:id=>feedStore.
 }
 
 export function adaptHtml(source){
+  source=once(source,'<p class="hero-eyebrow">FW LAB / LOW POWER MODE</p>','','hero decoration');
+  source=once(source,'<p class="eyebrow">FW ACCOUNT</p>','','account decoration');
+  source=once(source,'data-nav="compose">开始吐槽!','data-nav="square">逛逛精神广场','home browse action');
+  source=source.replace(/\s*<button class="feature-card home-tool-card offwork-card"[\s\S]*?<\/button>/,'');
+  source=once(source,'<span>我已阅读并同意《F.w研究所声明》</span>','<span>我已阅读并同意<button type="button" data-align-open-rules>《入馆须知》</button>和<a href="/privacy.html" target="_blank" rel="noopener noreferrer">《隐私政策》</a></span>','registration policies');
+  source=once(source,'<label>确认密码<input name="password2"','<p class="web-password-help" id="web-register-password-help">密码至少 6 位，两次输入需要一致。</p><label>确认密码<input name="password2"','password guidance');
   source=once(source,'<body class="auth-required">','<body class="fw-browser">','body');
   source=once(source,'<div class="modal auth-gate-modal auth-gate-checking" data-account-modal data-auth-locked="true">','<div class="modal" data-account-modal data-auth-locked="false" hidden>','optional sign-in dialog');
   source=once(source,'hidden inert aria-hidden="true"','aria-hidden="false"','guest shell');

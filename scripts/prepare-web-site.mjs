@@ -8,7 +8,7 @@ for(const folder of ['assets','app','download']){if(folder==='download'&&process
 await cp(resolve(root,'desktop-v11/public'),resolve(site,'desktop-v11/public'),{recursive:true});
 await cp(resolve(root,'web-client/dist'),resolve(site,'web'),{recursive:true});
 const html=await readFile(resolve(root,'web-client/dist/index.html'),'utf8');
-for(const page of ['index','square','rooms','bird','chatrooms','play','games','buddy','echo','compose','membership','shop','archive','settings','activities','announcements','rules','moderation'])await writeFile(resolve(site,page+'.html'),html);
+for(const page of ['index','square','rooms','bird','chatrooms','play','games','buddy','echo','compose','membership','shop','archive','settings','activities','announcements','rules','moderation','feedback'])await writeFile(resolve(site,page+'.html'),html);
 const desktopVersion=(await readFile(resolve(root,'desktop-v11/src/config.js'),'utf8')).match(/APP_VERSION = '([^']+)'/)[1];
-await writeFile(resolve(site,'web/version.json'),JSON.stringify({version:'2026.10.22',desktopParity:desktopVersion,guestBrowsing:true,guestSections:['home','square'],guestComments:false,commit:process.env.GITHUB_SHA||''}));
+await writeFile(resolve(site,'web/version.json'),JSON.stringify({version:'2026.10.24',desktopParity:desktopVersion,guestBrowsing:true,guestSections:['home','square'],guestComments:false,commit:process.env.GITHUB_SHA||''}));
 console.log('Browser site prepared in .site');

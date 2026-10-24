@@ -38,12 +38,11 @@ export const webMessages={
 
 export function installWebUx(feedStore){
   const square=document.querySelector('.square-page'),detail=document.querySelector('[data-post-detail]'),list=document.querySelector('.square-feed-column');
-  const narrow=matchMedia('(max-width:1000px)');
   const backdrop=document.createElement('button');backdrop.type='button';backdrop.className='web-post-backdrop';backdrop.hidden=true;backdrop.tabIndex=-1;backdrop.setAttribute('aria-label','关闭帖子详情');square.append(backdrop);
   let openId='',dialogOpen=false,trigger=null;
   const close=()=>feedStore.closePost();backdrop.addEventListener('click',close);
   const update=()=>{
-    const visible=Boolean(openId)&&document.querySelector('#app').dataset.view==='square',drawer=visible&&narrow.matches;
+    const visible=Boolean(openId)&&document.querySelector('#app').dataset.view==='square',drawer=visible;
     square.classList.toggle('web-post-open',visible);backdrop.hidden=!drawer;list.inert=drawer;
     document.body.classList.toggle('web-post-drawer-open',drawer);
     if(drawer){detail.setAttribute('role','dialog');detail.setAttribute('aria-modal','true');detail.setAttribute('aria-label','帖子详情');}
@@ -57,13 +56,27 @@ export function installWebUx(feedStore){
     if(dialogOpen&&document.activeElement===document.body&&!document.querySelector('dialog[open],.modal:not([hidden])'))detail.querySelector('[data-close-post]')?.focus({preventScroll:true});
   }).observe(detail,{childList:true,subtree:true});
   feedStore.subscribe(state=>{
+    const refresh=document.querySelector('[data-square-refresh]');refresh.disabled=Boolean(state.loading||state.webPage?.loadingMore);refresh.textContent=state.loading?'正在刷新…':'刷新';
     const previous=openId;openId=String(state.openPostId||'');
     if(openId&&!previous)trigger=document.activeElement;
     update();
-    if(openId&&!previous&&!narrow.matches){window.scrollTo({top:0,behavior:'instant'});requestAnimationFrame(()=>document.querySelector(`.square-post[data-open-post="${CSS.escape(openId)}"]`)?.scrollIntoView({block:'nearest',behavior:'instant'}));}
     if(previous&&!openId){const target=trigger?.isConnected?trigger:document.querySelector(`.square-post[data-open-post="${CSS.escape(previous)}"]`);target?.focus({preventScroll:true});trigger=null;}
   });
-  narrow.addEventListener('change',update);window.addEventListener('fw:web-view',update);
+  window.addEventListener('fw:web-view',update);
+  document.addEventListener('click',event=>{
+    if(event.target.closest?.('[data-web-feed-more]')){
+      const keyboard=event.detail===0,previous=new Set(feedStore.state.posts.map(post=>String(post.id)));
+      feedStore.loadMore().catch(()=>{}).finally(()=>{
+        if(!keyboard||document.querySelector('#app').dataset.view!=='square')return;
+        const next=[...document.querySelectorAll('.square-post')].find(card=>!previous.has(card.dataset.openPost));
+        (next||document.querySelector('[data-web-feed-more]')||document.querySelector('.web-feed-footer'))?.focus();
+      });
+    }
+  });
+  const top=document.createElement('button');top.type='button';top.className='secondary web-back-top';top.dataset.webBackTop='';top.textContent='↑ 回到顶部';top.hidden=true;document.body.append(top);
+  const paintTop=()=>{top.hidden=document.querySelector('#app').dataset.view!=='square'||window.scrollY<700||Boolean(openId);};
+  window.addEventListener('scroll',paintTop,{passive:true});window.addEventListener('fw:web-view',paintTop);feedStore.subscribe(paintTop);
+  top.onclick=()=>{window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'});document.querySelector('.web-square-tabs button')?.focus({preventScroll:true});};
   document.addEventListener('keydown',event=>{
     if(event.key==='Escape'&&openId&&!dialogOpen&&!document.querySelector('dialog[open],.modal:not([hidden])')){event.preventDefault();close();return;}
     const card=event.target.closest?.('.square-post');

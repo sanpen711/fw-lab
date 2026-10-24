@@ -52,7 +52,7 @@ export function installWebNavigation({paths,aliases,onView}){
     if(url.href!==location.href){
       stopRestore();
       const samePostLayer=view==='square'&&previous.view==='square'&&Boolean(previous.post)&&Boolean(route.post);
-      const web={key:newKey(),scroll:{y:0},postEntry:view==='square'&&Boolean(route.post)&&(history.state?.web?.postEntry||previous.view==='square'&&!previous.post),contentEntry:['activities','announcements'].includes(view)&&Boolean(route.item)&&(history.state?.web?.contentEntry||previous.view===view&&!previous.item)};
+      const web={key:newKey(),scroll:{y:view==='square'&&previous.view==='square'?window.scrollY:0},postEntry:view==='square'&&Boolean(route.post)&&(history.state?.web?.postEntry||previous.view==='square'&&!previous.post),contentEntry:['activities','announcements'].includes(view)&&Boolean(route.item)&&(history.state?.web?.contentEntry||previous.view===view&&!previous.item)};
       if(samePostLayer)history.replaceState({...history.state,web:{...history.state?.web,postEntry:history.state?.web?.postEntry}},'',url);
       else history.pushState({web},'',url);
       if(previous.view!==view||previous.tab!==route.tab||previous.filter!==route.filter)window.scrollTo({top:0,behavior:'instant'});
@@ -107,6 +107,9 @@ export function installWebNavigation({paths,aliases,onView}){
   });
   feedStore.subscribe(state=>{
     if(applying||document.querySelector('#app').dataset.view!=='square')return;
+    // Switching between guest and signed-in data clears the store briefly.
+    // Keep the route so the verified session can reopen the same post.
+    if(!state.loaded&&!state.loading&&!state.posts.length&&!state.webLinkedPost)return;
     const id=String(state.openPostId||''),route=readRoute();
     if(!id&&route.post){
       if(history.state?.web?.postEntry){history.back();return;}
