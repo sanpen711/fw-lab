@@ -22,7 +22,8 @@ export function adaptModule(name,source){
     change("if(typeof invoke!=='function')return{enabled:false,entries:0,bytes:0,path:'',fallback:true};","if(typeof invoke!=='function')return{enabled:true,entries:memory.size,bytes:[...memory.values()].reduce((total,value)=>total+new TextEncoder().encode(JSON.stringify(value)).byteLength,0),path:'',fallback:true};");
   }
   if(name==='app.js'){
-    source="import {webAccess,webCommentCount} from './web-access.js';\n"+source;
+    source="import {webRecovery} from './web-password-recovery.js';\nimport {webAccess,webCommentCount} from './web-access.js';\n"+source;
+    change("fd=>authStore.sendPasswordReset(fd.get('email')),()=>{toast('找回密码邮件已发送。');showAuth('login');}","fd=>webRecovery.send(fd.get('email')),result=>{closeAccount();webRecovery.showCode(result.email);}");
     change("import {installContentReviewUi,reportButton} from './content-review-ui.js';",`import {installContentReviewUi} from './content-review-ui.js';
 import {webReportButton as reportButton,webMessages} from './web-ux.js';
 import {webDraft} from './web-draft.js';`);
@@ -164,6 +165,7 @@ window.__FW_WEB_APP__={navigate,openAccount,notify:toast,openPost:id=>feedStore.
 }
 
 export function adaptHtml(source){
+  source=once(source,'<button class="primary full" type="submit">发送找回密码邮件</button>', '<button class="primary full" type="submit">发送验证码</button><button class="secondary full" type="button" data-web-recovery-enter-code>已收到验证码，前往填写</button>','recovery code entry');
   source=once(source,'<body class="auth-required">','<body class="fw-browser">','body');
   source=once(source,'<div class="modal auth-gate-modal auth-gate-checking" data-account-modal data-auth-locked="true">','<div class="modal" data-account-modal data-auth-locked="false" hidden>','optional sign-in dialog');
   source=once(source,'hidden inert aria-hidden="true"','aria-hidden="false"','guest shell');
