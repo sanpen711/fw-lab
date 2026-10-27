@@ -14,6 +14,8 @@ export function adaptModule(name,source){
   if(name==='auth-store.js'){
     change("detectSessionInUrl:false, storageKey:'fw-lab-auth-token'","detectSessionInUrl:true, storageKey:'sb-ekbovsmxbiplhyrzxoyw-auth-token'");
     change("platform:'windows'","platform:'web'");
+    change("if(!user||String(user.id)!==String(userId))return false;","if(!user||String(user.id)!==String(userId)||String(state.session?.user?.id)!==String(userId))return false;");
+    change('lastProfileUserId=sessionUser.id;', 'if(state.session?.user?.id!==sessionUser.id)return null;\n  lastProfileUserId=sessionUser.id;');
   }
   if(name==='alignment-nav-fix.js'){
     change("import './square-scroll-fix.js';",'// Browser document scrolling is managed by web.css.');
