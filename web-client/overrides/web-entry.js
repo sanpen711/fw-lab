@@ -3,6 +3,7 @@ import {feedStore} from './feed-store.js';
 import {installWebNavigation} from './web-navigation.js';
 import {installWebUx} from './web-ux.js';
 import {webAccess} from './web-access.js';
+import {webRecovery} from './web-password-recovery.js';
 
 const paths={home:'index.html',square:'square.html',rooms:'rooms.html',chatrooms:'chatrooms.html',play:'play.html',games:'games.html',buddy:'buddy.html',compose:'compose.html',membership:'membership.html',shop:'shop.html',archive:'archive.html',settings:'settings.html',activities:'activities.html',announcements:'announcements.html',rules:'rules.html',moderation:'moderation.html'};
 const aliases={'bird.html':'chatrooms','echo.html':'echo','admin.html':'moderation'};
@@ -55,12 +56,13 @@ document.addEventListener('submit',event=>{
   if(signed()){if(event.target.matches('[data-shop-checkout]'))reservePaymentWindow();return;}if(event.target.closest('[data-account-modal],[data-web-password-recovery]'))return;
   event.preventDefault();event.stopImmediatePropagation();login();
 },true);
-authStore.client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY')queueMicrotask(showRecovery);});
+authStore.client.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY')queueMicrotask(()=>webRecovery.acceptSession(session));});
 
 await import('./app.js');
 await import('./alignment-nav-fix.js');
 await import('./feature-alignment.js');
 await import('./game-center.js');
+webRecovery.install();
 
 const guestGate=document.createElement('section');guestGate.className='web-guest-gate';guestGate.dataset.webGuestGate='';guestGate.hidden=true;
 guestGate.setAttribute('aria-labelledby','web-guest-gate-title');
@@ -95,11 +97,4 @@ authStore.subscribe(state=>{
   identity=next;queueMicrotask(()=>{if(signed())resume();else navigation.apply({keepMenu:true});});
 });
 
-// Recovery links are consumed by Supabase; the password form stays separate from
-// sign-in and requires the verified recovery session before updating a password.
-function showRecovery(){
-  let modal=document.querySelector('[data-web-password-recovery]');if(modal)return;
-  modal=document.createElement('div');modal.className='web-recovery';modal.dataset.webPasswordRecovery='';modal.innerHTML='<form role="dialog" aria-modal="true" aria-label="设置新密码"><h2>设置新密码</h2><label>新密码<input name="password" type="password" autocomplete="new-password" minlength="6" required></label><label>确认新密码<input name="confirm" type="password" autocomplete="new-password" minlength="6" required></label><p role="status"></p><button class="primary" type="submit">保存新密码</button></form>';document.body.append(modal);
-  modal.querySelector('form').addEventListener('submit',async event=>{event.preventDefault();const data=new FormData(event.currentTarget),status=modal.querySelector('[role="status"]'),button=modal.querySelector('button');if(data.get('password')!==data.get('confirm')){status.textContent='两次密码不一致。';return;}button.disabled=true;try{const result=await authStore.client.auth.updateUser({password:data.get('password')});if(result.error)throw result.error;modal.remove();}catch(error){status.textContent=error.message||'保存失败，请重试。';}finally{button.disabled=false;}});
-}
 navigation.apply({keepMenu:true});
