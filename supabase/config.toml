@@ -23,3 +23,8 @@ verify_jwt = false
 [functions.fw-content-review]
 # Authenticated by a private random job revision checked against the service-only RPC.
 verify_jwt = false
+
+[functions.fw-send-auth-email]
+# Authenticated by the Standard Webhooks signature from Supabase Auth.
+verify_jwt = false
+

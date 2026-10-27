@@ -17,6 +17,10 @@
   var recoveryRequested = /(?:[?#&])type=recovery(?:[&#]|$)/i.test(window.location.href);
   var registerState = readRegisterState();
   var loginDraftEmail = '';
+  var recoveryEmail = '';
+  var recoveryVerifiedUserId = '';
+  var recoveryBusy = false;
+  var recoveryVerifying = false;
 
   function app(){ return window.FWApp; }
   function $(selector, root){ return app().$(selector, root); }
@@ -234,11 +238,22 @@
 
   function resetFormHtml(){
     return '<form class="stack" data-reset-form>' +
-      '<p class="mobile-auth-note">输入注册邮箱，我们会发送找回密码邮件。</p>' +
+      '<p class="mobile-auth-note">输入注册邮箱，我们会发送找回密码验证码。</p>' +
       '<label for="resetEmail">邮箱</label>' +
       '<input id="resetEmail" name="email" type="email" autocomplete="email" placeholder="输入绑定邮箱" value="' + esc(loginDraftEmail) + '" required>' +
-      '<button class="app-btn dark" type="submit">发送找回密码邮件</button>' +
+      '<button class="app-btn dark" type="submit">发送验证码</button>' +
+      '<button class="mobile-auth-link" type="button" data-reset-enter-code>已收到验证码，前往填写</button>' +
       '<button class="mobile-auth-link" type="button" data-auth-view="login">返回登录</button>' +
+    '</form>';
+  }
+
+  function resetCodeHtml(){
+    return '<form class="stack" data-reset-code-form>' +
+      '<p class="mobile-auth-note">验证码已发送至 ' + esc(recoveryEmail) + '，请输入邮件中的验证码。</p>' +
+      '<label for="resetToken">验证码</label>' +
+      '<input id="resetToken" name="token" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="10" pattern="[0-9]{6,10}" placeholder="输入邮件中的验证码" required>' +
+      '<button class="app-btn dark" type="submit">验证验证码</button>' +
+      '<div class="split-actions"><button class="app-btn" type="button" data-resend-reset-code>重新发送验证码</button><button class="app-btn" type="button" data-auth-view="reset">返回填写邮箱</button></div>' +
     '</form>';
   }
 
@@ -250,6 +265,7 @@
       '<label for="resetPassword2">确认新密码</label>' +
       '<input id="resetPassword2" name="password2" type="password" autocomplete="new-password" placeholder="再输入一次新密码" required>' +
       '<button class="app-btn dark" type="submit">确认修改密码</button>' +
+      '<button class="mobile-auth-link" type="button" data-auth-view="login">取消找回密码</button>' +
     '</form>';
   }
 
@@ -259,7 +275,8 @@
     var body = authView === 'register2' ? registerStep2Html()
       : (authView === 'register1' ? registerStep1Html()
       : (authView === 'resetNew' ? resetPasswordHtml()
-      : (authView === 'reset' ? resetFormHtml() : loginFormHtml())));
+      : (authView === 'resetCode' ? resetCodeHtml()
+      : (authView === 'reset' ? resetFormHtml() : loginFormHtml()))));
     var title = isRegister ? '注册账号' : (isReset ? '找回密码' : '账号登录');
     return '<section class="profile-detail-card profile-login-entry">' +
       '<div class="profile-detail-head"><button class="profile-back-btn" type="button" data-profile-back>‹ 返回</button><h2>' + title + '</h2></div>' +
@@ -562,6 +579,8 @@
   }
 
   async function sendPasswordReset(form){
+    if(recoveryBusy) return;
+    recoveryBusy = true;
     var btn = form.querySelector('button[type="submit"]');
     setBusy(btn, true, '发送中...');
     try{
@@ -570,17 +589,63 @@
       if(!email) throw new Error('请填写邮箱。');
       loginDraftEmail = email;
       await withTimeout(window.fwDb.sendPasswordReset({email:email}), 18000, '找回密码邮件发送超时，请稍后重试。');
-      authView = 'login';
+      recoveryEmail = email;
+      recoveryVerifiedUserId = '';
+      authView = 'resetCode';
       render();
-      app().toast('找回密码邮件已发送，请打开邮件继续。');
+      app().toast('验证码已发送，请输入邮件中的验证码。');
     }catch(err){
       app().toast(safeMessage(err, '找回密码邮件发送失败。'));
     }finally{
+      recoveryBusy = false;
       setBusy(btn, false);
     }
   }
 
+  async function verifyResetCode(form){
+    if(recoveryBusy) return;
+    recoveryBusy = true;
+    var btn = form.querySelector('button[type="submit"]');
+    setBusy(btn, true, '验证中...');
+    try{
+      await waitForDb();
+      var token = String(new FormData(form).get('token') || '').replace(/\s/g, '');
+      if(!recoveryEmail || !/^\d{6,10}$/.test(token)) throw new Error('请输入邮件中的数字验证码。');
+      recoveryVerifying = true;
+      var result = await withTimeout(client().auth.verifyOtp({email:recoveryEmail, token:token, type:'recovery'}), 18000, '验证码验证超时，请重试。');
+      if(result.error) throw result.error;
+      var user = result.data && result.data.session && result.data.session.user;
+      if(!user || !user.id) throw new Error('验证状态已失效，请重新获取验证码。');
+      recoveryVerifiedUserId = user.id;
+      recoveryRequested = true;
+      authView = 'resetNew';
+      mode = 'login';
+      render();
+    }catch(err){
+      app().toast(safeMessage(err, '验证码验证失败。'));
+    }finally{
+      recoveryVerifying = false;
+      recoveryBusy = false;
+      setBusy(btn, false);
+    }
+  }
+
+  async function resendResetCode(btn){
+    if(recoveryBusy) return;
+    recoveryBusy = true;
+    setBusy(btn, true, '发送中...');
+    try{
+      await waitForDb();
+      if(!recoveryEmail) throw new Error('请返回填写注册邮箱。');
+      await withTimeout(window.fwDb.sendPasswordReset({email:recoveryEmail}), 18000, '验证码发送超时，请重试。');
+      app().toast('验证码已重新发送，请查看邮箱。');
+    }catch(err){ app().toast(safeMessage(err, '验证码发送失败。')); }
+    finally{ recoveryBusy = false; setBusy(btn, false); }
+  }
+
   async function saveResetPassword(form){
+    if(recoveryBusy) return;
+    recoveryBusy = true;
     var btn = form.querySelector('button[type="submit"]');
     setBusy(btn, true, '修改中...');
     try{
@@ -589,9 +654,15 @@
       var password2 = String(form.password2 && form.password2.value || '').trim();
       if(password.length < 8) throw new Error('新密码至少 8 位。');
       if(password !== password2) throw new Error('两次密码不一致。');
+      var current = await client().auth.getSession();
+      if(current.error) throw current.error;
+      var sessionUser = current.data && current.data.session && current.data.session.user;
+      if(!recoveryRequested || !sessionUser || (recoveryVerifiedUserId && sessionUser.id !== recoveryVerifiedUserId)) throw new Error('找回密码状态已失效，请重新验证邮箱。');
       await withTimeout(window.fwDb.updatePassword({password:password}), 18000, '密码修改超时，请稍后重试。');
       await window.fwDb.signOut().catch(function(){});
       recoveryRequested = false;
+      recoveryVerifiedUserId = '';
+      recoveryEmail = '';
       authView = 'login';
       mode = 'login';
       await app().refreshUser();
@@ -600,6 +671,7 @@
     }catch(err){
       app().toast(safeMessage(err, '密码修改失败。'));
     }finally{
+      recoveryBusy = false;
       setBusy(btn, false);
     }
   }
@@ -635,8 +707,9 @@
   function bindRecoveryAuth(){
     if(recoveryBound || !db() || !window.fwDb.onAuthChange) return;
     recoveryBound = true;
-    window.fwDb.onAuthChange(function(event){
-      if(event !== 'PASSWORD_RECOVERY') return;
+    window.fwDb.onAuthChange(function(event, session){
+      if(event !== 'PASSWORD_RECOVERY' || recoveryVerifying) return;
+      if(session && session.user) recoveryVerifiedUserId = session.user.id;
       recoveryRequested = true;
       authView = 'resetNew';
       mode = 'login';
@@ -731,6 +804,13 @@
         return;
       }
 
+      var resetCodeForm = e.target.closest && e.target.closest('[data-reset-code-form]');
+      if(resetCodeForm){
+        e.preventDefault();
+        await verifyResetCode(resetCodeForm);
+        return;
+      }
+
       var profileForm = e.target.closest && e.target.closest('[data-profile-form]');
       if(profileForm){
         e.preventDefault();
@@ -765,11 +845,33 @@
       var authBtn = e.target.closest && e.target.closest('[data-auth-view]');
       if(authBtn){
         e.preventDefault();
+        if(recoveryBusy) return;
+        if(recoveryVerifiedUserId){
+          await window.fwDb.signOut();
+          recoveryVerifiedUserId = '';
+          recoveryRequested = false;
+        }
         authView = authBtn.dataset.authView || 'login';
         mode = 'login';
         render();
         return;
       }
+
+      var enterResetCode = e.target.closest && e.target.closest('[data-reset-enter-code]');
+      if(enterResetCode){
+        e.preventDefault();
+        var resetForm = enterResetCode.closest('form');
+        if(!resetForm.reportValidity()) return;
+        recoveryEmail = normEmail(resetForm.email.value);
+        loginDraftEmail = recoveryEmail;
+        authView = 'resetCode';
+        mode = 'login';
+        render();
+        return;
+      }
+
+      var resendReset = e.target.closest && e.target.closest('[data-resend-reset-code]');
+      if(resendReset){ e.preventDefault(); await resendResetCode(resendReset); return; }
 
       var resend = e.target.closest && e.target.closest('[data-resend-register-code]');
       if(resend){
