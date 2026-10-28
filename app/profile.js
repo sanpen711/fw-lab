@@ -1,4 +1,6 @@
 (function(){
+  var authErrorMessage = null;
+  import('../assets/fw-auth-errors.mjs').then(function(module){ authErrorMessage = module.authErrorMessage; }).catch(function(){});
   if(window.FWAppProfile) return;
 
   var bound = false;
@@ -444,6 +446,7 @@
   }
 
   function safeMessage(err, fallback){
+    if(authErrorMessage) return authErrorMessage(err, fallback);
     var msg = err && err.message ? err.message : String(err || '');
     if(/token has expired|token.*invalid|expired or is invalid|otp.*expired|otp.*invalid/i.test(msg)) return '验证码错误或已失效';
     if(/invalid login credentials/i.test(msg)) return '邮箱或密码不正确。';
@@ -455,7 +458,7 @@
     if(/Could not|relationship|schema|violates/i.test(msg)) return fallback;
     if(/bucket|storage|not found/i.test(msg)) return '表情存储还没初始化，请先检查表情包 SQL。';
     if(/row-level security|permission|policy|denied/i.test(msg)) return '没有权限执行这个操作，请检查登录状态。';
-    return msg || fallback;
+    return /[A-Za-z]/.test(msg) ? (fallback || '操作失败，请稍后重试。') : (msg || fallback);
   }
 
   async function waitForDb(){

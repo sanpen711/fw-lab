@@ -1,7 +1,7 @@
 import {test,expect} from '../../desktop-v11/node_modules/@playwright/test';
 import {mock,session,user} from './fixtures';
 
-async function recoveryMock(page,{failSend=false,failUpdate=false}={}){
+async function recoveryMock(page,{failSend=false,failUpdate=false,saveError=null}={}){
   await mock(page);
   const calls={send:[],verify:[],update:[]};
   await page.route('**/auth/v1/recover*',route=>{
@@ -15,7 +15,7 @@ async function recoveryMock(page,{failSend=false,failUpdate=false}={}){
   await page.route('**/auth/v1/user',route=>{
     if(route.request().method()!=='PUT')return route.fallback();
     calls.update.push(route.request().postDataJSON());
-    return route.fulfill({status:failUpdate?503:200,contentType:'application/json',body:JSON.stringify(failUpdate?{message:'密码保存失败，请重试。'}:user)});
+    return route.fulfill({status:saveError?422:(failUpdate?503:200),contentType:'application/json',body:JSON.stringify(saveError||(failUpdate?{message:'密码保存失败，请重试。'}:user))});
   });
   return calls;
 }
@@ -82,6 +82,13 @@ test('保存失败保留密码表单并允许重试',async({page})=>{
   await recovery.locator('[name="password"]').fill('new-test-password');await recovery.locator('[name="confirm"]').fill('new-test-password');
   await recovery.locator('[type="submit"]').click();await expect(recovery).toContainText('密码保存失败');
   await expect(recovery.locator('[type="submit"]')).toBeEnabled();expect(calls.update).toHaveLength(1);
+});
+
+test('网页版新旧密码相同时显示中文原因',async({page})=>{
+  await recoveryMock(page,{saveError:{code:'same_password',message:'New password should be different from the old password.'}});const form=await openReset(page);await form.locator('[data-web-recovery-enter-code]').click();
+  const recovery=page.locator('[data-web-password-recovery]');await recovery.locator('[name="token"]').fill('012345');await recovery.locator('[type="submit"]').click();
+  await recovery.locator('[name="password"]').fill('unchanged-test-password');await recovery.locator('[name="confirm"]').fill('unchanged-test-password');await recovery.locator('[type="submit"]').click();
+  await expect(recovery.locator('[role="status"]')).toHaveText('新密码不能与原密码相同，请换一个新密码。');await expect(recovery.locator('[type="submit"]')).toBeEnabled();
 });
 
 test('验证码表单在窄屏可见，关闭和返回不触发密码更新',async({page})=>{

@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 
 const user={id:'11111111-1111-4111-8111-111111111111',aud:'authenticated',role:'authenticated',email:'desktop-test@example.com',email_confirmed_at:'2026-01-01T00:00:00Z',app_metadata:{provider:'email'},user_metadata:{nickname:'测试研究员',lab_code:'FWTEST1'},created_at:'2026-01-01T00:00:00Z'};
 const session={access_token:'test-access-token',refresh_token:'test-refresh-token',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,token_type:'bearer',user};
-async function setup(page,{failSend=false,failSave=false}={}){
+async function setup(page,{failSend=false,failSave=false,saveError=null}={}){
   const calls={send:[],verify:[],save:[],profiles:0,logout:0};
   await page.context().routeWebSocket('wss://**',ws=>ws.close());
   await page.route('**/*',async route=>{
@@ -13,7 +13,7 @@ async function setup(page,{failSend=false,failSave=false}={}){
     let data:any=[],status=200;
     if(path.endsWith('/recover')){calls.send.push(body);if(failSend){status=503;data={message:'模拟发信失败'};}else data={};}
     else if(path.endsWith('/verify')){calls.verify.push(body);if(body.token==='012345')data=session;else{status=403;data={message:'Token has expired or is invalid',code:'otp_expired'};}}
-    else if(path.endsWith('/user')){data=user;if(req.method()==='PUT'){calls.save.push(body);if(failSave){status=503;data={message:'模拟保存失败'};}}}
+    else if(path.endsWith('/user')){data=user;if(req.method()==='PUT'){calls.save.push(body);if(saveError){status=422;data=saveError;}else if(failSave){status=503;data={message:'模拟保存失败'};}}}
     else if(path.endsWith('/logout')){calls.logout++;data={};}
     else if(path.endsWith('/token'))data=session;
     else if(path.endsWith('/fw_get_current_profile')){calls.profiles++;data=[{id:user.id,nickname:'测试研究员',lab_code:'FWTEST1',role:'user',is_banned:false}];}
@@ -53,6 +53,15 @@ test('已收到验证码可直接填写，重发与返回保留同一邮箱',asy
 
 test('发信失败留在邮箱表单',async({page})=>{
   const {form,verify}=await setup(page,{failSend:true});await form.locator('[type="submit"]').click();await expect(page.locator('[data-form-status]')).toContainText('模拟发信失败');await expect(form).toBeVisible();await expect(verify).toBeHidden();
+});
+
+test('新旧密码相同时顶部原因和表单提示都使用中文',async({page})=>{
+  const {form,verify,password}=await setup(page,{saveError:{code:'same_password',message:'New password should be different from the old password.'}});
+  await form.locator('[data-reset-enter-code]').click();await verify.locator('[name="token"]').fill('012345');await verify.locator('[type="submit"]').click();
+  await password.locator('[name="password"]').fill('unchanged-test-password');await password.locator('[name="confirm"]').fill('unchanged-test-password');await password.locator('[type="submit"]').click();
+  const expected='密码保存失败：新密码不能与原密码相同，请换一个新密码。';
+  await expect(page.locator('[data-auth-gate-message]')).toHaveText(expected);await expect(page.locator('[data-form-status]')).toHaveText(expected);
+  await expect(password).toBeVisible();await expect(password.locator('[type="submit"]')).toBeEnabled();
 });
 
 test('保存失败仍显示新密码表单，取消会清除恢复会话',async({page})=>{

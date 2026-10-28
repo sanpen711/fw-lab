@@ -5,6 +5,7 @@ on:
     paths:
       - 'desktop-v11/**'
       - 'assets/fw-user-activity.mjs'
+      - 'assets/fw-auth-errors.mjs'
       - 'tests/user-activity.test.mjs'
       - 'src-tauri/tauri.v11.conf.json'
       - '.github/workflows/windows-v11-preview.yml'
