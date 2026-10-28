@@ -1,11 +1,11 @@
 {
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.31-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmJHaXNkRzdDVGlCRmFveE5sa1NucDhaM2ptYzFJRmJBNDZFb3dSd0ZSemxBZy85KzUzTndibU9vOW1Pa1pKaXJYaTBiK1hLaFo5M2VnbnhqUWlYK2c0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyNTY5MTM1CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzFfeDY0LXNldHVwLmV4ZQp1dkJsanVSL1ZPODBIUkNFd3BqVXpGVXRleWNMSEVkU1krcTlQTlhtbXREdGc4N2R6czBWMlRTK29zL1Z1WGRvUzQvdis4amVTWFk4VENqZmZuSkdCQT09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmI0Yy9DM2Q3cllLM1dqNzlHVE1TelpDZjVLcmgwNWF0ZEFHdDJqSnArNnZkRmFJWW50TmF2OW5haCtXcHhvYW81aXpONHZ6LzBOUWJNeTFZbzR5WndvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTY2NzExCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzJfeDY0LXNldHVwLmV4ZQplbHQ2bzNJdEp1bGNreVhBUjJoMEIxYVFVZ1c3UzBXajIzd0N3aUE2WWFabG9PWFVDNVN0bE85bDdoRm1uNS9WUDBSTDJhRDhIb1l1bXhROWp3U0pCdz09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.32-setup.exe"
     }
   },
-  "version": "1.3.31",
-  "pub_date": "2026-10-21T07:52:24.8862540Z",
-  "notes": "Windows 1.3.31：新增内容举报入口，支持举报隐藏、人工复核和发言限制；同步清理被隐藏内容的页面缓存。"
+  "notes": "Windows 1.3.32：同步邮箱验证码找回密码流程：在客户端内填写验证码、设置新密码；支持重新发送及使用已收到的验证码。",
+  "version": "1.3.32",
+  "pub_date": "2026-10-28T05:52:00.6596684Z"
 }
