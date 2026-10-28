@@ -1,5 +1,6 @@
 import {installContentReviewUi,reportButton} from './content-review-ui.js';
 import {authStore} from './auth-store.js';
+import {installPasswordRecovery} from './password-recovery.js';
 import {socialStore} from './social-store.js';
 import {feedStore} from './feed-store.js';
 import {pollStore} from './poll-store.js';
@@ -201,7 +202,7 @@ function renderAuthGate(next){
   const app=$('#app');const modal=$('[data-account-modal]');const checking=$('[data-auth-checking]');const content=$('[data-auth-content]');
   const close=$('[data-close-account]');const retry=$('[data-auth-retry]');const checkingCopy=$('[data-auth-checking-copy]');const gateMessage=$('[data-auth-gate-message]');
   const user=authenticatedUser(next);const canUnlock=Boolean(user)&&(!authGateLocked||!next.busy);const locked=!canUnlock;const wasLocked=authGateLocked;authGateLocked=locked;
-  const bootFailure=Boolean(next.ready&&next.error&&(next.session?.user||next.user?.cached));
+  const bootFailure=Boolean(next.ready&&!next.recovering&&next.error&&(next.session?.user||next.user?.cached));
   const checkingOnly=locked&&(!next.ready||bootFailure);
   document.body.classList.toggle('auth-required',locked);app.hidden=locked;app.inert=locked;app.setAttribute('aria-hidden',String(locked));
   modal.dataset.authLocked=String(locked);modal.classList.toggle('auth-gate-modal',locked);modal.classList.toggle('auth-gate-checking',checkingOnly);close.hidden=locked;
@@ -240,7 +241,7 @@ function renderAccount(next){
 }
 
 function showAuth(view){
-  currentAuthView=view;const labels={login:['账号登录','输入邮箱和密码，进入研究所。'],register:['注册账号','填写信息后，我们会向邮箱发送验证码。'],verify:['验证邮箱','输入邮件中的验证码，完成注册。'],reset:['找回密码','输入邮箱，接收找回密码邮件。']};
+  currentAuthView=view;const labels={login:['账号登录','输入邮箱和密码，进入研究所。'],register:['注册账号','填写信息后，我们会向邮箱发送验证码。'],verify:['验证邮箱','输入邮件中的验证码，完成注册。'],reset:['找回密码','输入注册邮箱，接收找回密码验证码。'],resetVerify:['验证邮箱验证码','输入邮件中的验证码，继续设置新密码。'],resetNew:['设置新密码','邮箱验证成功，设置新密码后请重新登录。']};
   const [title,copy]=labels[view]||labels.login;$('[data-account-title]').textContent=title;$('[data-account-copy]').textContent=copy;
   $$('[data-auth-view]').forEach(panel=>panel.hidden=panel.dataset.authView!==view);setFormStatus('');requestAnimationFrame(()=>{$(`[data-auth-view="${view}"] input:not([disabled])`)?.focus();});
 }
@@ -595,7 +596,7 @@ function bindForms(){
   $('[data-auth-view="login"]').addEventListener('submit',event=>{event.preventDefault();runForm(event.currentTarget,fd=>authStore.signIn(fd.get('email'),fd.get('password')),()=>{toast('登录成功。');closeAccount();});});
   $('[data-auth-view="register"]').addEventListener('submit',event=>{event.preventDefault();runForm(event.currentTarget,fd=>authStore.beginRegistration({email:fd.get('email'),password:fd.get('password'),password2:fd.get('password2'),labCode:fd.get('labCode')}),result=>{$('[data-verify-tip]').textContent=`验证码已发送至 ${result.email}。`;showAuth('verify');});});
   $('[data-auth-view="verify"]').addEventListener('submit',event=>{event.preventDefault();runForm(event.currentTarget,fd=>authStore.finishRegistration(fd.get('token')),()=>{toast('注册成功，请登录。');showAuth('login');});});
-  $('[data-auth-view="reset"]').addEventListener('submit',event=>{event.preventDefault();runForm(event.currentTarget,fd=>authStore.sendPasswordReset(fd.get('email')),()=>{toast('找回密码邮件已发送。');showAuth('login');});});
+  installPasswordRecovery({authStore,showAuth,toast});
   $('[data-settings-profile]').addEventListener('submit',async event=>{event.preventDefault();setProfileStatus('正在保存…');try{const fd=new FormData(event.currentTarget);await authStore.updateProfile({nickname:fd.get('nickname'),avatarFile:fd.get('avatar')});setProfileStatus('资料已保存。');toast('资料已保存。');}catch(error){setProfileStatus(error.message||'保存失败，请稍后重试。',true);}});
   $('[data-resend-code]').addEventListener('click',()=>runForm($('[data-auth-view="verify"]'),()=>authStore.resendRegistration(),result=>{toast(`验证码已重新发送至 ${result.email}。`);}));
   $('[data-sign-out]').addEventListener('click',async event=>{if(!window.confirm('确定退出当前账号吗？'))return;event.currentTarget.disabled=true;try{closeAccountMenu();await authStore.signOut();toast('已退出登录。');showAuth('login');}catch(error){toast(error.message||'退出登录失败。');}finally{event.currentTarget.disabled=false;}});

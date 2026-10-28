@@ -8,11 +8,12 @@ const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 const listeners = new Set();
-const state = {ready:false, busy:false, session:null, user:null, error:''};
+const state = {ready:false, busy:false, session:null, user:null, error:'', recovering:false};
 const activity=createUserActivityTracker({record:()=>client.rpc('fw_record_user_activity')});
 let bootPromise = null;
 let lastProfileUserId = '';
 let pendingRegistration = null;
+let recoveryUserId = '';
 
 function cachedUser(){
   try{return JSON.parse(localStorage.getItem(ACCOUNT_CACHE_KEY) || 'null');}catch{return null;}
@@ -29,7 +30,7 @@ function persistUser(user){
 async function hydrateProfileCache(userId){
   if(!userId)return false;
   const cached=await desktopCache.read('profile',userId);const user=cached?.payload?.user;
-  if(!user||String(user.id)!==String(userId))return false;
+  if(!user||String(user.id)!==String(userId)||state.recovering||String(state.session?.user?.id)!==String(userId))return false;
   state.user={...user,cached:true};emit();return true;
 }
 
@@ -66,6 +67,7 @@ async function readProfile(sessionUser, force=false){
   }else{
     profile=fail(await client.from('profiles').select('id,nickname,avatar_url,role,is_banned,created_at,lab_code').eq('id',sessionUser.id).maybeSingle(), '读取用户资料失败') || {};
   }
+  if(state.recovering||state.session?.user?.id!==sessionUser.id)return null;
   lastProfileUserId=sessionUser.id;
   const user=profileToUser(sessionUser, profile);
   if(user.disabled){
@@ -120,8 +122,9 @@ async function boot(){
   client.auth.onAuthStateChange((event, session)=>{
     state.session=session || null;
     if(event === 'SIGNED_OUT' || !session?.user){
-      lastProfileUserId='';state.user=null;persistUser(null);emit();return;
+      lastProfileUserId='';recoveryUserId='';state.recovering=false;state.user=null;persistUser(null);emit();return;
     }
+    if(state.recovering)return;
     if(event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED'){
       if(!state.user||String(state.user.id)!==String(session.user.id))hydrateProfileCache(session.user.id).catch(()=>{});
       readProfile(session.user, event !== 'SIGNED_IN').catch(error=>{state.error=error.message||String(error);emit();});
@@ -198,8 +201,46 @@ async function resendRegistration(){
 
 async function sendPasswordReset(email){
   return withBusy(async()=>{
-    const result=await client.auth.resetPasswordForEmail(String(email || '').trim(),{redirectTo:PASSWORD_RESET_URL});
+    const mail=String(email||'').trim().toLowerCase();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail))throw new Error('请填写有效的注册邮箱。');
+    const result=await client.auth.resetPasswordForEmail(mail,{redirectTo:PASSWORD_RESET_URL});
     if(result.error) throw new Error(`发送失败：${result.error.message}`);
+    return {email:mail};
+  });
+}
+
+async function verifyPasswordReset(email,token){
+  return withBusy(async()=>{
+    const mail=String(email||'').trim().toLowerCase();
+    const code=String(token||'').replace(/\s/g,'');
+    if(!mail||!/^\d{6,10}$/.test(code))throw new Error('请输入邮件中的数字验证码。');
+    state.recovering=true;
+    try{
+      const result=await client.auth.verifyOtp({email:mail,token:code,type:'recovery'});
+      if(result.error)throw result.error;
+      const session=result.data?.session;
+      if(!session?.user?.id)throw new Error('验证状态已失效，请重新获取验证码。');
+      recoveryUserId=session.user.id;state.session=session;state.user=null;lastProfileUserId='';persistUser(null);
+    }catch(error){state.recovering=false;recoveryUserId='';throw error;}
+  });
+}
+
+async function updateRecoveredPassword(password,confirm){
+  return withBusy(async()=>{
+    if(String(password||'').length<8)throw new Error('新密码至少 8 位。');
+    if(password!==confirm)throw new Error('两次密码不一致。');
+    const current=fail(await client.auth.getSession(),'读取找回密码状态失败');
+    if(!state.recovering||!recoveryUserId||current?.session?.user?.id!==recoveryUserId)throw new Error('找回密码状态已失效，请重新验证邮箱。');
+    fail(await client.auth.updateUser({password}),'密码保存失败');
+    fail(await client.auth.signOut(),'密码已保存，退出失败，请重试');
+    recoveryUserId='';state.recovering=false;state.session=null;state.user=null;lastProfileUserId='';persistUser(null);
+  });
+}
+
+async function cancelPasswordRecovery(){
+  return withBusy(async()=>{
+    if(state.recovering)fail(await client.auth.signOut(),'退出找回密码失败');
+    recoveryUserId='';state.recovering=false;
   });
 }
 
@@ -281,6 +322,9 @@ export const authStore={
   finishRegistration,
   resendRegistration,
   sendPasswordReset,
+  verifyPasswordReset,
+  updateRecoveredPassword,
+  cancelPasswordRecovery,
   updateProfile,
   submitFeedback,
   signOut
