@@ -1,11 +1,11 @@
 {
+  "pub_date": "2026-10-28T06:45:54.2868767Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmI0Yy9DM2Q3cllLM1dqNzlHVE1TelpDZjVLcmgwNWF0ZEFHdDJqSnArNnZkRmFJWW50TmF2OW5haCtXcHhvYW81aXpONHZ6LzBOUWJNeTFZbzR5WndvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTY2NzExCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzJfeDY0LXNldHVwLmV4ZQplbHQ2bzNJdEp1bGNreVhBUjJoMEIxYVFVZ1c3UzBXajIzd0N3aUE2WWFabG9PWFVDNVN0bE85bDdoRm1uNS9WUDBSTDJhRDhIb1l1bXhROWp3U0pCdz09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.32-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlExWDFQalhyeFViYm1wWElqczFMSjIzOVJ1ZkFMVzVVZVlXRjJxR2ZRZkZLQjN5OUVYUWFKZFZPeHhOcDlldGY3S1VhMUxHUzJVYlBBRG9IN2xyK0FrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTY5OTQ1CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzNfeDY0LXNldHVwLmV4ZQpHVm9LMzRFU2FnUkhuOW1OdDhVNm5QM0VlYkZvNmZ3WVJiaVd2QUMvNjVTcUFHRDNSVHR4anBxT2hLRlhWWG9QUzFPSVBROHFlSkFZNGtMaTlmQzJDQT09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.33-setup.exe"
     }
   },
-  "notes": "Windows 1.3.32：同步邮箱验证码找回密码流程：在客户端内填写验证码、设置新密码；支持重新发送及使用已收到的验证码。",
-  "version": "1.3.32",
-  "pub_date": "2026-10-28T05:52:00.6596684Z"
+  "version": "1.3.33",
+  "notes": "Windows 1.3.33：账号错误提示改为中文，明确提示新密码不能与原密码相同，并本地化验证码、密码强度及网络错误。"
 }
