@@ -1,15 +1,11 @@
+import {authErrorMessage} from '../../assets/fw-auth-errors.mjs';
+
 // Recovery stays inside the locked account dialog until the new password is saved.
 export function installPasswordRecovery({authStore,showAuth,toast}){
   const $=selector=>document.querySelector(selector);
   const reset=$('[data-auth-view="reset"]'),verify=$('[data-auth-view="resetVerify"]'),password=$('[data-auth-view="resetNew"]');
   let email='',resendAt=0,timer=0;
   const status=text=>{$('[data-form-status]').textContent=text||'';};
-  function errorMessage(error){
-    const text=String(error?.message||'操作失败，请重试。');
-    if(/otp|token/i.test(text)&&/invalid|expired/i.test(text))return '验证码不正确或已过期，请检查或重新发送。';
-    if(/rate.limit|too.many|seconds/i.test(text))return '验证码发送太频繁，请稍后重试。';
-    return text;
-  }
   function updateResend(){
     clearTimeout(timer);timer=0;
     if(verify.hidden)return;
@@ -21,7 +17,7 @@ export function installPasswordRecovery({authStore,showAuth,toast}){
     if(authStore.state.busy)return;
     status('正在处理…');
     try{const result=await action();status('');success?.(result);}
-    catch(error){status(errorMessage(error));}
+    catch(error){status(authErrorMessage(error));}
   }
   function showCode(value){
     email=String(value||'').trim().toLowerCase();

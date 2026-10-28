@@ -2,6 +2,7 @@ import {createClient} from '@supabase/supabase-js';
 import {ACCOUNT_CACHE_KEY, APP_VERSION, PASSWORD_RESET_URL, SUPABASE_ANON_KEY, SUPABASE_URL} from './config.js';
 import {desktopCache} from './desktop-persistent-cache.js';
 import {createUserActivityTracker} from '../../assets/fw-user-activity.mjs';
+import {authErrorMessage} from '../../assets/fw-auth-errors.mjs';
 
 const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storageKey:'fw-lab-auth-token'}
@@ -41,7 +42,7 @@ function emit(){
 }
 
 function fail(result, label){
-  if(result?.error) throw new Error(`${label}：${result.error.message}`);
+  if(result?.error) throw new Error(`${label}：${authErrorMessage(result.error)}`);
   return result?.data;
 }
 
@@ -112,7 +113,7 @@ async function boot(){
       }else {state.user=null;persistUser(null);}
       state.error='';
     }catch(error){
-      state.error=error.message || String(error);
+      state.error=authErrorMessage(error);
     }finally{
       state.ready=true;
       emit();
@@ -127,7 +128,7 @@ async function boot(){
     if(state.recovering)return;
     if(event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED'){
       if(!state.user||String(state.user.id)!==String(session.user.id))hydrateProfileCache(session.user.id).catch(()=>{});
-      readProfile(session.user, event !== 'SIGNED_IN').catch(error=>{state.error=error.message||String(error);emit();});
+      readProfile(session.user, event !== 'SIGNED_IN').catch(error=>{state.error=authErrorMessage(error);emit();});
     }
   });
   return bootPromise;
@@ -137,7 +138,7 @@ async function withBusy(action){
   if(state.busy) throw new Error('正在处理，请稍候。');
   state.busy=true;state.error='';emit();
   try{return await action();}
-  catch(error){state.error=error.message || String(error);throw error;}
+  catch(error){state.error=authErrorMessage(error);throw new Error(state.error);}
   finally{state.busy=false;emit();}
 }
 

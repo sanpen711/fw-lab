@@ -1,15 +1,11 @@
 import {authStore} from './auth-store.js';
+import {authErrorMessage} from '../../assets/fw-auth-errors.mjs';
 
 let email='',verifiedUserId='',busy=false,verifying=false,resendAt=0,timer=0,previousFocus=null;
 const client=authStore.client;
 const $=selector=>document.querySelector(selector);
 const normalizeEmail=value=>String(value||'').trim().toLowerCase();
-function message(error){
-  const text=String(error?.message||error||'操作失败，请重试。');
-  if(/otp|token/i.test(text)&&/invalid|expired/i.test(text))return '验证码不正确或已过期，请检查或重新发送。';
-  if(/rate.limit|too.many|seconds/i.test(text))return '验证码发送太频繁，请稍后重试。';
-  return text;
-}
+const message=authErrorMessage;
 function notify(text){window.__FW_WEB_APP__?.notify(text);}
 function status(text){const node=$('[data-web-password-recovery] [role="status"]');if(node)node.textContent=text||'';}
 function updateResend(){
