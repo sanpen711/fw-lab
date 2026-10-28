@@ -14,8 +14,6 @@ export function adaptModule(name,source){
   if(name==='auth-store.js'){
     change("detectSessionInUrl:false, storageKey:'fw-lab-auth-token'","detectSessionInUrl:true, storageKey:'sb-ekbovsmxbiplhyrzxoyw-auth-token'");
     change("platform:'windows'","platform:'web'");
-    change("if(!user||String(user.id)!==String(userId))return false;","if(!user||String(user.id)!==String(userId)||String(state.session?.user?.id)!==String(userId))return false;");
-    change('lastProfileUserId=sessionUser.id;', 'if(state.session?.user?.id!==sessionUser.id)return null;\n  lastProfileUserId=sessionUser.id;');
   }
   if(name==='alignment-nav-fix.js'){
     change("import './square-scroll-fix.js';",'// Browser document scrolling is managed by web.css.');
@@ -25,7 +23,7 @@ export function adaptModule(name,source){
   }
   if(name==='app.js'){
     source="import {webRecovery} from './web-password-recovery.js';\nimport {webAccess,webCommentCount} from './web-access.js';\n"+source;
-    change("fd=>authStore.sendPasswordReset(fd.get('email')),()=>{toast('找回密码邮件已发送。');showAuth('login');}","fd=>webRecovery.send(fd.get('email')),result=>{closeAccount();webRecovery.showCode(result.email);}");
+    change('installPasswordRecovery({authStore,showAuth,toast});',`$('[data-auth-view="reset"]').addEventListener('submit',event=>{event.preventDefault();runForm(event.currentTarget,fd=>webRecovery.send(fd.get('email')),result=>{closeAccount();webRecovery.showCode(result.email);});});`);
     change("import {installContentReviewUi,reportButton} from './content-review-ui.js';",`import {installContentReviewUi} from './content-review-ui.js';
 import {webReportButton as reportButton,webMessages} from './web-ux.js';
 import {webDraft} from './web-draft.js';`);
@@ -167,7 +165,7 @@ window.__FW_WEB_APP__={navigate,openAccount,notify:toast,openPost:id=>feedStore.
 }
 
 export function adaptHtml(source){
-  source=once(source,'<button class="primary full" type="submit">发送找回密码邮件</button>', '<button class="primary full" type="submit">发送验证码</button><button class="secondary full" type="button" data-web-recovery-enter-code>已收到验证码，前往填写</button>','recovery code entry');
+  source=once(source,'data-reset-enter-code','data-web-recovery-enter-code','recovery code entry');
   source=once(source,'<body class="auth-required">','<body class="fw-browser">','body');
   source=once(source,'<div class="modal auth-gate-modal auth-gate-checking" data-account-modal data-auth-locked="true">','<div class="modal" data-account-modal data-auth-locked="false" hidden>','optional sign-in dialog');
   source=once(source,'hidden inert aria-hidden="true"','aria-hidden="false"','guest shell');

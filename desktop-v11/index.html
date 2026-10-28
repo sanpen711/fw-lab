@@ -380,8 +380,23 @@
 
         <form class="account-form" data-auth-view="reset" hidden>
           <label>邮箱<input name="email" type="email" autocomplete="email" required></label>
-          <button class="primary full" type="submit">发送找回密码邮件</button>
+          <button class="primary full" type="submit">发送验证码</button>
+          <button class="secondary full" type="button" data-reset-enter-code>已收到验证码，前往填写</button>
           <div class="form-links"><button type="button" data-show-auth="login">返回登录</button></div>
+        </form>
+
+        <form class="account-form" data-auth-view="resetVerify" hidden>
+          <p class="verify-tip" data-reset-verify-tip></p>
+          <label>验证码<input name="token" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="10" pattern="[0-9]{6,10}" placeholder="输入邮件中的验证码" required></label>
+          <button class="primary full" type="submit">验证并继续</button>
+          <div class="form-links"><button type="button" data-resend-reset-code>重新发送验证码</button><button type="button" data-reset-back>返回填写邮箱</button></div>
+        </form>
+
+        <form class="account-form" data-auth-view="resetNew" hidden>
+          <label>新密码<input name="password" type="password" autocomplete="new-password" minlength="8" placeholder="至少 8 位" required></label>
+          <label>确认新密码<input name="confirm" type="password" autocomplete="new-password" minlength="8" placeholder="再输入一次新密码" required></label>
+          <button class="primary full" type="submit">保存新密码</button>
+          <div class="form-links"><button type="button" data-cancel-reset>取消找回密码</button></div>
         </form>
 
         <p class="form-status" data-form-status aria-live="polite"></p>
