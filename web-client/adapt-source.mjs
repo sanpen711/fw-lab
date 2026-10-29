@@ -1,6 +1,7 @@
 // Browser-only adaptations. The Windows sources remain the shared implementation.
 // Exact replacements fail the build when an upstream contract changes.
 import assert from 'node:assert/strict';
+import {renderPrivacyPolicy} from '../assets/fw-privacy-policy.mjs';
 
 function once(source, before, after, label){
   assert.equal(source.split(before).length-1,1,`Web adaptation no longer matches: ${label}`);
@@ -8,6 +9,12 @@ function once(source, before, after, label){
 }
 export function adaptModule(name,source){
   const change=(before,after)=>{source=once(source,before,after,name);};
+  if(name==='feature-alignment.js'&&!source.includes("from '../../assets/fw-privacy-policy.mjs'")){
+    // The public browser build shares current policy text without releasing a Windows installer.
+    const policy=/<section class="align-section"><h2>隐私政策<\/h2>.*?<\/section>(?=<\/div>`;})/gs;
+    assert.equal([...source.matchAll(policy)].length,1,'Web privacy policy section no longer matches');
+    source=source.replace(policy,()=>renderPrivacyPolicy());
+  }
   if(name==='config.js'){
     change("export const ACCOUNT_CACHE_KEY = 'fw:desktop:v11:account';","export const ACCOUNT_CACHE_KEY = 'fw:web:account';");
   }
