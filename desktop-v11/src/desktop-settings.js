@@ -128,7 +128,8 @@ async function checkUpdates(button){
   checkingUpdate=true;button.disabled=true;button.textContent='检查中…';setStatus('[data-update-check-status]','正在检查更新…');
   try{
     const result=await invoke('desktop_check_for_updates');
-    if(result?.status==='latest')setStatus('[data-update-check-status]','当前已是最新版本。');
+    if(result?.status==='store')setStatus('[data-update-check-status]','已打开微软商店，请在商店中更新 FW研究所。');
+    else if(result?.status==='latest')setStatus('[data-update-check-status]','当前已是最新版本。');
     else if(result?.status==='available')setStatus('[data-update-check-status]',`发现新版本${result.version?' '+result.version:''}，可在更新提示中选择更新。`);
     else if(result?.status==='busy')setStatus('[data-update-check-status]','正在检查或处理更新，请稍候再试。');
     else throw new Error('检查更新暂未完成，请重试。');

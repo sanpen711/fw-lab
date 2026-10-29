@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod desktop_identity;
+mod distribution;
 mod alipay_checkout;
 mod external_links;
 mod persistent_cache;
@@ -566,6 +567,10 @@ fn desktop_app_version(app: AppHandle) -> String {
 
 #[tauri::command]
 async fn desktop_check_for_updates(app: AppHandle) -> Result<UpdateCheckResult, String> {
+    if distribution::is_store() {
+        distribution::open_store()?;
+        return Ok(UpdateCheckResult { status: "store", version: None });
+    }
     run_update_check(app.clone()).await.map_err(|error| {
         update_log(&app, format!("manual_check_error {error}"));
         "检查更新失败，请确认网络连接后重试。".to_owned()
@@ -579,6 +584,10 @@ fn check_for_updates(app: AppHandle) {
 }
 
 async fn run_update_check(app: AppHandle) -> Result<UpdateCheckResult, String> {
+    // Store packages are updated by Microsoft Store, never by the NSIS updater.
+    if distribution::is_store() {
+        return Ok(UpdateCheckResult { status: "store", version: None });
+    }
     if UPDATE_INSTALL_ACTIVE.load(Ordering::Acquire) {
         return Ok(UpdateCheckResult { status: "busy", version: None });
     }
@@ -671,9 +680,10 @@ async fn run_update_check(app: AppHandle) -> Result<UpdateCheckResult, String> {
 }
 
 fn main() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+    let builder = tauri::Builder::default().plugin(tauri_plugin_dialog::init());
+    #[cfg(not(feature = "microsoft-store"))]
+    let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    builder
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.unminimize();
@@ -685,7 +695,9 @@ fn main() {
         .setup(|app| {
             let _ = desktop_identity::apply_saved(app.handle());
             let _ = persistent_cache::init(app.handle());
-            check_for_updates(app.handle().clone());
+            if !distribution::is_store() {
+                check_for_updates(app.handle().clone());
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -49,7 +49,10 @@ fn resolve_cache_dir(app: &AppHandle) -> Result<(PathBuf, bool), String> {
         return Ok((dir.clone(), *fallback));
     }
 
-    let resolved = if let Ok(exe) = std::env::current_exe() {
+    let resolved = if crate::distribution::is_store() {
+        // WindowsApps is read-only. Store builds keep mutable data in app data.
+        None
+    } else if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             let preferred = parent.join(CACHE_FOLDER);
             if prepare_dir(&preferred).is_ok() {

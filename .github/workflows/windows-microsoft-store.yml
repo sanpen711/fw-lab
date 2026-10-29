@@ -1,0 +1,57 @@
+name: Build Microsoft Store MSIX Candidate
+
+on:
+  push:
+    branches: ['store/msix-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: microsoft-store-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop-v11/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix desktop-v11 ci
+      - name: Validate Store manifest
+        run: node --test tests/microsoft-store-package.test.mjs
+      - name: Validate desktop frontend
+        run: npm --prefix desktop-v11 run test:static
+      - name: Build Store-channel executable with local frontend
+        run: npx tauri build --config src-tauri/tauri.v11.conf.json --config src-tauri/tauri.microsoft-store.conf.json --features microsoft-store --no-bundle
+      - name: Test native code in both distribution channels
+        env:
+          TAURI_CONFIG: '{"build":{"frontendDist":"../desktop-v11/dist"}}'
+        run: |
+          cargo test --manifest-path src-tauri/Cargo.toml
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo test --manifest-path src-tauri/Cargo.toml --features microsoft-store
+      - name: Package and validate MSIX
+        shell: pwsh
+        run: ./packaging/microsoft-store/package.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FW-Research-Microsoft-Store-Candidate
+          path: microsoft-store-candidate/*
+          if-no-files-found: error
+          retention-days: 30

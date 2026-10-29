@@ -179,6 +179,10 @@ fn apply_window(app: &AppHandle, identity: &DesktopIdentity) -> Result<(), Strin
 
 #[cfg(target_os = "windows")]
 fn update_shortcuts(app: &AppHandle, identity: &DesktopIdentity) -> Result<(), String> {
+    // MSIX owns the Start menu entry; retain custom window titles/icons only.
+    if crate::distribution::is_store() {
+        return Ok(());
+    }
     const CREATE_NO_WINDOW: u32 = 0x08000000;
     let executable = std::env::current_exe().map_err(|error| format!("无法定位客户端程序：{error}"))?;
     let icon_name = if identity.mode == "custom" {
