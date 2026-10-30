@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -40,6 +41,21 @@ jobs:
           node-version: '22'
       - name: Prepare static official website
         run: node scripts/prepare-web-site.mjs
+      - name: Wait for legacy Pages build to finish
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Publish the selected static artifact after the repository's legacy builder.
+            await new Promise(resolve => setTimeout(resolve, 10000));
+            for (let attempt = 0; attempt < 60; attempt++) {
+              const {data} = await github.rest.actions.listWorkflowRunsForRepo({
+                ...context.repo, head_sha: context.sha, per_page: 100
+              });
+              const legacy = data.workflow_runs.filter(run => run.event === 'dynamic');
+              if (legacy.every(run => run.status === 'completed')) break;
+              if (attempt === 59) throw new Error('Legacy Pages build did not finish');
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
