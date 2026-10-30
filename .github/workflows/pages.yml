@@ -37,21 +37,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: desktop-v11/package-lock.json
-      - name: Install browser build dependencies
-        run: npm --prefix desktop-v11 ci
-      - name: Build browser frontend from shared desktop modules
-        run: node scripts/build-web.mjs
-      - name: Prepare website and existing mobile PWA
+      - name: Prepare static official website
         run: node scripts/prepare-web-site.mjs
-      - name: Verify deployment files
-        run: node --test web-client/tests/contracts.test.mjs
-      - name: Install browser for release checks
-        working-directory: desktop-v11
-        run: npx playwright install --with-deps chromium
-      - name: Verify browser guest and account flows
-        run: desktop-v11/node_modules/.bin/playwright test --config web-client/playwright.config.ts
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
