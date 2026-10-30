@@ -8,6 +8,7 @@ on:
     workflows:
       - Build Windows App
       - Build Windows Admin App
+      - pages build and deployment
     types:
       - completed
   workflow_dispatch:
