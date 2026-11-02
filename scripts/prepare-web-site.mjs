@@ -10,12 +10,12 @@ for(const folder of ['assets','download','desktop-v11/public']){
 }
 // Official artwork wins over any same-name legacy asset.
 await cp(resolve(root,'official-site/assets'),resolve(site,'assets'),{recursive:true});
-for(const file of ['CNAME','.nojekyll','admin.html','practice-1022-b7d9e4.html']){
+for(const file of ['CNAME','.nojekyll','practice-1022-b7d9e4.html']){
   if(await stat(resolve(root,file)).catch(()=>null)) await cp(resolve(root,file),resolve(site,file));
 }
 const redirect='<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=/"><title>FW研究所官网</title><script>location.replace("/")</script><a href="/">前往 FW研究所官网</a></html>';
 for(const file of await readdir(root)){
-  if(file.endsWith('.html')&&!['index.html','privacy.html','admin.html','practice-1022-b7d9e4.html'].includes(file)) await writeFile(resolve(site,file),redirect);
+  if(file.endsWith('.html')&&!['index.html','privacy.html','practice-1022-b7d9e4.html'].includes(file)) await writeFile(resolve(site,file),redirect);
 }
 for(const folder of ['app','web']){
   await mkdir(resolve(site,folder),{recursive:true});
