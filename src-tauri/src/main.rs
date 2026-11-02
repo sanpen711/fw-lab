@@ -4,6 +4,7 @@ mod desktop_identity;
 mod alipay_checkout;
 mod external_links;
 mod persistent_cache;
+mod update_endpoints;
 
 use serde::Serialize;
 use serde_json::Value;
@@ -263,29 +264,39 @@ fn show_update_error(app: &AppHandle, detail: String) {
         app,
         "error",
         "自动更新没有完成",
-        format!("网络或安装阶段返回错误：{detail}"),
+        "更新暂时未能完成，请稍后重试。当前版本可继续使用。",
         None,
         0,
         None,
         0,
     );
 
-    let retry_app = app.clone();
-    app.dialog()
-        .message(format!(
-            "自动更新没有完成。\n\n错误信息：{detail}\n\n可以重新尝试；如果仍然失败，请使用网页下载最新版。当前版本不会受到影响。"
-        ))
-        .title(format!("{}更新", desktop_identity::display_name(app)))
-        .kind(MessageDialogKind::Error)
-        .buttons(MessageDialogButtons::OkCancelCustom(
-            "重新尝试".to_owned(),
-            "关闭".to_owned(),
-        ))
-        .show(move |retry| {
-            if retry {
-                check_for_updates(retry_app);
-            }
-        });
+}
+
+async fn check_manifest_endpoint(app: &AppHandle, endpoint: &'static str, direct: bool) -> Result<Option<Update>, String> {
+    update_log(app, format!("check_endpoint direct={direct} url={endpoint}"));
+    let builder = app.updater_builder()
+        .endpoints(vec![endpoint.parse().map_err(|error| format!("endpoint {error:?}"))?])
+        .map_err(|error| format!("endpoint {error:?}"))?;
+    let updater = if direct {
+        builder.no_proxy().configure_client(|client| client
+            .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
+            .read_timeout(Duration::from_secs(UPDATE_READ_TIMEOUT_SECS))
+            .http1_only()
+            .local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED)))
+            .build()
+    } else {
+        builder.configure_client(|client| client
+            .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
+            .read_timeout(Duration::from_secs(UPDATE_READ_TIMEOUT_SECS)))
+            .build()
+    }.map_err(|error| format!("builder {endpoint}: {error:?}"))?;
+    updater.check().await.map_err(|error| format!("{endpoint}: {error:?}"))
+}
+
+async fn check_manifests(app: &AppHandle, direct: bool) -> Result<Option<Update>, String> {
+    update_endpoints::first_available(|endpoint| check_manifest_endpoint(app, endpoint, direct))
+        .await.map_err(|errors| errors.join("; "))
 }
 
 fn check_for_updates_direct_auto(app: AppHandle) {
@@ -302,26 +313,7 @@ fn check_for_updates_direct_auto(app: AppHandle) {
     );
 
     tauri::async_runtime::spawn(async move {
-        let updater = match app
-            .updater_builder()
-            .no_proxy()
-            .configure_client(|client| {
-                client
-                    .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
-                    .read_timeout(Duration::from_secs(UPDATE_READ_TIMEOUT_SECS))
-                    .http1_only()
-                    .local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
-            })
-            .build()
-        {
-            Ok(updater) => updater,
-            Err(error) => {
-                show_update_error(&app, format!("direct_builder {error}"));
-                return;
-            }
-        };
-
-        match updater.check().await {
+        match check_manifests(&app, true).await {
             Ok(Some(update)) => {
                 update_log(&app, format!("fallback_direct_found version={}", update.version));
                 install_latest_update(app, update, UPDATE_MODE_DIRECT.to_owned());
@@ -574,7 +566,17 @@ async fn desktop_check_for_updates(app: AppHandle) -> Result<UpdateCheckResult, 
 
 fn check_for_updates(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
-        if let Err(error) = run_update_check(app.clone()).await { show_update_error(&app, error); }
+        for attempt in 0..2 {
+            match run_update_check(app.clone()).await {
+                Ok(_) => return,
+                Err(error) => update_log(&app, format!("startup_check_error attempt={attempt}: {error}")),
+            }
+            if attempt == 0 {
+                tokio::time::sleep(Duration::from_secs(3)).await;
+            }
+        }
+        // An unavailable update service must not interrupt starting the client.
+        update_log(&app, "startup_check_deferred");
     });
 }
 
@@ -586,21 +588,8 @@ async fn run_update_check(app: AppHandle) -> Result<UpdateCheckResult, String> {
         return Ok(UpdateCheckResult { status: "busy", version: None });
     };
     update_log(&app, "check_system_start");
-    let system_result = match app
-        .updater_builder()
-        .configure_client(|client| {
-            client
-                .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
-                .read_timeout(Duration::from_secs(UPDATE_READ_TIMEOUT_SECS))
-        })
-        .build()
-    {
-        Ok(updater) => updater
-            .check()
-            .await
-            .map_err(|error| format!("system_check {error}")),
-        Err(error) => Err(format!("system_builder {error}")),
-    };
+    let system_result = check_manifests(&app, false).await
+        .map_err(|error| format!("system_check {error}"));
 
     let (update, network_mode) = match system_result {
         Ok(update) => {
@@ -609,25 +598,7 @@ async fn run_update_check(app: AppHandle) -> Result<UpdateCheckResult, String> {
         }
         Err(system_error) => {
             update_log(&app, format!("{system_error}; fallback_direct_check"));
-            let direct_updater = match app
-                .updater_builder()
-                .no_proxy()
-                .configure_client(|client| {
-                    client
-                        .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
-                        .read_timeout(Duration::from_secs(UPDATE_READ_TIMEOUT_SECS))
-                        .http1_only()
-                        .local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
-                })
-                .build()
-            {
-                Ok(updater) => updater,
-                Err(error) => {
-                    return Err(format!("{system_error}; direct_builder {error}"));
-                }
-            };
-
-            match direct_updater.check().await {
+            match check_manifests(&app, true).await {
                 Ok(update) => {
                     update_log(&app, "check_direct_ok");
                     (update, UPDATE_MODE_DIRECT.to_owned())
