@@ -198,6 +198,7 @@ test('钻石徽章随名字字号缩放，图片无数字且在深浅背景和�
   await page.route('**/rest/v1/rpc/fw_get_membership_appearances',route=>route.fulfill({contentType:'application/json',body:JSON.stringify((route.request().postDataJSON().p_user_ids||[]).map((id:string)=>({user_id:id,theme:'black_gold',frame:'ticket',nickname_color:'rose_gold',title:'',expires_at:expires})))}));
   await page.goto('/');await page.locator('[data-nav="membership"]').click();
   const expectNameSize=async(badge:any,name:any)=>{
+    await expect(badge).toBeVisible();
     const nameSize=await name.evaluate((node:Element)=>parseFloat(getComputedStyle(node).fontSize));
     const bounds=await badge.boundingBox();
     expect(bounds?.height).toBeCloseTo(nameSize,1);
