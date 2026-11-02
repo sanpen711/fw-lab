@@ -193,10 +193,18 @@ test('V1～V9 默认折叠，展开和刷新保留等级与锁定装扮',async({
   await expect(page.locator('[data-account-avatar]')).not.toHaveClass(/vip-identity/);
 });
 
-test('钻石徽章随等级显示，图片无数字且在深浅背景和窄窗口中完整显示',async({page})=>{
+test('钻石徽章随名字字号缩放，图片无数字且在深浅背景和窄窗口中完整显示',async({page})=>{
   await setup(page);
   await page.route('**/rest/v1/rpc/fw_get_membership_appearances',route=>route.fulfill({contentType:'application/json',body:JSON.stringify((route.request().postDataJSON().p_user_ids||[]).map((id:string)=>({user_id:id,theme:'black_gold',frame:'ticket',nickname_color:'rose_gold',title:'',expires_at:expires})))}));
   await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  const expectNameSize=async(badge:any,name:any)=>{
+    const nameSize=await name.evaluate((node:Element)=>parseFloat(getComputedStyle(node).fontSize));
+    const bounds=await badge.boundingBox();
+    expect(bounds?.height).toBeCloseTo(nameSize,1);
+    expect(bounds?.width).toBeCloseTo(nameSize*1.25,1);
+  };
+  await expectNameSize(page.locator('.membership-vip-head .member-level-badge'),page.locator('.membership-vip-head h2'));
+  await expectNameSize(page.locator('.membership-growth-summary .member-level-badge'),page.locator('.membership-growth-summary h3'));
   await page.locator('.membership-growth-summary').click();
   const badges=page.locator('.membership-level-steps .member-level-badge');
   await expect(badges).toHaveCount(9);
@@ -213,20 +221,26 @@ test('钻石徽章随等级显示，图片无数字且在深浅背景和窄窗�
   for(const width of [1280,760]){
     await page.setViewportSize({width,height:820});
     for(const badge of await badges.all()){
-      const bounds=await badge.boundingBox();
-      expect(bounds?.height).toBe(48);expect(bounds?.width).toBe(60);
+      await expectNameSize(badge,badge.locator('..').locator('b'));
     }
     expect(await page.locator('.membership-level-steps').evaluate(node=>node.scrollWidth-node.clientWidth)).toBeLessThanOrEqual(1);
     await page.screenshot({path:test.info().outputPath(`diamond-levels-${width}.png`)});
   }
   await page.setViewportSize({width:1280,height:820});
+  await page.locator('.membership-tabs [data-membership-tab="appearance"]').click();
+  await expectNameSize(page.locator('.member-identity-preview-head .member-level-badge'),page.locator('.member-identity-preview-head b'));
   await page.locator('.nav-item[data-nav="square"]').click();
   const author=page.locator('[data-square-feed] .member-level-badge').first();
   await expect(author).toHaveAttribute('aria-label','V2');
   await expect(author).toHaveText('');
-  await expect(author).toHaveCSS('width','30px');await expect(author).toHaveCSS('height','24px');
+  await expectNameSize(author,author.locator('..'));
+  await author.locator('..').evaluate((node:HTMLElement)=>node.style.fontSize='18px');
+  await expectNameSize(author,author.locator('..'));
+  await author.locator('..').evaluate((node:HTMLElement)=>node.style.removeProperty('font-size'));
   await page.locator('[data-square-feed] [data-open-post="101"]').first().click();
   await expect(page.locator('.post-comment .member-level-badge')).toHaveCount(12);
+  await expectNameSize(page.locator('.detail-post .member-level-badge'),page.locator('.detail-post .post-author b'));
+  await expectNameSize(page.locator('.post-comment .member-level-badge').first(),page.locator('.post-comment .comment-meta b').first());
   await page.screenshot({path:test.info().outputPath('diamond-post-comments.png')});
 });
 
