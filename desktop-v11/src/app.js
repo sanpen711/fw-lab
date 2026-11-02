@@ -2,6 +2,7 @@ import {installContentReviewUi,reportButton} from './content-review-ui.js';
 import {authStore} from './auth-store.js';
 import {installPasswordRecovery} from './password-recovery.js';
 import {socialStore} from './social-store.js';
+import {showChatTime,fullChatTime,chatTimeLabel,conversationTime} from './chat-presentation.js';
 import {feedStore} from './feed-store.js';
 import {pollStore} from './poll-store.js';
 import {chatRoomUi} from './chat-room-ui.js';
@@ -451,7 +452,7 @@ function messagePreview(value){return decodeSticker(value)?'动画表情':String
 function renderMessageList(accepted){
   const rows=accepted.map(friend=>{const userId=buddyOtherId(friend);return{friend,userId,profile:socialState.buddy.profiles[userId]||{},latest:socialState.buddy.latest[userId]||null,unread:Number(socialState.buddy.unread[userId]||0)};}).sort((a,b)=>b.unread-a.unread||new Date(b.latest?.created_at||0)-new Date(a.latest?.created_at||0)||String(a.profile.nickname||'').localeCompare(String(b.profile.nickname||''),'zh-CN'));
   if(!rows.length)return'<div class="state-card">暂时还没有搭子消息。先去“新的搭子”加一个搭子吧。</div>';
-  return rows.map(item=>{const mine=String(item.latest?.sender_id||'')===String(accountState.user?.id);return `<article class="buddy-item message-item ${item.unread?'unread':''} ${socialState.chat.targetId===item.userId?'active':''}" data-open-chat="${esc(item.userId)}">${avatarHtml(item.profile,'social-avatar',{userId:item.userId})}${item.unread?`<i class="unread-dot">${item.unread>99?'99+':item.unread}</i>`:''}<div class="buddy-main"><b>${memberName(item.profile.nickname||'低功耗搭子',item.userId,true)}</b><span>${esc(item.latest?(mine?'我：':'')+messagePreview(item.latest.content):'还没有消息，点这里打个招呼')}</span><time>${item.latest?esc(timeText(item.latest.created_at)):''}</time></div></article>`;}).join('');
+  return rows.map(item=>{const mine=String(item.latest?.sender_id||'')===String(accountState.user?.id);return `<article class="buddy-item message-item ${item.unread?'unread':''} ${socialState.chat.targetId===item.userId?'active':''}" data-open-chat="${esc(item.userId)}">${avatarHtml(item.profile,'social-avatar',{userId:item.userId})}${item.unread?`<i class="unread-dot">${item.unread>99?'99+':item.unread}</i>`:''}<div class="buddy-main"><b>${memberName(item.profile.nickname||'低功耗搭子',item.userId,true)}</b><span>${esc(item.latest?(mine?'我：':'')+messagePreview(item.latest.content):'还没有消息，点这里打个招呼')}</span><time title="${esc(fullChatTime(item.latest?.created_at))}">${item.latest?esc(conversationTime(item.latest.created_at)):''}</time></div></article>`;}).join('');
 }
 
 function renderSearchResults(){
@@ -471,13 +472,38 @@ function renderBuddyList(){
   list.innerHTML=renderSearchResults()+`<section class="buddy-section"><h3>收到申请</h3>${incoming.length?incoming.map(row=>buddyCard(row,{mode:'request'})).join(''):'<div class="state-card small">暂时没有收到新的搭子申请。</div>'}</section><section class="buddy-section"><h3>发出申请</h3>${outgoing.length?outgoing.map(row=>buddyCard(row,{mode:'request'})).join(''):'<div class="state-card small">暂时没有发出的搭子申请。</div>'}</section>`;
 }
 
-function messageBubble(row){const mine=String(row.sender_id)===String(accountState.user?.id);const sticker=decodeSticker(row.content);return `<article class="chat-message ${mine?'mine':''}" data-chat-message-id="${esc(row.id)}"><small>${mine?'你':esc(socialState.chat.profile?.nickname||'搭子')} ${vipBadgeHtml(row.sender_id)}</small><div class="chat-bubble ${sticker?'sticker':''}">${sticker?`<img src="${esc(sticker)}" alt="表情">`:emojiText(row.content)}</div><time>${esc(timeText(row.created_at))}</time>${mine||String(row.id).startsWith('pending-')?'':reportButton('private_message',row.id)}</article>`;}
+function messageBubble(row,consecutive=false){
+  const mine=String(row.sender_id)===String(accountState.user?.id),sticker=decodeSticker(row.content);
+  const profile=mine?accountState.user:socialState.chat.profile;
+  const pending=String(row.id).startsWith('pending-');
+  const actions=pending?'':`<details class="chat-actions"><summary aria-label="消息操作" title="消息操作">⋯</summary><div class="chat-action-menu"><button type="button" data-chat-copy="${esc(row.id)}">复制</button>${mine?'':reportButton('private_message',row.id)}</div></details>`;
+  return `<article class="chat-message ${mine?'mine':''} ${consecutive?'consecutive':''}" data-chat-message-id="${esc(row.id)}" title="${esc(fullChatTime(row.created_at))}">${avatarHtml(profile,'social-avatar chat-avatar',{userId:row.sender_id})}<div class="chat-bubble ${sticker?'sticker':''}">${sticker?`<img src="${esc(sticker)}" alt="表情">`:emojiText(row.content)}</div>${actions}</article>`;
+}
+function closeChatActions(except=null){$$('.chat-actions[open]').forEach(menu=>{if(menu!==except)menu.open=false;});}
+function bindChatActions(){
+  document.addEventListener('click',event=>{
+    const menu=event.target.closest('.chat-actions');closeChatActions(menu);
+    if(menu&&event.target.closest('button'))queueMicrotask(()=>menu.open=false);
+  },true);
+  document.addEventListener('toggle',event=>{
+    const menu=event.target;if(!menu.matches?.('.chat-actions')||!menu.open)return;
+    closeChatActions(menu);menu.classList.remove('menu-below');
+    const bounds=menu.querySelector('.chat-action-menu').getBoundingClientRect();
+    if(bounds.top<$('[data-chat-messages]').getBoundingClientRect().top)menu.classList.add('menu-below');
+  },true);
+  document.addEventListener('keydown',event=>{
+    if(event.key!=='Escape')return;const menu=$('.chat-actions[open]');if(!menu)return;
+    event.preventDefault();event.stopPropagation();menu.open=false;menu.querySelector('summary').focus({preventScroll:true});
+  });
+}
 function renderChat(){
   const chat=socialState.chat;const messages=$('[data-chat-messages]');const input=$('[data-chat-compose] input[name="message"]');const submit=$('[data-chat-compose] button[type="submit"]');const emoji=$('[data-emoji-toggle]');const target=String(chat.targetId||'');
   if(chatComposerTarget!==target){if(chatComposerTarget)chatDrafts.set(chatComposerTarget,input.value);chatComposerTarget=target;input.value=chatDrafts.get(target)||'';$('[data-emoji-panel]').hidden=true;}
-  $('[data-chat-title]').textContent=chat.targetId?`和 ${chat.profile?.nickname||'搭子'} 私聊`:'选择一个搭子';$('[data-chat-subtitle]').textContent=chat.targetId?`${chat.profile?.lab_code?`实验品编号：${chat.profile.lab_code}`:'实验品编号：未设置'}${chat.loading?' · 正在同步':''}`:'左边点一个消息或搭子，右边直接聊天。';$('[data-close-chat]').hidden=!chat.targetId;
-  const enabled=Boolean(chat.targetId&&!chat.loading);input.disabled=!enabled;submit.disabled=!enabled||chat.sending;emoji.disabled=!enabled;input.placeholder=enabled?'输入文字，或 Ctrl+V 直接粘贴图片...':'先从左侧选择一个搭子';submit.textContent=chat.sending?'发送中...':'发送';
-  const signature=[chat.targetId,chat.loading&&!(chat.rows||[]).length?'loading':'ready',chat.profile?.nickname||'',chat.hasMore,chat.historyLoading,chat.historyError,chat.historyPage,...(chat.rows||[]).map(row=>`${row.id}:${row.is_deleted?'1':'0'}:${row.content}`)].join('|');
+  $('[data-chat-title]').innerHTML=target?memberName(chat.profile?.nickname||'搭子',target,true):'选择一个搭子';
+  $('[data-chat-heading-avatar]').innerHTML=target?avatarHtml(chat.profile,'social-avatar',{userId:target}):'';
+  $('[data-chat-subtitle]').textContent=target?(chat.loading?'正在同步消息…':''):'从左侧选择一个搭子，开始聊天';$('[data-chat-subtitle]').hidden=Boolean(target&&!chat.loading);$('[data-close-chat]').hidden=!target;
+  const enabled=Boolean(chat.targetId&&!chat.loading);input.disabled=!enabled;submit.disabled=!enabled||chat.sending;emoji.disabled=!enabled;input.placeholder=!target?'先从左侧选择一个搭子':chat.loading?'正在同步消息…':'发消息…';submit.textContent=chat.sending?'发送中...':'发送';
+  const signature=[chat.targetId,chat.loading&&!(chat.rows||[]).length?'loading':'ready',chat.profile?.nickname||'',chat.profile?.avatar_url||'',accountState.user?.avatarUrl||'',chat.hasMore,chat.historyLoading,chat.historyError,chat.historyPage,...(chat.rows||[]).map(row=>`${row.id}:${row.sender_id}:${row.created_at}:${row.is_deleted?'1':'0'}:${row.content}`)].join('|');
   if(signature===lastChatRenderSignature)return;
   const changedTarget=messages.dataset.target!==target,top=messages.scrollTop,nearBottom=messages.scrollHeight-top-messages.clientHeight<70;
   const olderPage=!changedTarget&&messages.dataset.historyPage!==String(chat.historyPage||0);
@@ -490,7 +516,7 @@ function renderChat(){
   messages.dataset.target=target;messages.dataset.historyPage=String(chat.historyPage||0);chatMessageIds=new Set((chat.rows||[]).map(row=>String(row.id)));lastChatRenderSignature=signature;
   if(chat.loading&&!chat.rows.length){messages.innerHTML='<div class="state-card">正在打开私聊...</div>';return;}if(!chat.targetId){messages.innerHTML='<div class="state-card">还没有选择聊天对象。</div>';return;}if(!chat.rows.length){messages.innerHTML='<div class="state-card">还没有私聊消息。可以先低功耗地打个招呼。</div>';return;}
   const history=chat.hasMore?`<div class="chat-history"><button class="secondary compact" type="button" data-chat-load-older ${chat.historyLoading||chat.loading?'disabled':''}>${chat.historyLoading?'正在加载…':chat.historyError?'重试加载更早消息':'加载更早消息'}</button>${chat.historyError?`<p role="status">${esc(chat.historyError)}</p>`:''}</div>`:chat.historyPage?'<div class="chat-history">没有更早的消息了</div>':'';
-  messages.innerHTML=history+chat.rows.map(messageBubble).join('');
+  messages.innerHTML=history+chat.rows.map((row,index)=>{const previous=chat.rows[index-1],separator=showChatTime(row.created_at,previous?.created_at);return(separator?`<time class="chat-time-divider" datetime="${esc(row.created_at)}" title="${esc(fullChatTime(row.created_at))}">${esc(chatTimeLabel(row.created_at))}</time>`:'')+messageBubble(row,!separator&&previous?.sender_id===row.sender_id);}).join('');
   if(shouldScroll)requestAnimationFrame(()=>{if(messages.dataset.target===target&&lastChatRenderSignature===signature)messages.scrollTop=messages.scrollHeight;});
   else{const nextAnchor=anchorId&&Array.from(messages.querySelectorAll('[data-chat-message-id]')).find(node=>node.dataset.chatMessageId===anchorId);messages.scrollTop=nextAnchor?messages.scrollTop+nextAnchor.getBoundingClientRect().top-containerTop-anchorOffset:top;}
 }
@@ -579,6 +605,12 @@ function bindNavigation(){
     const reject=event.target.closest('[data-reject-friend]');if(reject){try{await socialStore.respondFriendship(reject.dataset.rejectFriend,false);toast('已拒绝搭子申请。');}catch(error){toast(error.message||'处理失败。');}return;}
     const remove=event.target.closest('[data-remove-friend]');if(remove){if(!window.confirm('确定处理这个搭子关系吗？'))return;try{await socialStore.removeFriendship(remove.dataset.removeFriend);toast('已处理搭子关系。');}catch(error){toast(error.message||'操作失败。');}return;}
     if(event.target.closest('[data-close-chat]')){socialStore.closeChat();return;}
+    const chatCopy=event.target.closest('[data-chat-copy]');if(chatCopy){
+      const row=(socialState.chat.rows||[]).find(item=>String(item.id)===chatCopy.dataset.chatCopy);if(!row)return;
+      let value=decodeSticker(row.content)||String(row.content||'');
+      const media=value.match(/^\[\[(?:FW_MEDIA_IMAGE|FW_MEDIA_VIDEO):([A-Za-z0-9+/=]+)\]\]$/);if(media){try{value=atob(media[1]);}catch{}}
+      try{await navigator.clipboard.writeText(value);toast('已复制。');}catch{toast('复制失败，请选中文字后复制。');}return;
+    }
     if(event.target.closest('[data-emoji-toggle]')){const panel=$('[data-emoji-panel]');panel.hidden=!panel.hidden;if(!panel.hidden)renderEmojiPanel();return;}
     const emojiSwitch=event.target.closest('[data-emoji-tab]');if(emojiSwitch){emojiTab=emojiSwitch.dataset.emojiTab;if(emojiTab==='stickers')socialStore.loadStickers().catch(error=>toast(error.message));renderEmojiPanel();return;}
     const emoji=event.target.closest('[data-insert-emoji]');if(emoji){const input=$('[data-chat-compose] input[name="message"]');input.value+=emoji.dataset.insertEmoji;input.dispatchEvent(new Event('input',{bubbles:true}));input.focus();return;}
@@ -626,6 +658,6 @@ function bindForms(){
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);const owner=accountState.user?.id,text=draft.text,attachments=draft.attachments;try{await feedStore.createComment({postId,text,attachments});if(accountState.user?.id!==owner)return;if(draft.text===text&&draft.attachments===attachments){releasePreview(draft);draft.text='';}toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
-bindExternalLinks({onError:toast});bindSidebarMore();bindNavigation();bindForms();chatRoomUi.init({toast,avatarHtml,memberName,emojiText,emojiImage,fufuImage,emojis:EMOJIS,fufu:FUFU_PACK});desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);archiveStore.subscribe(renderArchive);authStore.boot();
+bindExternalLinks({onError:toast});bindSidebarMore();bindChatActions();bindNavigation();bindForms();chatRoomUi.init({toast,avatarHtml,memberName,emojiText,emojiImage,fufuImage,emojis:EMOJIS,fufu:FUFU_PACK});desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);archiveStore.subscribe(renderArchive);authStore.boot();
 
 installContentReviewUi({toast});
