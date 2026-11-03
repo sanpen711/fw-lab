@@ -86,7 +86,7 @@ test('会员装扮独立预览保存，切换栏目保留草稿和阅读位置',
   await expect(page.locator('[data-account-avatar]')).toHaveCSS('animation-name','none');
   await expect(page.locator('[data-membership-content]')).not.toContainText('优先体验');
   await expect(page.locator('[data-membership-content]')).not.toContainText('云存档');
-  await page.screenshot({path:'/tmp/fw-member-appearance.png',fullPage:true});
+  await page.screenshot({path:test.info().outputPath('fw-member-appearance.png'),fullPage:true});
   for(const width of [1000,760]){
     await page.setViewportSize({width,height:820});
     const preview=page.locator('[data-member-identity-preview]');
@@ -94,14 +94,14 @@ test('会员装扮独立预览保存，切换栏目保留草稿和阅读位置',
     expect(await preview.evaluate(node=>node.scrollWidth-node.clientWidth)).toBeLessThanOrEqual(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(1);
   }
-  await page.screenshot({path:'/tmp/fw-member-narrow.png',fullPage:true});
+  await page.screenshot({path:test.info().outputPath('fw-member-narrow.png'),fullPage:true});
 });
 
 for(const active of [false,true])test(`${active?'会员续费':'普通用户开通'}入口首屏可见，套餐金额同步且未开放支付不可扣款`,async({page})=>{
   const {requests}=await setup(page,active);await page.goto('/');await page.locator('[data-nav="membership"]').click();
   const entry=page.getByRole('button',{name:active?'续费会员':'开通会员'});
   await expect(entry).toBeInViewport();
-  if(!active)await page.screenshot({path:'/tmp/fw-member-entry-desktop.png'});
+  if(!active)await page.screenshot({path:test.info().outputPath('fw-member-entry-desktop.png')});
   await entry.click();
   await expect(page.getByRole('heading',{name:active?'续费研究所会员':'开通研究所会员'})).toBeFocused();
   await expect(page.locator('.membership-pay-total')).toContainText('¥2');
@@ -116,14 +116,14 @@ for(const active of [false,true])test(`${active?'会员续费':'普通用户开�
   await expect(page.locator('.membership-renewal-note')).toContainText(active?'从当前到期时间顺延':'付款成功后开始计时');
   await page.locator('[data-membership-plan="monthly"]').click();
   if(active)await expect(page.locator('.membership-purchase-heading')).toContainText('当前会员有效至');
-  if(!active)await page.screenshot({path:'/tmp/fw-member-purchase-desktop.png'});
+  if(!active)await page.screenshot({path:test.info().outputPath('fw-member-purchase-desktop.png')});
   for(const width of [1066,760]){
     await page.setViewportSize({width,height:width===1066?728:820});
     await expect(page.locator('[data-membership-plan="monthly"]')).toBeVisible();
     expect(await page.locator('.membership-purchase-page').evaluate(node=>node.scrollWidth-node.clientWidth)).toBeLessThanOrEqual(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(1);
     await expect(page.locator('.membership-pay-total strong')).toHaveText('¥2');
-    if(width===1066&&!active)await page.screenshot({path:'/tmp/fw-member-purchase-1066.png'});
+    if(width===1066&&!active)await page.screenshot({path:test.info().outputPath('fw-member-purchase-1066.png')});
     if(width===760)await page.locator('[data-payment-config]').scrollIntoViewIfNeeded();
   }
   await page.locator('[data-membership-return]').click();
@@ -182,7 +182,7 @@ test('V1～V9 默认折叠，展开和刷新保留等级与锁定装扮',async({
   await page.locator('.membership-growth-tools [data-membership-refresh]').click();
   await expect(page.locator('[data-membership-growth]')).toHaveAttribute('open','');
   await expect(page.locator('.membership-growth-content')).toBeVisible();
-  await page.screenshot({path:'/tmp/fw-member-levels-expanded.png'});
+  await page.screenshot({path:test.info().outputPath('fw-member-levels-expanded.png')});
   await page.locator('.membership-growth-summary').click();
   await expect(page.locator('.membership-growth-content')).toBeHidden();
   await expect(page.locator('.membership-growth h3')).toContainText('V2');
@@ -191,6 +191,58 @@ test('V1～V9 默认折叠，展开和刷新保留等级与锁定装扮',async({
   await expect(page.locator('[data-member-identity-choice="frame"][data-value="crown"]')).toBeDisabled();
   await expect(page.locator('[data-member-identity-choice="card_layout"][data-value="honor"]')).toBeDisabled();
   await expect(page.locator('[data-account-avatar]')).not.toHaveClass(/vip-identity/);
+});
+
+test('钻石徽章随名字字号缩放，图片无数字且在深浅背景和窄窗口中完整显示',async({page})=>{
+  await setup(page);
+  await page.route('**/rest/v1/rpc/fw_get_membership_appearances',route=>route.fulfill({contentType:'application/json',body:JSON.stringify((route.request().postDataJSON().p_user_ids||[]).map((id:string)=>({user_id:id,theme:'black_gold',frame:'ticket',nickname_color:'rose_gold',title:'',expires_at:expires})))}));
+  await page.goto('/');await page.locator('[data-nav="membership"]').click();
+  const expectNameSize=async(badge:any,name:any)=>{
+    await expect(badge).toBeVisible();
+    const nameSize=await name.evaluate((node:Element)=>parseFloat(getComputedStyle(node).fontSize));
+    const bounds=await badge.boundingBox();
+    expect(bounds?.height).toBeCloseTo(nameSize,1);
+    expect(bounds?.width).toBeCloseTo(nameSize*1.25,1);
+  };
+  await expectNameSize(page.locator('.membership-vip-head .member-level-badge'),page.locator('.membership-vip-head h2'));
+  await expectNameSize(page.locator('.membership-growth-summary .member-level-badge'),page.locator('.membership-growth-summary h3'));
+  await page.locator('.membership-growth-summary').click();
+  const badges=page.locator('.membership-level-steps .member-level-badge');
+  await expect(badges).toHaveCount(9);
+  for(let index=0;index<9;index++){
+    const badge=badges.nth(index);
+    await expect(badge).toHaveAttribute('aria-label',`V${index+1}`);
+    await expect(badge).toHaveText('');
+    await expect(badge.locator('img')).toHaveAttribute('src',`/membership-badges/v${index+1}.png`);
+    await expect.poll(()=>badge.locator('img').evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth===160)).toBe(true);
+    await expect(badge).toHaveCSS('background-image','none');
+    await expect(badge).toHaveCSS('border-top-width','0px');
+    await expect(badge).toHaveCSS('outline-width','0px');
+  }
+  for(const width of [1280,760]){
+    await page.setViewportSize({width,height:820});
+    for(const badge of await badges.all()){
+      await expectNameSize(badge,badge.locator('..').locator('b'));
+    }
+    expect(await page.locator('.membership-level-steps').evaluate(node=>node.scrollWidth-node.clientWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({path:test.info().outputPath(`diamond-levels-${width}.png`)});
+  }
+  await page.setViewportSize({width:1280,height:820});
+  await page.locator('.membership-tabs [data-membership-tab="appearance"]').click();
+  await expectNameSize(page.locator('.member-identity-preview-head .member-level-badge'),page.locator('.member-identity-preview-head b'));
+  await page.locator('.nav-item[data-nav="square"]').click();
+  const author=page.locator('[data-square-feed] .member-level-badge').first();
+  await expect(author).toHaveAttribute('aria-label','V2');
+  await expect(author).toHaveText('');
+  await expectNameSize(author,author.locator('..'));
+  await author.locator('..').evaluate((node:HTMLElement)=>node.style.fontSize='18px');
+  await expectNameSize(author,author.locator('..'));
+  await author.locator('..').evaluate((node:HTMLElement)=>node.style.removeProperty('font-size'));
+  await page.locator('[data-square-feed] [data-open-post="101"]').first().click();
+  await expect(page.locator('.post-comment .member-level-badge')).toHaveCount(12);
+  await expectNameSize(page.locator('.detail-post .member-level-badge'),page.locator('.detail-post .post-author b'));
+  await expectNameSize(page.locator('.post-comment .member-level-badge').first(),page.locator('.post-comment .comment-meta b').first());
+  await page.screenshot({path:test.info().outputPath('diamond-post-comments.png')});
 });
 
 test('支付宝下单防重复，官方付款页和自动开通结果同步',async({page})=>{
@@ -205,7 +257,7 @@ test('支付宝下单防重复，官方付款页和自动开通结果同步',asy
   await expect(page.locator('.membership-payment-success')).toContainText('会员已自动生效');
   await expect(page.locator('.membership-payment-success')).toContainText('有效至');
   expect(requests.filter(row=>['POST','PATCH','DELETE'].includes(row.method)&&/\/(membership_orders|memberships)$/.test(row.path))).toHaveLength(0);
-  await page.screenshot({path:'/tmp/fw-member-payment-success.png'});
+  await page.screenshot({path:test.info().outputPath('fw-member-payment-success.png')});
   await page.getByRole('button',{name:'去装扮',exact:true}).click();await expect(page.getByRole('button',{name:'保存装扮',exact:true})).toBeEnabled();
 });
 
@@ -272,7 +324,7 @@ test('后台查单不显示忙碌按钮，暂不支付立即中止查询且重�
   await expect(page.locator('[data-payment-pause]')).toHaveText('已暂不支付');
   await expect.poll(()=>requests.filter(row=>row.body.action==='query').length).toBe(2);
   await page.clock.runFor(6000);expect(requests.filter(row=>row.body.action==='query')).toHaveLength(2);
-  await page.screenshot({path:'/tmp/fw-member-payment-paused.png'});
+  await page.screenshot({path:test.info().outputPath('fw-member-payment-paused.png')});
 });
 
 test('未付款自动查单三次后暂停，不伪造失败或无限轮询',async({page})=>{

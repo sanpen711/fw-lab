@@ -53,6 +53,84 @@ async function privateFixture(page:Page){
   });
 }
 
+
+test('打开私聊后延迟加载的表情仍贴底，主动上翻后保持阅读位置，再点搭子回到最新消息',async({page})=>{
+  let release!:()=>void;const pending=new Promise<void>(resolve=>release=resolve);
+  const image='http://127.0.0.1:1421/slow-chat-sticker.svg';
+  const rows=Array.from({length:60},(_,i)=>({id:i+1,conversation_id:601,sender_id:i%2?me:other,content:i>=56?'[[FW_USER_STICKER:'+Buffer.from(image).toString('base64')+']]':'消息 '+(i+1),is_deleted:false,created_at:stamp}));
+  await page.route('**/rest/v1/private_messages**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify(queried(rows,new URL(route.request().url())))}));
+  await page.route('**/slow-chat-sticker.svg',async route=>{await pending;await route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="128" height="128" fill="#a1c5b4"/></svg>'});});
+  await boot(page);await openChat(page);
+  const messages=page.locator('[data-chat-messages]');
+  const bottomGap=()=>messages.evaluate(el=>el.scrollHeight-el.clientHeight-el.scrollTop);
+  await expect.poll(bottomGap).toBeLessThan(2);
+  release();await expect.poll(()=>messages.locator('.sticker img').evaluateAll((images:HTMLImageElement[])=>images.every(img=>img.complete&&img.naturalHeight===128))).toBe(true);
+  await expect.poll(bottomGap).toBeLessThan(2);
+  await page.setViewportSize({width:950,height:640});await expect.poll(bottomGap).toBeLessThan(2);
+  await messages.hover();await page.mouse.wheel(0,-900);await expect.poll(bottomGap).toBeGreaterThan(100);
+  const top=await messages.evaluate(el=>el.scrollTop);
+  await messages.locator('.sticker img').last().evaluate((img:HTMLImageElement)=>{img.style.maxHeight='220px';img.style.height='220px';});
+  await expect(messages.locator('.sticker img').last()).toHaveCSS('height','220px');
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  expect(Math.abs(await messages.evaluate(el=>el.scrollTop)-top)).toBeLessThan(2);
+  await page.locator('[data-open-chat="'+other+'"]').first().click();await expect.poll(bottomGap).toBeLessThan(2);
+});
+
+test('私聊按间隔显示时间，举报收进菜单，支持复制与键盘关闭',async({page})=>{
+  await page.route('**/rest/v1/rpc/fw_get_membership_appearances',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{user_id:other,theme:'black_gold',frame:'ticket',nickname_color:'rose_gold',title:'',expires_at:'2099-01-01T00:00:00Z'}])}));
+  await page.route('**/rest/v1/rpc/fw_get_membership_levels',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{user_id:other,level:9}])}));
+  const rows=[
+    {id:1,sender_id:other,content:'第一条消息',created_at:'2026-11-01T15:50:00Z'},
+    {id:2,sender_id:other,content:'连续的消息',created_at:'2026-11-01T15:51:00Z'},
+    {id:3,sender_id:me,content:'我的回复',created_at:'2026-11-01T15:52:00Z'},
+    {id:4,sender_id:other,content:'间隔五分钟',created_at:'2026-11-01T15:57:00Z'},
+    {id:5,sender_id:other,content:'跨过零点',created_at:'2026-11-01T16:00:00Z'},
+  ].map(row=>({...row,conversation_id:601,is_deleted:false}));
+  await page.route('**/rest/v1/private_messages**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify(queried(rows,new URL(route.request().url())))}));
+  await page.addInitScript(()=>Object.defineProperty(navigator,'clipboard',{value:{writeText:async(value:string)=>{(window as any).__chatCopied=value;}}}));
+  await boot(page);await openChat(page);
+  const messages=page.locator('[data-chat-messages]'),first=messages.locator('[data-chat-message-id="1"]');
+  await expect(page.locator('[data-chat-title]')).toHaveText('搭子甲');
+  await expect(page.locator('[data-chat-subtitle]')).toBeHidden();
+  await expect(page.locator('[data-chat-heading-avatar] [data-profile-user]')).toHaveCount(1);
+  await expect(page.locator('[data-chat-title] .vip-badge')).toBeVisible();
+  expect(await page.locator('[data-chat-title] .vip-badge').evaluate(el=>el.getBoundingClientRect().height)).toBe(await page.locator('[data-chat-title]').evaluate(el=>parseFloat(getComputedStyle(el).fontSize)));
+  await expect(page.locator('[data-chat-compose] input[name="message"]')).toHaveAttribute('placeholder','发消息…');
+  await expect(messages.locator('.chat-time-divider')).toHaveCount(3);
+  await expect(messages.locator('.chat-message time,.chat-message small,.chat-message .vip-badge')).toHaveCount(0);
+  await expect(first).toHaveAttribute('title','2026-11-01 23:50:00');
+  await expect(messages.locator('[data-chat-message-id="2"]')).toHaveClass(/consecutive/);
+  await expect(first.locator('[data-review-report]')).toBeHidden();
+  await first.hover();await first.locator('summary').click();await first.locator('[data-chat-copy]').click();
+  expect(await page.evaluate(()=>(window as any).__chatCopied)).toBe('第一条消息');
+  await expect(first.locator('details')).not.toHaveAttribute('open');
+  await first.locator('summary').focus();await page.keyboard.press('Enter');await expect(first.locator('[data-review-report]')).toBeVisible();
+  await page.keyboard.press('Escape');await expect(first.locator('summary')).toBeFocused();await expect(first.locator('[data-review-report]')).toBeHidden();
+  await first.locator('summary').click();await first.locator('[data-review-report]').click();
+  await expect(page.locator('.review-report-dialog')).toBeVisible();await page.locator('[data-report-cancel]').click();
+  await expect(messages.locator('.mine [data-review-report]')).toHaveCount(0);
+  expect(await messages.evaluate(el=>getComputedStyle(el).backgroundImage)).toBe('none');
+  await page.screenshot({path:test.info().outputPath('private-chat-layout.png')});
+});
+
+test('私聊同步提示区分已选搭子，图片与表情仍能显示，切换保留各自草稿',async({page})=>{
+  let release!:()=>void;const pending=new Promise<void>(resolve=>release=resolve);
+  const image='http://127.0.0.1:1421/membership-badges/v3.png';
+  const rows=[{id:1,conversation_id:601,sender_id:other,content:`[[FW_MEDIA_IMAGE:${Buffer.from(image).toString('base64')}]]`,created_at:stamp},{id:2,conversation_id:601,sender_id:me,content:`[[FW_USER_STICKER:${Buffer.from(image).toString('base64')}]]`,created_at:stamp}];
+  await page.route('**/rest/v1/private_messages**',async route=>{
+    const url=new URL(route.request().url());if(url.searchParams.get('conversation_id')==='eq.601'){await pending;return route.fulfill({contentType:'application/json',body:JSON.stringify(queried(rows,url))});}
+    return route.fulfill({contentType:'application/json',body:'[]'});
+  });
+  await boot(page);await page.locator('.nav-item[data-nav="buddy"]').click();await page.locator(`[data-open-chat="${other}"]`).first().click();
+  const input=page.locator('[data-chat-compose] input[name="message"]');
+  await expect(input).toHaveAttribute('placeholder','正在同步消息…');await expect(input).toBeDisabled();release();await expect(input).toBeEnabled();
+  await expect(page.locator('.chat-bubble.align-media img')).toHaveAttribute('src',image);
+  await expect(page.locator('.chat-bubble.sticker img')).toHaveAttribute('src',image);
+  await input.fill('给甲的草稿');await page.locator(`[data-open-chat="${third}"]`).first().click();await expect(input).toBeEnabled();await expect(input).toHaveValue('');await input.fill('给乙的草稿');
+  await page.locator(`[data-open-chat="${other}"]`).first().click();await expect(input).toHaveValue('给甲的草稿');
+  await page.locator('[data-close-chat]').click();await expect(input).toBeDisabled();await expect(input).toHaveAttribute('placeholder','先从左侧选择一个搭子');
+});
+
 test('组队超过200条仍展示最新消息，刷新后顺序正确',async({page})=>{
   const rows=Array.from({length:250},(_,i)=>({id:i+1,party_id:51,user_id:other,content:`队伍消息 ${i+1}`,created_at:stamp}));
   await page.route('**/rest/v1/game_party_messages**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(queried(rows,new URL(route.request().url())))}));
@@ -81,7 +159,7 @@ test('私聊历史跨200条分页无遗漏，保留阅读位置、草稿与后�
   await expect(messages.locator('[data-chat-load-older]')).toHaveCount(0);await expect(messages).toContainText('没有更早的消息了');
   await page.evaluate(other=>(window as any).__privateIncoming({new:{id:451,conversation_id:601,sender_id:other,content:'分页后的实时新消息',is_deleted:false,created_at:new Date().toISOString()}}),other);
   await expect(items).toHaveCount(451);await expect(items.first()).toHaveAttribute('data-chat-message-id','1');await expect(items.last()).toContainText('分页后的实时新消息');
-  await page.screenshot({path:'/tmp/fw-member-private-history.png'});
+  await page.screenshot({path:test.info().outputPath('private-history.png')});
 });
 
 test('私聊历史失败可重试，切换搭子后迟到响应不会串入新会话',async({page})=>{
@@ -122,7 +200,7 @@ test('设置显示原生版本号，检查中防止重复点击，无更新时�
   const button=page.locator('[data-check-updates]');await button.click();await expect(button).toBeDisabled();await expect(button).toHaveText('检查中…');await expect(page.locator('[data-update-check-status]')).toContainText('正在检查更新');
   expect(await page.evaluate(()=>(window as any).__updateCalls)).toBe(1);
   await page.evaluate(()=>(window as any).__finishUpdate({status:'latest'}));await expect(button).toBeEnabled();await expect(page.locator('[data-update-check-status]')).toHaveText('当前已是最新版本。');
-  await page.screenshot({path:'/tmp/fw-member-settings-update.png'});
+  await page.screenshot({path:test.info().outputPath('settings-update.png')});
 });
 
 for(const [name,result,text] of [

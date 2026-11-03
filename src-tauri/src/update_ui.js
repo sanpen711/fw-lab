@@ -13,14 +13,27 @@
   #fw-update-meta{display:flex;justify-content:space-between;gap:12px;color:#756f64;font-size:11px;font-weight:800}
   #fw-update-error{display:none;margin-top:17px;padding:11px 13px;border-radius:12px;background:#fff0ed;color:#944c4c;font-size:12px;line-height:1.6}
   #fw-update-overlay.error #fw-update-error{display:block}
-  #fw-update-close{display:none;margin-top:16px;padding:9px 14px;border:1px solid rgba(27,27,24,.14);border-radius:999px;background:#fffdf7;color:#1b1b18;font:800 12px inherit;cursor:pointer}
-  #fw-update-overlay.error #fw-update-close{display:inline-block}`;
+  #fw-update-retry,#fw-update-close{display:none;margin-top:16px;padding:9px 14px;border:1px solid rgba(27,27,24,.14);border-radius:999px;background:#fffdf7;color:#1b1b18;font:800 12px inherit;cursor:pointer}
+  #fw-update-retry{margin-right:8px;background:#ffe2e6}
+  #fw-update-overlay.error #fw-update-retry,#fw-update-overlay.error #fw-update-close{display:inline-block}
+  #fw-update-overlay.error #fw-update-track,#fw-update-overlay.error #fw-update-meta{display:none}`;
   document.head.appendChild(style);
   const overlay=document.createElement('div');
   overlay.id='fw-update-overlay';
-  overlay.innerHTML=`<section id="fw-update-card" role="dialog" aria-modal="true" aria-live="polite"><h2 id="fw-update-title">正在准备更新…</h2><p id="fw-update-detail">请稍候</p><div id="fw-update-track"><div id="fw-update-bar" class="indeterminate"></div></div><div id="fw-update-meta"><span id="fw-update-bytes">正在连接…</span><span id="fw-update-speed"></span></div><div id="fw-update-error">自动更新失败时不会影响当前版本。可重新尝试；如果仍失败，请从官网手动下载最新版。</div><button id="fw-update-close" type="button">关闭</button></section>`;
+  overlay.innerHTML=`<section id="fw-update-card" role="dialog" aria-modal="true" aria-live="polite"><h2 id="fw-update-title">正在准备更新…</h2><p id="fw-update-detail">请稍候</p><div id="fw-update-track"><div id="fw-update-bar" class="indeterminate"></div></div><div id="fw-update-meta"><span id="fw-update-bytes">正在连接…</span><span id="fw-update-speed"></span></div><div id="fw-update-error">当前版本可继续使用。可以稍后重试，或从官网手动下载。</div><button id="fw-update-retry" type="button">重新尝试</button><button id="fw-update-close" type="button">关闭</button></section>`;
   document.body.appendChild(overlay);
   overlay.querySelector('#fw-update-close').addEventListener('click',()=>overlay.classList.remove('show'));
+  overlay.querySelector('#fw-update-retry').addEventListener('click',async()=>{
+    const retry=overlay.querySelector('#fw-update-retry');
+    if(retry.disabled)return;
+    retry.disabled=true;
+    try{
+      await window.__TAURI__.core.invoke('desktop_check_for_updates');
+      overlay.classList.remove('show');
+    }catch{
+      window.__FW_UPDATE_RENDER__({phase:'error',title:'暂时无法检查更新',detail:'更新服务暂时无法连接，请稍后重试。当前版本可以继续使用。'});
+    }finally{retry.disabled=false;}
+  });
   const fmt=n=>{const v=Number(n||0);if(v>=1048576)return`${(v/1048576).toFixed(1)} MB`;if(v>=1024)return`${(v/1024).toFixed(0)} KB`;return`${v} B`};
   window.__FW_UPDATE_RENDER__=state=>{
     overlay.classList.add('show');

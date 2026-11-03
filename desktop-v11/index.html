@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="/game-party.css">
   <link rel="stylesheet" href="/chat-rooms.css">
   <link rel="stylesheet" href="/site-content.css">
+  <link rel="stylesheet" href="/private-chat.css">
 </head>
 <body class="auth-required">
   <div id="app" class="app-shell" data-view="home" hidden inert aria-hidden="true">
@@ -217,7 +218,7 @@
           </aside>
           <section class="chat-column">
             <header class="chat-heading">
-              <div><p>PRIVATE CHAT</p><h2 data-chat-title>选择一个搭子</h2><span data-chat-subtitle>左边点一个消息或搭子，右边直接聊天。</span></div>
+              <div class="chat-identity"><div class="chat-heading-avatar" data-chat-heading-avatar></div><div><h2 data-chat-title>选择一个搭子</h2><span data-chat-subtitle>从左侧选择一个搭子，开始聊天</span></div></div>
               <button class="secondary compact" type="button" data-close-chat hidden>关闭私聊</button>
             </header>
             <div class="chat-messages" data-chat-messages><div class="state-card">还没有选择聊天对象。</div></div>

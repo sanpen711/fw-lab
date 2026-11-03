@@ -1,6 +1,7 @@
 import {authStore} from './auth-store.js';
 import {membershipStore,DEFAULT_APPEARANCE} from './membership-store.js';
 import {escapeHtml as esc} from './member-identity.js';
+import {levelBadge} from './membership-badge.js';
 import {MEMBER_FRAMES,MEMBER_LAYOUTS} from './membership-levels.js';
 
 let draft=null,draftUser='',dirty=false,featuredPosts=[],postsLoadedFor='',saving=false;
@@ -12,7 +13,7 @@ function plain(value){return String(value||'').replace(/\[\[FW_[^\]]+\]\]/g,'[�
 function preview(){
   const user=authStore.state.user||{};const name=user.nickname||'研究员';
   const post=featuredPosts.find(row=>String(row.id)===String(draft.featured_post_id));
-  return `<div class="member-identity-preview identity-layout-${draft.card_layout} vip-theme-${draft.theme}" data-member-identity-preview><small>资料卡预览</small><div class="member-identity-preview-head"><span class="social-avatar vip-identity vip-frame-${draft.frame}">${user.avatarUrl?`<img src="${esc(user.avatarUrl)}" alt="我的头像">`:esc(name.slice(0,2))}</span><div><b class="member-name member-color-${draft.nickname_color}">${esc(name)}</b><span class="vip-badge member-level-badge vip-level-${Math.max(1,membershipStore.state.growth?.level||0)}">V${Math.max(1,membershipStore.state.growth?.level||0)}</span>${draft.title?`<p class="member-title">${esc(draft.title)}</p>`:''}<p>实验品编号：${esc(user.labCode||user.lab_code||'未设置')}</p></div></div>${draft.intro?`<p class="identity-intro">${esc(draft.intro)}</p>`:''}${post?`<div class="identity-featured"><small>我的代表作</small><p>${esc(plain(post.content).slice(0,100))}</p></div>`:''}<span class="member-identity-preview-note">预览不会改动当前身份，保存后生效。</span></div>`;
+  return `<div class="member-identity-preview identity-layout-${draft.card_layout} vip-theme-${draft.theme}" data-member-identity-preview><small>资料卡预览</small><div class="member-identity-preview-head"><span class="social-avatar vip-identity vip-frame-${draft.frame}">${user.avatarUrl?`<img src="${esc(user.avatarUrl)}" alt="我的头像">`:esc(name.slice(0,2))}</span><div><b class="member-name member-color-${draft.nickname_color}">${esc(name)} ${levelBadge(Math.max(1,membershipStore.state.growth?.level||0))}</b>${draft.title?`<p class="member-title">${esc(draft.title)}</p>`:''}<p>实验品编号：${esc(user.labCode||user.lab_code||'未设置')}</p></div></div>${draft.intro?`<p class="identity-intro">${esc(draft.intro)}</p>`:''}${post?`<div class="identity-featured"><small>我的代表作</small><p>${esc(plain(post.content).slice(0,100))}</p></div>`:''}<span class="member-identity-preview-note">预览不会改动当前身份，保存后生效。</span></div>`;
 }
 function loadOwnPosts(){
   const id=authStore.state.user?.id;if(!id||postsLoadedFor===id)return;postsLoadedFor=id;

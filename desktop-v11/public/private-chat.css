@@ -1,0 +1,49 @@
+/* Private conversations keep controls close to the message without repeating metadata. */
+.buddy-page .buddy-list{padding:8px}
+.buddy-page .message-item{position:relative;grid-template-columns:42px minmax(0,1fr);gap:11px;margin-bottom:4px;padding:14px 12px;border-radius:12px}
+.buddy-page .message-item .social-avatar{width:42px;height:42px;flex:0 0 42px}
+.buddy-page .message-item .buddy-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 9px;flex:1}
+.buddy-page .message-item .buddy-main b{grid-column:1;grid-row:1;font-size:13px}
+.buddy-page .message-item .buddy-main>span{grid-column:1 / -1;grid-row:2;margin:0;line-height:1.4}
+html body .buddy-page .message-item .buddy-main time{grid-column:2;grid-row:1;margin:0;color:#8a9490!important;font-size:10px;font-weight:400;white-space:nowrap}
+.buddy-page .message-item .unread-dot{position:absolute;top:8px;left:43px}
+.buddy-page .chat-heading{min-height:76px;padding:14px 22px;gap:12px}
+.buddy-page .chat-heading .chat-identity{display:flex;align-items:center;gap:12px;min-width:0}
+.buddy-page .chat-heading .chat-heading-avatar{display:flex;margin:0;flex-shrink:0}
+.buddy-page .chat-heading .social-avatar{display:grid;width:40px;height:40px;margin:0;font-size:13px;color:#fff}
+.buddy-page .chat-heading h2{font-size:17px;line-height:1.5;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.buddy-page .chat-identity>div{min-width:0}
+.buddy-page .chat-heading h2>span{display:inline;margin:0;font-size:inherit;color:inherit}
+.buddy-page .chat-heading h2 .member-name{display:inline;margin:0;color:inherit;font-size:inherit}
+.buddy-page .chat-heading h2 .vip-badge{display:inline-block;margin:0 0 0 .25em;color:inherit;font-size:inherit;vertical-align:-.1em}
+.buddy-page .chat-heading [data-chat-subtitle]{margin-top:2px;font-size:11px}
+.buddy-page .chat-heading [hidden]{display:none}
+html body .buddy-page .chat-messages{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:16px 22px 24px;background:#f5f7f6!important;background-image:none!important;overflow-anchor:none}
+.buddy-page .chat-timeline{display:flex;flex-direction:column;align-items:stretch;flex-shrink:0;min-width:0}
+.buddy-page .chat-time-divider{align-self:center;margin:12px 0 20px;color:#8a9490;font-size:10px;line-height:1.5}
+.buddy-page .chat-message{position:relative;display:flex;align-items:flex-start;align-self:flex-start;gap:10px;max-width:90%;margin:0 0 18px;text-align:left}
+.buddy-page .chat-message.consecutive{margin-top:-10px}
+.buddy-page .chat-message.mine{align-self:flex-end;flex-direction:row-reverse;text-align:left}
+.buddy-page .chat-timeline>article,.buddy-page .chat-timeline>time,.buddy-page .chat-timeline>.chat-history{flex-shrink:0}
+.buddy-page .chat-message[hidden]{display:none}
+.buddy-page .chat-message .chat-avatar{display:grid;width:32px;height:32px;flex:0 0 32px;margin:3px 0 0;font-size:11px}
+.buddy-page .chat-message .chat-bubble{min-width:36px;max-width:100%;padding:10px 13px;border-radius:3px 13px 13px;font-size:13px;font-weight:400;line-height:1.65}
+.buddy-page .chat-message.mine .chat-bubble{border-radius:13px 3px 13px 13px}
+html body .buddy-page .chat-message .chat-bubble.sticker,html body .buddy-page .chat-message .chat-bubble.align-media{padding:0;border:0;background:transparent!important;box-shadow:none!important}
+.buddy-page .chat-actions{position:relative;align-self:center;flex-shrink:0;opacity:0;transition:opacity .12s}
+.buddy-page .chat-message:hover .chat-actions,.buddy-page .chat-message:focus-within .chat-actions,.buddy-page .chat-actions[open]{opacity:1}
+.buddy-page .chat-actions summary{display:grid;place-items:center;list-style:none;width:26px;height:28px;border-radius:6px;color:#75827c;font:700 17px/1 sans-serif;cursor:pointer}
+.buddy-page .chat-actions summary::-webkit-details-marker{display:none}
+.buddy-page .chat-actions summary:hover,.buddy-page .chat-actions[open] summary{background:#e6ebe8;color:#152b25}
+.buddy-page .chat-actions summary:focus-visible{outline:2px solid #527b6c;outline-offset:2px}
+.buddy-page .chat-action-menu{position:absolute;z-index:12;bottom:calc(100% + 4px);left:0;display:grid;min-width:92px;padding:5px;border:1px solid #e1e7e3;border-radius:9px;background:#fff;box-shadow:0 5px 18px #152b251a}
+.buddy-page .mine .chat-action-menu{right:0;left:auto}
+.buddy-page .chat-actions.menu-below .chat-action-menu{top:calc(100% + 4px);bottom:auto}
+.buddy-page .chat-action-menu button{display:block;width:100%;min-height:32px;padding:6px 12px;border:0;border-radius:5px;background:transparent;color:#42544c;font:inherit;font-size:12px;text-align:left;white-space:nowrap;cursor:pointer}
+.buddy-page .chat-action-menu button:hover,.buddy-page .chat-action-menu button:focus-visible{background:#f0f4f2}
+.buddy-page .chat-action-menu [data-review-report]{color:#b05862}
+.buddy-page .chat-compose{padding:12px 18px;background:#fff}
+.buddy-page .chat-compose input{border-radius:12px;background:#f7f9f8}
+.buddy-page .chat-messages>.state-card{align-self:stretch}
+@media(hover:none){.buddy-page .chat-actions{opacity:1}}
+@media(max-width:1050px){.buddy-page .chat-messages{padding-right:14px;padding-left:14px}.buddy-page .chat-message{gap:7px;max-width:96%}.buddy-page .chat-heading{padding-right:14px;padding-left:14px}}

@@ -2,6 +2,8 @@ import {installContentReviewUi,reportButton} from './content-review-ui.js';
 import {authStore} from './auth-store.js';
 import {installPasswordRecovery} from './password-recovery.js';
 import {socialStore} from './social-store.js';
+import {showChatTime,fullChatTime,chatTimeLabel,conversationTime} from './chat-presentation.js';
+import {createChatScroll} from './chat-scroll.js';
 import {feedStore} from './feed-store.js';
 import {pollStore} from './poll-store.js';
 import {chatRoomUi} from './chat-room-ui.js';
@@ -64,6 +66,7 @@ let membershipStyleSignature='';
 let squareMode='feed';
 let emojiTab='emoji';
 let lastChatRenderSignature='';
+let chatScroll=null;
 let socialRenderMemo=null;
 let pollFilter='all';
 let pollCreateOpen=false;
@@ -354,7 +357,7 @@ function renderCompose(){
 }
 function postCard(post){
   const profile=currentProfile(post.user_id);const reactions=reactionInfo(post);const open=String(feedState.openPostId)===String(post.id);
-  return `<article class="square-post ${open?'active':''}" data-open-post="${esc(post.id)}"><div class="post-meta time-only"><time>${esc(timeText(post.created_at))}</time></div><div class="post-author">${avatarHtml(profile,'social-avatar mini',{userId:post.user_id})}<b>${memberName(profile.nickname||'匿名研究员',post.user_id)}</b>${vipBadgeHtml(post.user_id)}</div>${richContent(post.content)}<div class="post-stats"><button class="post-like-button ${reactions.active.like?'active':''}" type="button" data-react="like" data-post-id="${esc(post.id)}" aria-pressed="${reactions.active.like}">点赞 ${reactions.values.like}</button><button class="post-comment-button" type="button" data-open-post="${esc(post.id)}">评论 ${(post.comments||[]).length}</button></div></article>`;
+  return `<article class="square-post ${open?'active':''}" data-open-post="${esc(post.id)}"><div class="post-meta time-only"><time>${esc(timeText(post.created_at))}</time></div><div class="post-author">${avatarHtml(profile,'social-avatar mini',{userId:post.user_id})}<b>${memberName(profile.nickname||'匿名研究员',post.user_id,true)}</b></div>${richContent(post.content)}<div class="post-stats"><button class="post-like-button ${reactions.active.like?'active':''}" type="button" data-react="like" data-post-id="${esc(post.id)}" aria-pressed="${reactions.active.like}">点赞 ${reactions.values.like}</button><button class="post-comment-button" type="button" data-open-post="${esc(post.id)}">评论 ${(post.comments||[]).length}</button></div></article>`;
 }
 function renderSquareFeed(){
   const host=$('[data-square-feed]');if(!host)return;
@@ -385,7 +388,7 @@ function commentTree(comments){
 }
 function commentHtml(comment,{reply=false}={}){
   const profile=currentProfile(comment.user_id);const target=currentProfile(comment.reply_to_user_id);const mine=String(comment.user_id)===String(accountState.user?.id);
-  return `<article class="post-comment ${reply?'reply':''} " data-comment-id="${esc(comment.id)}">${avatarHtml(profile,'social-avatar mini',{userId:comment.user_id})}<div><div class="comment-meta"><b>${memberName(profile.nickname||'匿名用户',comment.user_id)}${reply&&target.nickname?` 回复 ${esc(target.nickname)}`:''}</b>${vipBadgeHtml(comment.user_id)}<time>${esc(timeText(comment.created_at))}</time></div>${richContent(comment.content)}<div class="comment-actions"><button type="button" data-reply-comment="${esc(comment.id)}">回复</button>${mine?'':reportButton('comment',comment.id)}${mine?`<button class="danger" type="button" data-delete-comment="${esc(comment.id)}">删除</button>`:''}</div></div></article>`;
+  return `<article class="post-comment ${reply?'reply':''} " data-comment-id="${esc(comment.id)}">${avatarHtml(profile,'social-avatar mini',{userId:comment.user_id})}<div><div class="comment-meta"><b>${memberName(profile.nickname||'匿名用户',comment.user_id,true)}${reply&&target.nickname?` 回复 ${esc(target.nickname)}`:''}</b><time>${esc(timeText(comment.created_at))}</time></div>${richContent(comment.content)}<div class="comment-actions"><button type="button" data-reply-comment="${esc(comment.id)}">回复</button>${mine?'':reportButton('comment',comment.id)}${mine?`<button class="danger" type="button" data-delete-comment="${esc(comment.id)}">删除</button>`:''}</div></div></article>`;
 }
 function renderPostDetail(){
   const host=$('[data-post-detail]');if(!host)return;const previousPostId=host.dataset.renderedPostId||'';const previousScrollTop=host.querySelector('.detail-content-scroll')?.scrollTop||0;const post=feedStore.getPost(feedState.openPostId);
@@ -396,7 +399,7 @@ function renderPostDetail(){
   const comments=tree.roots.length?tree.roots.map(root=>`<div class="comment-thread">${commentHtml(root)}${(tree.replies.get(String(root.id))||[]).map(item=>commentHtml(item,{reply:true})).join('')}</div>`).join(''):'<div class="comment-empty">还没有评论，来说两句吧。</div>';
   const composer=accountState.user?`<form class="comment-compose-card" data-comment-form="${esc(post.id)}">${reply?`<div class="replying">正在回复 ${esc(reply.name)}<button type="button" data-clear-reply>取消</button></div>`:''}<textarea name="content" rows="2" aria-label="评论内容" maxlength="${COMMENT_TEXT_LIMIT}" placeholder="发表评论，最多 300 字" ${feedState.busy?'disabled':''}>${esc(draft.text)}</textarea>${attachmentPreview(draft,'comment',post.id)}<div class="picker-block compact-picker" hidden>${sharedPicker(draft,'comment',post.id)}</div><div class="comment-compose-footer"><div class="comment-compose-toolbar"><div class="media-tools"><label class="secondary compact file-button">图片 / 视频<input type="file" accept="${MEDIA_ACCEPT}" multiple data-comment-image="${esc(post.id)}" hidden ${feedState.busy?'disabled':''}></label></div></div><span><i data-comment-count>${draft.text.length}/${COMMENT_TEXT_LIMIT}</i> · Ctrl + Enter</span><button class="primary compact" type="submit" ${feedState.busy?'disabled':''}>${feedState.busy?'发送中...':'发表评论'}</button></div></form>`:'';
   const signIn=accountState.user?'':'<div class="state-card small"><b>登录后参与评论</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';
-  host.innerHTML=`<div class="detail-scroll ${accountState.user?'has-comment-composer':''}"><header class="detail-head"><b>帖子详情</b><div class="row-actions">${mine?`<button class="detail-quiet-action danger" type="button" data-delete-post="${esc(post.id)}">删除帖子</button>`:`${reportButton('post',post.id)}`}<button class="secondary compact" type="button" data-close-post>关闭</button></div></header><div class="detail-content-scroll"><article class="detail-post"><div class="detail-author-row"><div class="post-author">${avatarHtml(profile,'social-avatar',{userId:post.user_id})}<b>${memberName(profile.nickname||'匿名研究员',post.user_id)}</b>${vipBadgeHtml(post.user_id)}</div><time>${esc(new Date(post.created_at).toLocaleString('zh-CN'))}</time></div>${richContent(post.content)}<div class="detail-post-actions"><div class="reaction-row"><button class="${reaction.active.like?'active':''}" type="button" data-react="like" data-post-id="${esc(post.id)}" aria-pressed="${reaction.active.like}">点赞 ${reaction.values.like}</button></div></div></article><section class="comments-section"><div class="comments-heading"><h3>评论</h3><span>${(post.comments||[]).length} 条</span></div><div class="comment-list">${comments}</div>${signIn}</section></div>${composer}</div>`;
+  host.innerHTML=`<div class="detail-scroll ${accountState.user?'has-comment-composer':''}"><header class="detail-head"><b>帖子详情</b><div class="row-actions">${mine?`<button class="detail-quiet-action danger" type="button" data-delete-post="${esc(post.id)}">删除帖子</button>`:`${reportButton('post',post.id)}`}<button class="secondary compact" type="button" data-close-post>关闭</button></div></header><div class="detail-content-scroll"><article class="detail-post"><div class="detail-author-row"><div class="post-author">${avatarHtml(profile,'social-avatar',{userId:post.user_id})}<b>${memberName(profile.nickname||'匿名研究员',post.user_id,true)}</b></div><time>${esc(new Date(post.created_at).toLocaleString('zh-CN'))}</time></div>${richContent(post.content)}<div class="detail-post-actions"><div class="reaction-row"><button class="${reaction.active.like?'active':''}" type="button" data-react="like" data-post-id="${esc(post.id)}" aria-pressed="${reaction.active.like}">点赞 ${reaction.values.like}</button></div></div></article><section class="comments-section"><div class="comments-heading"><h3>评论</h3><span>${(post.comments||[]).length} 条</span></div><div class="comment-list">${comments}</div>${signIn}</section></div>${composer}</div>`;
   host.dataset.renderedPostId=String(post.id);if(previousPostId===String(post.id))host.querySelector('.detail-content-scroll').scrollTop=previousScrollTop;
   if(samePost){restoreMediaInput(host,mediaInput,'[data-comment-image]');restoreUiState(host,inputState);}
 }
@@ -443,15 +446,15 @@ function buddyRelation(userId){const me=accountState.user?.id;return(socialState
 function buddyOtherId(row){return String(row.requester_id)===String(accountState.user?.id)?String(row.receiver_id):String(row.requester_id);}
 function buddyCard(row,{mode='friend'}={}){
   const userId=buddyOtherId(row);const profile=socialState.buddy.profiles[userId]||{};const name=profile.nickname||'低功耗研究员';
-  if(mode==='friend')return `<article class="buddy-item ${socialState.chat.targetId===userId?'active':''}" data-open-chat="${esc(userId)}">${avatarHtml(profile,'social-avatar',{userId})}<div class="buddy-main"><b>${memberName(name,userId)} ${vipBadgeHtml(userId)}</b><span>实验品编号：${esc(profile.lab_code||'未设置')}</span></div><div class="row-actions"><button class="secondary compact danger" type="button" data-remove-friend="${esc(row.id)}">解除</button></div></article>`;
-  const incoming=String(row.receiver_id)===String(accountState.user?.id);return `<article class="buddy-item">${avatarHtml(profile,'social-avatar',{userId})}<div class="buddy-main"><b>${memberName(name,userId)} ${vipBadgeHtml(userId)}</b><span>实验品编号：${esc(profile.lab_code||'未设置')} · ${incoming?'对方想加你为搭子':'等待对方处理'}</span></div><div class="row-actions">${incoming?`<button class="primary compact" type="button" data-accept-friend="${esc(row.id)}">同意</button><button class="secondary compact danger" type="button" data-reject-friend="${esc(row.id)}">拒绝</button>`:`<button class="secondary compact danger" type="button" data-remove-friend="${esc(row.id)}">撤回</button>`}</div></article>`;
+  if(mode==='friend')return `<article class="buddy-item ${socialState.chat.targetId===userId?'active':''}" data-open-chat="${esc(userId)}">${avatarHtml(profile,'social-avatar',{userId})}<div class="buddy-main"><b>${memberName(name,userId,true)}</b><span>实验品编号：${esc(profile.lab_code||'未设置')}</span></div><div class="row-actions"><button class="secondary compact danger" type="button" data-remove-friend="${esc(row.id)}">解除</button></div></article>`;
+  const incoming=String(row.receiver_id)===String(accountState.user?.id);return `<article class="buddy-item">${avatarHtml(profile,'social-avatar',{userId})}<div class="buddy-main"><b>${memberName(name,userId,true)}</b><span>实验品编号：${esc(profile.lab_code||'未设置')} · ${incoming?'对方想加你为搭子':'等待对方处理'}</span></div><div class="row-actions">${incoming?`<button class="primary compact" type="button" data-accept-friend="${esc(row.id)}">同意</button><button class="secondary compact danger" type="button" data-reject-friend="${esc(row.id)}">拒绝</button>`:`<button class="secondary compact danger" type="button" data-remove-friend="${esc(row.id)}">撤回</button>`}</div></article>`;
 }
 
 function messagePreview(value){return decodeSticker(value)?'动画表情':String(value||'[消息]').replace(/\s+/g,' ').trim();}
 function renderMessageList(accepted){
   const rows=accepted.map(friend=>{const userId=buddyOtherId(friend);return{friend,userId,profile:socialState.buddy.profiles[userId]||{},latest:socialState.buddy.latest[userId]||null,unread:Number(socialState.buddy.unread[userId]||0)};}).sort((a,b)=>b.unread-a.unread||new Date(b.latest?.created_at||0)-new Date(a.latest?.created_at||0)||String(a.profile.nickname||'').localeCompare(String(b.profile.nickname||''),'zh-CN'));
   if(!rows.length)return'<div class="state-card">暂时还没有搭子消息。先去“新的搭子”加一个搭子吧。</div>';
-  return rows.map(item=>{const mine=String(item.latest?.sender_id||'')===String(accountState.user?.id);return `<article class="buddy-item message-item ${item.unread?'unread':''} ${socialState.chat.targetId===item.userId?'active':''}" data-open-chat="${esc(item.userId)}">${avatarHtml(item.profile,'social-avatar',{userId:item.userId})}${item.unread?`<i class="unread-dot">${item.unread>99?'99+':item.unread}</i>`:''}<div class="buddy-main"><b>${memberName(item.profile.nickname||'低功耗搭子',item.userId)} ${vipBadgeHtml(item.userId)}</b><span>${esc(item.latest?(mine?'我：':'')+messagePreview(item.latest.content):'还没有消息，点这里打个招呼')}</span><time>${item.latest?esc(timeText(item.latest.created_at)):''}</time></div></article>`;}).join('');
+  return rows.map(item=>{const mine=String(item.latest?.sender_id||'')===String(accountState.user?.id);return `<article class="buddy-item message-item ${item.unread?'unread':''} ${socialState.chat.targetId===item.userId?'active':''}" data-open-chat="${esc(item.userId)}">${avatarHtml(item.profile,'social-avatar',{userId:item.userId})}${item.unread?`<i class="unread-dot">${item.unread>99?'99+':item.unread}</i>`:''}<div class="buddy-main"><b>${memberName(item.profile.nickname||'低功耗搭子',item.userId,true)}</b><span>${esc(item.latest?(mine?'我：':'')+messagePreview(item.latest.content):'还没有消息，点这里打个招呼')}</span><time title="${esc(fullChatTime(item.latest?.created_at))}">${item.latest?esc(conversationTime(item.latest.created_at)):''}</time></div></article>`;}).join('');
 }
 
 function renderSearchResults(){
@@ -471,13 +474,39 @@ function renderBuddyList(){
   list.innerHTML=renderSearchResults()+`<section class="buddy-section"><h3>收到申请</h3>${incoming.length?incoming.map(row=>buddyCard(row,{mode:'request'})).join(''):'<div class="state-card small">暂时没有收到新的搭子申请。</div>'}</section><section class="buddy-section"><h3>发出申请</h3>${outgoing.length?outgoing.map(row=>buddyCard(row,{mode:'request'})).join(''):'<div class="state-card small">暂时没有发出的搭子申请。</div>'}</section>`;
 }
 
-function messageBubble(row){const mine=String(row.sender_id)===String(accountState.user?.id);const sticker=decodeSticker(row.content);return `<article class="chat-message ${mine?'mine':''}" data-chat-message-id="${esc(row.id)}"><small>${mine?'你':esc(socialState.chat.profile?.nickname||'搭子')} ${vipBadgeHtml(row.sender_id)}</small><div class="chat-bubble ${sticker?'sticker':''}">${sticker?`<img src="${esc(sticker)}" alt="表情">`:emojiText(row.content)}</div><time>${esc(timeText(row.created_at))}</time>${mine||String(row.id).startsWith('pending-')?'':reportButton('private_message',row.id)}</article>`;}
+function messageBubble(row,consecutive=false){
+  const mine=String(row.sender_id)===String(accountState.user?.id),sticker=decodeSticker(row.content);
+  const profile=mine?accountState.user:socialState.chat.profile;
+  const pending=String(row.id).startsWith('pending-');
+  const actions=pending?'':`<details class="chat-actions"><summary aria-label="消息操作" title="消息操作">⋯</summary><div class="chat-action-menu"><button type="button" data-chat-copy="${esc(row.id)}">复制</button>${mine?'':reportButton('private_message',row.id)}</div></details>`;
+  return `<article class="chat-message ${mine?'mine':''} ${consecutive?'consecutive':''}" data-chat-message-id="${esc(row.id)}" title="${esc(fullChatTime(row.created_at))}">${avatarHtml(profile,'social-avatar chat-avatar',{userId:row.sender_id})}<div class="chat-bubble ${sticker?'sticker':''}">${sticker?`<img src="${esc(sticker)}" alt="表情">`:emojiText(row.content)}</div>${actions}</article>`;
+}
+function closeChatActions(except=null){$$('.chat-actions[open]').forEach(menu=>{if(menu!==except)menu.open=false;});}
+function bindChatActions(){
+  document.addEventListener('click',event=>{
+    const menu=event.target.closest('.chat-actions');closeChatActions(menu);
+    if(menu&&event.target.closest('button'))queueMicrotask(()=>menu.open=false);
+  },true);
+  document.addEventListener('toggle',event=>{
+    const menu=event.target;if(!menu.matches?.('.chat-actions')||!menu.open)return;
+    closeChatActions(menu);menu.classList.remove('menu-below');
+    const bounds=menu.querySelector('.chat-action-menu').getBoundingClientRect();
+    if(bounds.top<$('[data-chat-messages]').getBoundingClientRect().top)menu.classList.add('menu-below');
+  },true);
+  document.addEventListener('keydown',event=>{
+    if(event.key!=='Escape')return;const menu=$('.chat-actions[open]');if(!menu)return;
+    event.preventDefault();event.stopPropagation();menu.open=false;menu.querySelector('summary').focus({preventScroll:true});
+  });
+}
 function renderChat(){
   const chat=socialState.chat;const messages=$('[data-chat-messages]');const input=$('[data-chat-compose] input[name="message"]');const submit=$('[data-chat-compose] button[type="submit"]');const emoji=$('[data-emoji-toggle]');const target=String(chat.targetId||'');
+  chatScroll||=createChatScroll(messages,()=>{$('[data-chat-new-messages]').hidden=true;});chatScroll.setTarget(target);
   if(chatComposerTarget!==target){if(chatComposerTarget)chatDrafts.set(chatComposerTarget,input.value);chatComposerTarget=target;input.value=chatDrafts.get(target)||'';$('[data-emoji-panel]').hidden=true;}
-  $('[data-chat-title]').textContent=chat.targetId?`和 ${chat.profile?.nickname||'搭子'} 私聊`:'选择一个搭子';$('[data-chat-subtitle]').textContent=chat.targetId?`${chat.profile?.lab_code?`实验品编号：${chat.profile.lab_code}`:'实验品编号：未设置'}${chat.loading?' · 正在同步':''}`:'左边点一个消息或搭子，右边直接聊天。';$('[data-close-chat]').hidden=!chat.targetId;
-  const enabled=Boolean(chat.targetId&&!chat.loading);input.disabled=!enabled;submit.disabled=!enabled||chat.sending;emoji.disabled=!enabled;input.placeholder=enabled?'输入文字，或 Ctrl+V 直接粘贴图片...':'先从左侧选择一个搭子';submit.textContent=chat.sending?'发送中...':'发送';
-  const signature=[chat.targetId,chat.loading&&!(chat.rows||[]).length?'loading':'ready',chat.profile?.nickname||'',chat.hasMore,chat.historyLoading,chat.historyError,chat.historyPage,...(chat.rows||[]).map(row=>`${row.id}:${row.is_deleted?'1':'0'}:${row.content}`)].join('|');
+  $('[data-chat-title]').innerHTML=target?memberName(chat.profile?.nickname||'搭子',target,true):'选择一个搭子';
+  $('[data-chat-heading-avatar]').innerHTML=target?avatarHtml(chat.profile,'social-avatar',{userId:target}):'';
+  $('[data-chat-subtitle]').textContent=target?(chat.loading?'正在同步消息…':''):'从左侧选择一个搭子，开始聊天';$('[data-chat-subtitle]').hidden=Boolean(target&&!chat.loading);$('[data-close-chat]').hidden=!target;
+  const enabled=Boolean(chat.targetId&&!chat.loading);input.disabled=!enabled;submit.disabled=!enabled||chat.sending;emoji.disabled=!enabled;input.placeholder=!target?'先从左侧选择一个搭子':chat.loading?'正在同步消息…':'发消息…';submit.textContent=chat.sending?'发送中...':'发送';
+  const signature=[chat.targetId,chat.loading&&!(chat.rows||[]).length?'loading':'ready',chat.profile?.nickname||'',chat.profile?.avatar_url||'',accountState.user?.avatarUrl||'',chat.hasMore,chat.historyLoading,chat.historyError,chat.historyPage,...(chat.rows||[]).map(row=>`${row.id}:${row.sender_id}:${row.created_at}:${row.is_deleted?'1':'0'}:${row.content}`)].join('|');
   if(signature===lastChatRenderSignature)return;
   const changedTarget=messages.dataset.target!==target,top=messages.scrollTop,nearBottom=messages.scrollHeight-top-messages.clientHeight<70;
   const olderPage=!changedTarget&&messages.dataset.historyPage!==String(chat.historyPage||0);
@@ -485,14 +514,15 @@ function renderChat(){
   const anchor=Array.from(messages.querySelectorAll('[data-chat-message-id]')).find(node=>node.getBoundingClientRect().bottom>containerTop);
   const anchorId=anchor?.dataset.chatMessageId,anchorOffset=anchor?anchor.getBoundingClientRect().top-containerTop:0;
   const newRows=changedTarget||olderPage?[]:(chat.rows||[]).filter(row=>!chatMessageIds.has(String(row.id)));
-  const shouldScroll=!olderPage&&(changedTarget||nearBottom||newRows.some(row=>String(row.sender_id)===String(accountState.user?.id)));
+  const shouldScroll=!olderPage&&(changedTarget||chatScroll.following||nearBottom||newRows.some(row=>String(row.sender_id)===String(accountState.user?.id)));
   const notice=$('[data-chat-new-messages]');if(changedTarget||shouldScroll)notice.hidden=true;else if(newRows.length)notice.hidden=false;
   messages.dataset.target=target;messages.dataset.historyPage=String(chat.historyPage||0);chatMessageIds=new Set((chat.rows||[]).map(row=>String(row.id)));lastChatRenderSignature=signature;
-  if(chat.loading&&!chat.rows.length){messages.innerHTML='<div class="state-card">正在打开私聊...</div>';return;}if(!chat.targetId){messages.innerHTML='<div class="state-card">还没有选择聊天对象。</div>';return;}if(!chat.rows.length){messages.innerHTML='<div class="state-card">还没有私聊消息。可以先低功耗地打个招呼。</div>';return;}
+  if(shouldScroll)chatScroll.follow();else chatScroll.pause();
+  if(chat.loading&&!chat.rows.length){messages.innerHTML='<div class="state-card">正在打开私聊...</div>';chatScroll.afterRender();return;}if(!chat.targetId){messages.innerHTML='<div class="state-card">还没有选择聊天对象。</div>';chatScroll.afterRender();return;}if(!chat.rows.length){messages.innerHTML='<div class="state-card">还没有私聊消息。可以先低功耗地打个招呼。</div>';chatScroll.afterRender();return;}
   const history=chat.hasMore?`<div class="chat-history"><button class="secondary compact" type="button" data-chat-load-older ${chat.historyLoading||chat.loading?'disabled':''}>${chat.historyLoading?'正在加载…':chat.historyError?'重试加载更早消息':'加载更早消息'}</button>${chat.historyError?`<p role="status">${esc(chat.historyError)}</p>`:''}</div>`:chat.historyPage?'<div class="chat-history">没有更早的消息了</div>':'';
-  messages.innerHTML=history+chat.rows.map(messageBubble).join('');
-  if(shouldScroll)requestAnimationFrame(()=>{if(messages.dataset.target===target&&lastChatRenderSignature===signature)messages.scrollTop=messages.scrollHeight;});
-  else{const nextAnchor=anchorId&&Array.from(messages.querySelectorAll('[data-chat-message-id]')).find(node=>node.dataset.chatMessageId===anchorId);messages.scrollTop=nextAnchor?messages.scrollTop+nextAnchor.getBoundingClientRect().top-containerTop-anchorOffset:top;}
+  messages.innerHTML='<div class="chat-timeline" data-chat-timeline>'+history+chat.rows.map((row,index)=>{const previous=chat.rows[index-1],separator=showChatTime(row.created_at,previous?.created_at);return(separator?`<time class="chat-time-divider" datetime="${esc(row.created_at)}" title="${esc(fullChatTime(row.created_at))}">${esc(chatTimeLabel(row.created_at))}</time>`:'')+messageBubble(row,!separator&&previous?.sender_id===row.sender_id);}).join('')+'</div>';
+  if(!shouldScroll){const nextAnchor=anchorId&&Array.from(messages.querySelectorAll('[data-chat-message-id]')).find(node=>node.dataset.chatMessageId===anchorId);messages.scrollTop=nextAnchor?messages.scrollTop+nextAnchor.getBoundingClientRect().top-containerTop-anchorOffset:top;}
+  chatScroll.afterRender();
 }
 
 function renderEmojiPanel(){
@@ -572,17 +602,23 @@ function bindNavigation(){
     if(event.target.closest('[data-echo-mark-all]')){try{await socialStore.markAllEchoRead();}catch(error){toast(error.message||'全部已读失败。');}return;}
     const echoPost=event.target.closest('[data-echo-post]');if(echoPost){const item=echoPost.closest('[data-echo-item]');try{if(item)await socialStore.markEchoRead([item.dataset.echoItem]);await feedStore.openPostById(echoPost.dataset.echoPost);socialStore.loadStickers().catch(()=>{});}catch(error){toast(error.message||'帖子读取失败。');}return;}
     const tab=event.target.closest('[data-buddy-tab]');if(tab){socialStore.setBuddyTab(tab.dataset.buddyTab);return;}
-    if(event.target.closest('[data-chat-load-older]')){await socialStore.loadEarlierChat();return;}
-    const chat=event.target.closest('[data-open-chat]');if(chat&&!event.target.closest('[data-remove-friend]')){try{await socialStore.openChat(chat.dataset.openChat);$('[data-chat-compose] input')?.focus();}catch(error){toast(error.message||'私聊打开失败。');}return;}
+    if(event.target.closest('[data-chat-load-older]')){chatScroll?.pause();await socialStore.loadEarlierChat();return;}
+    const chat=event.target.closest('[data-open-chat]');if(chat&&!event.target.closest('[data-remove-friend]')){const targetId=chat.dataset.openChat;if(String(socialState.chat.targetId)===targetId)chatScroll?.follow();try{await socialStore.openChat(targetId);if(String(socialState.chat.targetId)===targetId)$('[data-chat-compose] input')?.focus({preventScroll:true});}catch(error){toast(error.message||'私聊打开失败。');}return;}
     const add=event.target.closest('[data-add-friend]');if(add){try{const result=await socialStore.sendFriendRequest(add.dataset.addFriend);toast(result==='already_accepted'?'你们已经是搭子了。':result==='already_pending'?'搭子申请已经发出，等待对方处理。':result==='blocked'?'当前不能发送搭子申请。':'搭子申请已发出。');}catch(error){toast(error.message||'发送申请失败。');}return;}
     const accept=event.target.closest('[data-accept-friend]');if(accept){try{await socialStore.respondFriendship(accept.dataset.acceptFriend,true);toast('已同意搭子申请。');socialStore.setBuddyTab('friends');}catch(error){toast(error.message||'处理失败。');}return;}
     const reject=event.target.closest('[data-reject-friend]');if(reject){try{await socialStore.respondFriendship(reject.dataset.rejectFriend,false);toast('已拒绝搭子申请。');}catch(error){toast(error.message||'处理失败。');}return;}
     const remove=event.target.closest('[data-remove-friend]');if(remove){if(!window.confirm('确定处理这个搭子关系吗？'))return;try{await socialStore.removeFriendship(remove.dataset.removeFriend);toast('已处理搭子关系。');}catch(error){toast(error.message||'操作失败。');}return;}
     if(event.target.closest('[data-close-chat]')){socialStore.closeChat();return;}
+    const chatCopy=event.target.closest('[data-chat-copy]');if(chatCopy){
+      const row=(socialState.chat.rows||[]).find(item=>String(item.id)===chatCopy.dataset.chatCopy);if(!row)return;
+      let value=decodeSticker(row.content)||String(row.content||'');
+      const media=value.match(/^\[\[(?:FW_MEDIA_IMAGE|FW_MEDIA_VIDEO):([A-Za-z0-9+/=]+)\]\]$/);if(media){try{value=atob(media[1]);}catch{}}
+      try{await navigator.clipboard.writeText(value);toast('已复制。');}catch{toast('复制失败，请选中文字后复制。');}return;
+    }
     if(event.target.closest('[data-emoji-toggle]')){const panel=$('[data-emoji-panel]');panel.hidden=!panel.hidden;if(!panel.hidden)renderEmojiPanel();return;}
     const emojiSwitch=event.target.closest('[data-emoji-tab]');if(emojiSwitch){emojiTab=emojiSwitch.dataset.emojiTab;if(emojiTab==='stickers')socialStore.loadStickers().catch(error=>toast(error.message));renderEmojiPanel();return;}
     const emoji=event.target.closest('[data-insert-emoji]');if(emoji){const input=$('[data-chat-compose] input[name="message"]');input.value+=emoji.dataset.insertEmoji;input.dispatchEvent(new Event('input',{bubbles:true}));input.focus();return;}
-    if(event.target.closest('[data-chat-new-messages]')){const messages=$('[data-chat-messages]');messages.scrollTop=messages.scrollHeight;$('[data-chat-new-messages]').hidden=true;return;}
+    if(event.target.closest('[data-chat-new-messages]')){chatScroll?.follow();$('[data-chat-new-messages]').hidden=true;return;}
     const sticker=event.target.closest('[data-send-sticker]');if(sticker){try{rememberSticker(sticker.dataset.sendSticker);await socialStore.sendMessage('',{stickerUrl:sticker.dataset.sendSticker});$('[data-emoji-panel]').hidden=true;}catch(error){toast(error.message||'发送失败。');}return;}
     if(event.target.closest('[data-upload-sticker]')){$('[data-sticker-file]').click();return;}
     const deleteSticker=event.target.closest('[data-delete-sticker]');if(deleteSticker){event.stopPropagation();try{await socialStore.deleteSticker(deleteSticker.dataset.deleteSticker);toast('表情已删除。');}catch(error){toast(error.message||'删除失败。');}return;}
@@ -626,6 +662,6 @@ function bindForms(){
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);const owner=accountState.user?.id,text=draft.text,attachments=draft.attachments;try{await feedStore.createComment({postId,text,attachments});if(accountState.user?.id!==owner)return;if(draft.text===text&&draft.attachments===attachments){releasePreview(draft);draft.text='';}toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
-bindExternalLinks({onError:toast});bindSidebarMore();bindNavigation();bindForms();chatRoomUi.init({toast,avatarHtml,memberName,emojiText,emojiImage,fufuImage,emojis:EMOJIS,fufu:FUFU_PACK});desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);archiveStore.subscribe(renderArchive);authStore.boot();
+bindExternalLinks({onError:toast});bindSidebarMore();bindChatActions();bindNavigation();bindForms();chatRoomUi.init({toast,avatarHtml,memberName,emojiText,emojiImage,fufuImage,emojis:EMOJIS,fufu:FUFU_PACK});desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);archiveStore.subscribe(renderArchive);authStore.boot();
 
 installContentReviewUi({toast});
