@@ -53,6 +53,29 @@ async function privateFixture(page:Page){
   });
 }
 
+
+test('打开私聊后延迟加载的表情仍贴底，主动上翻后保持阅读位置，再点搭子回到最新消息',async({page})=>{
+  let release!:()=>void;const pending=new Promise<void>(resolve=>release=resolve);
+  const image='http://127.0.0.1:1421/slow-chat-sticker.svg';
+  const rows=Array.from({length:60},(_,i)=>({id:i+1,conversation_id:601,sender_id:i%2?me:other,content:i>=56?'[[FW_USER_STICKER:'+Buffer.from(image).toString('base64')+']]':'消息 '+(i+1),is_deleted:false,created_at:stamp}));
+  await page.route('**/rest/v1/private_messages**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify(queried(rows,new URL(route.request().url())))}));
+  await page.route('**/slow-chat-sticker.svg',async route=>{await pending;await route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="128" height="128" fill="#a1c5b4"/></svg>'});});
+  await boot(page);await openChat(page);
+  const messages=page.locator('[data-chat-messages]');
+  const bottomGap=()=>messages.evaluate(el=>el.scrollHeight-el.clientHeight-el.scrollTop);
+  await expect.poll(bottomGap).toBeLessThan(2);
+  release();await expect.poll(()=>messages.locator('.sticker img').evaluateAll((images:HTMLImageElement[])=>images.every(img=>img.complete&&img.naturalHeight===128))).toBe(true);
+  await expect.poll(bottomGap).toBeLessThan(2);
+  await page.setViewportSize({width:950,height:640});await expect.poll(bottomGap).toBeLessThan(2);
+  await messages.hover();await page.mouse.wheel(0,-900);await expect.poll(bottomGap).toBeGreaterThan(100);
+  const top=await messages.evaluate(el=>el.scrollTop);
+  await messages.locator('.sticker img').last().evaluate((img:HTMLImageElement)=>{img.style.maxHeight='220px';img.style.height='220px';});
+  await expect(messages.locator('.sticker img').last()).toHaveCSS('height','220px');
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  expect(Math.abs(await messages.evaluate(el=>el.scrollTop)-top)).toBeLessThan(2);
+  await page.locator('[data-open-chat="'+other+'"]').first().click();await expect.poll(bottomGap).toBeLessThan(2);
+});
+
 test('私聊按间隔显示时间，举报收进菜单，支持复制与键盘关闭',async({page})=>{
   await page.route('**/rest/v1/rpc/fw_get_membership_appearances',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{user_id:other,theme:'black_gold',frame:'ticket',nickname_color:'rose_gold',title:'',expires_at:'2099-01-01T00:00:00Z'}])}));
   await page.route('**/rest/v1/rpc/fw_get_membership_levels',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{user_id:other,level:9}])}));

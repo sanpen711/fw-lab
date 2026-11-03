@@ -3,6 +3,7 @@ import {authStore} from './auth-store.js';
 import {installPasswordRecovery} from './password-recovery.js';
 import {socialStore} from './social-store.js';
 import {showChatTime,fullChatTime,chatTimeLabel,conversationTime} from './chat-presentation.js';
+import {createChatScroll} from './chat-scroll.js';
 import {feedStore} from './feed-store.js';
 import {pollStore} from './poll-store.js';
 import {chatRoomUi} from './chat-room-ui.js';
@@ -65,6 +66,7 @@ let membershipStyleSignature='';
 let squareMode='feed';
 let emojiTab='emoji';
 let lastChatRenderSignature='';
+let chatScroll=null;
 let socialRenderMemo=null;
 let pollFilter='all';
 let pollCreateOpen=false;
@@ -498,6 +500,7 @@ function bindChatActions(){
 }
 function renderChat(){
   const chat=socialState.chat;const messages=$('[data-chat-messages]');const input=$('[data-chat-compose] input[name="message"]');const submit=$('[data-chat-compose] button[type="submit"]');const emoji=$('[data-emoji-toggle]');const target=String(chat.targetId||'');
+  chatScroll||=createChatScroll(messages,()=>{$('[data-chat-new-messages]').hidden=true;});chatScroll.setTarget(target);
   if(chatComposerTarget!==target){if(chatComposerTarget)chatDrafts.set(chatComposerTarget,input.value);chatComposerTarget=target;input.value=chatDrafts.get(target)||'';$('[data-emoji-panel]').hidden=true;}
   $('[data-chat-title]').innerHTML=target?memberName(chat.profile?.nickname||'搭子',target,true):'选择一个搭子';
   $('[data-chat-heading-avatar]').innerHTML=target?avatarHtml(chat.profile,'social-avatar',{userId:target}):'';
@@ -511,14 +514,15 @@ function renderChat(){
   const anchor=Array.from(messages.querySelectorAll('[data-chat-message-id]')).find(node=>node.getBoundingClientRect().bottom>containerTop);
   const anchorId=anchor?.dataset.chatMessageId,anchorOffset=anchor?anchor.getBoundingClientRect().top-containerTop:0;
   const newRows=changedTarget||olderPage?[]:(chat.rows||[]).filter(row=>!chatMessageIds.has(String(row.id)));
-  const shouldScroll=!olderPage&&(changedTarget||nearBottom||newRows.some(row=>String(row.sender_id)===String(accountState.user?.id)));
+  const shouldScroll=!olderPage&&(changedTarget||chatScroll.following||nearBottom||newRows.some(row=>String(row.sender_id)===String(accountState.user?.id)));
   const notice=$('[data-chat-new-messages]');if(changedTarget||shouldScroll)notice.hidden=true;else if(newRows.length)notice.hidden=false;
   messages.dataset.target=target;messages.dataset.historyPage=String(chat.historyPage||0);chatMessageIds=new Set((chat.rows||[]).map(row=>String(row.id)));lastChatRenderSignature=signature;
-  if(chat.loading&&!chat.rows.length){messages.innerHTML='<div class="state-card">正在打开私聊...</div>';return;}if(!chat.targetId){messages.innerHTML='<div class="state-card">还没有选择聊天对象。</div>';return;}if(!chat.rows.length){messages.innerHTML='<div class="state-card">还没有私聊消息。可以先低功耗地打个招呼。</div>';return;}
+  if(shouldScroll)chatScroll.follow();else chatScroll.pause();
+  if(chat.loading&&!chat.rows.length){messages.innerHTML='<div class="state-card">正在打开私聊...</div>';chatScroll.afterRender();return;}if(!chat.targetId){messages.innerHTML='<div class="state-card">还没有选择聊天对象。</div>';chatScroll.afterRender();return;}if(!chat.rows.length){messages.innerHTML='<div class="state-card">还没有私聊消息。可以先低功耗地打个招呼。</div>';chatScroll.afterRender();return;}
   const history=chat.hasMore?`<div class="chat-history"><button class="secondary compact" type="button" data-chat-load-older ${chat.historyLoading||chat.loading?'disabled':''}>${chat.historyLoading?'正在加载…':chat.historyError?'重试加载更早消息':'加载更早消息'}</button>${chat.historyError?`<p role="status">${esc(chat.historyError)}</p>`:''}</div>`:chat.historyPage?'<div class="chat-history">没有更早的消息了</div>':'';
-  messages.innerHTML=history+chat.rows.map((row,index)=>{const previous=chat.rows[index-1],separator=showChatTime(row.created_at,previous?.created_at);return(separator?`<time class="chat-time-divider" datetime="${esc(row.created_at)}" title="${esc(fullChatTime(row.created_at))}">${esc(chatTimeLabel(row.created_at))}</time>`:'')+messageBubble(row,!separator&&previous?.sender_id===row.sender_id);}).join('');
-  if(shouldScroll)requestAnimationFrame(()=>{if(messages.dataset.target===target&&lastChatRenderSignature===signature)messages.scrollTop=messages.scrollHeight;});
-  else{const nextAnchor=anchorId&&Array.from(messages.querySelectorAll('[data-chat-message-id]')).find(node=>node.dataset.chatMessageId===anchorId);messages.scrollTop=nextAnchor?messages.scrollTop+nextAnchor.getBoundingClientRect().top-containerTop-anchorOffset:top;}
+  messages.innerHTML='<div class="chat-timeline" data-chat-timeline>'+history+chat.rows.map((row,index)=>{const previous=chat.rows[index-1],separator=showChatTime(row.created_at,previous?.created_at);return(separator?`<time class="chat-time-divider" datetime="${esc(row.created_at)}" title="${esc(fullChatTime(row.created_at))}">${esc(chatTimeLabel(row.created_at))}</time>`:'')+messageBubble(row,!separator&&previous?.sender_id===row.sender_id);}).join('')+'</div>';
+  if(!shouldScroll){const nextAnchor=anchorId&&Array.from(messages.querySelectorAll('[data-chat-message-id]')).find(node=>node.dataset.chatMessageId===anchorId);messages.scrollTop=nextAnchor?messages.scrollTop+nextAnchor.getBoundingClientRect().top-containerTop-anchorOffset:top;}
+  chatScroll.afterRender();
 }
 
 function renderEmojiPanel(){
@@ -598,8 +602,8 @@ function bindNavigation(){
     if(event.target.closest('[data-echo-mark-all]')){try{await socialStore.markAllEchoRead();}catch(error){toast(error.message||'全部已读失败。');}return;}
     const echoPost=event.target.closest('[data-echo-post]');if(echoPost){const item=echoPost.closest('[data-echo-item]');try{if(item)await socialStore.markEchoRead([item.dataset.echoItem]);await feedStore.openPostById(echoPost.dataset.echoPost);socialStore.loadStickers().catch(()=>{});}catch(error){toast(error.message||'帖子读取失败。');}return;}
     const tab=event.target.closest('[data-buddy-tab]');if(tab){socialStore.setBuddyTab(tab.dataset.buddyTab);return;}
-    if(event.target.closest('[data-chat-load-older]')){await socialStore.loadEarlierChat();return;}
-    const chat=event.target.closest('[data-open-chat]');if(chat&&!event.target.closest('[data-remove-friend]')){try{await socialStore.openChat(chat.dataset.openChat);$('[data-chat-compose] input')?.focus();}catch(error){toast(error.message||'私聊打开失败。');}return;}
+    if(event.target.closest('[data-chat-load-older]')){chatScroll?.pause();await socialStore.loadEarlierChat();return;}
+    const chat=event.target.closest('[data-open-chat]');if(chat&&!event.target.closest('[data-remove-friend]')){const targetId=chat.dataset.openChat;if(String(socialState.chat.targetId)===targetId)chatScroll?.follow();try{await socialStore.openChat(targetId);if(String(socialState.chat.targetId)===targetId)$('[data-chat-compose] input')?.focus({preventScroll:true});}catch(error){toast(error.message||'私聊打开失败。');}return;}
     const add=event.target.closest('[data-add-friend]');if(add){try{const result=await socialStore.sendFriendRequest(add.dataset.addFriend);toast(result==='already_accepted'?'你们已经是搭子了。':result==='already_pending'?'搭子申请已经发出，等待对方处理。':result==='blocked'?'当前不能发送搭子申请。':'搭子申请已发出。');}catch(error){toast(error.message||'发送申请失败。');}return;}
     const accept=event.target.closest('[data-accept-friend]');if(accept){try{await socialStore.respondFriendship(accept.dataset.acceptFriend,true);toast('已同意搭子申请。');socialStore.setBuddyTab('friends');}catch(error){toast(error.message||'处理失败。');}return;}
     const reject=event.target.closest('[data-reject-friend]');if(reject){try{await socialStore.respondFriendship(reject.dataset.rejectFriend,false);toast('已拒绝搭子申请。');}catch(error){toast(error.message||'处理失败。');}return;}
@@ -614,7 +618,7 @@ function bindNavigation(){
     if(event.target.closest('[data-emoji-toggle]')){const panel=$('[data-emoji-panel]');panel.hidden=!panel.hidden;if(!panel.hidden)renderEmojiPanel();return;}
     const emojiSwitch=event.target.closest('[data-emoji-tab]');if(emojiSwitch){emojiTab=emojiSwitch.dataset.emojiTab;if(emojiTab==='stickers')socialStore.loadStickers().catch(error=>toast(error.message));renderEmojiPanel();return;}
     const emoji=event.target.closest('[data-insert-emoji]');if(emoji){const input=$('[data-chat-compose] input[name="message"]');input.value+=emoji.dataset.insertEmoji;input.dispatchEvent(new Event('input',{bubbles:true}));input.focus();return;}
-    if(event.target.closest('[data-chat-new-messages]')){const messages=$('[data-chat-messages]');messages.scrollTop=messages.scrollHeight;$('[data-chat-new-messages]').hidden=true;return;}
+    if(event.target.closest('[data-chat-new-messages]')){chatScroll?.follow();$('[data-chat-new-messages]').hidden=true;return;}
     const sticker=event.target.closest('[data-send-sticker]');if(sticker){try{rememberSticker(sticker.dataset.sendSticker);await socialStore.sendMessage('',{stickerUrl:sticker.dataset.sendSticker});$('[data-emoji-panel]').hidden=true;}catch(error){toast(error.message||'发送失败。');}return;}
     if(event.target.closest('[data-upload-sticker]')){$('[data-sticker-file]').click();return;}
     const deleteSticker=event.target.closest('[data-delete-sticker]');if(deleteSticker){event.stopPropagation();try{await socialStore.deleteSticker(deleteSticker.dataset.deleteSticker);toast('表情已删除。');}catch(error){toast(error.message||'删除失败。');}return;}

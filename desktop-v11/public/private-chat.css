@@ -19,11 +19,12 @@ html body .buddy-page .message-item .buddy-main time{grid-column:2;grid-row:1;ma
 .buddy-page .chat-heading [data-chat-subtitle]{margin-top:2px;font-size:11px}
 .buddy-page .chat-heading [hidden]{display:none}
 html body .buddy-page .chat-messages{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:16px 22px 24px;background:#f5f7f6!important;background-image:none!important;overflow-anchor:none}
+.buddy-page .chat-timeline{display:flex;flex-direction:column;align-items:stretch;flex-shrink:0;min-width:0}
 .buddy-page .chat-time-divider{align-self:center;margin:12px 0 20px;color:#8a9490;font-size:10px;line-height:1.5}
 .buddy-page .chat-message{position:relative;display:flex;align-items:flex-start;align-self:flex-start;gap:10px;max-width:90%;margin:0 0 18px;text-align:left}
 .buddy-page .chat-message.consecutive{margin-top:-10px}
 .buddy-page .chat-message.mine{align-self:flex-end;flex-direction:row-reverse;text-align:left}
-.buddy-page .chat-messages>article,.buddy-page .chat-messages>time,.buddy-page .chat-messages>.chat-history{flex-shrink:0}
+.buddy-page .chat-timeline>article,.buddy-page .chat-timeline>time,.buddy-page .chat-timeline>.chat-history{flex-shrink:0}
 .buddy-page .chat-message[hidden]{display:none}
 .buddy-page .chat-message .chat-avatar{display:grid;width:32px;height:32px;flex:0 0 32px;margin:3px 0 0;font-size:11px}
 .buddy-page .chat-message .chat-bubble{min-width:36px;max-width:100%;padding:10px 13px;border-radius:3px 13px 13px;font-size:13px;font-weight:400;line-height:1.65}
