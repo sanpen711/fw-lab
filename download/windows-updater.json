@@ -1,11 +1,11 @@
 {
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.34-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlYxTUlIbDZOeUprRlc3c0RDbTJzVTJiN09hRFFHUEJSUk9iN2RhQjNvdjJUbHE4TWI4ZnkxOEZvanB6cjJBbFNqUm1heENqb3o0TS8rc3hTeHYvMVFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjc0MjcxCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzRfeDY0LXNldHVwLmV4ZQovQUdYWTVWSUZtNGdtSDNlSXlMRGhMSVlqeEJWZkt3UU1vbm9IeTJTOUIzQXh1MVpmVWY5TWFUUkVnMXRJbXhYZW9qdW55RzV0d0VwdGpLV3BORlNBQT09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.35-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmJHMGZ5azFXK2hKSmhCNWx3eHdiOXNXNGVDV1R5N2RES0dyTVFyQXVsbkNGV3p5VVB2Q1J5NExFbFhoNm5JaGVZWk83ZnhLUkR3MXM4QWJKUVVDeXdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNzgzMzY1CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzVfeDY0LXNldHVwLmV4ZQpIYjNjMllTaGpUZEdRYXFuUzBqalpzWG5wajJCSWRWVVY1NXh1N1JiWXlxOVc2S09Pb0I2SHIxWllxbm5KSzhlcWhhdnhKSjVQYkpQZnN6Sy80UTlBUT09Cg=="
     }
   },
-  "pub_date": "2026-11-03T02:51:21.6139546Z",
-  "notes": "Windows 1.3.34：更新钻石会员图标并随昵称字号显示；优化私聊布局、时间分组和举报菜单；修复打开私聊及表情加载后的底部定位；优化更新检查与失败重试。",
-  "version": "1.3.34"
+  "pub_date": "2026-11-04T09:09:35.4379683Z",
+  "notes": "Windows 1.3.35：精神广场帖子时间移至点赞、评论一行的右侧，减少顶部留白，让帖子列表更紧凑。",
+  "version": "1.3.35"
 }
