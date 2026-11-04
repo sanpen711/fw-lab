@@ -25,8 +25,21 @@ function frameUrl(game){
   return url.href;
 }
 
+function saveCurrentProgress(){
+  const frame=$('[data-game-frame]');
+  try{
+    const saved=frame?.contentWindow?.__FW_NES_PROGRESS__?.save();
+    if(saved)$('[data-game-save-warning]')?.remove();
+  }catch{
+    let warning=$('[data-game-save-warning]');
+    if(!warning){warning=document.createElement('p');warning.dataset.gameSaveWarning='';warning.className='game-save-warning';warning.setAttribute('role','alert');$('[data-game-hall]')?.prepend(warning);}
+    warning.textContent='本次游戏进度保存失败，上次成功保存的进度仍然保留。可重新打开游戏后重试。';
+  }
+}
+
 function open(id){
   const game=games[id];if(!game)return;
+  saveCurrentProgress();
   current=id;
   $('[data-game-hall]').hidden=true;
   $('[data-game-stage]').hidden=false;
@@ -38,6 +51,7 @@ function open(id){
 }
 
 function close(){
+  saveCurrentProgress();
   const previous=current;
   current='';
   const frame=$('[data-game-frame]');
@@ -47,7 +61,7 @@ function close(){
   if(previous&&hall?.closest('.view.active'))$(`[data-game-open="${previous}"]`)?.focus({preventScroll:true});
 }
 
-function reload(){if(current){const frame=$('[data-game-frame]');const url=frame.src;frame.src='about:blank';requestAnimationFrame(()=>{frame.src=url;});}}
+function reload(){if(current){saveCurrentProgress();const frame=$('[data-game-frame]');const url=frame.src;frame.src='about:blank';requestAnimationFrame(()=>{frame.src=url;});}}
 
 function activate(){
   if(!$('[data-game-stage]')?.hidden&&current)return;
@@ -61,5 +75,6 @@ document.addEventListener('click',event=>{
   const nav=event.target.closest?.('[data-nav]');if(nav&&nav.dataset.nav!=='games')close();
 });
 
+window.addEventListener('beforeunload',saveCurrentProgress);
 window.__FW_GAMES__={activate,close,open};
 $('[data-game-frame]')?.addEventListener('load',()=>{const frame=$('[data-game-frame]');if(current&&frame.src!=='about:blank'&&frame.closest('.view.active')){frame.focus({preventScroll:true});frame.contentWindow?.focus();}});

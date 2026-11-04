@@ -1,6 +1,7 @@
 import './nes-player.css';
 import {DEFAULT_NES_GAME_ID,NES_GAMES} from './nes-games.js';
 import {createNesDefaultControls,installNesKeyboardControls} from './nes-controls.js';
+import {createNesProgress} from './nes-progress.js';
 
 const base=new URL('./',document.baseURI);
 const boot=document.querySelector('[data-nes-boot]');
@@ -8,6 +9,36 @@ const requestedGame=new URLSearchParams(location.search).get('game')||DEFAULT_NE
 const game=NES_GAMES[requestedGame]||NES_GAMES[DEFAULT_NES_GAME_ID];
 let startTimer=0;
 let removeKeyboardControls;
+let saveTimer=0,leaving=false;
+const progressLabel=document.querySelector('[data-nes-progress-label]');
+const saveButton=document.querySelector('[data-nes-save]');
+const progress=createNesProgress({gameId:game.storageId,onStatus:paintProgress});
+const resumeAvailable=progress.prepare();
+window.__FW_NES_PROGRESS__=progress;
+
+function paintProgress(status){
+  if(progressLabel){
+    const stamp=status.savedAt?new Date(status.savedAt).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'';
+    progressLabel.textContent=status.message+(stamp?' · '+stamp:'');
+    progressLabel.dataset.status=status.kind;
+  }
+  if(saveButton)saveButton.disabled=!window.EJS_emulator?.started||progress.info().blocked;
+}
+function saveQuietly(){if(leaving)return false;try{return progress.save();}catch{return false;}}
+function focusGame(){window.EJS_emulator?.elements?.parent?.focus({preventScroll:true});}
+saveButton?.addEventListener('click',()=>{saveQuietly();focusGame();});
+document.querySelector('[data-nes-restart]')?.addEventListener('click',()=>{
+  const info=progress.info();
+  if((info.hasSave||info.blocked||window.EJS_emulator?.started)&&!window.confirm('从头开始会替换这款游戏的自动存档，确定继续吗？'))return;
+  try{
+    progress.restart();
+    const start=document.querySelector('.ejs_start_button');if(start)start.textContent='开始游戏';
+    focusGame();
+  }catch{}
+});
+window.addEventListener('blur',saveQuietly);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveQuietly();});
+window.addEventListener('beforeunload',()=>{saveQuietly();leaving=true;window.clearInterval(saveTimer);});
 
 function showError(message){
   document.documentElement.dataset.emulatorState='error';
@@ -30,7 +61,7 @@ window.EJS_color='#ff969e';
 window.EJS_backgroundColor='#111613';
 window.EJS_language='zh-CN';
 window.EJS_startOnLoaded=false;
-window.EJS_startButtonName='开始游戏';
+window.EJS_startButtonName=resumeAvailable?'继续上次游戏':'开始游戏';
 window.EJS_alignStartButton='center';
 window.EJS_threads=false;
 window.EJS_forceLegacyCores=true;
@@ -42,14 +73,21 @@ window.EJS_defaultControls=createNesDefaultControls(game.keyboard);
 window.EJS_ready=()=>{
   document.documentElement.dataset.emulatorState='ready';
   if(boot)boot.hidden=true;
+  window.EJS_emulator?.on('exit',()=>{saveQuietly();leaving=true;window.clearInterval(saveTimer);});
   window.EJS_emulator?.on('start-clicked',()=>{
     document.documentElement.dataset.gameState='loading';
     window.clearTimeout(startTimer);
     startTimer=window.setTimeout(()=>showError('本地游戏核心响应超时，请关闭游戏后重新打开。'),20000);
   });
 };
-window.EJS_onGameStart=()=>{
+window.EJS_onGameStart=async()=>{
   window.clearTimeout(startTimer);
+  leaving=false;
+  await progress.start(window.EJS_emulator);
+  if(leaving)return;
+  window.clearInterval(saveTimer);
+  saveTimer=window.setInterval(saveQuietly,5000);
+  if(saveButton)saveButton.disabled=progress.info().blocked;
   removeKeyboardControls?.();
   removeKeyboardControls=installNesKeyboardControls(window.EJS_emulator,game);
   document.documentElement.dataset.gameState='running';

@@ -1,5 +1,93 @@
 import {expect,test} from '@playwright/test';
 
+test('魂斗罗自动存档在重新打开后可恢复真实模拟器状态',async({page})=>{
+  test.setTimeout(60000);
+  const key='fw:nes:progress:v1:fw-contra-1-infinite-spread';
+  await page.goto('/nes-player.html');
+  await expect(page.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
+  await expect(page.locator('.ejs_start_button')).toHaveText('开始游戏');
+  await page.locator('.ejs_start_button').click();
+  await expect(page.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  await page.keyboard.press('Enter');
+  await expect.poll(()=>page.evaluate(key=>Boolean(localStorage.getItem(key)),key),{timeout:10000}).toBe(true);
+  const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!),key);
+  expect(atob(saved.state).length).toBeGreaterThan(1000);
+  expect(atob(saved.state).length).toBeLessThanOrEqual(1024*1024);
+  await expect(page.locator('[data-nes-progress-label]')).toContainText('进度已保存');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
+  await expect(page.locator('.ejs_start_button')).toHaveText('继续上次游戏');
+  await page.evaluate(()=>{
+    const emulator=(window as any).EJS_emulator;
+    const expected=JSON.parse(localStorage.getItem('fw:nes:progress:v1:fw-contra-1-infinite-spread')!).state;
+    let manager=emulator.gameManager;
+    Object.defineProperty(emulator,'gameManager',{configurable:true,get:()=>manager,set:value=>{
+      manager=value;
+      const load=value.loadState.bind(value);
+      value.loadState=(state:Uint8Array)=>{
+        let binary='';for(let i=0;i<state.length;i+=32768)binary+=String.fromCharCode(...state.subarray(i,i+32768));
+        (window as any).__loadedCheckpointMatches=btoa(binary)===expected;
+        const result=load(state);
+        // CPU RAM contains the current level and player state; frame/audio latches may change on load.
+        const ram=(bytes:Uint8Array)=>{
+          const start=bytes.findIndex((_,i)=>bytes[i]===82&&bytes[i+1]===65&&bytes[i+2]===77&&bytes[i+3]===0);
+          if(start<0)throw new Error('Missing FCEU CPU RAM section');
+          const size=new DataView(bytes.buffer,bytes.byteOffset+start+4,4).getUint32(0,true);
+          if(size!==2048)throw new Error('Unexpected NES CPU RAM size');
+          return bytes.slice(start+8,start+8+size);
+        };
+        const expectedRam=ram(state);
+        setTimeout(()=>{
+          const actualRam=ram(value.getState());
+          (window as any).__restoredCpuRam=actualRam.every((byte:number,i:number)=>byte===expectedRam[i]);
+        },0);
+        return result;
+      };
+    }});
+  });
+  await page.locator('.ejs_start_button').click();
+  await expect(page.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  expect(await page.evaluate(()=>(window as any).__FW_NES_PROGRESS__.info().restored)).toBe(true);
+  expect(await page.evaluate(()=>(window as any).__loadedCheckpointMatches)).toBe(true);
+  await expect.poll(()=>page.evaluate(()=>(window as any).__restoredCpuRam)).toBe(true);
+  await expect(page.locator('[data-nes-progress-label]')).toContainText('已恢复上次进度');
+  await expect(page.locator('#game canvas')).toBeVisible();
+  expect(await page.evaluate(()=>(window as any).EJS_emulator.gameManager.getState().length)).toBeGreaterThan(1000);
+  await page.evaluate(()=>localStorage.setItem('bestScore','12345'));
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('[data-nes-restart]').click();
+  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBeNull();
+  expect(await page.evaluate(()=>localStorage.getItem('bestScore'))).toBe('12345');
+  await expect(page.locator('[data-nes-progress-label]')).toContainText('已从头开始');
+});
+
+test('魂斗罗返回大厅先保存，重新打开可以继续',async({page})=>{
+  test.setTimeout(60000);
+  await page.goto('/');
+  await page.locator('[data-nav="games"].nav-item').click();
+  await page.locator('[data-game-open="contra"]').click();
+  const frame=()=>page.frames().find(frame=>frame.url().includes('/nes-player.html'))!;
+  const player=page.frameLocator('[data-game-frame]');
+  await expect(player.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
+  await player.locator('.ejs_start_button').click();
+  await expect(player.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  await frame().evaluate(()=>{
+    const bridge=(window as any).__FW_NES_PROGRESS__,save=bridge.save;
+    bridge.save=()=>{const result=save();(parent as any).__nesCloseSaved=result;return result;};
+  });
+  await page.locator('[data-game-back]').click();
+  await expect(page.locator('[data-game-frame]')).toHaveAttribute('src','about:blank');
+  expect(await page.evaluate(()=>(window as any).__nesCloseSaved)).toBe(true);
+  expect(await page.evaluate(()=>Boolean(localStorage.getItem('fw:nes:progress:v1:fw-contra-1-infinite-spread')))).toBe(true);
+  await page.locator('[data-game-open="contra"]').click();
+  await expect(player.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
+  await expect(player.locator('.ejs_start_button')).toHaveText('继续上次游戏');
+  await player.locator('.ejs_start_button').click();
+  await expect(player.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  expect(await frame().evaluate(()=>(window as any).__FW_NES_PROGRESS__.info().restored)).toBe(true);
+});
+
+
 const TEST_USER={
   id:'00000000-0000-4000-8000-000000000024',
   aud:'authenticated',
