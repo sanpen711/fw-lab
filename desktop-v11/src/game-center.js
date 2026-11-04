@@ -11,10 +11,8 @@ const games={
   ...nesGames,
   '2048':{title:'2048',tip:'使用方向键移动数字方块',path:'2048'},
   minesweeper:{title:'扫雷',tip:'左键翻开，右键插旗',path:'minesweeper'},
-  snake:{title:'贪吃蛇',tip:'使用方向键控制方向',path:'snake'},
   sudoku:{title:'数独',tip:'选择难度后点击格子填写数字',path:'sudoku'},
-  reaction:{title:'反应测试',tip:'画面变绿后尽快点击',path:'reaction'},
-  catch:{title:'接住掉落物',tip:'移动鼠标控制下方托盘',path:'catch'}
+  reaction:{title:'反应测试',tip:'画面变绿后尽快点击',path:'reaction'}
 };
 
 const $=selector=>document.querySelector(selector);

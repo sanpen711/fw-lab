@@ -298,8 +298,8 @@ test('小游戏在电脑端内部打开且离开后卸载',async({page})=>{
   await page.locator('[data-nav="games"].nav-item').click();
   await expect(page.locator('[data-view-panel="games"]')).toHaveClass(/active/);
   await expect(page.locator('.games-heading')).toHaveCount(0);
-  await expect(page.locator('[data-game-open]')).toHaveCount(7);
-  await expect(page.locator('.game-card-symbol')).toHaveCount(6);
+  await expect(page.locator('[data-game-open]')).toHaveCount(5);
+  await expect(page.locator('.game-card-symbol')).toHaveCount(4);
   await page.locator('[data-game-open="reaction"]').click();
   await expect(page.locator('[data-game-stage]')).toBeVisible();
   await expect(page.frameLocator('[data-game-frame]').getByText('测试一下今天还醒着吗')).toBeVisible();
