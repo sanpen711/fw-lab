@@ -357,7 +357,7 @@ function renderCompose(){
 }
 function postCard(post){
   const profile=currentProfile(post.user_id);const reactions=reactionInfo(post);const open=String(feedState.openPostId)===String(post.id);
-  return `<article class="square-post ${open?'active':''}" data-open-post="${esc(post.id)}"><div class="post-author">${avatarHtml(profile,'social-avatar mini',{userId:post.user_id})}<b>${memberName(profile.nickname||'匿名研究员',post.user_id,true)}</b></div>${richContent(post.content)}<div class="post-stats"><button class="post-like-button ${reactions.active.like?'active':''}" type="button" data-react="like" data-post-id="${esc(post.id)}" aria-pressed="${reactions.active.like}">点赞 ${reactions.values.like}</button><button class="post-comment-button" type="button" data-open-post="${esc(post.id)}">评论 ${(post.comments||[]).length}</button><time>${esc(timeText(post.created_at))}</time></div></article>`;
+  return `<article class="square-post ${open?'active':''}" data-open-post="${esc(post.id)}"><div class="post-author">${avatarHtml(profile,'social-avatar mini',{userId:post.user_id})}<b>${memberName(profile.nickname||'匿名研究员',post.user_id,true)}</b></div>${richContent(post.content)}<div class="post-stats"><button class="post-like-button ${reactions.active.like?'active':''}" type="button" data-react="like" data-post-id="${esc(post.id)}" aria-pressed="${reactions.active.like}">点赞 ${reactions.values.like}</button><button class="post-comment-button" type="button" data-open-post="${esc(post.id)}">评论 ${(post.comments||[]).length}</button><div class="post-meta time-only"><time>${esc(timeText(post.created_at))}</time></div></div></article>`;
 }
 function renderSquareFeed(){
   const host=$('[data-square-feed]');if(!host)return;
