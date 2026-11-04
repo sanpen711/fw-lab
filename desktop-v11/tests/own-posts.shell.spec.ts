@@ -45,7 +45,7 @@ test('我的按账号读取旧帖，分页后能发表评论和删除并切回�
   await expect(page.locator('[data-square-mine-toggle]')).toHaveCSS('background-color','rgb(21, 43, 37)');
   expect(requests[0].searchParams.get('user_id')).toBe(`eq.${me}`);
   await expect(feed).not.toContainText('其他研究员的新帖');
-  await page.screenshot({path:'/tmp/fw-member-square-my.png'});
+  await page.screenshot({path:test.info().outputPath('square-my.png')});
   await feed.locator('.square-post').first().click();
   await expect(page.locator('[data-post-detail]')).toContainText('旧帖评论');
   await page.locator('[data-comment-form] textarea').fill('我的旧帖仍可评论');
@@ -86,7 +86,7 @@ test('我的读取失败可重试，空列表有提示，最小窗口四个操�
   expect(Math.max(...boxes.map(box=>box.y))-Math.min(...boxes.map(box=>box.y))).toBeLessThanOrEqual(1);
   expect(Math.max(...boxes.map(box=>box.right))).toBeLessThanOrEqual(760);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
-  await page.screenshot({path:'/tmp/fw-member-square-my-narrow.png'});
+  await page.screenshot({path:test.info().outputPath('square-my-narrow.png')});
 });
 
 test('退出登录时清空我的记录，延迟返回的数据不能恢复旧账号帖子',async({page})=>{
