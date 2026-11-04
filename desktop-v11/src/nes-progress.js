@@ -2,7 +2,7 @@ const FORMAT=1;
 const CORE='fceumm';
 const LIMIT=1024*1024;
 
-export function nesProgressKey(gameId){return 'fw:nes:progress:v1:'+gameId;}
+export function nesProgressKey(gameId){return 'fw:nes:manual-save:v1:'+gameId;}
 function checksum(bytes){
   let hash=2166136261;
   for(const byte of bytes)hash=Math.imul(hash^byte,16777619);
@@ -20,10 +20,10 @@ function decode(value){
   return Uint8Array.from(binary,char=>char.charCodeAt(0));
 }
 
-// One bounded checkpoint per game, committed synchronously before its iframe is removed.
+// One bounded manual checkpoint per game. Only an explicit Save action writes it.
 export function createNesProgress({gameId,storage,onStatus=()=>{},now=()=>Date.now()}){
   const key=nesProgressKey(gameId);
-  let saved=null,emulator=null,blocked=false,restored=false,restoring=false,storageError;
+  let saved=null,emulator=null,blocked=false,restored=false,restoring=false,resumeRequested=true,storageError;
   try{storage??=globalThis.localStorage;}catch(error){storageError=error;}
   function report(kind,message){onStatus({kind,message,savedAt:saved?.savedAt||0});}
   function fail(message,error){report('error',message);throw new Error(message,{cause:error});}
@@ -33,36 +33,36 @@ export function createNesProgress({gameId,storage,onStatus=()=>{},now=()=>Date.n
       if(storageError||!storage)throw storageError||new Error('Storage unavailable');
       const raw=storage.getItem(key);
       found=Boolean(raw);
-      if(!raw){report('empty','开始后每 5 秒自动保存，仅保存在这台电脑');return false;}
+      if(!raw){report('empty','点击“保存进度”才会保存，退出不会自动保存');return false;}
       const record=JSON.parse(raw);
       const state=decode(record.state);
       if(record.version!==FORMAT||record.core!==CORE||record.gameId!==gameId||!Number.isFinite(record.savedAt)||record.checksum!==checksum(state))throw new Error('Invalid checkpoint');
       saved={...record,bytes:state};
-      report('ready','已找到上次进度，仅保存在这台电脑');
+      report('ready','已有手动存档，仅保存在这台电脑');
       return true;
     }catch(error){
       blocked=true;
-      report('error',found?'上次进度无法读取；可点“从头开始”，原存档暂时保留':'本机存档暂不可用，当前进度不会自动保存');
+      report('error',found?'上次进度无法读取；可点“从头开始”，原存档暂时保留':'本机存档暂不可用，当前进度无法保存');
       return false;
     }
   }
   async function start(instance){
     emulator=instance;
     if(blocked)return false;
-    if(saved){
+    if(saved&&resumeRequested){
       restoring=true;
       try{
         emulator.gameManager.loadState(new Uint8Array(saved.bytes));
         // The bundled core applies load-state on its next event-loop turn.
         await new Promise(resolve=>setTimeout(resolve,0));
         restored=true;
-        report('resumed','已恢复上次进度，每 5 秒自动保存');
+        report('resumed','已读取保存的进度，点击“保存进度”才会更新存档');
       }catch(error){
         blocked=true;
         report('error','上次进度未能恢复；请点“从头开始”，原存档暂时保留');
         return false;
       }finally{restoring=false;}
-    }else report('empty','每 5 秒自动保存，返回大厅时也会保存');
+    }else report('empty',saved?'本局尚未保存，退出后仍可读取原存档':'本局尚未保存，退出后将从头开始');
     return restored;
   }
   function save(){
@@ -73,19 +73,15 @@ export function createNesProgress({gameId,storage,onStatus=()=>{},now=()=>Date.n
       if(!state.length||state.length>LIMIT)throw new Error('Invalid snapshot size');
       const record={version:FORMAT,core:CORE,gameId,savedAt:now(),checksum:checksum(state),state:encode(state)};
       storage.setItem(key,JSON.stringify(record));
-      saved={...record,bytes:state};
+      saved={...record,bytes:state};resumeRequested=true;
       report('saved','进度已保存，仅保存在这台电脑');
       return true;
     }catch(error){return fail('进度保存失败，请重试；上次成功保存的进度仍会保留',error);}
   }
   function restart(){
-    try{
-      if(!storage)throw storageError||new Error('Storage unavailable');
-      storage.removeItem(key);
-    }catch(error){return fail('无法清除旧存档，请稍后重试',error);}
-    saved=null;blocked=false;restored=false;
+    blocked=false;restored=false;resumeRequested=false;
     if(emulator?.started)emulator.gameManager.restart();
-    report('empty','已从头开始，进入游戏后会自动保存');
+    report('empty',saved?'已从头开始，原存档保留；点击“保存进度”才会覆盖':'已从头开始，点击“保存进度”才会保留本局');
   }
   return {prepare,start,save,restart,info:()=>({key,hasSave:Boolean(saved),savedAt:saved?.savedAt||0,blocked,restored})};
 }

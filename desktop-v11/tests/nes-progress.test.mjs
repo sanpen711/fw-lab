@@ -16,6 +16,7 @@ test('a committed checkpoint resumes exact state after recreating the player',as
   assert.equal(progress.prepare(),false);
   assert.equal(progress.save(),false);
   await progress.start(f.emulator);
+  assert.equal(f.values.size,0);
   assert.equal(progress.save(),true);
   f.setState(new Uint8Array([7,8]));
   assert.equal(progress.info().savedAt,101);
@@ -41,7 +42,7 @@ test('corrupt checkpoints are retained and cannot be overwritten until explicit 
   await reopened.start(f.emulator);assert.equal(reopened.save(),false);
   assert.equal(f.values.get(key),damaged);
   reopened.restart();
-  assert.equal(f.values.has(key),false);assert.equal(reopened.info().blocked,false);
+  assert.equal(f.values.get(key),damaged);assert.equal(reopened.info().blocked,false);
   assert.equal(reopened.save(),true);
   assert.equal(f.statuses.some(value=>value.kind==='error'),true);
 });
@@ -59,14 +60,20 @@ test('storage failures keep the last successful checkpoint and allow a later ret
   assert.deepEqual(f.loads.at(-1),[8,9]);
 });
 
-test('restart and per-game saves leave other games and settings untouched',async()=>{
+test('starting over retains the manual checkpoint until the user saves again',async()=>{
   const f=fixture(),one=f.make('contra'),two=f.make('other');
   for(const progress of [one,two]){progress.prepare();await progress.start(f.emulator);progress.save();}
   f.values.set('bestScore','2048');f.values.set('ejs-settings','volume');
+  const previous=f.values.get(nesProgressKey('contra'));
   one.restart();
-  assert.equal(f.values.has(nesProgressKey('contra')),false);
+  assert.equal(await one.start(f.emulator),false);
+  assert.equal(f.values.get(nesProgressKey('contra')),previous);
   assert.equal(f.values.has(nesProgressKey('other')),true);
   assert.equal(f.values.get('bestScore'),'2048');assert.equal(f.values.get('ejs-settings'),'volume');
+  assert.equal(one.save(),true);
+  assert.notEqual(f.values.get(nesProgressKey('contra')),previous);
+  const reopened=f.make('contra');reopened.prepare();await reopened.start(f.emulator);
+  assert.deepEqual(f.loads.at(-1),[9]);
 });
 
 test('failed starts and oversized snapshots never replace a valid save',async()=>{
