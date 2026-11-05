@@ -1,11 +1,11 @@
 {
+  "version": "1.3.36",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.35-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmJHMGZ5azFXK2hKSmhCNWx3eHdiOXNXNGVDV1R5N2RES0dyTVFyQXVsbkNGV3p5VVB2Q1J5NExFbFhoNm5JaGVZWk83ZnhLUkR3MXM4QWJKUVVDeXdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNzgzMzY1CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzVfeDY0LXNldHVwLmV4ZQpIYjNjMllTaGpUZEdRYXFuUzBqalpzWG5wajJCSWRWVVY1NXh1N1JiWXlxOVc2S09Pb0I2SHIxWllxbm5KSzhlcWhhdnhKSjVQYkpQZnN6Sy80UTlBUT09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWllhSFZCNGhuNFJQa05RUzdnY285TGJVSDhxUkV2Y2d2VEdFZFBwSTNJYzc5bkthZ3JkRUFvR0YxL2ZtSndOOE9taVZ4TitkMGs2Wm5mWkJrbzhpOHd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzODQzMjg3CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzZfeDY0LXNldHVwLmV4ZQpyRGhZYVFoUEhlS0pNNHpRdDU2Nmk1WS9MUTdJbTQ5QXpsYVZaODE0SDBjNWoyUzVXZGVMNUJqdjJ5TTQwMnZWWW9WMUNkanFjRE9GaHpJY1JkYWVDZz09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.36-setup.exe"
     }
   },
-  "pub_date": "2026-11-04T09:09:35.4379683Z",
-  "notes": "Windows 1.3.35：精神广场帖子时间移至点赞、评论一行的右侧，减少顶部留白，让帖子列表更紧凑。",
-  "version": "1.3.35"
+  "notes": "Windows 1.3.36：移除贪吃蛇与接住掉落物；魂斗罗支持手动保存、退出自动存档和继续已保存进度。",
+  "pub_date": "2026-11-05T01:48:13.4214211Z"
 }
