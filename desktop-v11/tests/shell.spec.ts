@@ -1,6 +1,6 @@
 import {expect,test} from '@playwright/test';
 
-test('魂斗罗仅手动存档，重新打开可恢复真实模拟器状态',async({page})=>{
+test('魂斗罗手动与退出存档可恢复真实状态，游戏中不定时保存',async({page})=>{
   test.setTimeout(60000);
   const key='fw:nes:manual-save:v1:fw-contra-1-infinite-spread';
   await page.goto('/nes-player.html');
@@ -23,7 +23,9 @@ test('魂斗罗仅手动存档，重新打开可恢复真实模拟器状态',asy
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
   await expect(page.locator('.ejs_start_button')).toHaveText('继续已保存进度');
-  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBe(manualCheckpoint);
+  const exitCheckpoint=await page.evaluate(key=>localStorage.getItem(key),key);
+  expect(JSON.parse(exitCheckpoint!).saveReason).toBe('exit');
+  expect(exitCheckpoint).not.toBe(manualCheckpoint);
   await page.evaluate(()=>{
     const emulator=(window as any).EJS_emulator;
     const expected=JSON.parse(localStorage.getItem('fw:nes:manual-save:v1:fw-contra-1-infinite-spread')!).state;
@@ -63,15 +65,21 @@ test('魂斗罗仅手动存档，重新打开可恢复真实模拟器状态',asy
   await page.evaluate(()=>localStorage.setItem('bestScore','12345'));
   page.once('dialog',dialog=>dialog.accept());
   await page.locator('[data-nes-restart]').click();
-  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBe(manualCheckpoint);
+  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBe(exitCheckpoint);
   expect(await page.evaluate(()=>localStorage.getItem('bestScore'))).toBe('12345');
   await expect(page.locator('[data-nes-progress-label]')).toContainText('已从头开始');
 });
 
-test('魂斗罗未保存退出从头开始，已有手动存档不会在退出时被覆盖',async({page})=>{
+test('魂斗罗返回大厅、重载和关闭客户端前保存最新进度且不重复写入',async({page})=>{
   test.setTimeout(60000);
   const key='fw:nes:manual-save:v1:fw-contra-1-infinite-spread';
+  await page.addInitScript(()=>{
+    (window as any).__TAURI__={window:{getCurrentWindow:()=>({
+      onCloseRequested:async(handler:any)=>{(window as any).__nativeCloseHandler=handler;return()=>{};}
+    })}};
+  });
   await page.goto('/');
+  await expect.poll(()=>page.evaluate(()=>typeof (window as any).__nativeCloseHandler)).toBe('function');
   await page.locator('[data-nav="games"].nav-item').click();
   await page.locator('[data-game-open="contra"]').click();
   const frame=()=>page.frames().find(frame=>frame.url().includes('/nes-player.html'))!;
@@ -79,36 +87,41 @@ test('魂斗罗未保存退出从头开始，已有手动存档不会在退出�
   await expect(player.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
   await player.locator('.ejs_start_button').click();
   await expect(player.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBeNull();
   await frame().evaluate(()=>{
-    (parent as any).__nesSaveCalls=0;
-    const bridge=(window as any).__FW_NES_PROGRESS__,save=bridge.save;
-    bridge.save=()=>{(parent as any).__nesSaveCalls++;return save();};
+    (parent as any).__nesSnapshotCount=0;
+    const manager=(window as any).EJS_emulator.gameManager,getState=manager.getState.bind(manager);
+    manager.getState=()=>{(parent as any).__nesSnapshotCount++;return getState();};
   });
   await page.locator('[data-game-back]').click();
   await expect(page.locator('[data-game-frame]')).toHaveAttribute('src','about:blank');
-  expect(await page.evaluate(()=>(window as any).__nesSaveCalls)).toBe(0);
-  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBeNull();
-  await page.locator('[data-game-open="contra"]').click();
-  await expect(player.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
-  await expect(player.locator('.ejs_start_button')).toHaveText('开始游戏');
-  await player.locator('.ejs_start_button').click();
-  await expect(player.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
-  await player.locator('[data-nes-save]').click();
-  const manualCheckpoint=await page.evaluate(key=>localStorage.getItem(key),key);
-  expect(manualCheckpoint).not.toBeNull();
-  await page.locator('[data-nav="home"].nav-item').click();
-  await expect(page.locator('[data-game-frame]')).toHaveAttribute('src','about:blank');
-  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBe(manualCheckpoint);
-  await page.locator('[data-nav="games"].nav-item').click();
+  expect(await page.evaluate(()=>(window as any).__nesSnapshotCount)).toBe(1);
+  expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!).saveReason,key)).toBe('exit');
   await page.locator('[data-game-open="contra"]').click();
   await expect(player.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
   await expect(player.locator('.ejs_start_button')).toHaveText('继续已保存进度');
   await player.locator('.ejs_start_button').click();
   await expect(player.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
   expect(await frame().evaluate(()=>(window as any).__FW_NES_PROGRESS__.info().restored)).toBe(true);
+  await player.locator('[data-nes-save]').click();
+  expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!).saveReason,key)).toBe('manual');
   await page.locator('[data-game-reload]').click();
-  await expect(player.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
-  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBe(manualCheckpoint);
+  await expect(player.locator('.ejs_start_button')).toHaveText('继续已保存进度',{timeout:30000});
+  expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!).saveReason,key)).toBe('exit');
+  await player.locator('.ejs_start_button').click();
+  await expect(player.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  await player.locator('[data-nes-save]').click();
+  const manualCheckpoint=await page.evaluate(key=>localStorage.getItem(key),key);
+  const closing=await page.evaluate(async(key)=>{
+    let prevented=false;
+    await (window as any).__nativeCloseHandler({preventDefault:()=>{prevented=true;}});
+    return{prevented,checkpoint:localStorage.getItem(key)};
+  },key);
+  expect(closing.prevented).toBe(false);
+  expect(JSON.parse(closing.checkpoint!).saveReason).toBe('exit');
+  expect(closing.checkpoint).not.toBe(manualCheckpoint);
+  await frame().evaluate(()=>window.dispatchEvent(new Event('beforeunload')));
+  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBe(closing.checkpoint);
 });
 
 const TEST_USER={

@@ -60,7 +60,7 @@ test('storage failures keep the last successful checkpoint and allow a later ret
   assert.deepEqual(f.loads.at(-1),[8,9]);
 });
 
-test('starting over retains the manual checkpoint until the user saves again',async()=>{
+test('starting over retains the checkpoint until a manual or exit save',async()=>{
   const f=fixture(),one=f.make('contra'),two=f.make('other');
   for(const progress of [one,two]){progress.prepare();await progress.start(f.emulator);progress.save();}
   f.values.set('bestScore','2048');f.values.set('ejs-settings','volume');
@@ -82,4 +82,15 @@ test('failed starts and oversized snapshots never replace a valid save',async()=
   f.emulator.failedToStart=true;assert.equal(progress.save(),false);
   f.emulator.failedToStart=false;f.setState(new Uint8Array(1024*1024+1));
   assert.throws(()=>progress.save(),/保存失败/);assert.equal(f.values.get(key),previous);
+});
+
+test('exit checkpoints replace the manual checkpoint with the latest state',async()=>{
+  const f=fixture(),progress=f.make();
+  progress.prepare();await progress.start(f.emulator);progress.save();
+  assert.equal(JSON.parse(f.values.get(nesProgressKey('contra'))).saveReason,'manual');
+  f.setState(new Uint8Array([6,7,8]));
+  assert.equal(progress.save({reason:'exit'}),true);
+  assert.equal(JSON.parse(f.values.get(nesProgressKey('contra'))).saveReason,'exit');
+  const reopened=f.make();assert.equal(reopened.prepare(),true);await reopened.start(f.emulator);
+  assert.deepEqual(f.loads.at(-1),[6,7,8]);
 });

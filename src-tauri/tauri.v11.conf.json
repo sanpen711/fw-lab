@@ -33,7 +33,7 @@
           "identifier": "fw-main-local-v11",
           "description": "Allow the packaged Windows 1.3.35 local frontend to use core window APIs and bundled games.",
           "windows": ["main"],
-          "permissions": ["core:default"]
+          "permissions": ["core:default", "core:window:allow-destroy"]
         }
       ]
     }

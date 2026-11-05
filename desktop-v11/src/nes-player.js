@@ -14,7 +14,7 @@ const progressLabel=document.querySelector('[data-nes-progress-label]');
 const saveButton=document.querySelector('[data-nes-save]');
 const progress=createNesProgress({gameId:game.storageId,onStatus:paintProgress});
 const resumeAvailable=progress.prepare();
-window.__FW_NES_PROGRESS__=progress;
+window.__FW_NES_PROGRESS__={...progress,saveOnExit};
 
 function paintProgress(status){
   if(progressLabel){
@@ -25,18 +25,26 @@ function paintProgress(status){
   if(saveButton)saveButton.disabled=!window.EJS_emulator?.started||progress.info().blocked;
 }
 function saveManually(){if(leaving)return false;try{return progress.save();}catch{return false;}}
+function saveOnExit(){
+  if(leaving)return false;
+  const saved=progress.save({reason:'exit'});
+  leaving=true;
+  removeKeyboardControls?.();
+  return saved;
+}
+function saveBeforeUnload(){try{saveOnExit();}catch{leaving=true;}}
 function focusGame(){window.EJS_emulator?.elements?.parent?.focus({preventScroll:true});}
 saveButton?.addEventListener('click',()=>{saveManually();focusGame();});
 document.querySelector('[data-nes-restart]')?.addEventListener('click',()=>{
   const info=progress.info();
-  if((info.hasSave||info.blocked||window.EJS_emulator?.started)&&!window.confirm('从头开始会丢弃本次未保存的进度，已保存的存档会保留。确定继续吗？'))return;
+  if((info.hasSave||info.blocked||window.EJS_emulator?.started)&&!window.confirm('从头开始会重开本局；下次手动保存或退出时，存档将更新为这一局。确定继续吗？'))return;
   try{
     progress.restart();
     const start=document.querySelector('.ejs_start_button');if(start)start.textContent='开始游戏';
     focusGame();
   }catch{}
 });
-window.addEventListener('beforeunload',()=>{leaving=true;});
+window.addEventListener('beforeunload',saveBeforeUnload);
 
 function showError(message){
   document.documentElement.dataset.emulatorState='error';
@@ -71,7 +79,8 @@ window.EJS_defaultControls=createNesDefaultControls(game.keyboard);
 window.EJS_ready=()=>{
   document.documentElement.dataset.emulatorState='ready';
   if(boot)boot.hidden=true;
-  window.EJS_emulator?.on('exit',()=>{leaving=true;});
+  // Register before the core's exit handler, which resets the emulated game.
+  window.EJS_emulator?.on('exit',saveBeforeUnload);
   window.EJS_emulator?.on('start-clicked',()=>{
     document.documentElement.dataset.gameState='loading';
     window.clearTimeout(startTimer);

@@ -25,8 +25,24 @@ function frameUrl(game){
   return url.href;
 }
 
+function saveGameOnExit(){
+  const frame=$('[data-game-frame]');
+  return frame?.contentWindow?.__FW_NES_PROGRESS__?.saveOnExit?.();
+}
+function saveBeforeLeaving(){
+  try{saveGameOnExit();return true;}catch{
+    return window.confirm('当前进度保存失败，仍然退出吗？上次成功保存的存档会保留。');
+  }
+}
+// Tauri waits for this handler before destroying the native window.
+const nativeWindow=window.__TAURI__?.window?.getCurrentWindow?.();
+nativeWindow?.onCloseRequested?.(event=>{
+  if(!saveBeforeLeaving())event.preventDefault();
+}).catch(error=>console.warn('[FW games] close listener unavailable',error));
+
 function open(id){
   const game=games[id];if(!game)return;
+  if(!saveBeforeLeaving())return;
   current=id;
   $('[data-game-hall]').hidden=true;
   $('[data-game-stage]').hidden=false;
@@ -38,6 +54,7 @@ function open(id){
 }
 
 function close(){
+  if(!saveBeforeLeaving())return;
   const previous=current;
   current='';
   const frame=$('[data-game-frame]');
@@ -47,7 +64,7 @@ function close(){
   if(previous&&hall?.closest('.view.active'))$(`[data-game-open="${previous}"]`)?.focus({preventScroll:true});
 }
 
-function reload(){if(current){const frame=$('[data-game-frame]');const url=frame.src;frame.src='about:blank';requestAnimationFrame(()=>{frame.src=url;});}}
+function reload(){if(current&&saveBeforeLeaving()){const frame=$('[data-game-frame]');const url=frame.src;frame.src='about:blank';requestAnimationFrame(()=>{frame.src=url;});}}
 
 function activate(){
   if(!$('[data-game-stage]')?.hidden&&current)return;
@@ -61,5 +78,6 @@ document.addEventListener('click',event=>{
   const nav=event.target.closest?.('[data-nav]');if(nav&&nav.dataset.nav!=='games')close();
 });
 
+window.addEventListener('beforeunload',()=>{try{saveGameOnExit();}catch{}});
 window.__FW_GAMES__={activate,close,open};
 $('[data-game-frame]')?.addEventListener('load',()=>{const frame=$('[data-game-frame]');if(current&&frame.src!=='about:blank'&&frame.closest('.view.active')){frame.focus({preventScroll:true});frame.contentWindow?.focus();}});
