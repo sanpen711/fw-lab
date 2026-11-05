@@ -199,10 +199,19 @@ test('钻石徽章随名字字号缩放，图片无数字且在深浅背景和�
   await page.goto('/');await page.locator('[data-nav="membership"]').click();
   const expectNameSize=async(badge:any,name:any)=>{
     await expect(badge).toBeVisible();
-    const nameSize=await name.evaluate((node:Element)=>parseFloat(getComputedStyle(node).fontSize));
-    const bounds=await badge.boundingBox();
-    expect(bounds?.height).toBeCloseTo(nameSize,1);
-    expect(bounds?.width).toBeCloseTo(nameSize*1.25,1);
+    await expect(name).toBeVisible();
+    await expect.poll(async()=>{
+      const label=await name.elementHandle();
+      if(!label)return Number.MAX_VALUE;
+      try{
+        return await badge.evaluate((node:Element,label:Element)=>{
+          if(!node.isConnected||!label.isConnected)return Number.MAX_VALUE;
+          const size=parseFloat(getComputedStyle(label).fontSize),bounds=node.getBoundingClientRect();
+          if(!Number.isFinite(size)||size<=0)return Number.MAX_VALUE;
+          return Math.max(Math.abs(bounds.height-size),Math.abs(bounds.width-size*1.25));
+        },label);
+      }finally{await label.dispose();}
+    }).toBeLessThan(0.05);
   };
   await expectNameSize(page.locator('.membership-vip-head .member-level-badge'),page.locator('.membership-vip-head h2'));
   await expectNameSize(page.locator('.membership-growth-summary .member-level-badge'),page.locator('.membership-growth-summary h3'));

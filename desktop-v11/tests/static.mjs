@@ -8,11 +8,11 @@ const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
 const read=path=>readFileSync(resolve(root,path),'utf8');
 const readBinary=path=>readFileSync(resolve(root,path));
 const config=JSON.parse(read('src-tauri/tauri.v11.conf.json'));
-assert.equal(config.version,'1.3.35');
+assert.equal(config.version,'1.3.36');
 assert.equal(config.build.frontendDist,'../desktop-v11/dist');
 assert.equal(config.build.devUrl,'http://127.0.0.1:1421');
 assert.equal(config.app.windows[0].url,'index.html');
-assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.3\.35/);
+assert.match(config.app.windows[0].userAgent,/FWYanjiusuoDesktop\/1\.3\.36/);
 assert.doesNotMatch(JSON.stringify(config),/fwyanjiusuo\.com\/index\.html/);
 assert.match(config.app.security.csp,/supabase\.co/);
 assert.doesNotMatch(config.app.security.csp,/open-meteo/,'Windows 不应再直连旧天气服务');
@@ -85,7 +85,7 @@ for(const icon of ['home','brain','discussion','news','game','echo','buddy','mem
   assert.match(theme,new RegExp(`nav-icon-${icon}`),`${icon} 图标必须接入统一导航样式`);
   assert.match(read(`desktop-v11/public/nav-icons/${icon}.svg`),/<svg[\s\S]*stroke="#000"/,`${icon} 必须使用本地 SVG 轮廓图标`);
 }
-for(const icon of ['face','media','sun','partly-cloudy','cloud','rain','storm','snow','fog','temperature','game-2048','game-mines','game-snake','game-sudoku','game-reaction','game-catch'])assert.match(uiIcons,new RegExp(`id="${icon}"`),`${icon} 必须包含在本地功能图标精灵中`);
+for(const icon of ['face','media','sun','partly-cloudy','cloud','rain','storm','snow','fog','temperature','game-2048','game-mines','game-sudoku','game-reaction'])assert.match(uiIcons,new RegExp(`id="${icon}"`),`${icon} 必须包含在本地功能图标精灵中`);
 assert.match(twemojiLicense,/Creative Commons Attribution 4\.0 International/,'Twemoji 图形许可必须随安装包保留');
 assert.match(twemojiAttribution,/jdecked\/twemoji/,'Twemoji 来源和归属必须随安装包保留');
 assert.match(theme,/\.compose-button\{display:none!important/,'首页改用首屏开始吐槽按钮，侧栏不重复放大按钮');
@@ -208,7 +208,7 @@ assert.match(html,/data-offwork-form/,'下班倒计时必须提供时间设置�
 assert.match(html,/data-feedback-form/,'反馈卡片必须提供简短反馈表单');
 for(const icon of ['home','brain','discussion','chatrooms','game','buddy','archive'])assert.match(html,new RegExp(`nav-icon nav-icon-${icon}`),`${icon} 图标必须出现在主导航`);
 assert.match(html,/data-nav="games"[\s\S]*?<b>小游戏<\/b>/,'小游戏必须作为电脑端左侧导航入口');
-for(const id of ['contra','2048','minesweeper','snake','sudoku','reaction','catch'])assert.match(html,new RegExp(`data-game-open="${id}"`),`${id} 必须出现在小游戏大厅`);
+for(const id of ['contra','2048','minesweeper','sudoku','reaction'])assert.match(html,new RegExp(`data-game-open="${id}"`),`${id} 必须出现在小游戏大厅`);
 assert.match(html,/data-game-frame/,'小游戏必须在软件内部框架中运行');
 assert.doesNotMatch(gameCenter,/https?:\/\//,'小游戏运行入口不能跳转到外部站点');
 assert.match(gameCenter,/localStorage\.setItem\('fw:desktop:v11:last-game'/,'小游戏大厅必须仅在本机记录最近游戏');
@@ -250,13 +250,12 @@ assert.match(gameNotices,/FCEUmm EmulatorJS Core 4\.2\.3/,'FCEUmm 必须写入�
 assert.match(read('desktop-v11/public/games/nes/LICENSE-EMULATORJS-GPL-3.txt'),/GNU GENERAL PUBLIC LICENSE/i,'EmulatorJS GPL 许可证必须随包保留');
 assert.match(read('desktop-v11/public/games/nes/LICENSE-FCEUMM-GPL-2.txt'),/GNU GENERAL PUBLIC LICENSE/i,'FCEUmm GPL 许可证必须随包保留');
 assert.doesNotMatch(webGames,/contra|魂斗罗|nes-player/i,'网页小游戏页面本次不得加入 NES 游戏');
-for(const id of ['2048','minesweeper','snake','sudoku']){
-  assert.match(gameNotices,new RegExp(`(?:${id==='minesweeper'?'JSMinesweeper':id==='snake'?'Snake Game':id==='sudoku'?'Super Sudoku':'2048'})`,'i'),`${id} 必须写入第三方许可说明`);
+for(const id of ['2048','minesweeper','sudoku']){
+  assert.match(gameNotices,new RegExp(`(?:${id==='minesweeper'?'JSMinesweeper':id==='sudoku'?'Super Sudoku':'2048'})`,'i'),`${id} 必须写入第三方许可说明`);
   assert.match(read(`desktop-v11/public/games/${id}/LICENSE${id==='2048'?'.txt':''}`),/MIT License/i,`${id} 必须随包保留 MIT 许可证`);
 }
 assert.doesNotMatch(read('desktop-v11/public/games/sudoku/index.html'),/fonts\.googleapis\.com/,'内置数独不得依赖在线字体');
 assert.match(read('desktop-v11/public/games/reaction/app.js'),/fw-game-reaction-best/,'反应测试必须在本机保存最佳成绩');
-assert.match(read('desktop-v11/public/games/catch/app.js'),/fw-game-catch-best/,'接住掉落物必须在本机保存最高分');
 assert.doesNotMatch(html,/[⌂◉▣▤◌♧]/,'电脑端主导航不能继续使用字符占位图标');
 assert.doesNotMatch(html,/<p>(?:MENTAL SQUARE|POLL RESEARCH|NEWS DESK|AFTER WORK SQUAD)<\/p>/,'栏目页不应重复显示英文页眉');
 assert.doesNotMatch(html,/<div class="section-heading games-heading">/,'小游戏列表应直接展示内容');
@@ -287,7 +286,7 @@ assert.match(app,/const gridClass=`inline-sticker-grid\$\{unifiedLayout\?' unifi
 assert.match(app,/function attachmentPreview/,'选择我的表情后必须在发布区显示发送预览');
 assert.match(composeUi,/\[data-comment-emoji\],\[data-comment-sticker\][\s\S]*openPickerKey=''/,'评论选择一个表情后必须自动关闭表情面板');
 assert.match(composeUi,/event\.ctrlKey\|\|event\.key!==\'Enter\'/,'评论输入区必须支持 Ctrl + Enter 快速发送');
-assert.match(cargo,/version = "1\.3\.35"/);
+assert.match(cargo,/version = "1\.3\.36"/);
 assert.match(cargo,/tauri-plugin-updater = "2\.10\.1"/);
 assert.match(cargo,/rusqlite = \{ version = "0\.32", features = \["bundled"\] \}/,'持久缓存必须使用内置 SQLite，不能依赖用户额外安装数据库');
 assert.match(rust,/mod persistent_cache;/,'Rust 主程序必须注册持久缓存模块');
@@ -466,7 +465,7 @@ assert.match(composeUi,/data-comment-compact-media/,'评论区必须提供同款
 assert.match(composeUi,/\.media-tools,\[data-comment-form\] \.media-tools\{display:none!important\}/,'旧的大号添加图片\/视频工具行必须收起');
 assert.match(composeUi,/openPickerKey/,'表情面板必须按需展开而不是常驻');
 assert.match(composeUi,/\[data-compose-image\]/,'加号必须继续复用现有图片\/视频上传能力');
-assert.match(squareScroll,/Windows 1\.3\.35 本地前端 · 会员开通与续费/,'右下角版本标识必须更新');
+assert.match(squareScroll,/Windows 1\.3\.36 本地前端 · 会员开通与续费/,'右下角版本标识必须更新');
 assert.match(squareScroll,/square-scroll-locked/,'精神广场必须锁住整页滚动');
 assert.match(squareScroll,/buddy-scroll-locked/,'搭子页必须锁住整页滚动');
 assert.match(squareScroll,/\.chat-messages\{min-height:0;overflow-y:auto/,'搭子聊天记录必须独立滚动');
@@ -476,7 +475,7 @@ assert.match(squareScroll,/\.square-feed\{min-height:0;overflow-y:auto/,'左侧�
 assert.match(squareScroll,/\.detail-scroll\{height:100%;min-height:0;overflow:hidden/,'右侧详情外层必须固定在窗口内');
 assert.match(squareScroll,/\.detail-content-scroll\{min-height:0;overflow-y:auto/,'右侧正文与评论必须连续滚动');
 assert.match(squareScroll,/attributeFilter:\['data-view'\]/,'滚动锁监听必须只观察 data-view，不能监听整棵 DOM');
-assert.match(windowsWorkflow,/url = 'https:\/\/ekbovsmxbiplhyrzxoyw\.supabase\.co\/storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.3\.35-setup\.exe'/,'自动更新必须使用 Supabase Storage 的版本化安装包');
+assert.match(windowsWorkflow,/url = 'https:\/\/ekbovsmxbiplhyrzxoyw\.supabase\.co\/storage\/v1\/object\/public\/app-releases\/fw-lab-windows-1\.3\.36-setup\.exe'/,'自动更新必须使用 Supabase Storage 的版本化安装包');
 assert.ok(windowsWorkflow.includes(`installer.Name -notmatch '${config.version.split('.').join('\\.')}'`),'安装包名称校验必须跟随当前 Windows 版本');
 assert.match(windowsWorkflow,/functions\/v1\/sync-windows-release/,'Windows 发布必须先同步 Supabase 安装包');
 assert.match(windowsWorkflow,/gh release create/,'Windows 构建必须发布独立版本安装包');

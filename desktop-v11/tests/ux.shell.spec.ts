@@ -94,7 +94,10 @@ test('中文输入组合期间评论刷新保留原输入节点',async({page})=>
 });
 
 for(const nearBottom of [false,true])test(`私聊新消息${nearBottom?'在底部跟随':'保留历史位置并提示'}`,async({page})=>{
-  await boot(page);await incoming(page);await openChat(page);const messages=page.locator('[data-chat-messages]');await messages.evaluate((el,bottom)=>el.scrollTop=bottom?el.scrollHeight:0,nearBottom);await deliver(page);
+  await boot(page);await incoming(page);await openChat(page);const messages=page.locator('[data-chat-messages]');
+  await expect.poll(()=>messages.evaluate(el=>el.scrollHeight-el.clientHeight-el.scrollTop)).toBeLessThan(70);
+  if(!nearBottom){await messages.hover();await page.mouse.wheel(0,-10000);await expect.poll(()=>messages.evaluate(el=>el.scrollTop)).toBe(0);}
+  await deliver(page);
   if(nearBottom){await expect.poll(()=>messages.evaluate(el=>el.scrollHeight-el.clientHeight-el.scrollTop)).toBeLessThan(70);await expect(page.locator('[data-chat-new-messages]')).toBeHidden();}
   else{await expect.poll(()=>messages.evaluate(el=>el.scrollTop)).toBe(0);await expect(page.locator('[data-chat-new-messages]')).toBeVisible();await page.locator('[data-chat-new-messages]').click();await expect.poll(()=>messages.evaluate(el=>el.scrollHeight-el.clientHeight-el.scrollTop)).toBeLessThan(70);}
 });

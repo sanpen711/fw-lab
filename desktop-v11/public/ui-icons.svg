@@ -38,16 +38,10 @@
   <symbol id="game-mines" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="12" cy="12" r="4"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>
   </symbol>
-  <symbol id="game-snake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M5 5.5h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7.5"/><circle cx="18.5" cy="17.5" r="2"/><path d="M19 17h.01" stroke-width="2.4"/>
-  </symbol>
   <symbol id="game-sudoku" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
     <rect x="3.5" y="3.5" width="17" height="17" rx="1"/><path d="M9.2 3.5v17M14.8 3.5v17M3.5 9.2h17M3.5 14.8h17"/><path d="M12 5.6v1.5m4.8 4.1h1.5M6 16.8h1.5" stroke-width="2"/>
   </symbol>
   <symbol id="game-reaction" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <path d="M13.5 2.8 6.7 13h5l-1.2 8.2L17.3 11h-5Z"/>
-  </symbol>
-  <symbol id="game-catch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M8 3.5h8v6H8zM12 11.5v4M9.5 13l2.5 2.5 2.5-2.5"/><path d="M4.5 17.5h15l-2 3h-11Z"/>
   </symbol>
 </svg>

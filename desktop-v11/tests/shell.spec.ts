@@ -1,5 +1,129 @@
 import {expect,test} from '@playwright/test';
 
+test('魂斗罗手动与退出存档可恢复真实状态，游戏中不定时保存',async({page})=>{
+  test.setTimeout(60000);
+  const key='fw:nes:manual-save:v1:fw-contra-1-infinite-spread';
+  await page.goto('/nes-player.html');
+  await expect(page.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
+  await expect(page.locator('.ejs_start_button')).toHaveText('开始游戏');
+  await page.locator('.ejs_start_button').click();
+  await expect(page.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(5500);
+  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBeNull();
+  await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
+  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBeNull();
+  await page.locator('[data-nes-save]').click();
+  await expect.poll(()=>page.evaluate(key=>Boolean(localStorage.getItem(key)),key),{timeout:10000}).toBe(true);
+  const manualCheckpoint=await page.evaluate(key=>localStorage.getItem(key),key);
+  const saved=JSON.parse(manualCheckpoint!);
+  expect(atob(saved.state).length).toBeGreaterThan(1000);
+  expect(atob(saved.state).length).toBeLessThanOrEqual(1024*1024);
+  await expect(page.locator('[data-nes-progress-label]')).toContainText('进度已保存');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
+  await expect(page.locator('.ejs_start_button')).toHaveText('继续已保存进度');
+  const exitCheckpoint=await page.evaluate(key=>localStorage.getItem(key),key);
+  expect(JSON.parse(exitCheckpoint!).saveReason).toBe('exit');
+  expect(exitCheckpoint).not.toBe(manualCheckpoint);
+  await page.evaluate(()=>{
+    const emulator=(window as any).EJS_emulator;
+    const expected=JSON.parse(localStorage.getItem('fw:nes:manual-save:v1:fw-contra-1-infinite-spread')!).state;
+    let manager=emulator.gameManager;
+    Object.defineProperty(emulator,'gameManager',{configurable:true,get:()=>manager,set:value=>{
+      manager=value;
+      const load=value.loadState.bind(value);
+      value.loadState=(state:Uint8Array)=>{
+        let binary='';for(let i=0;i<state.length;i+=32768)binary+=String.fromCharCode(...state.subarray(i,i+32768));
+        (window as any).__loadedCheckpointMatches=btoa(binary)===expected;
+        const result=load(state);
+        // CPU RAM contains the current level and player state; frame/audio latches may change on load.
+        const ram=(bytes:Uint8Array)=>{
+          const start=bytes.findIndex((_,i)=>bytes[i]===82&&bytes[i+1]===65&&bytes[i+2]===77&&bytes[i+3]===0);
+          if(start<0)throw new Error('Missing FCEU CPU RAM section');
+          const size=new DataView(bytes.buffer,bytes.byteOffset+start+4,4).getUint32(0,true);
+          if(size!==2048)throw new Error('Unexpected NES CPU RAM size');
+          return bytes.slice(start+8,start+8+size);
+        };
+        const expectedRam=ram(state);
+        setTimeout(()=>{
+          const actualRam=ram(value.getState());
+          (window as any).__restoredCpuRam=actualRam.every((byte:number,i:number)=>byte===expectedRam[i]);
+        },0);
+        return result;
+      };
+    }});
+  });
+  await page.locator('.ejs_start_button').click();
+  await expect(page.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  expect(await page.evaluate(()=>(window as any).__FW_NES_PROGRESS__.info().restored)).toBe(true);
+  expect(await page.evaluate(()=>(window as any).__loadedCheckpointMatches)).toBe(true);
+  await expect.poll(()=>page.evaluate(()=>(window as any).__restoredCpuRam)).toBe(true);
+  await expect(page.locator('[data-nes-progress-label]')).toContainText('已读取保存的进度');
+  await expect(page.locator('#game canvas')).toBeVisible();
+  expect(await page.evaluate(()=>(window as any).EJS_emulator.gameManager.getState().length)).toBeGreaterThan(1000);
+  await page.evaluate(()=>localStorage.setItem('bestScore','12345'));
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('[data-nes-restart]').click();
+  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBe(exitCheckpoint);
+  expect(await page.evaluate(()=>localStorage.getItem('bestScore'))).toBe('12345');
+  await expect(page.locator('[data-nes-progress-label]')).toContainText('已从头开始');
+});
+
+test('魂斗罗返回大厅、重载和关闭客户端前保存最新进度且不重复写入',async({page})=>{
+  test.setTimeout(60000);
+  const key='fw:nes:manual-save:v1:fw-contra-1-infinite-spread';
+  await page.addInitScript(()=>{
+    (window as any).__TAURI__={window:{getCurrentWindow:()=>({
+      onCloseRequested:async(handler:any)=>{(window as any).__nativeCloseHandler=handler;return()=>{};}
+    })}};
+  });
+  await page.goto('/');
+  await expect.poll(()=>page.evaluate(()=>typeof (window as any).__nativeCloseHandler)).toBe('function');
+  await page.locator('[data-nav="games"].nav-item').click();
+  await page.locator('[data-game-open="contra"]').click();
+  const frame=()=>page.frames().find(frame=>frame.url().includes('/nes-player.html'))!;
+  const player=page.frameLocator('[data-game-frame]');
+  await expect(player.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
+  await player.locator('.ejs_start_button').click();
+  await expect(player.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBeNull();
+  await frame().evaluate(()=>{
+    (parent as any).__nesSnapshotCount=0;
+    const manager=(window as any).EJS_emulator.gameManager,getState=manager.getState.bind(manager);
+    manager.getState=()=>{(parent as any).__nesSnapshotCount++;return getState();};
+  });
+  await page.locator('[data-game-back]').click();
+  await expect(page.locator('[data-game-frame]')).toHaveAttribute('src','about:blank');
+  expect(await page.evaluate(()=>(window as any).__nesSnapshotCount)).toBe(1);
+  expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!).saveReason,key)).toBe('exit');
+  await page.locator('[data-game-open="contra"]').click();
+  await expect(player.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
+  await expect(player.locator('.ejs_start_button')).toHaveText('继续已保存进度');
+  await player.locator('.ejs_start_button').click();
+  await expect(player.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  expect(await frame().evaluate(()=>(window as any).__FW_NES_PROGRESS__.info().restored)).toBe(true);
+  await player.locator('[data-nes-save]').click();
+  expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!).saveReason,key)).toBe('manual');
+  await page.locator('[data-game-reload]').click();
+  await expect(player.locator('.ejs_start_button')).toHaveText('继续已保存进度',{timeout:30000});
+  expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!).saveReason,key)).toBe('exit');
+  await player.locator('.ejs_start_button').click();
+  await expect(player.locator('html')).toHaveAttribute('data-game-state','running',{timeout:30000});
+  await player.locator('[data-nes-save]').click();
+  const manualCheckpoint=await page.evaluate(key=>localStorage.getItem(key),key);
+  const closing=await page.evaluate(async(key)=>{
+    let prevented=false;
+    await (window as any).__nativeCloseHandler({preventDefault:()=>{prevented=true;}});
+    return{prevented,checkpoint:localStorage.getItem(key)};
+  },key);
+  expect(closing.prevented).toBe(false);
+  expect(JSON.parse(closing.checkpoint!).saveReason).toBe('exit');
+  expect(closing.checkpoint).not.toBe(manualCheckpoint);
+  await frame().evaluate(()=>window.dispatchEvent(new Event('beforeunload')));
+  expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBe(closing.checkpoint);
+});
+
 const TEST_USER={
   id:'00000000-0000-4000-8000-000000000024',
   aud:'authenticated',
@@ -298,8 +422,8 @@ test('小游戏在电脑端内部打开且离开后卸载',async({page})=>{
   await page.locator('[data-nav="games"].nav-item').click();
   await expect(page.locator('[data-view-panel="games"]')).toHaveClass(/active/);
   await expect(page.locator('.games-heading')).toHaveCount(0);
-  await expect(page.locator('[data-game-open]')).toHaveCount(7);
-  await expect(page.locator('.game-card-symbol')).toHaveCount(6);
+  await expect(page.locator('[data-game-open]')).toHaveCount(5);
+  await expect(page.locator('.game-card-symbol')).toHaveCount(4);
   await page.locator('[data-game-open="reaction"]').click();
   await expect(page.locator('[data-game-stage]')).toBeVisible();
   await expect(page.frameLocator('[data-game-frame]').getByText('测试一下今天还醒着吗')).toBeVisible();
