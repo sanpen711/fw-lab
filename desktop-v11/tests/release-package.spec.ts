@@ -34,7 +34,8 @@ test('生产包的启用游戏均能加载，脚本、字体和数独工作线�
   await page.goto('/');await page.locator('.nav-item[data-nav="games"]').click();
   for(const game of ['2048','minesweeper','sudoku','reaction']){
     await page.locator('[data-game-open="'+game+'"]').click();
-    const frame=page.frames().find(frame=>frame.url().includes('/games/'+game+'/index.html'))||await page.waitForEvent('framenavigated',frame=>frame.url().includes('/games/'+game+'/index.html'));
+    await expect.poll(()=>page.frames().some(frame=>frame.url().includes('/games/'+game+'/index.html'))).toBe(true);
+    const frame=page.frames().find(frame=>frame.url().includes('/games/'+game+'/index.html'))!;
     await frame.waitForLoadState('networkidle');
     await expect(page.frameLocator('[data-game-frame]').locator('body')).toBeVisible();
     await page.locator('[data-game-back]').click();

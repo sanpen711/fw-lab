@@ -72,5 +72,6 @@ test('release audit rejects an inline encoding of the archived ROM',async()=>{
 test('retired decorations are removed without deleting active shared styles or surrounding markup',()=>{
   const html='<main><div class="hero-visual"><span>old</span><div><div>nested</div></div></div><section>active</section></main><!-- 魂斗罗 ROM 归档 -->';
   assert.equal(cleanReleaseHtml(html),'<main><section>active</section></main>');
+  assert.equal(cleanReleaseHtml('<p>NES 播放器使用 EmulatorJS 与 FCEUmm；2048 基于开源项目。</p>'),'<p>2048 基于开源项目。</p>');
   assert.equal(cleanReleaseCss('.weather-card,.home-tool-card{color:red}.nav-icon-news{display:block}'),'.home-tool-card{color:red}');
 });

@@ -42,7 +42,7 @@ export function cleanReleaseHtml(html){
     if(end<0)throw new Error('Unclosed archived hero visual');
     html=html.slice(0,start)+html.slice(end);
   }
-  return html.replace(/<!--[^]*?-->/g,comment=>/魂斗罗|ROM/.test(comment)?'':comment);
+  return html.replace(/<!--[^]*?-->/g,comment=>/魂斗罗|ROM/.test(comment)?'':comment).replace('NES 播放器使用 EmulatorJS 与 FCEUmm；','');
 }
 function cleanPublicText(path,text){
   if(path.endsWith('.css'))return cleanReleaseCss(text);
@@ -86,7 +86,8 @@ export async function auditReleaseDist(distDir,{sourceDir}={}){
       if((bytes[0]===78&&bytes[1]===69&&bytes[2]===83&&bytes[3]===26)||(bytes[0]===0&&bytes[1]===97&&bytes[2]===115&&bytes[3]===109)||hash===romHash)throw new Error('ROM or emulator binary in release: '+path);
       if(textExtensions.has(extname(path))){
         const text=bytes.toString('utf8');
-        if(forbiddenContent.test(text)||(encodedRom&&text.includes(encodedRom)))throw new Error('Archived feature content in release: '+path);
+        const archived=forbiddenContent.exec(text);
+        if(archived||(encodedRom&&text.includes(encodedRom)))throw new Error('Archived feature content in release: '+path+' ('+(archived?.[0]||'encoded ROM')+')');
       }
       files.push({path,bytes:bytes.length,sha256:hash});
     }
