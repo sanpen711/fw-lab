@@ -1,12 +1,12 @@
 {
-  "version": "1.3.37",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.37-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlF5N29ZVG85MHdBbXRmT3I2VlJpU3FaZFdGbmNYM3RNcW1POHM3QXpqMGlzN1kwc3FTRlZ3NjFaKzN4SWNTanNEV0p6NlJXdVlBeUJZQzU1QllTeEFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzOTQzODkwCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzdfeDY0LXNldHVwLmV4ZQp0V1lOcTdPWUdPS3ZXRjl3eXNsUkJaN3BLMkVzTTByYWhKcncxL2p1OVU5ZDNpK0NzT25qQ2VlOXdLMXFhSnYzV21YOHBzMjVncEpTaVByVXBDb2REZz09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.38-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmN5TmhkUFU5aTlvTjF1Z1JkMXVmWExYWlVoWFlYMVpBcU9MNXRJQmpYeVRQMmYyL09xeit5dTdwQWdJOWQyYXpVdlNiQnhEMnZWMzJTVTFCY0FqSUE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzOTQ4ODkyCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzhfeDY0LXNldHVwLmV4ZQpSNGxoazNwSlg2dmQwbVJNWmFpUFpEWmdneXJoSzJ1WDBvOE1SamFzcStUbDlvbW83Q1BxU3llWGFrRkZuc01nSVp1cDdFZVFFZGdyTUlpcGk5UlhCdz09Cg=="
     }
   },
   "displayVersion": "1.0.1",
-  "pub_date": "2026-11-06T05:45:00.5099298Z",
-  "notes": "Windows 1.0.1：暂时隐藏魂斗罗入口，保留原有存档；对外版本从 1.0.1 重新编号。"
+  "pub_date": "2026-11-06T07:08:29.2328807Z",
+  "version": "1.3.38",
+  "notes": "Windows 1.0.1：安装包仅包含当前启用功能，移除魂斗罗 ROM、播放器、模拟器及停用资源；GitHub 原文件保留。"
 }
