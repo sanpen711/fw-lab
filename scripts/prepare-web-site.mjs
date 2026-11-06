@@ -1,4 +1,4 @@
-import {cp,mkdir,readdir,rm,writeFile,stat} from 'node:fs/promises';
+import {cp,mkdir,readdir,rm,readFile,writeFile,stat} from 'node:fs/promises';
 import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),site=resolve(root,'.site');
@@ -8,6 +8,13 @@ await cp(resolve(root,'official-site'),site,{recursive:true});
 for(const folder of ['assets','download','desktop-v11/public']){
   if(await stat(resolve(root,folder)).catch(()=>null)) await cp(resolve(root,folder),resolve(site,folder),{recursive:true});
 }
+// Render download information from the last published manifest, not a stale source label.
+const release=JSON.parse(await readFile(resolve(root,'download/windows-version.json'),'utf8'));
+const homePath=resolve(site,'index.html');
+const home=await readFile(homePath,'utf8');
+const displayVersion=release.displayVersion||release.version;
+if(!/^\d+\.\d+\.\d+$/.test(displayVersion)||!String(release.downloadUrl||'').startsWith('https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/'))throw new Error('Invalid public release metadata');
+await writeFile(homePath,home.replace(/安装包 v[\d.]+/,'安装包 v'+displayVersion).replace(/href="https:\/\/ekbovsmxbiplhyrzxoyw\.supabase\.co\/storage\/v1\/object\/public\/app-releases\/fw-lab-windows-[\d.]+-setup\.exe"/,'href="'+release.downloadUrl+'"'));
 // Official artwork wins over any same-name legacy asset.
 await cp(resolve(root,'official-site/assets'),resolve(site,'assets'),{recursive:true});
 for(const file of ['CNAME','.nojekyll','practice-1022-b7d9e4.html']){

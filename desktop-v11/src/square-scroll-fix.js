@@ -1,3 +1,5 @@
+import {APP_VERSION} from './config.js';
+
 // Windows 双栏页面滚动修复：只监听 #app 的 data-view，避免全局 DOM 监听。
 const app=document.getElementById('app');
 
@@ -14,7 +16,7 @@ if(app){
   const style=document.createElement('style');
   style.id='fw-square-scroll-fix';
   style.textContent=`
-    html body .phase-note::after{content:'Windows 1.3.36 本地前端 · 会员开通与续费'!important}
+    html body .phase-note::after{content:'Windows ${APP_VERSION} 本地前端 · 会员开通与续费'!important}
     body.square-scroll-locked{height:100vh;overflow:hidden!important}
     body.square-scroll-locked #app{height:100vh;min-height:0;overflow:hidden}
     body.square-scroll-locked .main-content{height:100vh;min-height:0;overflow:hidden}
