@@ -95,6 +95,7 @@ function mascotStateHtml({title,copy='',tone='idle',action=''}={}){
   return `<div class="state-card mascot-state" data-mascot-state="${esc(tone)}"><img src="/mascot-fufu.webp" alt="伏伏"><div class="mascot-state-copy"><b>${esc(title)}</b>${copy?`<span>${esc(copy)}</span>`:''}${action}</div></div>`;
 }
 function setMascotGreeting(){
+  if(!import.meta.env.DEV)return;
   const node=$('[data-mascot-status]');if(!node)return;const hour=new Date().getHours();
   node.textContent=hour<11?'今日研究任务已启动':hour<14?'午间低功耗运行中':hour<18?'检测到下班时间正在靠近':'今日研究暂告一段落';
 }

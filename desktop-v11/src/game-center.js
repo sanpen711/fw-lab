@@ -1,11 +1,11 @@
 import {NES_GAMES} from './nes-games.js';
 import {APP_VERSION} from './config.js';
 
-const nesGames=Object.fromEntries(Object.entries(NES_GAMES).map(([id,game])=>[id,{
+const nesGames=import.meta.env.DEV?Object.fromEntries(Object.entries(NES_GAMES).map(([id,game])=>[id,{
   title:game.title,
   tip:game.controls,
   page:`./nes-player.html?game=${encodeURIComponent(id)}`,
-}]));
+}])):{};
 
 const games={
   ...nesGames,
@@ -26,19 +26,23 @@ function frameUrl(game){
 }
 
 function saveGameOnExit(){
+  if(!import.meta.env.DEV)return;
   const frame=$('[data-game-frame]');
   return frame?.contentWindow?.__FW_NES_PROGRESS__?.saveOnExit?.();
 }
 function saveBeforeLeaving(){
+  if(!import.meta.env.DEV)return true;
   try{saveGameOnExit();return true;}catch{
     return window.confirm('当前进度保存失败，仍然退出吗？上次成功保存的存档会保留。');
   }
 }
 // Tauri waits for this handler before destroying the native window.
+if(import.meta.env.DEV){
 const nativeWindow=window.__TAURI__?.window?.getCurrentWindow?.();
 nativeWindow?.onCloseRequested?.(event=>{
   if(!saveBeforeLeaving())event.preventDefault();
 }).catch(error=>console.warn('[FW games] close listener unavailable',error));
+}
 
 function open(id){
   const game=games[id];if(!game)return;
@@ -78,6 +82,6 @@ document.addEventListener('click',event=>{
   const nav=event.target.closest?.('[data-nav]');if(nav&&nav.dataset.nav!=='games')close();
 });
 
-window.addEventListener('beforeunload',()=>{try{saveGameOnExit();}catch{}});
+if(import.meta.env.DEV)window.addEventListener('beforeunload',()=>{try{saveGameOnExit();}catch{}});
 window.__FW_GAMES__={activate,close,open};
 $('[data-game-frame]')?.addEventListener('load',()=>{const frame=$('[data-game-frame]');if(current&&frame.src!=='about:blank'&&frame.closest('.view.active')){frame.focus({preventScroll:true});frame.contentWindow?.focus();}});

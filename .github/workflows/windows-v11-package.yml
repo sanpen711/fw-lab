@@ -46,6 +46,8 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: npx tauri build --config src-tauri/tauri.v11.conf.json --bundles nsis
+      - name: Audit packaged frontend resources
+        run: npm --prefix desktop-v11 run verify:release
       - name: Test native URL restrictions
         env:
           TAURI_CONFIG: '{"build":{"frontendDist":"../desktop-v11/dist"}}'
@@ -71,11 +73,12 @@ jobs:
           Copy-Item $portable.FullName "windows-v11-candidate/$portableName"
           $portableHash = (Get-FileHash $portable.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           Add-Content 'windows-v11-candidate/sha256.txt' "$portableHash  $portableName" -Encoding utf8
+          Copy-Item 'desktop-v11/.cache/release-package-audit.json' 'windows-v11-candidate/release-package-audit.json'
           @(
             'F.w 研究所 Windows 测试版（未正式发布）',
             "解压后，请先彻底退出正在运行的正式客户端，再双击 $portableName。无需安装。",
             '如需安装，也可运行同目录下的 setup.exe 安装包。',
-            '魂斗罗入口暂时隐藏，已有存档保留。'
+            '本安装包不包含魂斗罗 ROM、NES 播放器、模拟器核心及已停用资源；GitHub 原文件保留。'
             '本文件仅用于测试，没有更新正式下载或客户端自动更新。'
           ) | Set-Content 'windows-v11-candidate/test-readme.txt' -Encoding utf8
           "version=$displayVersion" >> $env:GITHUB_OUTPUT
