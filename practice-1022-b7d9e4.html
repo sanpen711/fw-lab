@@ -38,6 +38,16 @@ body{color:#20252c;-webkit-text-size-adjust:100%}button,a{-webkit-tap-highlight-
 
 @media(max-width:720px){.question-card{scroll-margin-top:16px}}
 
+/* Random exam: preserve phone navigation and neutral answer states until hand-in. */
+.exam-status{font-size:12px;color:#b94418;background:#fff0e7;border-radius:20px;padding:5px 10px;white-space:nowrap}
+.exam-save-note{font-size:12px;color:#65584e;line-height:1.7;margin:18px 0 0}
+.exam-wide-button{width:100%;margin-top:15px}
+.exam-answered-dot{background:#eb641f!important}
+.exam-score{text-align:center;margin:20px 0 25px;color:#d85422}
+.exam-score strong{font-size:48px;letter-spacing:-1px}.exam-score span{font-size:16px;margin-left:8px;color:#62666b}
+#examSummaryButton[hidden]{display:none}
+@media(max-width:1100px) and (min-width:721px){.sidebar #navigation{flex-wrap:wrap}.sidebar .nav-button{flex:0 0 auto}}
+@media(max-width:720px){#navigation{grid-template-columns:repeat(6,minmax(0,1fr))}.nav-button{min-width:0;padding-left:2px;padding-right:2px}.nav-button .mobile-nav-label{font-size:10px}.exam-save-note{font-size:12px}#examSummaryButton{display:inline-flex}.toolbar-actions{gap:5px}}
 </style>
 </head>
 <body>
@@ -54,7 +64,7 @@ body{color:#20252c;-webkit-text-size-adjust:100%}button,a{-webkit-tap-highlight-
       <main>
         <section class="page-heading"><div><div class="eyebrow">个人专属题库</div><h1 id="pageTitle">顺序练习</h1><p id="pageSubtitle">按题库顺序，踏实练好每一道题。</p></div><div class="today-pill"><span data-icon="sun"></span><span>今日已练 <b id="todayCount">0</b> 题</span></div></section>
         <section class="stats" aria-label="练习统计"><div class="stat"><span class="stat-label">题库总量</span><div><strong>96</strong><span>题</span></div><p>46 单选 · 20 多选 · 30 判断</p></div><div class="stat"><span class="stat-label">累计已练</span><div><strong id="doneCount">0</strong><span>/ 96 题</span></div><p id="doneHint">从第一道题开始</p></div><div class="stat"><span class="stat-label">答题正确率</span><div><strong id="accuracy">—</strong></div><p>按累计提交次数计算</p></div><div class="stat"><span class="stat-label">待复习错题</span><div><strong id="wrongCount">0</strong><span>题</span></div><button data-action="mode" data-mode="wrong" class="text-link">去复习 <span>↗</span></button></div></section>
-        <section class="practice-area"><div class="practice-toolbar"><div class="filters" id="filters" role="group" aria-label="题型筛选"></div><div class="toolbar-actions"><button id="mobileCardButton" class="mobile-card-button" data-action="answer-card">答题卡</button><button id="restartButton" class="subtle-button" data-action="restart"><span data-icon="refresh"></span><span id="restartLabel">新一轮练习</span></button></div></div><div id="practiceContent"></div></section>
+        <section class="practice-area"><div class="practice-toolbar"><div class="filters" id="filters" role="group" aria-label="题型筛选"></div><div class="toolbar-actions"><button id="examSummaryButton" class="mobile-card-button" data-action="exam-summary" hidden>交卷</button><button id="mobileCardButton" class="mobile-card-button" data-action="answer-card">答题卡</button><button id="restartButton" class="subtle-button" data-action="restart"><span data-icon="refresh"></span><span id="restartLabel">新一轮练习</span></button></div></div><div id="practiceContent"></div></section>
         <footer class="page-footer"><span>题库更新于 2026.10.22 · 已排除模板示例</span><span>进度保存在当前浏览器，可通过「进度备份」迁移</span></footer>
       </main>
     </div>
@@ -2797,7 +2807,7 @@ const QUESTIONS = [
 ];
 
 const STORAGE_KEY = 'my-study-notebook-1022-v1';
-const MODE_NAMES = {order:'顺序练习',random:'随机练习',wrong:'错题本',favorite:'收藏夹',browse:'题库浏览'};
+const MODE_NAMES = {order:'顺序练习',random:'随机练习',exam:'随机考试',wrong:'错题本',favorite:'收藏夹',browse:'题库浏览'};
 function emptyState() { return {version:1,records:{},wrong:[],favorites:[],daily:{},sessions:{},mode:'order',filter:'全部'}; }
 function equalAnswers(a,b) { return [...a].sort().join('|') === [...b].sort().join('|'); }
 function poolFor(questions,state,mode,filter='全部') {
@@ -2805,8 +2815,8 @@ function poolFor(questions,state,mode,filter='全部') {
 }
 function createSession(questions,state,mode,filter='全部',rng=Math.random) {
   const ids=poolFor(questions,state,mode,filter).map(q=>q.id);
-  if(mode==='random') for(let i=ids.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}
-  return {ids,index:0,results:{},drafts:{},mode,filter};
+  if(mode==='random'||mode==='exam') for(let i=ids.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}
+  return {ids,index:0,results:{},drafts:{},mode,filter,submitted:false};
 }
 function answerQuestion(state,session,q,selected,dateKey) {
   if(session.results[q.id] || !selected.length) return null;
@@ -2836,7 +2846,9 @@ function readState(value,questions) {
     const results={};
     for(const id of ids){const r=s.results?.[id],q=questions.find(q=>q.id===id); if(r&&Array.isArray(r.selected)&&r.selected.length&&r.selected.every(k=>q.options.some(o=>o.key===k))) results[id]={selected:[...new Set(r.selected)],correct:equalAnswers(r.selected,q.answer),answeredAt:String(r.answeredAt||'')};}
     const drafts={};for(const id of ids)if(Array.isArray(s.drafts?.[id]))drafts[id]=s.drafts[id].filter(k=>questions.find(q=>q.id===id).options.some(o=>o.key===k));
-    base.sessions[key]={ids,index:Math.min(Math.max(0,Number.isInteger(s.index)?s.index:0),Math.max(ids.length-1,0)),results,drafts,mode:s.mode,filter:s.filter};
+    const examFinished=s.mode==='exam'&&s.submitted===true&&ids.length>0&&ids.every(id=>results[id]);
+    if(s.mode==='exam'&&!examFinished)for(const id of Object.keys(results)){if(!drafts[id]?.length)drafts[id]=results[id].selected;delete results[id];}
+    base.sessions[key]={submitted:examFinished,ids,index:Math.min(Math.max(0,Number.isInteger(s.index)?s.index:0),Math.max(ids.length-1,0)),results,drafts,mode:s.mode,filter:s.filter};
   }
   return base;
 }
@@ -2844,6 +2856,7 @@ function readState(value,questions) {
 
 const icons={
   order:'<path d="M8 6h12M8 12h12M8 18h12M3 6h.01M3 12h.01M3 18h.01"/>',
+  exam:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v4H9zM9 12h6M9 16h4"/>',
   random:'<path d="m16 3 4 4-4 4M4 7h3c4 0 6 10 10 10h3M16 13l4 4-4 4M4 17h3c1 0 2-1 3-3M14 9c1-1 2-2 3-2h3"/>',
   wrong:'<path d="M5 4h12a2 2 0 0 1 2 2v15H6a3 3 0 0 1-3-3V6a2 2 0 0 1 2-2ZM6 17h13M8 8l5 5M13 8l-5 5"/>',
   favorite:'<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/>',
@@ -2871,17 +2884,20 @@ function toast(text){clearTimeout(toastTimer);$('#toast').textContent=text;$('#t
 function currentSession(){if(!state.sessions[key()])state.sessions[key()]=createSession(QUESTIONS,state,state.mode,state.filter);return state.sessions[key()];}
 function currentQuestion(){const s=currentSession();return byId.get(s.ids[s.index]);}
 function startMode(mode,force=false){
+  if(mode==='exam'&&state.mode!=='exam')state.filter='全部';
   state.mode=mode;searchQuery='';
   if(force||['wrong','favorite'].includes(mode))state.sessions[key()]=createSession(QUESTIONS,state,mode,state.filter);
   save();render();
 }
 function renderHeader(){
-  const subtitles={order:'按题库顺序，踏实练好每一道题。',random:'打乱题目顺序，看看自己真正掌握了多少。',wrong:'把没掌握的题，再认真练一遍。',favorite:'把值得多看一眼的题，收在这里。',browse:'按关键词查找，快速回顾题目和答案。'};
+  const subtitles={order:'按题库顺序，踏实练好每一道题。',random:'打乱题目顺序，看看自己真正掌握了多少。',exam:'题目随机排列，全部作答后交卷，统一查看结果。',wrong:'把没掌握的题，再认真练一遍。',favorite:'把值得多看一眼的题，收在这里。',browse:'按关键词查找，快速回顾题目和答案。'};
   $('#pageTitle').textContent=MODE_NAMES[state.mode];$('#pageSubtitle').textContent=subtitles[state.mode];
-  const shortLabels={order:'顺序练习',random:'随机练习',wrong:'错题本',favorite:'收藏夹',browse:'题库'};
+  const shortLabels={order:'顺序练习',random:'随机练习',exam:'随机考试',wrong:'错题本',favorite:'收藏夹',browse:'题库'};
   $('#navigation').innerHTML=Object.entries(MODE_NAMES).map(([mode,label])=>`<button class="nav-button ${state.mode===mode?'active':''}" data-action="mode" data-mode="${mode}" ${state.mode===mode?'aria-current="page"':''}>${svg(mode)}<span class="desktop-nav-label">${label}</span><span class="mobile-nav-label">${shortLabels[mode]}</span>${mode==='wrong'||mode==='favorite'?`<span class="nav-count">${mode==='wrong'?state.wrong.length:state.favorites.length}</span>`:''}</button>`).join('');
   $('#filters').innerHTML=['全部','单选','多选','判断'].map(type=>`<button class="filter-button ${state.filter===type?'active':''}" data-action="filter" data-type="${type}" aria-pressed="${state.filter===type}">${type==='全部'?'全部题型':type+'题'}<small>${QUESTIONS.filter(q=>type==='全部'||q.type===type).length}</small></button>`).join('');
-  $('#restartLabel').textContent=state.mode==='random'?'重新打乱':state.mode==='browse'?'进度备份':'新一轮练习';
+  $('#examSummaryButton').hidden=state.mode!=='exam';
+  $('#examSummaryButton').textContent=state.mode==='exam'&&currentSession().submitted?'考试结果':'交卷';
+  $('#restartLabel').textContent=state.mode==='exam'?'重新考试':state.mode==='random'?'重新打乱':state.mode==='browse'?'进度备份':'新一轮练习';
   $('#mobileCardButton').hidden=state.mode==='browse';
   document.body.classList.toggle('is-browsing',state.mode==='browse');
   const records=Object.values(state.records),done=records.length,attempts=records.reduce((n,r)=>n+r.attempts,0),correct=records.reduce((n,r)=>n+r.correct,0),mastered=records.filter(r=>r.latestCorrect).length;
@@ -2892,6 +2908,7 @@ function renderHeader(){
 }
 function render(){renderHeader();if(state.mode==='browse')renderBrowse();else renderQuiz();}
 function renderQuiz(){
+  if(state.mode==='exam'&&!currentSession().submitted){renderExamQuestion();return;}
   const s=currentSession(),q=currentQuestion();
   if(!q){
     const messages={wrong:['还没有待复习的错题','答错的题会自动加入这里；再次答对后，会自动移出。'],favorite:['收藏夹还是空的','练习时点击题目右上角的「收藏」，方便以后回顾。']};
@@ -2902,8 +2919,53 @@ function renderQuiz(){
   const answered=s.ids.filter(id=>s.results[id]).length,correct=s.ids.filter(id=>s.results[id]?.correct).length;
   const difficulty={低:'基础',中:'适中',高:'进阶'}[q.difficulty]||q.difficulty;
   const answerText=q.answer.map(k=>{const o=q.options.find(o=>o.key===k);return q.type==='判断'?o.text:`${k}. ${o.text}`;}).join('；');
-  $('#practiceContent').innerHTML=`<div class="quiz-layout"><div><section class="question-card" aria-label="当前题目"><div class="question-meta"><div class="question-tags"><span class="type-tag">${q.type}题</span><span class="question-difficulty">${esc(difficulty)} · ${q.points} 分</span></div><button class="favorite-button ${favorite?'is-favorite':''}" data-action="favorite" data-id="${q.id}" aria-pressed="${favorite}" aria-label="${favorite?'取消收藏本题':'收藏本题'}">${svg('favorite')}${favorite?'已收藏':'收藏'}</button></div><div class="question-counter"><b>${String(s.index+1).padStart(2,'0')}</b> / ${s.ids.length} <span class="sr-only">原题库第 ${q.number} 题</span></div><h2 class="question-text" id="questionTitle">${esc(q.text)}</h2><div class="answer-hint">${q.type==='多选'?'本题为多选题，请选出所有正确选项，全部选对才计为正确。':q.type==='判断'?'请选择正确或错误，提交后查看结果。':'请选择一个最合适的答案。'}</div><div class="options" role="group" aria-labelledby="questionTitle">${q.options.map(o=>`<button class="option ${selected.includes(o.key)?'selected':''} ${result?(q.answer.includes(o.key)?'correct':selected.includes(o.key)?'incorrect':''):''}" data-action="option" data-key="${o.key}" aria-pressed="${selected.includes(o.key)}" ${result?'disabled':''}><span class="option-letter">${q.type==='判断'?(o.key==='T'?'✓':'×'):o.key}</span><span class="option-text">${esc(o.text)}</span>${result&&(q.answer.includes(o.key)||selected.includes(o.key))?`<span class="answer-mark">${q.answer.includes(o.key)?'✓':'×'}</span>`:''}</button>`).join('')}</div>${result?`<div class="feedback ${result.correct?'':'wrong'}" role="status"><div class="feedback-title">${svg(result.correct?'check':'info')}${result.correct?'回答正确，继续保持':'这题再记一记'}<small>${result.correct?'已记录本次练习':'已加入错题本'}</small></div><p class="correct-answer">正确答案：${esc(answerText)}</p>${!result.correct?`<p>你的选择：${esc(result.selected.map(k=>q.type==='判断'?q.options.find(o=>o.key===k).text:k).join('、'))}</p>`:''}<p class="answer-note">${q.explanation?esc(q.explanation):'原表未提供解析，请对照正确答案复习。'}</p><button class="retry-button" data-action="retry">重做本题</button></div>`:''}<div class="question-actions ${result?'has-result':''}"><button class="nav-action" data-action="previous" ${s.index===0?'disabled':''}>${svg('prev')}上一题</button>${!result?`<button class="primary-button" data-action="submit" ${!selected.length?'disabled':''}>提交答案 ${svg('next')}</button>`:'<span class="sr-only">已提交</span>'}<button class="${result?'primary-button':'nav-action'}" data-action="next">${s.index===s.ids.length-1?'本轮回顾':'下一题'}${svg('next')}</button></div></section><p class="practice-tip">选择后按 Enter 提交 · ← → 切换题目 · 自动记住练习进度</p></div><aside class="answer-panel" aria-label="本轮答题卡"><div class="panel-heading">答题卡<span>${s.ids.length} 道题</span></div><div class="round-progress-label"><span>本轮已答</span><span>${answered} / ${s.ids.length}</span></div><div class="progress-track"><i style="width:${answered/s.ids.length*100}%"></i></div><div class="question-grid">${s.ids.map((id,i)=>`<button class="grid-number ${i===s.index?'current':''} ${s.results[id]?(s.results[id].correct?'is-correct':'is-wrong'):s.drafts[id]?.length?'has-draft':''}" data-action="jump" data-index="${i}" aria-label="跳转第 ${i+1} 题${s.results[id]?(s.results[id].correct?'，已答对':'，已答错'):''}" ${i===s.index?'aria-current="true"':''}>${i+1}</button>`).join('')}</div><div class="legend"><span><i class="good"></i>答对</span><span><i class="bad"></i>答错</span><span><i></i>未答</span></div><p class="panel-note">本轮答对 ${correct} 题${answered?`，正确率 ${Math.round(correct/answered*100)}%`:'。'}<br>点击题号，可自由跳转。</p></aside></div>`;
+  $('#practiceContent').innerHTML=`<div class="quiz-layout"><div><section class="question-card" aria-label="当前题目"><div class="question-meta"><div class="question-tags"><span class="type-tag">${q.type}题</span><span class="question-difficulty">${esc(difficulty)} · ${q.points} 分</span></div><button class="favorite-button ${favorite?'is-favorite':''}" data-action="favorite" data-id="${q.id}" aria-pressed="${favorite}" aria-label="${favorite?'取消收藏本题':'收藏本题'}">${svg('favorite')}${favorite?'已收藏':'收藏'}</button></div><div class="question-counter"><b>${String(s.index+1).padStart(2,'0')}</b> / ${s.ids.length} <span class="sr-only">原题库第 ${q.number} 题</span></div><h2 class="question-text" id="questionTitle">${esc(q.text)}</h2><div class="answer-hint">${state.mode==='exam'?'考试已交卷，下面展示本题作答结果。':q.type==='多选'?'本题为多选题，请选出所有正确选项，全部选对才计为正确。':q.type==='判断'?'请选择正确或错误，提交后查看结果。':'请选择一个最合适的答案。'}</div><div class="options" role="group" aria-labelledby="questionTitle">${q.options.map(o=>`<button class="option ${selected.includes(o.key)?'selected':''} ${result?(q.answer.includes(o.key)?'correct':selected.includes(o.key)?'incorrect':''):''}" data-action="option" data-key="${o.key}" aria-pressed="${selected.includes(o.key)}" ${result?'disabled':''}><span class="option-letter">${q.type==='判断'?(o.key==='T'?'✓':'×'):o.key}</span><span class="option-text">${esc(o.text)}</span>${result&&(q.answer.includes(o.key)||selected.includes(o.key))?`<span class="answer-mark">${q.answer.includes(o.key)?'✓':'×'}</span>`:''}</button>`).join('')}</div>${result?`<div class="feedback ${result.correct?'':'wrong'}" role="status"><div class="feedback-title">${svg(result.correct?'check':'info')}${result.correct?'回答正确，继续保持':'这题再记一记'}<small>${result.correct?'已记录本次练习':'已加入错题本'}</small></div><p class="correct-answer">正确答案：${esc(answerText)}</p>${!result.correct?`<p>你的选择：${esc(result.selected.map(k=>q.type==='判断'?q.options.find(o=>o.key===k).text:k).join('、'))}</p>`:''}<p class="answer-note">${q.explanation?esc(q.explanation):'原表未提供解析，请对照正确答案复习。'}</p>${state.mode==='exam'?'':'<button class="retry-button" data-action="retry">重做本题</button>'}</div>`:''}<div class="question-actions ${result?'has-result':''}"><button class="nav-action" data-action="previous" ${s.index===0?'disabled':''}>${svg('prev')}上一题</button>${!result?`<button class="primary-button" data-action="submit" ${!selected.length?'disabled':''}>提交答案 ${svg('next')}</button>`:'<span class="sr-only">已提交</span>'}<button class="${result?'primary-button':'nav-action'}" data-action="next">${s.index===s.ids.length-1?'本轮回顾':'下一题'}${svg('next')}</button></div></section><p class="practice-tip">选择后按 Enter 提交 · ← → 切换题目 · 自动记住练习进度</p></div><aside class="answer-panel" aria-label="本轮答题卡"><div class="panel-heading">答题卡<span>${s.ids.length} 道题</span></div><div class="round-progress-label"><span>本轮已答</span><span>${answered} / ${s.ids.length}</span></div><div class="progress-track"><i style="width:${answered/s.ids.length*100}%"></i></div><div class="question-grid">${s.ids.map((id,i)=>`<button class="grid-number ${i===s.index?'current':''} ${s.results[id]?(s.results[id].correct?'is-correct':'is-wrong'):s.drafts[id]?.length?'has-draft':''}" data-action="jump" data-index="${i}" aria-label="跳转第 ${i+1} 题${s.results[id]?(s.results[id].correct?'，已答对':'，已答错'):''}" ${i===s.index?'aria-current="true"':''}>${i+1}</button>`).join('')}</div><div class="legend"><span><i class="good"></i>答对</span><span><i class="bad"></i>答错</span><span><i></i>未答</span></div><p class="panel-note">本轮答对 ${correct} 题${answered?`，正确率 ${Math.round(correct/answered*100)}%`:'。'}<br>点击题号，可自由跳转。</p></aside></div>`;
 }
+function examAnsweredCount(session){return session.ids.filter(id=>session.results[id]||session.drafts[id]?.length).length;}
+function gradeExam(state,session,questions,dateKey){
+  if(session.mode!=='exam'||session.submitted||!session.ids.length)return false;
+  const qs=session.ids.map(id=>questions.find(q=>q.id===id));
+  if(qs.some(q=>!q||!session.drafts[q.id]?.length||session.drafts[q.id].some(k=>!q.options.some(o=>o.key===k))))return false;
+  for(const q of qs)answerQuestion(state,session,q,session.drafts[q.id],dateKey);
+  session.submitted=true;
+  return true;
+}
+function examScore(session){
+  return session.ids.reduce((total,id)=>{const q=byId.get(id),points=Number(q.points)||0;total.total+=points;if(session.results[id]?.correct){total.correct++;total.earned+=points;}return total;},{total:0,earned:0,correct:0});
+}
+function answerCardGrid(session,inDialog=false){
+  const pending=state.mode==='exam'&&!session.submitted;
+  return session.ids.map((id,i)=>{
+    const result=pending?null:session.results[id],answered=!!(result||session.drafts[id]?.length);
+    const status=result?(result.correct?'is-correct':'is-wrong'):answered?'has-draft':'';
+    return `<button class="grid-number ${i===session.index?'current':''} ${status}" data-action="${inDialog?'dialog-jump':'jump'}" data-index="${i}" aria-label="跳转第 ${i+1} 题${result?(result.correct?'，已答对':'，已答错'):answered?'，已作答':'，未作答'}" ${i===session.index?'aria-current="true"':''}>${i+1}</button>`;
+  }).join('');
+}
+function examLegend(){return '<div class="legend"><span><i class="exam-answered-dot"></i>已作答</span><span><i></i>未作答</span></div>';}
+function renderExamQuestion(){
+  const s=currentSession(),q=currentQuestion();if(!q)return;
+  const selected=s.drafts[q.id]||[],answered=examAnsweredCount(s),last=s.index===s.ids.length-1;
+  $('#practiceContent').innerHTML=`<div class="quiz-layout"><div><section class="question-card" aria-label="当前考试题目"><div class="question-meta"><div class="question-tags"><span class="type-tag">${q.type}题</span><span class="question-difficulty">${q.points} 分</span></div><span class="exam-status">考试中</span></div><div class="question-counter"><b>${String(s.index+1).padStart(2,'0')}</b> / ${s.ids.length}</div><h2 class="question-text" id="questionTitle">${esc(q.text)}</h2><div class="answer-hint">${state.mode==='exam'?'考试已交卷，下面展示本题作答结果。':q.type==='多选'?'多选题，请选出所有正确选项。':'请选择'+(q.type==='判断'?'正确或错误。':'一个答案。')} 交卷后统一显示对错。</div><div class="options" role="group" aria-labelledby="questionTitle">${q.options.map(o=>`<button class="option ${selected.includes(o.key)?'selected':''}" data-action="option" data-key="${o.key}" aria-pressed="${selected.includes(o.key)}"><span class="option-letter">${q.type==='判断'?(o.key==='T'?'✓':'×'):o.key}</span><span class="option-text">${esc(o.text)}</span></button>`).join('')}</div><p class="exam-save-note" role="status">${selected.length?'本题答案已保存，可继续修改。':'选择后自动保存，可随时返回修改。'} 已作答 ${answered} / ${s.ids.length} 题</p><div class="question-actions has-result"><button class="nav-action" data-action="previous" ${s.index===0?'disabled':''}>${svg('prev')}上一题</button><button class="primary-button" data-action="next">${last?'交卷':'下一题'}${svg('next')}</button></div></section><p class="practice-tip">题目随机排列 · 考试中不显示对错 · 全部作答后交卷</p></div><aside class="answer-panel" aria-label="考试答题卡"><div class="panel-heading">考试答题卡<span>${s.ids.length} 道题</span></div><div class="round-progress-label"><span>已作答</span><span>${answered} / ${s.ids.length}</span></div><div class="progress-track"><i style="width:${answered/s.ids.length*100}%"></i></div><div class="question-grid">${answerCardGrid(s)}</div>${examLegend()}<p class="panel-note">点击题号可回看、修改答案。<br>全部作答后，交卷查看结果。</p><button class="primary-button exam-wide-button" data-action="exam-summary">交卷</button></aside></div>`;
+}
+function openExamSummary(){
+  const s=currentSession();
+  if(s.submitted){openExamResults();return;}
+  const remaining=s.ids.length-examAnsweredCount(s);
+  if(remaining){
+    dialog(`${dialogHeader('还有题目未作答')}<p class="dialog-description">已作答 ${examAnsweredCount(s)} / ${s.ids.length} 题，还有 ${remaining} 题未答。全部作答后即可交卷查看结果。</p><div class="summary-actions"><button class="primary-button" data-action="continue-unanswered">继续未答题</button><button class="secondary-button" data-action="close-dialog">继续考试</button></div>`);
+    return;
+  }
+  dialog(`${dialogHeader('全部答完，确认交卷')}<p class="dialog-description">${s.ids.length} 道题均已作答。交卷后统一判分，并显示每道题的对错和正确答案。</p><div class="summary-actions"><button class="primary-button" data-action="exam-submit">确认交卷</button><button class="secondary-button" data-action="close-dialog">再检查一下</button></div>`);
+}
+function submitExam(){
+  const s=currentSession();if(!gradeExam(state,s,QUESTIONS,today())){openExamSummary();return;}
+  save();render();openExamResults();
+}
+function openExamResults(){
+  const s=currentSession(),score=examScore(s),wrong=s.ids.length-score.correct;
+  dialog(`${dialogHeader('考试结果')}<div class="exam-score"><strong>${score.earned}</strong><span>/ ${score.total} 分</span></div><div class="summary-stats"><div><strong>${score.correct}</strong><span>答对题目</span></div><div><strong>${wrong}</strong><span>答错题目</span></div><div><strong>${Math.round(score.correct/s.ids.length*100)}%</strong><span>正确率</span></div></div><p class="dialog-description">已完成 ${s.ids.length} 道题。答错的题已加入错题本，可通过答题卡逐题查看本次考试答案。</p><div class="summary-actions"><button class="primary-button" data-action="exam-review">查看试卷</button>${wrong?'<button class="secondary-button" data-action="exam-first-wrong">查看本次错题</button>':''}<button class="secondary-button" data-action="restart">再考一次</button></div>`);
+}
+
 function renderBrowse(){
   $('#practiceContent').innerHTML=`<div class="browser-tools"><label class="search-field">${svg('search')}<input id="questionSearch" placeholder="搜索题干、选项或关键词…" aria-label="搜索题库" value="${esc(searchQuery)}"></label><button class="secondary-button" data-action="backup" aria-label="备份练习进度">进度备份</button></div><p class="browse-count" id="browseCount"></p><div class="browse-list" id="browseList"></div>`;
   renderBrowseList();
@@ -2914,18 +2976,21 @@ function renderBrowseList(){
   $('#browseList').innerHTML=qs.length?qs.map(q=>`<details class="browse-card"><summary><span class="browse-number">${String(q.number).padStart(2,'0')}</span><span>${esc(q.text)}</span><span class="type-tag">${q.type}</span></summary><div class="browse-options">${q.options.map(o=>`<div>${q.type==='判断'?'':o.key+'. '}${esc(o.text)}</div>`).join('')}</div><div class="browse-answer">正确答案：${q.answer.map(k=>q.type==='判断'?q.options.find(o=>o.key===k).text:k).join('、')}</div><div class="browse-actions"><button data-action="favorite" data-id="${q.id}">${state.favorites.includes(q.id)?'★ 已收藏':'☆ 收藏本题'}</button><button data-action="practice-id" data-id="${q.id}">练习这道题 →</button></div></details>`).join(''):'<section class="empty-state"><h2>没有找到匹配的题目</h2><p>换一个关键词，或切换题型再试试。</p></section>';
 }
 function selectOption(k){const s=currentSession(),q=currentQuestion();if(!q||s.results[q.id])return;const values=s.drafts[q.id]||[];s.drafts[q.id]=q.type==='多选'?(values.includes(k)?values.filter(x=>x!==k):[...values,k]):[k];save();renderQuiz();}
-function submit(){const s=currentSession(),q=currentQuestion();if(!q)return;const result=answerQuestion(state,s,q,s.drafts[q.id]||[],today());if(!result)return;save();render();}
+function submit(){const s=currentSession(),q=currentQuestion();if(!q)return;if(state.mode==='exam'){if(s.submitted||s.drafts[q.id]?.length)move(1);else toast('请先选择答案');return;}const result=answerQuestion(state,s,q,s.drafts[q.id]||[],today());if(!result)return;save();render();}
 function move(delta){const s=currentSession();if(delta>0&&s.index===s.ids.length-1){openSummary();return;}s.index=Math.max(0,Math.min(s.ids.length-1,s.index+delta));save();renderQuiz();if(window.matchMedia('(max-width:720px)').matches)document.querySelector('.question-card')?.scrollIntoView({block:'start',behavior:'instant'});}
 function dialog(html){$('#dialogContent').innerHTML=html;if(!$('#utilityDialog').open)$('#utilityDialog').showModal();}
 const dialogHeader=title=>`<div class="dialog-header"><h2 id="dialogTitle">${title}</h2><button class="dialog-close" data-action="close-dialog" aria-label="关闭">×</button></div>`;
 function openBackup(){dialog(`${dialogHeader('把练习进度带走')}<p class="dialog-description">进度保存在当前浏览器。更换设备、浏览器或清理缓存前，可以先导出一份备份。</p><div class="backup-choice"><div><b>导出进度</b><p>包含答题记录、错题、收藏和当前进度</p></div><button class="secondary-button" data-action="export">导出备份</button></div><div class="backup-choice"><div><b>恢复进度</b><p>从之前导出的备份文件恢复</p></div><button class="secondary-button" data-action="import">选择文件</button><input type="file" id="importFile" accept="application/json,.json" hidden></div><p class="import-note">恢复会替换当前浏览器的练习进度，请先导出现有进度。备份文件只在浏览器里读取。</p>`);}
-function openSummary(){const s=currentSession(),answered=s.ids.filter(id=>s.results[id]).length,correct=s.ids.filter(id=>s.results[id]?.correct).length,unanswered=s.ids.length-answered;dialog(`${dialogHeader(unanswered?'本轮练习回顾':'这一轮，练完了')}<p class="dialog-description">${unanswered?`还有 ${unanswered} 道题没有提交，可以继续补齐。`:'给认真练习的自己一个小小的肯定。错题已经自动收好。'}</p><div class="summary-stats"><div><strong>${answered}</strong><span>已答题目</span></div><div><strong>${correct}</strong><span>答对题目</span></div><div><strong>${answered?Math.round(correct/answered*100)+'%':'—'}</strong><span>本轮正确率</span></div></div><div class="summary-actions">${unanswered?'<button class="primary-button" data-action="continue-unanswered">继续未答题</button>':'<button class="primary-button" data-action="restart-confirmed">再练一轮</button>'}<button class="secondary-button" data-action="summary-wrong">复习错题</button></div>`);}
-function openAnswerCard(){const s=currentSession();dialog(`${dialogHeader('本轮答题卡')}<p class="dialog-description">已答 ${s.ids.filter(id=>s.results[id]).length} / ${s.ids.length} 题，点击题号跳转。</p><div class="mobile-dialog-grid">${s.ids.map((id,i)=>`<button class="grid-number ${i===s.index?'current':''} ${s.results[id]?(s.results[id].correct?'is-correct':'is-wrong'):s.drafts[id]?.length?'has-draft':''}" data-action="dialog-jump" data-index="${i}" aria-label="跳转第 ${i+1} 题">${i+1}</button>`).join('')}</div><div class="legend"><span><i class="good"></i>答对</span><span><i class="bad"></i>答错</span><span><i></i>未答</span></div>`);}
-function restart(){if(state.mode==='browse'){openBackup();return;}const s=currentSession();if(!Object.keys(s.results).length&&!Object.keys(s.drafts).length){restartConfirmed();return;}dialog(`${dialogHeader('开始新一轮练习')}<p class="dialog-description">本轮答题卡会重新开始。累计练习记录、错题和收藏都会保留。</p><div class="summary-actions"><button class="primary-button" data-action="restart-confirmed">开始新一轮</button><button class="secondary-button" data-action="close-dialog">继续这一轮</button></div>`);}
-function restartConfirmed(){state.sessions[key()]=createSession(QUESTIONS,state,state.mode,state.filter);$('#utilityDialog').close();save();render();toast(state.mode==='random'?'题目已重新打乱':'新一轮练习已准备好');}
+function openSummary(){if(state.mode==='exam'){openExamSummary();return;}const s=currentSession(),answered=s.ids.filter(id=>s.results[id]).length,correct=s.ids.filter(id=>s.results[id]?.correct).length,unanswered=s.ids.length-answered;dialog(`${dialogHeader(unanswered?'本轮练习回顾':'这一轮，练完了')}<p class="dialog-description">${unanswered?`还有 ${unanswered} 道题没有提交，可以继续补齐。`:'给认真练习的自己一个小小的肯定。错题已经自动收好。'}</p><div class="summary-stats"><div><strong>${answered}</strong><span>已答题目</span></div><div><strong>${correct}</strong><span>答对题目</span></div><div><strong>${answered?Math.round(correct/answered*100)+'%':'—'}</strong><span>本轮正确率</span></div></div><div class="summary-actions">${unanswered?'<button class="primary-button" data-action="continue-unanswered">继续未答题</button>':'<button class="primary-button" data-action="restart-confirmed">再练一轮</button>'}<button class="secondary-button" data-action="summary-wrong">复习错题</button></div>`);}
+function openAnswerCard(){const s=currentSession(),pending=state.mode==='exam'&&!s.submitted;dialog(`${dialogHeader(state.mode==='exam'?'考试答题卡':'本轮答题卡')}<p class="dialog-description">已${pending?'作答':'答'} ${pending?examAnsweredCount(s):s.ids.filter(id=>s.results[id]).length} / ${s.ids.length} 题，点击题号跳转。</p><div class="mobile-dialog-grid">${answerCardGrid(s,true)}</div>${pending?examLegend():'<div class="legend"><span><i class="good"></i>答对</span><span><i class="bad"></i>答错</span><span><i></i>未答</span></div>'}${state.mode==='exam'?`<button class="primary-button exam-wide-button" data-action="exam-summary">${pending?'交卷':'考试结果'}</button>`:''}`);}
+function restart(){if(state.mode==='browse'){openBackup();return;}const s=currentSession();if(!Object.keys(s.results).length&&!Object.keys(s.drafts).length){restartConfirmed();return;}dialog(`${dialogHeader(state.mode==='exam'?'开始新一场考试':'开始新一轮练习')}<p class="dialog-description">${state.mode==='exam'&&!s.submitted?'当前考试答案会清空，题目将重新随机排列。':'本轮答题卡会重新开始。'}累计练习记录、错题和收藏都会保留。</p><div class="summary-actions"><button class="primary-button" data-action="restart-confirmed">开始新一轮</button><button class="secondary-button" data-action="close-dialog">继续这一轮</button></div>`);}
+function restartConfirmed(){state.sessions[key()]=createSession(QUESTIONS,state,state.mode,state.filter);$('#utilityDialog').close();save();render();toast(state.mode==='exam'?'新一场随机考试已准备好':state.mode==='random'?'题目已重新打乱':'新一轮练习已准备好');}
 function exportBackup(){const data={...state,backupFor:'my-study-notebook-1022',exportedAt:new Date().toISOString()},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`刷题进度-${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);toast('已导出进度备份');}
 async function importBackup(file){if(!file)return;if(file.size>2000000){toast('文件过大，请选择正确的进度备份');return;}try{const raw=JSON.parse(await file.text());if(raw.backupFor!=='my-study-notebook-1022'||raw.version!==1||!raw.records)throw Error('invalid');const next=readState(raw,QUESTIONS);dialog(`${dialogHeader('恢复这份练习进度')}<p class="dialog-description">备份中有 ${Object.keys(next.records).length} 道已练题目、${next.wrong.length} 道错题和 ${next.favorites.length} 道收藏。恢复后会替换当前浏览器的进度。</p><div class="summary-actions"><button class="primary-button" id="restoreBackupButton">确认恢复</button><button class="secondary-button" data-action="close-dialog">取消</button></div>`);$('#restoreBackupButton').addEventListener('click',()=>{state=next;save();$('#utilityDialog').close();render();toast('练习进度已恢复');},{once:true});}catch{toast('无法识别文件，请选择本工具导出的 JSON 备份');}}
 document.addEventListener('click',event=>{const button=event.target.closest('[data-action]');if(!button||button.disabled)return;const action=button.dataset.action;
+  if(action==='exam-summary'){openExamSummary();return;}
+  if(action==='exam-submit'){submitExam();return;}
+  if(action==='exam-review'||action==='exam-first-wrong'){const s=currentSession();s.index=action==='exam-first-wrong'?Math.max(0,s.ids.findIndex(id=>!s.results[id]?.correct)):0;$('#utilityDialog').close();save();render();window.scrollTo({top:0,behavior:'smooth'});return;}
   if(action==='mode'){startMode(button.dataset.mode);return;}
   if(action==='filter'){state.filter=button.dataset.type;save();render();return;}
   if(action==='option'){selectOption(button.dataset.key);return;}
@@ -2935,11 +3000,11 @@ document.addEventListener('click',event=>{const button=event.target.closest('[da
   if(action==='answer-card'){openAnswerCard();return;}
   if(action==='dialog-jump'){currentSession().index=Number(button.dataset.index);$('#utilityDialog').close();save();renderQuiz();window.scrollTo({top:0,behavior:'smooth'});return;}
   if(action==='favorite'){const id=button.dataset.id;state.favorites=state.favorites.includes(id)?state.favorites.filter(x=>x!==id):[...state.favorites,id];save();if(state.mode==='browse'){const details=button.closest('details');button.textContent=state.favorites.includes(id)?'★ 已收藏':'☆ 收藏本题';renderHeader();}else render();return;}
-  if(action==='retry'){const s=currentSession(),q=currentQuestion();if(q){delete s.results[q.id];delete s.drafts[q.id];save();render();}return;}
+  if(action==='retry'){if(state.mode==='exam')return;const s=currentSession(),q=currentQuestion();if(q){delete s.results[q.id];delete s.drafts[q.id];save();render();}return;}
   if(action==='restart'){restart();return;}if(action==='restart-confirmed'){restartConfirmed();return;}
   if(action==='close-dialog'){$('#utilityDialog').close();return;}if(action==='backup'){openBackup();return;}
   if(action==='export'){exportBackup();return;}if(action==='import'){$('#importFile').click();return;}
-  if(action==='continue-unanswered'){const s=currentSession();s.index=s.ids.findIndex(id=>!s.results[id]);$('#utilityDialog').close();save();render();return;}
+  if(action==='continue-unanswered'){const s=currentSession();s.index=s.ids.findIndex(id=>state.mode==='exam'&&!s.submitted?!s.drafts[id]?.length:!s.results[id]);$('#utilityDialog').close();save();render();return;}
   if(action==='summary-wrong'){$('#utilityDialog').close();state.filter='全部';startMode('wrong',true);return;}
   if(action==='practice-id'){state.mode='order';state.filter='全部';const s=currentSession();s.index=s.ids.indexOf(button.dataset.id);save();render();window.scrollTo({top:0,behavior:'smooth'});return;}
 });
@@ -2951,3 +3016,4 @@ render();save();
 
 </script>
 </body></html>
+
