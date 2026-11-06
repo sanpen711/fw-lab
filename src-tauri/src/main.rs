@@ -5,6 +5,7 @@ mod alipay_checkout;
 mod external_links;
 mod persistent_cache;
 mod update_endpoints;
+mod release_version;
 
 use serde::Serialize;
 use serde_json::Value;
@@ -326,7 +327,7 @@ fn check_for_updates_direct_auto(app: AppHandle) {
 
 fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
     UPDATE_INSTALL_ACTIVE.store(true, Ordering::Release);
-    let version = update.version.clone();
+    let version = release_version::update_display_version(&update.raw_json, &update.version);
     if let Some(window) = app.get_webview_window("main") {
         let window_title = format!("{} · 正在更新到 {version}", desktop_identity::display_name(&app));
         let _ = window.set_title(&window_title);
@@ -552,8 +553,8 @@ struct UpdateCheckResult {
 }
 
 #[tauri::command]
-fn desktop_app_version(app: AppHandle) -> String {
-    app.package_info().version.to_string()
+fn desktop_app_version() -> String {
+    release_version::current_display_version()
 }
 
 #[tauri::command]
@@ -611,7 +612,7 @@ async fn run_update_check(app: AppHandle) -> Result<UpdateCheckResult, String> {
     };
 
     if let Some(update) = update {
-        let version = update.version.clone();
+        let version = release_version::update_display_version(&update.raw_json, &update.version);
         update_log(
             &app,
             format!("found version={version} mode={network_mode}"),

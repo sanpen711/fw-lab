@@ -81,7 +81,7 @@ test('魂斗罗返回大厅、重载和关闭客户端前保存最新进度且�
   await page.goto('/');
   await expect.poll(()=>page.evaluate(()=>typeof (window as any).__nativeCloseHandler)).toBe('function');
   await page.locator('[data-nav="games"].nav-item').click();
-  await page.locator('[data-game-open="contra"]').click();
+  await page.evaluate(()=>(window as any).__FW_GAMES__.open('contra'));
   const frame=()=>page.frames().find(frame=>frame.url().includes('/nes-player.html'))!;
   const player=page.frameLocator('[data-game-frame]');
   await expect(player.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
@@ -97,7 +97,7 @@ test('魂斗罗返回大厅、重载和关闭客户端前保存最新进度且�
   await expect(page.locator('[data-game-frame]')).toHaveAttribute('src','about:blank');
   expect(await page.evaluate(()=>(window as any).__nesSnapshotCount)).toBe(1);
   expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!).saveReason,key)).toBe('exit');
-  await page.locator('[data-game-open="contra"]').click();
+  await page.evaluate(()=>(window as any).__FW_GAMES__.open('contra'));
   await expect(player.locator('html')).toHaveAttribute('data-emulator-state','ready',{timeout:30000});
   await expect(player.locator('.ejs_start_button')).toHaveText('继续已保存进度');
   await player.locator('.ejs_start_button').click();
@@ -416,13 +416,17 @@ test('闲聊房间替换新闻专区并按需读取',async({page})=>{
   await expect(page.locator('[data-room-editor-form]')).toBeVisible();expect(page.url()).toBe(original);
 });
 
-test('小游戏在电脑端内部打开且离开后卸载',async({page})=>{
+test('小游戏隐藏魂斗罗，其他游戏内部打开且离开后卸载',async({page})=>{
+  await page.addInitScript(()=>localStorage.setItem('fw:desktop:v11:last-game','contra'));
   await page.goto('/');
   const original=page.url();
   await page.locator('[data-nav="games"].nav-item').click();
   await expect(page.locator('[data-view-panel="games"]')).toHaveClass(/active/);
   await expect(page.locator('.games-heading')).toHaveCount(0);
-  await expect(page.locator('[data-game-open]')).toHaveCount(5);
+  await expect(page.locator('[data-game-open]')).toHaveCount(4);
+  await expect(page.locator('[data-game-open="contra"]')).toHaveCount(0);
+  await expect(page.locator('[data-game-stage]')).toBeHidden();
+  await expect(page.locator('[data-game-frame]')).toHaveAttribute('src','about:blank');
   await expect(page.locator('.game-card-symbol')).toHaveCount(4);
   await page.locator('[data-game-open="reaction"]').click();
   await expect(page.locator('[data-game-stage]')).toBeVisible();
@@ -431,7 +435,7 @@ test('小游戏在电脑端内部打开且离开后卸载',async({page})=>{
   await page.locator('[data-game-back]').click();
   await expect(page.locator('[data-game-hall]')).toBeVisible();
   await expect(page.locator('[data-game-stage]')).toBeHidden();
-  await page.locator('[data-game-open="contra"]').click();
+  await page.evaluate(()=>(window as any).__FW_GAMES__.open('contra'));
   const tip=page.locator('[data-game-tip]');
   await expect(tip).toContainText('玩家1：WASD 方向');
   await expect(tip).toContainText('J / 空格 攻击');
