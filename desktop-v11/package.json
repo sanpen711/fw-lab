@@ -7,13 +7,15 @@
     "prepare:nes": "node scripts/prepare-nes-assets.mjs",
     "predev": "npm run prepare:nes",
     "dev": "vite --host 127.0.0.1 --port 1421 --strictPort",
-    "prebuild": "npm run prepare:nes",
-    "build": "vite build",
+    "build": "vite build && node scripts/verify-release-package.mjs",
     "pretest:static": "npm run prepare:nes",
-    "test:static": "node tests/static.mjs && node --test tests/chat-presentation.test.mjs tests/auth-errors.test.mjs tests/membership-levels.test.mjs tests/external-links.test.mjs tests/square-media.test.mjs tests/shop-model.test.mjs tests/site-content-model.test.mjs tests/nes-controls.test.mjs tests/nes-progress.test.mjs ../tests/user-activity.test.mjs",
+    "test:static": "node tests/static.mjs && node --test tests/chat-presentation.test.mjs tests/auth-errors.test.mjs tests/membership-levels.test.mjs tests/external-links.test.mjs tests/square-media.test.mjs tests/shop-model.test.mjs tests/site-content-model.test.mjs tests/nes-controls.test.mjs tests/nes-progress.test.mjs ../tests/user-activity.test.mjs tests/release-package.test.mjs",
     "pretest:browser": "npm run prepare:nes",
     "test:browser": "playwright test --config playwright.config.ts",
-    "test": "npm run test:static && npm run build && npm run test:browser"
+    "test": "npm run test:static && npm run build && npm run test:browser && npm run test:release",
+    "preview": "vite preview --host 127.0.0.1 --port 1422 --strictPort",
+    "verify:release": "node scripts/verify-release-package.mjs",
+    "test:release": "node scripts/verify-release-package.mjs && playwright test --config playwright.release.config.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.55.0"
