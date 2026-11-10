@@ -1,3 +1,4 @@
+import {uiErrorMessage} from './ui-errors.js';
 import {authStore} from './auth-store.js';
 import {desktopCache} from './desktop-persistent-cache.js';
 
@@ -9,7 +10,7 @@ let profileRefreshPromise=null;
 
 function snapshot(){return {...state,weekly:{like:[...state.weekly.like]},daily:{like:[...state.daily.like]},ranges:state.ranges&&{...state.ranges}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
-function fail(result,label){if(result?.error)throw new Error(`${label}：${result.error.message}`);return result?.data;}
+function fail(result,label){if(result?.error)throw new Error(uiErrorMessage(result.error,`${label}，请稍后重试。`));return result?.data;}
 function count(){if(window.__FW_DESKTOP_V11__)window.__FW_DESKTOP_V11__.contentRequests=(window.__FW_DESKTOP_V11__.contentRequests||0)+1;}
 function contentSignature(weekly,daily,rangesValue){try{return JSON.stringify([weekly,daily,rangesValue]);}catch{return'';}}
 function startOfDay(value=new Date()){const date=new Date(value);date.setHours(0,0,0,0);return date;}

@@ -1,4 +1,6 @@
 import {APP_VERSION} from './config.js';
+import {desktopPreferences} from './desktop-preferences.js';
+import {uiErrorMessage} from './ui-errors.js';
 
 const invoke=window.__TAURI__?.core?.invoke;
 const FALLBACK_KEY='fw:desktop:v11:display-identity';
@@ -28,7 +30,7 @@ function normalize(value){
 function iconUrl(icon){return `/app-icons/${ICONS.has(icon)?icon:'folder'}.png`;}
 
 function setStatus(selector,message='',error=false){
-  const node=$(selector);if(!node)return;node.textContent=message;node.classList.toggle('error',error);
+  const node=$(selector);if(!node)return;node.textContent=error?uiErrorMessage(message):message;node.classList.toggle('error',error);
 }
 
 function currentDraft(){
@@ -115,6 +117,25 @@ function bind(){
   form?.addEventListener('submit',event=>{event.preventDefault();saveIdentity(event.currentTarget);});
   $('[data-clear-cache]')?.addEventListener('click',event=>clearCache(event.currentTarget));
   $('[data-check-updates]')?.addEventListener('click',event=>checkUpdates(event.currentTarget));
+  $('[data-behavior-form]')?.addEventListener('submit',saveBehavior);
+}
+
+function renderBehavior(){
+  const form=$('[data-behavior-form]');if(!form)return;const value=desktopPreferences.value;
+  form.elements.closeToTray.checked=value.closeToTray;form.elements.shortcutEnabled.checked=value.shortcutEnabled;form.elements.shortcut.value=value.shortcut;form.elements.messagePreview.checked=value.messagePreview;
+  for(const name of ['closeToTray','shortcutEnabled','shortcut'])form.elements[name].disabled=typeof invoke!=='function';
+}
+async function loadBehavior(){
+  if(typeof invoke==='function')try{const value=await invoke('desktop_behavior_get');if(value&&typeof value==='object')desktopPreferences.apply(value);}catch{}
+  renderBehavior();
+  const value=desktopPreferences.value;
+  if(value.shortcutEnabled&&value.shortcutRegistered===false)setStatus('[data-behavior-status]','快捷键被其他软件占用，请选择其他组合后保存。',true);
+}
+async function saveBehavior(event){
+  event.preventDefault();const form=event.currentTarget,button=form.querySelector('[type="submit"]');button.disabled=true;
+  const preferences={closeToTray:form.elements.closeToTray.checked,shortcutEnabled:form.elements.shortcutEnabled.checked,shortcut:form.elements.shortcut.value,messagePreview:form.elements.messagePreview.checked};
+  try{const value=typeof invoke==='function'?await invoke('desktop_behavior_set',{preferences}):preferences;desktopPreferences.apply(value||preferences);renderBehavior();setStatus('[data-behavior-status]','已保存，本机立即生效。');}
+  catch(error){setStatus('[data-behavior-status]',error,true);}finally{button.disabled=false;}
 }
 
 async function loadVersion(){
@@ -126,17 +147,19 @@ async function checkUpdates(button){
   if(checkingUpdate)return;
   if(typeof invoke!=='function'){setStatus('[data-update-check-status]','请在 Windows 客户端中检查更新。');return;}
   checkingUpdate=true;button.disabled=true;button.textContent='检查中…';setStatus('[data-update-check-status]','正在检查更新…');
+  window.__FW_UPDATE_REOPEN__?.();
   try{
     const result=await invoke('desktop_check_for_updates');
     if(result?.status==='latest')setStatus('[data-update-check-status]','当前已是最新版本。');
     else if(result?.status==='available')setStatus('[data-update-check-status]',`发现新版本${result.version?' '+result.version:''}，可在更新提示中选择更新。`);
+    else if(result?.status==='ready')setStatus('[data-update-check-status]','更新已准备好，可在更新提示中重启安装。');
     else if(result?.status==='busy')setStatus('[data-update-check-status]','正在检查或处理更新，请稍候再试。');
     else throw new Error('检查更新暂未完成，请重试。');
   }catch(error){setStatus('[data-update-check-status]',error?.message||String(error)||'检查更新失败，请稍后重试。',true);}
   finally{checkingUpdate=false;button.disabled=false;button.textContent='检查更新';}
 }
 
-async function init(options={}){notify=options.toast||notify;bind();await Promise.all([loadIdentity(),loadVersion()]);}
-function activate(){refreshCache();renderIdentity(identity);}
+async function init(options={}){notify=options.toast||notify;bind();await Promise.all([loadIdentity(),loadVersion(),loadBehavior()]);}
+function activate(){refreshCache();renderIdentity(identity);renderBehavior();}
 
 export const desktopSettings={init,activate,refreshCache};

@@ -293,6 +293,17 @@
               </form>
             </section>
 
+            <section class="settings-card">
+              <header><div><h2>窗口与隐私</h2><p>快捷隐藏、关闭行为与消息预览仅在这台电脑上生效。</p></div></header>
+              <form class="behavior-form" data-behavior-form>
+                <label class="behavior-check"><input type="checkbox" name="closeToTray"><span><b>关闭窗口时收起到托盘</b><small>可从托盘菜单打开窗口或彻底退出。</small></span></label>
+                <label class="behavior-check"><input type="checkbox" name="shortcutEnabled" checked><span><b>启用快捷隐藏 / 恢复</b><small>在其他软件中也可使用；快捷键冲突时可更换组合。</small></span></label>
+                <label class="behavior-shortcut">快捷键<select name="shortcut"><option>Ctrl+Alt+H</option><option>Ctrl+Alt+Q</option><option>Ctrl+Shift+F9</option></select></label>
+                <label class="behavior-check"><input type="checkbox" name="messagePreview" checked><span><b>显示会话列表消息预览</b><small>关闭后仍显示未读数量，隐藏消息正文。</small></span></label>
+                <div class="settings-actions"><button class="primary" type="submit">保存窗口与隐私设置</button><span class="settings-status" data-behavior-status role="status" aria-live="polite"></span></div>
+              </form>
+            </section>
+
             <section class="settings-card settings-cache-card">
               <header><div><h2>缓存管理</h2><p>清理帖子、图片等本机临时缓存，不会删除账号、登录状态、表情、游戏文件或应用显示设置。</p></div></header>
               <div class="cache-summary"><div><small>当前缓存</small><strong data-cache-size>正在统计…</strong><span data-cache-detail></span></div><button class="secondary" type="button" data-clear-cache>清理缓存</button></div>

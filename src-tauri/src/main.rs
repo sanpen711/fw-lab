@@ -6,6 +6,7 @@ mod external_links;
 mod persistent_cache;
 mod update_endpoints;
 mod release_version;
+mod desktop_behavior;
 
 use serde::Serialize;
 use serde_json::Value;
@@ -17,7 +18,7 @@ use std::{
     path::PathBuf,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
-        Arc,
+        Arc, Mutex,
     },
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
@@ -26,6 +27,8 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tauri_plugin_updater::{Update, UpdaterExt};
 
 const CACHE_FOLDER: &str = "content-cache";
+struct PendingUpdate(Mutex<Option<(Update, Vec<u8>)>>);
+
 const UPDATE_CONNECT_TIMEOUT_SECS: u64 = 12;
 const UPDATE_READ_TIMEOUT_SECS: u64 = 45;
 const UPDATE_UI_INTERVAL_MS: u64 = 250;
@@ -256,6 +259,7 @@ fn render_update_ui(
 
 fn show_update_error(app: &AppHandle, detail: String) {
     UPDATE_INSTALL_ACTIVE.store(false, Ordering::Release);
+    UPDATE_INSTALLING.store(false, Ordering::Release);
     update_log(app, format!("error {detail}"));
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.set_title(&format!("{} · 更新失败", desktop_identity::display_name(app)));
@@ -305,8 +309,8 @@ fn check_for_updates_direct_auto(app: AppHandle) {
     render_update_ui(
         &app,
         "connecting",
-        "系统网络失败，正在切换兼容直连…",
-        "将自动绕过系统代理，使用 HTTP/1.1 + IPv4 兼容通道重试一次",
+        "正在重新连接…",
+        "网络连接不稳定，正在重试。你可以继续使用软件。",
         None,
         0,
         None,
@@ -337,7 +341,7 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
         &app,
         "connecting",
         "正在连接更新服务器…",
-        format!("准备下载 Windows {version} · 通道：{network_mode}"),
+        format!("正在后台下载 {version}，你可以继续使用软件。"),
         None,
         0,
         None,
@@ -363,7 +367,6 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
         let finish_downloaded = downloaded.clone();
         let finish_total = total_bytes.clone();
         let watchdog_downloaded = downloaded.clone();
-        let progress_mode = network_mode.clone();
 
         let download_future = update.download(
             move |chunk, total| {
@@ -401,7 +404,7 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
                             &chunk_app,
                             "downloading",
                             "正在下载更新…",
-                            format!("下载完成不代表更新完成；随后还会校验并安装 · 通道：{progress_mode}"),
+                            "正在后台下载，完成后由你选择重启安装。",
                             percent,
                             current,
                             (known_total > 0).then_some(known_total),
@@ -432,7 +435,7 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
                     &finish_app,
                     "verifying",
                     "安装包已下载，正在校验…",
-                    "还没有更新完成，请不要手动退出软件",
+                    "正在检查更新包，你可以继续使用软件。",
                     Some(100),
                     current,
                     (total > 0).then_some(total),
@@ -496,7 +499,7 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
                     &app,
                     "connecting",
                     "当前线路持续低速，正在自动换线…",
-                    "将绕过系统代理，改用 HTTP/1.1 + IPv4 兼容通道重新下载",
+                    "你可以继续使用软件，下载完成后会提醒你。",
                     None,
                     0,
                     (known_total > 0).then_some(known_total),
@@ -511,29 +514,38 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
             &app,
             format!("verify_ok mode={network_mode} bytes={}", bytes.len()),
         );
-        render_update_ui(
-            &app,
-            "installing",
-            "校验完成，正在启动安装…",
-            "接下来会显示安装进度；只有新软件自动重新打开才表示更新完成",
-            Some(100),
-            bytes.len() as u64,
-            Some(bytes.len() as u64),
-            0,
-        );
-
-        if let Err(error) = update.install(bytes) {
-            show_update_error(&app, format!("install {error}"));
-            return;
+        let size = bytes.len() as u64;
+        if let Ok(mut pending) = app.state::<PendingUpdate>().0.lock() {
+            *pending = Some((update, bytes));
+        } else {
+            show_update_error(&app, "pending_update_lock".into()); return;
         }
-
-        update_log(&app, "install_returned_ok");
-        app.restart();
+        UPDATE_INSTALL_ACTIVE.store(false, Ordering::Release);
+        if let Some(window) = app.get_webview_window("main") { let _ = window.set_title(&desktop_identity::display_name(&app)); }
+        render_update_ui(&app, "ready", "更新已准备好", "方便时重启安装即可。未发送的草稿已保存在本机。", Some(100), size, Some(size), 0);
     });
+}
+
+
+#[tauri::command]
+async fn desktop_install_ready_update(app: AppHandle) -> Result<(), String> {
+    let pending = app.state::<PendingUpdate>().0.lock().map_err(|_| "更新状态暂时不可用。")?.take();
+    let Some((update, bytes)) = pending else { return Err("还没有准备好的更新包，请先检查更新。".into()); };
+    UPDATE_INSTALL_ACTIVE.store(true, Ordering::Release);
+    UPDATE_INSTALLING.store(true, Ordering::Release);
+    render_update_ui(&app, "installing", "正在安装更新…", "软件将自动重新打开，请稍候。", Some(100), bytes.len() as u64, Some(bytes.len() as u64), 0);
+    // Start installation on the next task so the UI can paint and drafts flush.
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(500)).await;
+        if let Err(error) = update.install(bytes) { show_update_error(&app, format!("install {error}")); return; }
+        update_log(&app, "install_returned_ok"); app.restart();
+    });
+    Ok(())
 }
 
 static UPDATE_CHECK_RUNNING: AtomicBool = AtomicBool::new(false);
 static UPDATE_INSTALL_ACTIVE: AtomicBool = AtomicBool::new(false);
+static UPDATE_INSTALLING: AtomicBool = AtomicBool::new(false);
 
 struct UpdateCheckGuard;
 impl UpdateCheckGuard {
@@ -582,6 +594,12 @@ fn check_for_updates(app: AppHandle) {
 }
 
 async fn run_update_check(app: AppHandle) -> Result<UpdateCheckResult, String> {
+    let ready_version = app.state::<PendingUpdate>().0.lock().ok().and_then(|value| value.as_ref().map(|(update, _)| release_version::update_display_version(&update.raw_json, &update.version)));
+    if let Some(version) = ready_version {
+        ensure_update_ui(&app);
+        render_update_ui(&app, "ready", "更新已准备好", "方便时重启安装即可。未发送的草稿已保存在本机。", Some(100), 0, None, 0);
+        return Ok(UpdateCheckResult { status: "ready", version: Some(version) });
+    }
     if UPDATE_INSTALL_ACTIVE.load(Ordering::Acquire) {
         return Ok(UpdateCheckResult { status: "busy", version: None });
     }
@@ -621,12 +639,12 @@ async fn run_update_check(app: AppHandle) -> Result<UpdateCheckResult, String> {
         let install_app = app.clone();
         app.dialog()
             .message(format!(
-                "发现新版本 {version}。点击立即更新后会先下载安装包，遇到失败或持续低速时自动切换兼容直连通道，再显示安装进度；只有软件自动重新打开才表示更新完成，请不要在中途手动退出。账号和缓存都会保留。"
+                "当前版本 {} → 新版本 {version}\n\n{}\n\n更新包将在后台下载，完成后由你选择重启安装。", release_version::current_display_version(), update.body.as_deref().unwrap_or("改进使用体验与运行稳定性。").chars().take(300).collect::<String>()
             ))
             .title(format!("{}更新", desktop_identity::display_name(&app)))
             .kind(MessageDialogKind::Info)
             .buttons(MessageDialogButtons::OkCancelCustom(
-                "立即更新".to_owned(),
+                "后台下载".to_owned(),
                 "稍后".to_owned(),
             ))
             .show(move |confirmed| {
@@ -644,6 +662,7 @@ async fn run_update_check(app: AppHandle) -> Result<UpdateCheckResult, String> {
 
 fn main() {
     tauri::Builder::default()
+        .manage(PendingUpdate(Mutex::new(None)))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -657,11 +676,16 @@ fn main() {
         .setup(|app| {
             let _ = desktop_identity::apply_saved(app.handle());
             let _ = persistent_cache::init(app.handle());
+            if let Err(error) = desktop_behavior::initialize(app.handle()) { update_log(app.handle(), format!("desktop_behavior_init {error}")); }
             check_for_updates(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            desktop_behavior::desktop_window_is_active,
+            desktop_behavior::desktop_behavior_get,
+            desktop_behavior::desktop_behavior_set,
             desktop_app_version,
+            desktop_install_ready_update,
             desktop_check_for_updates,
             alipay_checkout::desktop_open_alipay,
             external_links::desktop_open_web_url,
@@ -678,6 +702,16 @@ fn main() {
             persistent_cache::desktop_persistent_cache_remove,
             persistent_cache::desktop_persistent_cache_status
         ])
+        .on_window_event(|window, event| {
+            if window.label() != "main" { return; }
+            match event {
+                tauri::WindowEvent::CloseRequested { api, .. } if !UPDATE_INSTALLING.load(Ordering::Acquire) && desktop_behavior::close_to_tray(window.app_handle()) => {
+                    api.prevent_close(); let _ = window.hide(); desktop_behavior::notify_attention(window.app_handle());
+                },
+                tauri::WindowEvent::Focused(_) | tauri::WindowEvent::Resized(_) => desktop_behavior::notify_attention(window.app_handle()),
+                _ => ()
+            }
+        })
         .run(tauri::generate_context!())
         .expect("F.w 研究所 Windows 客户端启动失败");
 }

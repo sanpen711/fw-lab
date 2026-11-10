@@ -1,3 +1,4 @@
+import {uiErrorMessage} from './ui-errors.js';
 import {authStore} from './auth-store.js';
 import {desktopCache} from './desktop-persistent-cache.js';
 import {POST_TEXT_LIMIT,COMMENT_TEXT_LIMIT,mediaKind,validateAttachments,composeContent} from './square-media.js';
@@ -26,7 +27,7 @@ function snapshot(){return {...state,posts:copyPosts(state.posts),mine:{...state
 function getPost(postId){const id=String(postId||'');return state.posts.find(post=>String(post.id)===id)||state.mine.posts.find(post=>String(post.id)===id);}
 function mapPostLists(update){state.posts=state.posts.map(update);state.mine.posts=state.mine.posts.map(update);}
 function emit(scope='all'){const next=snapshot();listeners.forEach(listener=>listener(next,scope));}
-function fail(result,label){if(result?.error)throw new Error(`${label}：${result.error.message}`);return result?.data;}
+function fail(result,label){if(result?.error)throw new Error(uiErrorMessage(result.error,`${label}，请稍后重试。`));return result?.data;}
 function countContent(){if(window.__FW_DESKTOP_V11__)window.__FW_DESKTOP_V11__.contentRequests=(window.__FW_DESKTOP_V11__.contentRequests||0)+1;}
 function user(){const current=authStore.state.user;return current&&!current.cached?current:null;}
 function requireUser(){const current=user();if(!current)throw new Error('请先登录。');if(current.disabled)throw new Error('这个账号已被停用。');return current;}

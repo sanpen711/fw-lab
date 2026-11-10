@@ -24,6 +24,11 @@ import {openDialog,closeDialog} from './dialog-focus.js';
 import {renderWebLinks,bindExternalLinks} from './external-links.js';
 import {POST_TEXT_LIMIT,COMMENT_TEXT_LIMIT,MEDIA_ACCEPT,mediaKind,validateAttachments,parseContent} from './square-media.js';
 import {mediaLightbox} from './media-lightbox.js';
+import {loadDraftSnapshot,saveDraftSnapshot,flushDraftWrites} from './draft-storage.js';
+import {reconcileChatTimeline} from './chat-timeline.js';
+import {uiErrorMessage} from './ui-errors.js';
+import {desktopPreferences} from './desktop-preferences.js';
+import {installNetworkStatus} from './network-status.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
@@ -78,6 +83,25 @@ const commentDrafts=new Map();
 const chatDrafts=new Map();
 let chatComposerTarget='';
 let chatMessageIds=new Set();
+let draftOwner='',draftHydrating=false,draftGeneration=0;
+let draftTouched=new Set();
+function persistDrafts(key){
+  if(!draftOwner)return;if(typeof key==='string')draftTouched.add(key);
+  if(draftHydrating)return;
+  saveDraftSnapshot(draftOwner,{compose:composeDraft,comments:Object.fromEntries(commentDrafts),chats:Object.fromEntries(chatDrafts)});
+}
+async function restoreDrafts(owner){
+  const generation=draftGeneration;draftHydrating=true;
+  const snapshot=await loadDraftSnapshot(owner);
+  if(draftOwner!==owner||generation!==draftGeneration){if(snapshot.compose)releasePreview(snapshot.compose);Object.values(snapshot.comments).forEach(releasePreview);return;}
+  draftHydrating=false;
+  if(snapshot.compose){if(!draftTouched.has('compose'))Object.assign(composeDraft,snapshot.compose);else releasePreview(snapshot.compose);}
+  Object.entries(snapshot.comments).forEach(([id,value])=>{if(!draftTouched.has('comment:'+id))commentDrafts.set(id,value);else releasePreview(value);});
+  Object.entries(snapshot.chats).forEach(([id,value])=>{if(!draftTouched.has('chat:'+id))chatDrafts.set(id,value);});
+  if(chatComposerTarget)$('[data-chat-compose] input[name="message"]').value=chatDrafts.get(chatComposerTarget)||'';
+  renderCompose();renderPostDetail();
+  persistDrafts();
+}
 
 window.__FW_DESKTOP_V11__={version:APP_VERSION,architecture:'local-frontend',contentRequests:0,socialContentRequests:0,realtimeChat:true,pollingTimers:0};
 
@@ -121,11 +145,11 @@ function setAvatar(element,user){
   if(user?.avatarUrl){element.style.backgroundImage=`url("${String(user.avatarUrl).replace(/["\\]/g,'')}")`;element.classList.add('has-image');}
   else{element.textContent=initials(user?.nickname);element.classList.remove('has-image');}
 }
-function toast(message){const node=$('[data-toast]');node.textContent=message;node.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>node.classList.remove('show'),2800);}
+function toast(message){const node=$('[data-toast]');node.textContent=uiErrorMessage(message);node.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>node.classList.remove('show'),2800);}
 function openLightbox(trigger){mediaLightbox.open(trigger);}
 function closeLightbox(){mediaLightbox.close();}
-function setFormStatus(message,error=false){const node=$('[data-form-status]');node.textContent=message||'';node.classList.toggle('error',error);}
-function setProfileStatus(message,error=false){const node=$('[data-profile-status]');if(!node)return;node.textContent=message||'';node.classList.toggle('error',error);}
+function setFormStatus(message,error=false){const node=$('[data-form-status]');node.textContent=error?uiErrorMessage(message):message||'';node.classList.toggle('error',error);}
+function setProfileStatus(message,error=false){const node=$('[data-profile-status]');if(!node)return;node.textContent=error?uiErrorMessage(message):message||'';node.classList.toggle('error',error);}
 function timeText(value){
   if(!value)return'刚刚';const date=new Date(value);if(Number.isNaN(date.getTime()))return'刚刚';const minutes=Math.floor(Math.max(0,Date.now()-date.getTime())/60000);if(minutes<1)return'刚刚';if(minutes<60)return`${minutes}分钟前`;const hours=Math.floor(minutes/60);if(hours<24)return`${hours}小时前`;const days=Math.floor(hours/24);return days<7?`${days}天前`:date.toLocaleDateString('zh-CN');
 }
@@ -225,7 +249,7 @@ function renderAuthGate(next){
 }
 function renderAccount(next){
   const previousUserId=String(accountState.user?.id||'');accountState=next;const user=next.user;
-  if(previousUserId!==String(user?.id||'')){releasePreview(composeDraft);composeDraft.text='';commentDrafts.forEach(releasePreview);commentDrafts.clear();chatDrafts.clear();chatComposerTarget='';chatMessageIds.clear();lastChatRenderSignature='';$('[data-chat-compose] input[name="message"]').value='';}
+  if(previousUserId!==String(user?.id||'')){persistDrafts();releasePreview(composeDraft);composeDraft.text='';commentDrafts.forEach(releasePreview);commentDrafts.clear();chatDrafts.clear();chatComposerTarget='';chatMessageIds.clear();lastChatRenderSignature='';$('[data-chat-compose] input[name="message"]').value='';draftOwner=String(user?.id||'');draftGeneration++;draftTouched=new Set();draftHydrating=false;if(draftOwner)restoreDrafts(draftOwner).catch(()=>toast('草稿暂时无法恢复，请稍后重试。'));}
   $('[data-account-label]').textContent=user?user.nickname:(next.ready?'注册 / 登录':'正在连接…');
   setAvatar($('[data-account-avatar]'),user);setAvatar($('[data-profile-avatar]'),user);
   $('[data-profile-name]').textContent=user?.nickname||'研究员';$('[data-profile-email]').textContent=user?.email||'';
@@ -419,7 +443,7 @@ function renderPolls(next=pollState){
   $$('[data-poll-filter]').forEach(button=>button.classList.toggle('active',button.dataset.pollFilter===pollFilter));
   const create=$('[data-poll-create-host]');if(create){const owner=`${accountState.user?.id||''}:${accountState.user?.role||''}`;if(create.dataset.owner!==owner){create.replaceChildren();create.dataset.owner=owner;}create.hidden=!pollCreateOpen;if(pollCreateOpen&&!create.querySelector('[data-poll-create-form]'))create.innerHTML=accountState.user?`<form class="poll-create-card" data-poll-create-form><div><h2>发起投票</h2><p>每人每天最多 3 次；标题最多 120 字，填写 2～4 个不同选项。</p></div><label>课题标题<input name="title" maxlength="120" autocomplete="off" required placeholder="例如：今天最值得研究的崩溃来源是什么？"></label><div class="poll-initial-options">${[1,2,3,4].map(index=>`<label>选项 ${index}${index>2?'（选填）':''}<input name="option${index}" maxlength="80" ${index<=2?'required':''}></label>`).join('')}</div><label>投票时长<select name="durationDays">${[1,3,7,15,30].map(days=>`<option value="${days}" ${days===7?'selected':''}>${days}天</option>`).join('')}</select></label><label class="poll-official-check"><input type="checkbox" name="allowUserOptions"> 允许其他人添加选项</label><p>默认不允许；开放后每人可补充 1 个选项，添加时会同时投票。</p>${accountState.user.role==='admin'?'<label class="poll-official-check"><input type="checkbox" name="official"> 作为官方课题发布并置顶</label>':''}<div class="compose-actions"><button class="secondary" type="button" data-poll-create-toggle>取消</button><button class="primary" type="submit" ${pollState.busy?'disabled':''}>${pollState.busy?'发布中...':'发布课题'}</button></div></form>`:'<div class="state-card"><b>登录后发起课题</b><button class="primary compact" type="button" data-open-account>注册 / 登录</button></div>';}
   const form=create?.querySelector('[data-poll-create-form]');if(form){for(const field of form.elements)field.disabled=pollState.busy;form.querySelector('[type="submit"]').textContent=pollState.busy?'发布中...':'发布课题';}
-  const list=$('[data-poll-list]');if(!list)return;if(pollState.loading&&!pollState.loaded){list.innerHTML='<div class="state-card">正在读取学术研讨课题...</div>';return;}if(pollState.error&&!pollState.polls.length){list.innerHTML=`<div class="state-card"><b>课题暂时读取失败</b><span>${esc(pollState.error)}</span><button class="secondary compact" type="button" data-poll-refresh>重试</button></div>`;return;}const rows=pollState.polls.filter(pollMatches).sort((a,b)=>pollFilter==='ended'?new Date(b.created_at)-new Date(a.created_at):Number(b.is_official)-Number(a.is_official)||new Date(b.created_at)-new Date(a.created_at));list.innerHTML=rows.length?rows.map(pollCard).join(''):'<div class="state-card">这个分类下暂时没有课题。</div>';
+  const list=$('[data-poll-list]');if(!list)return;if(pollState.loading&&!pollState.loaded){list.innerHTML='<div class="state-card">正在读取学术研讨课题...</div>';return;}if(pollState.error&&!pollState.polls.length){list.innerHTML=`<div class="state-card"><b>课题暂时读取失败</b><span>${esc(uiErrorMessage(pollState.error))}</span><button class="secondary compact" type="button" data-poll-refresh>重试</button></div>`;return;}const rows=pollState.polls.filter(pollMatches).sort((a,b)=>pollFilter==='ended'?new Date(b.created_at)-new Date(a.created_at):Number(b.is_official)-Number(a.is_official)||new Date(b.created_at)-new Date(a.created_at));list.innerHTML=rows.length?rows.map(pollCard).join(''):'<div class="state-card">这个分类下暂时没有课题。</div>';
 }
 
 function safeDirectUrl(value){try{const url=new URL(String(value||''));return['http:','https:'].includes(url.protocol)?url.href:'';}catch{return'';}}
@@ -429,7 +453,7 @@ function archiveWinner(row,rank){const item=row||{nickname:`暂无第${rank}名`
 function archiveAward(rows){const config=ARCHIVE_AWARD;if(!rows.length)return`<article class="archive-award"><header><div><small>${config.en}</small><h3>${config.title}</h3></div><i>${config.medal}</i></header><div class="state-card small">上周还没有产生${config.title}。</div><blockquote><b>${config.quote}：</b>暂无。</blockquote></article>`;const first=rows[0];return`<article class="archive-award"><header><div><small>${config.en}</small><h3>${config.title}</h3></div><i>${config.medal}</i></header><div class="archive-podium">${archiveWinner(rows[1],2)}${archiveWinner(first,1)}${archiveWinner(rows[2],3)}</div><blockquote><b>${config.quote}：</b>“${esc(previewText(first.topPost?.content||'暂无代表废话。').slice(0,100))}”</blockquote></article>`;}
 function formatMonthDay(value){const date=new Date(value);return`${date.getMonth()+1}月${date.getDate()}日`;}
 function renderArchive(next=archiveState){
-  archiveState=next;const host=$('[data-archive-content]');if(!host)return;if(archiveState.loading&&!archiveState.loaded){host.innerHTML='<div class="state-card">正在整理废话档案...</div>';return;}const weekly=archiveState.weekly.like||[];const daily=archiveState.daily.like||[];const hasRows=weekly.length||daily.length;if(archiveState.error&&!hasRows){host.innerHTML=`<div class="state-card"><b>榜单暂时读取失败</b><span>${esc(archiveState.error)}</span><button class="secondary compact" type="button" data-archive-refresh>重试</button></div>`;return;}const nextDay=archiveState.ranges?.nextDay;const nextMonday=archiveState.ranges?.nextMonday;const top=weekly[0];host.innerHTML=`<section class="archive-hero"><div><small>LOW POWER ARCHIVE</small><h2>有人发牢骚，有人点了赞，<br>有些废话就这样被留下。</h2><p>榜单不是为了竞争，只是看看哪些话被大家顺手点亮了。</p></div><div class="archive-update">周榜：${nextMonday?formatMonthDay(nextMonday):'下周一'} 00:00 更新<br>日榜：${nextDay?formatMonthDay(nextDay):'明日'} 00:00 更新</div></section><section class="archive-section"><header><div><small>LAST WEEK LIKE HONOR WALL</small><h2>上周点赞荣誉榜</h2></div><span>前三名</span></header><div class="archive-award-grid">${archiveAward(weekly)}</div></section><section class="archive-section"><header><div><small>YESTERDAY LIKE TOP 10</small><h2>昨日点赞榜</h2></div><span>每日 0 点更新</span></header><div class="archive-daily-list">${daily.length?daily.map((row,index)=>`<div class="archive-daily-row"><span>${String(index+1).padStart(2,'0')}</span>${archiveAvatar(row)}<b>${esc(row.nickname)}</b><strong>${Number(row.score||0)}</strong></div>`).join(''):'<div class="state-card small">昨日还没有产生点赞榜。</div>'}</div></section><section class="archive-rule"><b>档案规则</b><span>自己给自己的点赞可以显示，但不计入榜单；同一用户对同一条内容只统计 1 次；删除或被处理的内容不会进入榜单。</span></section><section class="archive-section"><header><div><small>PAST ARCHIVES</small><h2>历代废话档案</h2></div><span>最近一周预览</span></header><div class="archive-history"><article><small>上周 / ${ARCHIVE_AWARD.title}</small><h3>${esc(top?.nickname||'暂无上榜')}</h3><p>${esc(top?previewText(top.topPost?.content).slice(0,100):'还没有足够数据进入档案。')}</p></article></div></section>`;}
+  archiveState=next;const host=$('[data-archive-content]');if(!host)return;if(archiveState.loading&&!archiveState.loaded){host.innerHTML='<div class="state-card">正在整理废话档案...</div>';return;}const weekly=archiveState.weekly.like||[];const daily=archiveState.daily.like||[];const hasRows=weekly.length||daily.length;if(archiveState.error&&!hasRows){host.innerHTML=`<div class="state-card"><b>榜单暂时读取失败</b><span>${esc(uiErrorMessage(archiveState.error))}</span><button class="secondary compact" type="button" data-archive-refresh>重试</button></div>`;return;}const nextDay=archiveState.ranges?.nextDay;const nextMonday=archiveState.ranges?.nextMonday;const top=weekly[0];host.innerHTML=`<section class="archive-hero"><div><small>LOW POWER ARCHIVE</small><h2>有人发牢骚，有人点了赞，<br>有些废话就这样被留下。</h2><p>榜单不是为了竞争，只是看看哪些话被大家顺手点亮了。</p></div><div class="archive-update">周榜：${nextMonday?formatMonthDay(nextMonday):'下周一'} 00:00 更新<br>日榜：${nextDay?formatMonthDay(nextDay):'明日'} 00:00 更新</div></section><section class="archive-section"><header><div><small>LAST WEEK LIKE HONOR WALL</small><h2>上周点赞荣誉榜</h2></div><span>前三名</span></header><div class="archive-award-grid">${archiveAward(weekly)}</div></section><section class="archive-section"><header><div><small>YESTERDAY LIKE TOP 10</small><h2>昨日点赞榜</h2></div><span>每日 0 点更新</span></header><div class="archive-daily-list">${daily.length?daily.map((row,index)=>`<div class="archive-daily-row"><span>${String(index+1).padStart(2,'0')}</span>${archiveAvatar(row)}<b>${esc(row.nickname)}</b><strong>${Number(row.score||0)}</strong></div>`).join(''):'<div class="state-card small">昨日还没有产生点赞榜。</div>'}</div></section><section class="archive-rule"><b>档案规则</b><span>自己给自己的点赞可以显示，但不计入榜单；同一用户对同一条内容只统计 1 次；删除或被处理的内容不会进入榜单。</span></section><section class="archive-section"><header><div><small>PAST ARCHIVES</small><h2>历代废话档案</h2></div><span>最近一周预览</span></header><div class="archive-history"><article><small>上周 / ${ARCHIVE_AWARD.title}</small><h3>${esc(top?.nickname||'暂无上榜')}</h3><p>${esc(top?previewText(top.topPost?.content).slice(0,100):'还没有足够数据进入档案。')}</p></article></div></section>`;}
 
 function renderEcho(){
   const list=$('[data-echo-list]');if(!list)return;
@@ -451,7 +475,7 @@ function buddyCard(row,{mode='friend'}={}){
   const incoming=String(row.receiver_id)===String(accountState.user?.id);return `<article class="buddy-item">${avatarHtml(profile,'social-avatar',{userId})}<div class="buddy-main"><b>${memberName(name,userId,true)}</b><span>实验品编号：${esc(profile.lab_code||'未设置')} · ${incoming?'对方想加你为搭子':'等待对方处理'}</span></div><div class="row-actions">${incoming?`<button class="primary compact" type="button" data-accept-friend="${esc(row.id)}">同意</button><button class="secondary compact danger" type="button" data-reject-friend="${esc(row.id)}">拒绝</button>`:`<button class="secondary compact danger" type="button" data-remove-friend="${esc(row.id)}">撤回</button>`}</div></article>`;
 }
 
-function messagePreview(value){return decodeSticker(value)?'动画表情':String(value||'[消息]').replace(/\s+/g,' ').trim();}
+function messagePreview(value){if(!desktopPreferences.value.messagePreview)return'消息内容已隐藏';return decodeSticker(value)?'动画表情':String(value||'[消息]').replace(/\s+/g,' ').trim();}
 function renderMessageList(accepted){
   const rows=accepted.map(friend=>{const userId=buddyOtherId(friend);return{friend,userId,profile:socialState.buddy.profiles[userId]||{},latest:socialState.buddy.latest[userId]||null,unread:Number(socialState.buddy.unread[userId]||0)};}).sort((a,b)=>b.unread-a.unread||new Date(b.latest?.created_at||0)-new Date(a.latest?.created_at||0)||String(a.profile.nickname||'').localeCompare(String(b.profile.nickname||''),'zh-CN'));
   if(!rows.length)return'<div class="state-card">暂时还没有搭子消息。先去“新的搭子”加一个搭子吧。</div>';
@@ -501,7 +525,7 @@ function bindChatActions(){
 }
 function renderChat(){
   const chat=socialState.chat;const messages=$('[data-chat-messages]');const input=$('[data-chat-compose] input[name="message"]');const submit=$('[data-chat-compose] button[type="submit"]');const emoji=$('[data-emoji-toggle]');const target=String(chat.targetId||'');
-  chatScroll||=createChatScroll(messages,()=>{$('[data-chat-new-messages]').hidden=true;});chatScroll.setTarget(target);
+  chatScroll||=createChatScroll(messages,()=>{$('[data-chat-new-messages]').hidden=true;socialStore.markPrivateRead(socialState.chat.targetId).catch(()=>{});});chatScroll.setTarget(target);
   if(chatComposerTarget!==target){if(chatComposerTarget)chatDrafts.set(chatComposerTarget,input.value);chatComposerTarget=target;input.value=chatDrafts.get(target)||'';$('[data-emoji-panel]').hidden=true;}
   $('[data-chat-title]').innerHTML=target?memberName(chat.profile?.nickname||'搭子',target,true):'选择一个搭子';
   $('[data-chat-heading-avatar]').innerHTML=target?avatarHtml(chat.profile,'social-avatar',{userId:target}):'';
@@ -521,7 +545,19 @@ function renderChat(){
   if(shouldScroll)chatScroll.follow();else chatScroll.pause();
   if(chat.loading&&!chat.rows.length){messages.innerHTML='<div class="state-card">正在打开私聊...</div>';chatScroll.afterRender();return;}if(!chat.targetId){messages.innerHTML='<div class="state-card">还没有选择聊天对象。</div>';chatScroll.afterRender();return;}if(!chat.rows.length){messages.innerHTML='<div class="state-card">还没有私聊消息。可以先低功耗地打个招呼。</div>';chatScroll.afterRender();return;}
   const history=chat.hasMore?`<div class="chat-history"><button class="secondary compact" type="button" data-chat-load-older ${chat.historyLoading||chat.loading?'disabled':''}>${chat.historyLoading?'正在加载…':chat.historyError?'重试加载更早消息':'加载更早消息'}</button>${chat.historyError?`<p role="status">${esc(chat.historyError)}</p>`:''}</div>`:chat.historyPage?'<div class="chat-history">没有更早的消息了</div>':'';
-  messages.innerHTML='<div class="chat-timeline" data-chat-timeline>'+history+chat.rows.map((row,index)=>{const previous=chat.rows[index-1],separator=showChatTime(row.created_at,previous?.created_at);return(separator?`<time class="chat-time-divider" datetime="${esc(row.created_at)}" title="${esc(fullChatTime(row.created_at))}">${esc(chatTimeLabel(row.created_at))}</time>`:'')+messageBubble(row,!separator&&previous?.sender_id===row.sender_id);}).join('')+'</div>';
+  let timeline=messages.querySelector('[data-chat-timeline]');
+  if(!timeline||changedTarget){messages.innerHTML='<div class="chat-timeline" data-chat-timeline></div>';timeline=messages.firstElementChild;}
+  let historyNode=timeline.querySelector('[data-chat-history]');
+  if(!historyNode){historyNode=document.createElement('div');historyNode.dataset.chatHistory='';timeline.prepend(historyNode);}
+  if(historyNode.innerHTML!==history)historyNode.innerHTML=history;historyNode.hidden=!history;
+  let bubbles=timeline.querySelector('[data-chat-bubbles]');if(!bubbles){bubbles=document.createElement('div');bubbles.className='chat-timeline';bubbles.dataset.chatBubbles='';timeline.append(bubbles);}
+  const timelineRows=[];chat.rows.forEach((row,index)=>{const previous=chat.rows[index-1],separator=showChatTime(row.created_at,previous?.created_at);if(separator)timelineRows.push({kind:'time',row});timelineRows.push({kind:'message',row,consecutive:!separator&&previous?.sender_id===row.sender_id});});
+  const identity=[chat.profile?.nickname,chat.profile?.avatar_url,accountState.user?.avatarUrl,membershipStyleSignature].join('|');
+  reconcileChatTimeline(bubbles,timelineRows,{
+    key:item=>item.kind+':'+item.row.id,
+    signature:item=>JSON.stringify([item.row.id,item.row.content,item.row.sender_id,item.row.created_at,item.consecutive,identity]),
+    render:item=>item.kind==='time'?`<time class="chat-time-divider" datetime="${esc(item.row.created_at)}" title="${esc(fullChatTime(item.row.created_at))}">${esc(chatTimeLabel(item.row.created_at))}</time>`:messageBubble(item.row,item.consecutive)
+  });
   if(!shouldScroll){const nextAnchor=anchorId&&Array.from(messages.querySelectorAll('[data-chat-message-id]')).find(node=>node.dataset.chatMessageId===anchorId);messages.scrollTop=nextAnchor?messages.scrollTop+nextAnchor.getBoundingClientRect().top-containerTop-anchorOffset:top;}
   chatScroll.afterRender();
 }
@@ -638,7 +674,7 @@ function bindForms(){
   $('[data-resend-code]').addEventListener('click',()=>runForm($('[data-auth-view="verify"]'),()=>authStore.resendRegistration(),result=>{toast(`验证码已重新发送至 ${result.email}。`);}));
   $('[data-sign-out]').addEventListener('click',async event=>{if(!window.confirm('确定退出当前账号吗？'))return;event.currentTarget.disabled=true;try{closeAccountMenu();await authStore.signOut();toast('已退出登录。');showAuth('login');}catch(error){toast(error.message||'退出登录失败。');}finally{event.currentTarget.disabled=false;}});
   $('[data-buddy-search]').addEventListener('submit',event=>{event.preventDefault();socialStore.searchProfiles(new FormData(event.currentTarget).get('q')).catch(error=>toast(error.message||'搜索失败。'));});
-  $('[data-chat-compose]').addEventListener('submit',async event=>{event.preventDefault();const input=event.currentTarget.elements.message;const text=input.value,owner=accountState.user?.id;try{const targetId=await socialStore.sendMessage(text);if(accountState.user?.id!==owner)return;if(chatDrafts.get(String(targetId))===text)chatDrafts.delete(String(targetId));if(String(socialStore.state.chat.targetId)===String(targetId)&&input.value===text){input.value='';input.focus();}}catch(error){toast(error.message||'发送失败。');}});
+  $('[data-chat-compose]').addEventListener('submit',async event=>{event.preventDefault();const input=event.currentTarget.elements.message;const text=input.value,owner=accountState.user?.id;try{const targetId=await socialStore.sendMessage(text);if(accountState.user?.id!==owner)return;if(chatDrafts.get(String(targetId))===text)chatDrafts.delete(String(targetId));if(String(socialStore.state.chat.targetId)===String(targetId)&&input.value===text){input.value='';input.focus();}persistDrafts('chat:'+targetId);}catch(error){toast(error.message||'发送失败。');}});
   $('[data-chat-messages]').addEventListener('scroll',event=>{const box=event.currentTarget;if(box.scrollHeight-box.scrollTop-box.clientHeight<70)$('[data-chat-new-messages]').hidden=true;});
   $('[data-sticker-file]').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;try{await socialStore.uploadSticker(file);toast('表情已添加。');}catch(error){toast(error.message||'添加表情失败。');}});
   document.addEventListener('input',event=>{
@@ -659,10 +695,35 @@ function bindForms(){
   document.addEventListener('submit',async event=>{
     const createPoll=event.target.closest?.('[data-poll-create-form]');if(createPoll){event.preventDefault();const fd=new FormData(createPoll),owner=accountState.user?.id;try{await pollStore.createPoll({title:fd.get('title'),options:[1,2,3,4].map(index=>fd.get(`option${index}`)),isOfficial:fd.get('official')==='on',durationDays:Number(fd.get('durationDays')),allowUserOptions:fd.get('allowUserOptions')==='on'});if(accountState.user?.id!==owner)return;createPoll.reset();pollCreateOpen=false;pollFilter=accountState.user?.role==='admin'&&fd.get('official')==='on'?'official':'user';toast('投票课题已发布。');renderPolls();}catch(error){toast(error.message||'发布失败。');}return;}
     const addOption=event.target.closest?.('[data-poll-add-option]');if(addOption){event.preventDefault();try{await pollStore.addOption(addOption.dataset.pollAddOption,new FormData(addOption).get('label'));toast('新选项已加入并投票。');}catch(error){toast(error.message||'新增选项失败。');}return;}
-    const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();const owner=accountState.user?.id,text=composeDraft.text,attachments=composeDraft.attachments;try{await feedStore.createPost({text,attachments});if(accountState.user?.id!==owner)return;if(composeDraft.text===text&&composeDraft.attachments===attachments){releasePreview(composeDraft);composeDraft.text='';}toast('发布成功。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
-    const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);const owner=accountState.user?.id,text=draft.text,attachments=draft.attachments;try{await feedStore.createComment({postId,text,attachments});if(accountState.user?.id!==owner)return;if(draft.text===text&&draft.attachments===attachments){releasePreview(draft);draft.text='';}toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
+    const compose=event.target.closest?.('[data-compose-form]');if(compose){event.preventDefault();const owner=accountState.user?.id,text=composeDraft.text,attachments=composeDraft.attachments;try{await feedStore.createPost({text,attachments});if(accountState.user?.id!==owner)return;if(composeDraft.text===text&&composeDraft.attachments===attachments){releasePreview(composeDraft);composeDraft.text='';}persistDrafts('compose');toast('发布成功。');navigate('square');}catch(error){toast(error.message||'发布失败。');}return;}
+    const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);const owner=accountState.user?.id,text=draft.text,attachments=draft.attachments;try{await feedStore.createComment({postId,text,attachments});if(accountState.user?.id!==owner)return;if(draft.text===text&&draft.attachments===attachments){releasePreview(draft);draft.text='';}persistDrafts('comment:'+postId);toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
 bindExternalLinks({onError:toast});bindSidebarMore();bindChatActions();bindNavigation();bindForms();chatRoomUi.init({toast,avatarHtml,memberName,emojiText,emojiImage,fufuImage,emojis:EMOJIS,fufu:FUFU_PACK});desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);archiveStore.subscribe(renderArchive);authStore.boot();
 
 installContentReviewUi({toast});
+
+let draftErrorShown=false;
+window.addEventListener('fw:draft-storage-error',()=>{if(!draftErrorShown){draftErrorShown=true;toast('本机草稿保存或恢复失败，请保留当前编辑内容后重试。');}});
+document.addEventListener('input',event=>{if(event.target.matches?.('[data-compose-form] textarea'))persistDrafts('compose');else if(event.target.matches?.('[data-comment-form] textarea'))persistDrafts('comment:'+event.target.closest('[data-comment-form]').dataset.commentForm);else if(event.target.matches?.('[data-chat-compose] input[name="message"]'))persistDrafts('chat:'+chatComposerTarget);});
+function editedDraftKey(target){if(target.closest?.('[data-compose-form]'))return'compose';const form=target.closest?.('[data-comment-form]');return form?'comment:'+form.dataset.commentForm:'chat:'+chatComposerTarget;}
+document.addEventListener('change',event=>{if(event.target.matches?.('[data-compose-image],[data-comment-image]'))persistDrafts(editedDraftKey(event.target));});
+document.addEventListener('click',event=>{if(event.target.closest?.('[data-compose-emoji],[data-comment-emoji],[data-compose-sticker],[data-comment-sticker],[data-insert-emoji],[data-compose-attachment-remove],[data-comment-attachment-remove]'))queueMicrotask(()=>persistDrafts(editedDraftKey(event.target)));});
+document.addEventListener('paste',event=>{if(event.clipboardData?.files?.length)queueMicrotask(()=>persistDrafts(editedDraftKey(event.target)));});
+window.addEventListener('pagehide',persistDrafts);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)persistDrafts();});
+
+window.__FW_FLUSH_DRAFTS__=async()=>{persistDrafts();await flushDraftWrites();};
+
+window.addEventListener('fw:desktop-preferences',()=>{socialRenderMemo=null;renderSocial();});
+
+installNetworkStatus(async()=>{
+  if(!accountState.user)return;
+  if(accountState.user.cached){await authStore.boot();return;}
+  const tasks=[socialStore.refreshBadges(true)];
+  if(currentView==='square')tasks.push(feedStore.load(true));
+  if(currentView==='buddy'){tasks.push(socialStore.loadBuddy(true));if(socialState.chat.targetId)tasks.push(socialStore.openChat(socialState.chat.targetId));}
+  if(currentView==='rooms')tasks.push(pollStore.load(true));
+  if(currentView==='archive')tasks.push(archiveStore.load(true));
+  await Promise.all(tasks);
+});

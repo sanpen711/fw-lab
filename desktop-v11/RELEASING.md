@@ -1,6 +1,10 @@
+# Current release
+
+Public **1.0.2**, native installer/update **1.3.39**. This release improves visible-message receipts, durable drafts, incremental chat rendering, tray/hotkeys, background updates, compact windows and Chinese failure messages. Archived game/resource exclusions remain in force.
+
 # Windows versions
 
-The public client version restarts at **1.0.1**. Set `version` in `release.json` for the next public version (1.0.2, 1.0.3, ...).
+The public client version restarts at **1.0.1**. Set `version` in `release.json` for the next public version (1.0.3, 1.0.4, ...).
 
 The native installer/update version must keep increasing from **1.3.38** so already-installed clients receive the update. Set `buildVersion` in `release.json` and keep Cargo.toml, the application Cargo.lock entry, tauri.v11.conf.json and the release workflow in sync. The installed application identity, updater key and local storage identifiers stay the same.
 
