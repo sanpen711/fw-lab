@@ -1,12 +1,12 @@
 {
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.38-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmN5TmhkUFU5aTlvTjF1Z1JkMXVmWExYWlVoWFlYMVpBcU9MNXRJQmpYeVRQMmYyL09xeit5dTdwQWdJOWQyYXpVdlNiQnhEMnZWMzJTVTFCY0FqSUE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzOTQ4ODkyCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzhfeDY0LXNldHVwLmV4ZQpSNGxoazNwSlg2dmQwbVJNWmFpUFpEWmdneXJoSzJ1WDBvOE1SamFzcStUbDlvbW83Q1BxU3llWGFrRkZuc01nSVp1cDdFZVFFZGdyTUlpcGk5UlhCdz09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.39-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlJLSGRIUGZ6YnpFZ3labVcwZThlVWRUOVl3SUVRSFIxd3RXSDl4eExuWGtBK0tIZnBxYnFGdXlXQkxWQkxVK29WZG8rZzg1MDJFOEJRTlNrbXA3WlFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0Mjk2NzE1CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuMzlfeDY0LXNldHVwLmV4ZQo4OEVHUGdVTCtqSDhhUHorVTArRWhZbTlmWU1hSlh5aXI2ZU1BKysybE1oMlhNcHNqUHpONHVvOTk0ekRzQWRjYVZiWFgySy9xMU9YZkdRN3VkMUdEQT09Cg=="
     }
   },
-  "displayVersion": "1.0.1",
-  "pub_date": "2026-11-06T07:08:29.2328807Z",
-  "version": "1.3.38",
-  "notes": "Windows 1.0.1：安装包仅包含当前启用功能，移除魂斗罗 ROM、播放器、模拟器及停用资源；GitHub 原文件保留。"
+  "displayVersion": "1.0.2",
+  "pub_date": "2026-11-10T07:47:35.6247111Z",
+  "version": "1.3.39",
+  "notes": "Windows 1.0.2：优化消息已读、重启草稿恢复与聊天流畅度；新增快捷隐藏与窗口设置，完善后台更新和小窗口体验。"
 }
