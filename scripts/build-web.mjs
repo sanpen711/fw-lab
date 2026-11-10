@@ -12,6 +12,7 @@ await cp(resolve(root,'desktop-v11/src'),resolve(stage,'src'),{recursive:true});
 for(const file of await readdir(resolve(stage,'src'))){if(file.endsWith('.js')){const path=resolve(stage,'src',file);await writeFile(path,adaptModule(file,await readFile(path,'utf8')));}}
 await cp(resolve(root,'desktop-v11/public'),resolve(stage,'public'),{recursive:true,filter:path=>!/(?:\/emulatorjs(?:\/|$)|\/games\/nes(?:\/|$))/.test(path)});
 for(const file of await readdir(resolve(stage,'public'))){if(file.endsWith('.css')){const path=resolve(stage,'public',file);await writeFile(path,(await readFile(path,'utf8')).replace(/url\((['"]?)\/(?!web\/)/g,'url($1/web/'));}}
+await cp(resolve(root,'desktop-v11/release.json'),resolve(stage,'release.json'));
 await cp(resolve(root,'desktop-v11/styles.css'),resolve(stage,'styles.css'));
 await cp(resolve(root,'web-client/web.css'),resolve(stage,'web.css'));
 await cp(resolve(root,'web-client/overrides'),resolve(stage,'src'),{recursive:true});

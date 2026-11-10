@@ -368,6 +368,7 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
         let finish_total = total_bytes.clone();
         let watchdog_downloaded = downloaded.clone();
 
+        let progress_mode = network_mode.clone();
         let download_future = update.download(
             move |chunk, total| {
                     let current = chunk_downloaded
@@ -705,6 +706,7 @@ fn main() {
         .on_window_event(|window, event| {
             if window.label() != "main" { return; }
             match event {
+                tauri::WindowEvent::CloseRequested { api, .. } if UPDATE_INSTALLING.load(Ordering::Acquire) => api.prevent_close(),
                 tauri::WindowEvent::CloseRequested { api, .. } if !UPDATE_INSTALLING.load(Ordering::Acquire) && desktop_behavior::close_to_tray(window.app_handle()) => {
                     api.prevent_close(); let _ = window.hide(); desktop_behavior::notify_attention(window.app_handle());
                 },

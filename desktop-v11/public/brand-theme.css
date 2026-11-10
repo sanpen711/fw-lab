@@ -567,7 +567,7 @@ html body .chat-timeline [data-chat-bubbles]{min-width:0}
 }
 @media(max-width:930px){
   html body .buddy-page{grid-template-columns:minmax(215px,32%) minmax(0,1fr)!important}
-  html body .square-page{grid-template-columns:minmax(250px,39%) minmax(0,1fr)!important}
+  html body .square-page{grid-template-columns:340px minmax(0,1fr)!important}
   html body .buddy-column,html body .square-feed-column{min-width:0}
   html body .buddy-tabs{gap:4px;padding-inline:9px}
   html body .buddy-tabs button{padding-inline:8px;font-size:12px}
@@ -592,4 +592,10 @@ html body .chat-timeline [data-chat-bubbles]{min-width:0}
   html body .settings-heading{height:auto;min-height:70px;padding-block:14px}
   html body .settings-scroll{height:calc(100vh - 70px)}
   html body .modal .account-panel{max-height:calc(100vh - 32px);overflow:auto}
+}
+
+@media(max-width:1050px){
+  html body .square-heading .section-actions{flex-wrap:nowrap!important;gap:6px!important}
+  html body .square-heading{padding-inline:12px!important}
+  html body .square-heading .section-actions button{padding-inline:12px!important}
 }

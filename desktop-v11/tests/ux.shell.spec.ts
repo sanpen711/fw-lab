@@ -31,6 +31,7 @@ test('投票失败保留时长和补充权限，重复选项不提交',async({pa
   await boot(page,{failRpc:'fw_create_poll_v2'});await nav(page,'rooms');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');
   await form.locator('[name="title"]').fill('保留投票设置');await form.locator('[name="option1"]').fill('相同');await form.locator('[name="option2"]').fill(' 相同 ');await form.locator('[name="durationDays"]').selectOption('15');await form.locator('[name="allowUserOptions"]').check();
   let writes=0;page.on('request',r=>{if(r.url().endsWith('/fw_create_poll_v2'))writes++;});
+  await expect(form.locator('[name="title"]')).toHaveValue('保留投票设置');await expect(form.locator('[name="option1"]')).toHaveValue('相同');await expect(form.locator('[name="option2"]')).toHaveValue(' 相同 ');expect(await form.evaluate((node:HTMLFormElement)=>node.checkValidity())).toBe(true);
   await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('初始选项不能重复');expect(writes).toBe(0);
   await form.locator('[name="option2"]').fill('不同');await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('网络连接异常');expect(writes).toBe(1);
   await expect(form.locator('[name="durationDays"]')).toHaveValue('15');await expect(form.locator('[name="allowUserOptions"]')).toBeChecked();await expect(form.locator('[type="submit"]')).toBeEnabled();

@@ -80,7 +80,7 @@ function renderAuthGate(next){
     // Restore the inner list position after public-feed refreshes, too.
     const feedEnd="action:'<button class=\"primary compact\" type=\"button\" data-nav=\"compose\">发牢骚</button>'});\n}";
     change(feedEnd,feedEnd.slice(0,-2)+'host.scrollTop=webFeedTop;restoreWebFeedFocus();\n}');
-    change("$('[data-chat-compose] input[name=\"message\"]').value='';}","$('[data-chat-compose] input[name=\"message\"]').value='';webDraft.restore(user?.id,composeDraft);webMessages.reset();}");
+    change("draftOwner=String(user?.id||'');","draftOwner=String(user?.id||'');webDraft.restore(user?.id,composeDraft);webMessages.reset();");
     change('host.innerHTML=`<form class="compose-card" data-compose-form>', 'webDraft.save(accountState.user.id,composeDraft);\n  host.innerHTML=`<form class="compose-card" data-compose-form>');
     change('<div class="compose-input-heading"><label', '<div class="web-draft-toolbar"><span data-web-draft-status role="status"></span><button type="button" class="secondary compact" data-web-clear-draft ${feedState.busy?\'disabled\':\'\'}>清空草稿</button></div><div class="compose-input-heading"><label');
     change("restoreUiState(host,inputState);\n}\nfunction postCard", "restoreUiState(host,inputState);webDraft.paint(accountState.user?.id);\n}\nfunction postCard");
@@ -88,8 +88,8 @@ function renderAuthGate(next){
     change("const composePickerTab=event.target.closest('[data-compose-picker-tab]');",`if(event.target.closest('[data-web-clear-draft]')){if(!feedState.busy&&confirm('清空文字和附件草稿？')){releasePreview(composeDraft);composeDraft.text='';webDraft.clear(accountState.user?.id);renderCompose();}return;}
     const composePickerTab=event.target.closest('[data-compose-picker-tab]');`);
     change("toast('发布成功。');navigate('square');", "webDraft.clear(owner);toast('发布成功。');navigate('square');");
-    change("messages.innerHTML=history+chat.rows.map(messageBubble).join('');",`messages.innerHTML=history+chat.rows.map(messageBubble).join('');
-  webMessages.update('private',{context:target,rows:chat.rows,ownerField:'sender_id',ownId:accountState.user?.id,scroller:messages,button:notice,nearBottom,forceBottom:shouldScroll});`);
+    change("  if(!shouldScroll){const nextAnchor=",`  webMessages.update('private',{context:target,rows:chat.rows,ownerField:'sender_id',ownId:accountState.user?.id,scroller:messages,button:notice,nearBottom,forceBottom:shouldScroll});
+  if(!shouldScroll){const nextAnchor=`);
     source+=`\nwindow.addEventListener('beforeunload',event=>{if(composeDraft.attachments.length){event.preventDefault();event.returnValue='';}});
 window.__FW_WEB_APP__={navigate,openAccount,notify:toast,openPost:id=>feedStore.openPostById(id),state:()=>({view:currentView,tab:membershipTab,mode:squareMode,filter:pollFilter}),
   openGuestView(view,{mode='feed',tab='benefits',filter='all'}={}){

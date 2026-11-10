@@ -207,3 +207,25 @@ pub fn desktop_behavior_set(
     *state.preferences.lock().map_err(|_| "设置暂时无法保存。")? = preferences;
     desktop_behavior_get(app)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{Preferences, SHORTCUTS};
+    #[test]
+    fn defaults_preserve_exit_and_preview_and_offer_a_recoverable_shortcut() {
+        let value: Preferences = serde_json::from_str("{}").unwrap();
+        assert!(!value.close_to_tray);
+        assert!(value.message_preview);
+        assert!(value.shortcut_enabled);
+        assert!(SHORTCUTS.contains(&value.shortcut.as_str()));
+    }
+    #[test]
+    fn saved_behavior_roundtrips_without_losing_privacy_choices() {
+        let value: Preferences = serde_json::from_str(r#"{"closeToTray":true,"shortcutEnabled":false,"shortcut":"Ctrl+Alt+Q","messagePreview":false}"#).unwrap();
+        let saved = serde_json::to_value(value).unwrap();
+        assert_eq!(saved["closeToTray"], true);
+        assert_eq!(saved["shortcutEnabled"], false);
+        assert_eq!(saved["messagePreview"], false);
+        assert_eq!(saved["shortcut"], "Ctrl+Alt+Q");
+    }
+}
