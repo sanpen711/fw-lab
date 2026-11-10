@@ -517,7 +517,7 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
         );
         let size = bytes.len() as u64;
         if let Ok(mut pending) = app.state::<PendingUpdate>().0.lock() {
-            *pending = Some((update, bytes));
+            *pending = Some((update.clone(), bytes));
         } else {
             show_update_error(&app, "pending_update_lock".into()); return;
         }
