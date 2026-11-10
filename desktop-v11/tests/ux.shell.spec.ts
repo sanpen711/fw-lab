@@ -12,7 +12,7 @@ test('投票发布失败保留标题、四个选项，并可重试',async({page}
   await boot(page,{failRpc:'fw_create_poll_v2'});await nav(page,'rooms');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');
   await expect(form.locator('[name="title"]')).toBeFocused();
   await form.locator('[name="title"]').fill('保留标题');for(let i=1;i<=4;i++)await form.locator(`[name="option${i}"]`).fill('选项'+i);
-  await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('模拟网络失败');await expect(form.locator('[name="title"]')).toHaveValue('保留标题');for(let i=1;i<=4;i++)await expect(form.locator(`[name="option${i}"]`)).toHaveValue('选项'+i);
+  await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('网络连接异常');await expect(form.locator('[name="title"]')).toHaveValue('保留标题');for(let i=1;i<=4;i++)await expect(form.locator(`[name="option${i}"]`)).toHaveValue('选项'+i);
   await expect(form.locator('[type="submit"]')).toBeEnabled();
 });
 
@@ -31,8 +31,9 @@ test('投票失败保留时长和补充权限，重复选项不提交',async({pa
   await boot(page,{failRpc:'fw_create_poll_v2'});await nav(page,'rooms');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');
   await form.locator('[name="title"]').fill('保留投票设置');await form.locator('[name="option1"]').fill('相同');await form.locator('[name="option2"]').fill(' 相同 ');await form.locator('[name="durationDays"]').selectOption('15');await form.locator('[name="allowUserOptions"]').check();
   let writes=0;page.on('request',r=>{if(r.url().endsWith('/fw_create_poll_v2'))writes++;});
+  await expect(form.locator('[name="title"]')).toHaveValue('保留投票设置');await expect(form.locator('[name="option1"]')).toHaveValue('相同');await expect(form.locator('[name="option2"]')).toHaveValue(' 相同 ');expect(await form.evaluate((node:HTMLFormElement)=>node.checkValidity())).toBe(true);
   await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('初始选项不能重复');expect(writes).toBe(0);
-  await form.locator('[name="option2"]').fill('不同');await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('模拟网络失败');expect(writes).toBe(1);
+  await form.locator('[name="option2"]').fill('不同');await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('网络连接异常');expect(writes).toBe(1);
   await expect(form.locator('[name="durationDays"]')).toHaveValue('15');await expect(form.locator('[name="allowUserOptions"]')).toBeChecked();await expect(form.locator('[type="submit"]')).toBeEnabled();
 });
 
@@ -62,12 +63,12 @@ test('创建组队失败保留完整表单和申请开关',async({page})=>{
   await boot(page,{failRpc:'fw_create_game_party'});await nav(page,'play');await page.locator('[data-party-create-toggle]').click();const form=page.locator('[data-party-create-form]');
   await expect(form.locator('[name="gameName"]')).toBeFocused();
   await form.locator('[name="gameName"]').fill('今晚开黑');await form.locator('[name="note"]').fill('组队说明');await form.locator('[name="requiresApproval"]').uncheck();await form.locator('[type="submit"]').click();
-  await expect(page.locator('[data-toast]')).toContainText('模拟网络失败');await expect(form.locator('[name="gameName"]')).toHaveValue('今晚开黑');await expect(form.locator('[name="note"]')).toHaveValue('组队说明');await expect(form.locator('[name="requiresApproval"]')).not.toBeChecked();await expect(form.locator('[type="submit"]')).toBeEnabled();
+  await expect(page.locator('[data-toast]')).toContainText('网络连接异常');await expect(form.locator('[name="gameName"]')).toHaveValue('今晚开黑');await expect(form.locator('[name="note"]')).toHaveValue('组队说明');await expect(form.locator('[name="requiresApproval"]')).not.toBeChecked();await expect(form.locator('[type="submit"]')).toBeEnabled();
 });
 
 for(const failure of [true,false])test(`组队聊天${failure?'失败保留':'成功清空'}本房间草稿`,async({page})=>{
   await boot(page,failure?{failRpc:'fw_send_game_party_message'}:{});await nav(page,'play');await page.locator('[data-party-open]').first().click();const form=page.locator('[data-party-chat-form]');await form.locator('input').fill('组队聊天草稿');
-  await Promise.all([page.waitForResponse(r=>r.url().endsWith('/fw_send_game_party_message')),form.locator('button').click()]);if(failure)await expect(page.locator('[data-toast]')).toContainText('模拟网络失败');await expect(form.locator('input')).toHaveValue(failure?'组队聊天草稿':'');
+  await Promise.all([page.waitForResponse(r=>r.url().endsWith('/fw_send_game_party_message')),form.locator('button').click()]);if(failure)await expect(page.locator('[data-toast]')).toContainText('网络连接异常');await expect(form.locator('input')).toHaveValue(failure?'组队聊天草稿':'');
 });
 
 test('私聊草稿按对象恢复，退出账号后清除',async({page})=>{

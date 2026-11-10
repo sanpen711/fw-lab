@@ -1,3 +1,4 @@
+import {uiErrorMessage} from './ui-errors.js';
 import {authStore} from './auth-store.js';
 import {desktopCache} from './desktop-persistent-cache.js';
 desktopCache.remove('bird','public').catch(()=>{});
@@ -8,7 +9,7 @@ const signed=new Map();
 function currentUser(){const u=authStore.state.user;if(!u||u.cached)throw new Error('请先登录。');if(u.disabled)throw new Error('账号已停用。');return u;}
 function snapshot(){return {...state,rooms:state.rooms.map(r=>({...r})),detail:state.detail&&{...state.detail,messages:[...(state.detail.messages||[])],members:[...(state.detail.members||[])],requests:[...(state.detail.requests||[])]}};}
 function emit(){const s=snapshot();listeners.forEach(fn=>fn(s));}
-function result(r){if(r.error)throw new Error(r.error.message||'房间读取失败。');if(r.data?.error)throw new Error(r.data.error);return r.data;}
+function result(r){if(r.error)throw new Error(uiErrorMessage(r.error,'房间读取失败，请稍后重试。'));if(r.data?.error)throw new Error(uiErrorMessage(r.data.error));return r.data;}
 async function rpc(name,args={}){if(window.__FW_DESKTOP_V11__)window.__FW_DESKTOP_V11__.contentRequests++;return result(await client.rpc(name,args));}
 function serverTime(data){if(data?.server_time)state.serverOffset=new Date(data.server_time).getTime()-Date.now();}
 function removeChannel(channel){if(channel)client.removeChannel(channel);}

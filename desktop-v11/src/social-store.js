@@ -1,6 +1,8 @@
+import {uiErrorMessage} from './ui-errors.js';
 import {authStore} from './auth-store.js';
 import {desktopCache} from './desktop-persistent-cache.js';
 import {membershipStore} from './membership-store.js';
+import {windowIsActive,onWindowAttention} from './window-attention.js';
 
 const ECHO_TYPES=['like','comment','comment_reply'];
 const PRIVATE_TYPE='private_message';
@@ -32,6 +34,7 @@ let chatOpenToken=0;
 let pendingMessageSequence=0;
 const privateReadPromises=new Map();
 const privateReadQueued=new Set();
+const privateReadMessages=new Map();
 let replyCache={userId:'',at:0,rows:[]};
 let hydratedEchoUser='';
 let hydratedBuddyUser='';
@@ -44,7 +47,7 @@ let stickersRequested=false;
 
 function emit(){const snapshot={...state,badges:{...state.badges},echo:{...state.echo},buddy:{...state.buddy},chat:{...state.chat},stickers:{...state.stickers}};listeners.forEach(fn=>fn(snapshot));}
 function countContent(){if(window.__FW_DESKTOP_V11__) window.__FW_DESKTOP_V11__.socialContentRequests=(window.__FW_DESKTOP_V11__.socialContentRequests||0)+1;}
-function fail(result,label){if(result?.error) throw new Error(`${label}：${result.error.message}`);return result?.data;}
+function fail(result,label){if(result?.error) throw new Error(uiErrorMessage(result.error,`${label}，请稍后重试。`));return result?.data;}
 function cacheUser(){return authStore.state.user||null;}
 function currentUser(){return authStore.state.user && !authStore.state.user.cached ? authStore.state.user : null;}
 function unique(values){return Array.from(new Set((values||[]).filter(Boolean).map(String)));}
@@ -151,7 +154,7 @@ async function refreshBadges(force=false){
 }
 
 function teardownChannels(){
-  clearTimeout(badgeTimer);clearTimeout(buddyTimer);clearTimeout(echoTimer);badgeRefreshQueued=false;buddyRefreshQueued=false;chatOpenToken+=1;privateReadPromises.clear();privateReadQueued.clear();
+  clearTimeout(badgeTimer);clearTimeout(buddyTimer);clearTimeout(echoTimer);badgeRefreshQueued=false;buddyRefreshQueued=false;chatOpenToken+=1;privateReadPromises.clear();privateReadQueued.clear();privateReadMessages.clear();
   if(badgeChannel){client.removeChannel(badgeChannel);badgeChannel=null;}
   if(chatChannel){client.removeChannel(chatChannel);chatChannel=null;}
 }
@@ -164,12 +167,12 @@ function startBadgeChannel(userId){
       const row=payload?.new||payload?.old||{};scheduleBadges();
       if(ECHO_TYPES.includes(row.type)&&state.echo.loaded)scheduleEchoReload();
       if(payload?.eventType==='INSERT'&&row.type===PRIVATE_TYPE&&state.buddy.loaded){
-        const actorId=String(row.actor_id||'');const active=actorId&&String(state.chat.targetId)===actorId;
+        const actorId=String(row.actor_id||'');const active=canReadPrivate(actorId);
         if(actorId){
           const unread={...state.buddy.unread,[actorId]:active?0:Number(state.buddy.unread[actorId]||0)+1};
           const preview={id:`notice-${row.target_id||row.id}`,sender_id:actorId,content:row.content||'',created_at:row.created_at};
           state.buddy={...state.buddy,unread,latest:{...state.buddy.latest,[actorId]:preview}};emit();persistBuddyCache(userId).catch(()=>{});
-          if(active)markPrivateRead(actorId).catch(()=>{});
+          if(active)markPrivateRead(actorId,true).catch(()=>{});
         }
       }
     })
@@ -324,12 +327,24 @@ async function sendFriendRequest(userId){return runBuddyMutation('fw_send_friend
 async function respondFriendship(id,accept){return runBuddyMutation('fw_respond_friendship',{target_friendship_id:Number(id),accept_request:Boolean(accept)});}
 async function removeFriendship(id){return runBuddyMutation('fw_remove_friendship',{target_friendship_id:Number(id)});}
 
-async function markPrivateRead(actorId){
-  const user=currentUser();if(!user?.id||!actorId) return;
+function canReadPrivate(actorId){
+  const box=document.querySelector('[data-chat-messages]');
+  return Boolean(actorId&&String(state.chat.targetId)===String(actorId)&&!state.chat.loading&&windowIsActive()&&document.querySelector('#app')?.dataset.view==='buddy'&&box?.clientHeight&&box.scrollHeight-box.scrollTop-box.clientHeight<70);
+}
+async function markPrivateRead(actorId,force=false){
+  const user=currentUser();if(!user?.id||!canReadPrivate(actorId)) return;
   const key=String(actorId);const existing=privateReadPromises.get(key);if(existing){privateReadQueued.add(key);return existing;}
+  const newest=String(state.chat.rows.at(-1)?.id||'empty');
   const previousUnread=Number(state.buddy.unread[key]||0);
+  if(!force&&!previousUnread&&privateReadMessages.get(key)===newest)return;
   if(previousUnread>0){state.buddy={...state.buddy,unread:{...state.buddy.unread,[key]:0}};state.badges={...state.badges,buddy:Math.max(0,state.badges.buddy-previousUnread)};emit();persistBuddyCache(user.id).catch(()=>{});persistBadgesCache(user.id).catch(()=>{});}
-  const promise=client.from('notifications').update({is_read:true}).eq('user_id',user.id).eq('is_read',false).eq('type',PRIVATE_TYPE).eq('actor_id',key).then(result=>{if(result?.error)scheduleBadges();}).finally(()=>{if(privateReadPromises.get(key)===promise)privateReadPromises.delete(key);if(privateReadQueued.delete(key))queueMicrotask(()=>markPrivateRead(key));});
+  const promise=client.from('notifications').update({is_read:true}).eq('user_id',user.id).eq('is_read',false).eq('type',PRIVATE_TYPE).eq('actor_id',key).then(result=>{
+    if(state.userId!==user.id)return;
+    if(result?.error){
+      if(previousUnread){const restored=Math.max(previousUnread,Number(state.buddy.unread[key]||0));state.buddy={...state.buddy,unread:{...state.buddy.unread,[key]:restored}};emit();}
+      scheduleBadges();
+    }else privateReadMessages.set(key,newest);
+  }).finally(()=>{if(privateReadPromises.get(key)===promise)privateReadPromises.delete(key);if(privateReadQueued.delete(key)&&state.userId===user.id)queueMicrotask(()=>markPrivateRead(key,true));});
   privateReadPromises.set(key,promise);return promise;
 }
 
@@ -358,8 +373,7 @@ function subscribeChat(conversationId){
       if(!state.chat.rows.some(item=>String(item.id)===String(row.id))){
         const targetId=String(state.chat.targetId);const user=currentUser();const incoming=user&&String(row.sender_id)!==String(user.id);const previousUnread=Number(state.buddy.unread[targetId]||0);
         state.chat={...state.chat,rows:mergeRealtimeMessage(row)};
-        state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:row},unread:incoming?{...state.buddy.unread,[targetId]:0}:state.buddy.unread};
-        if(incoming&&previousUnread>0)state.badges={...state.badges,buddy:Math.max(0,state.badges.buddy-previousUnread)};
+        state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:row}};
         emit();persistChatCache().catch(()=>{});persistBuddyCache().catch(()=>{});if(incoming)markPrivateRead(targetId).catch(()=>{});
       }
     }).subscribe();
@@ -484,5 +498,7 @@ export const socialStore={
   state,ECHO_TYPES,refreshBadges,loadEcho,markEchoRead,markAllEchoRead,loadBuddy,setBuddyTab,searchProfiles,sendFriendRequest,respondFriendship,removeFriendship,openChat,loadEarlierChat,closeChat,sendMessage,markPrivateRead,loadStickers,uploadSticker,deleteSticker,
   subscribe(listener){listeners.add(listener);listener({...state,badges:{...state.badges}});return()=>listeners.delete(listener);}
 };
+
+onWindowAttention(active=>{if(active)requestAnimationFrame(()=>markPrivateRead(state.chat.targetId).catch(()=>{}));});
 
 window.addEventListener('fw:content-review-change',event=>{const e=event.detail;if(e.kind!=='private_message')return;if(!e.visible){state.chat.rows=state.chat.rows.filter(r=>String(r.id)!==String(e.target_id));for(const [id,row]of Object.entries(state.buddy.latest))if(String(row.id)===String(e.target_id))delete state.buddy.latest[id];emit();if(currentUser())persistBuddyCache(currentUser().id).catch(()=>{});}if(state.chat.targetId)openChat(state.chat.targetId).catch(()=>{});});

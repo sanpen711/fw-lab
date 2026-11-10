@@ -157,6 +157,12 @@ fn icon_file(app: &AppHandle, icon: &str) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+pub fn tray_image(app: &AppHandle) -> Result<Image<'static>, String> {
+    let identity = read(app);
+    let name = if identity.mode == "custom" { identity.icon.as_str() } else { "default" };
+    Image::from_bytes(icon_png(name)).map_err(|_| "无法读取客户端图标。".to_owned())
+}
+
 fn apply_window(app: &AppHandle, identity: &DesktopIdentity) -> Result<(), String> {
     let Some(window) = app.get_webview_window("main") else {
         return Ok(());
@@ -172,8 +178,12 @@ fn apply_window(app: &AppHandle, identity: &DesktopIdentity) -> Result<(), Strin
     let icon = Image::from_bytes(icon_png(icon_name))
         .map_err(|error| format!("无法读取客户端图标：{error}"))?;
     window
-        .set_icon(icon)
+        .set_icon(icon.clone())
         .map_err(|error| format!("无法修改窗口图标：{error}"))?;
+    if let Some(tray) = app.tray_by_id("fw-desktop") {
+        let _ = tray.set_icon(Some(icon));
+        let _ = tray.set_tooltip(Some(identity.display_name.as_str()));
+    }
     Ok(())
 }
 

@@ -1,3 +1,4 @@
+import {uiErrorMessage} from './ui-errors.js';
 import {authStore} from './auth-store.js';
 import {desktopCache} from './desktop-persistent-cache.js';
 
@@ -12,7 +13,7 @@ let profileRefreshPromise=null;
 
 function snapshot(){return {...state,polls:state.polls.map(poll=>({...poll,options:[...(poll.options||[])],stats:{...(poll.stats||{})},myVote:poll.myVote&&{...poll.myVote}})),profiles:{...state.profiles}};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
-function fail(result,label){if(result?.error)throw new Error(`${label}：${result.error.message}`);return result?.data;}
+function fail(result,label){if(result?.error)throw new Error(uiErrorMessage(result.error,`${label}，请稍后重试。`));return result?.data;}
 function count(){if(window.__FW_DESKTOP_V11__)window.__FW_DESKTOP_V11__.contentRequests=(window.__FW_DESKTOP_V11__.contentRequests||0)+1;}
 function contentSignature(polls,profiles,dailyCount){try{return JSON.stringify([polls,profiles,dailyCount]);}catch{return'';}}
 function currentUser(){const user=authStore.state.user;return user&&!user.cached?user:null;}

@@ -206,7 +206,7 @@ test('设置显示原生版本号，检查中防止重复点击，无更新时�
 for(const [name,result,text] of [
   ['可用更新',{status:'available',version:'9.8.8'},'发现新版本 9.8.8'],
   ['已有更新检查',{status:'busy'},'正在检查或处理更新'],
-  ['检查失败','error','检查更新失败，请确认网络连接后重试。'],
+  ['检查失败','error','网络连接异常，请检查网络后重试。'],
 ] as const)test(`手动检查更新：${name}有结果且按钮可再次使用`,async({page})=>{
   await nativeUpdates(page,result);const button=page.locator('[data-check-updates]');await button.click();await expect(page.locator('[data-update-check-status]')).toContainText(text);await expect(button).toBeEnabled();await expect(button).toHaveText('检查更新');
 });

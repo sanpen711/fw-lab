@@ -33,13 +33,18 @@ jobs:
       - name: Install Chromium
         working-directory: desktop-v11
         run: npx playwright install --with-deps chromium
+      - name: Verify desktop optimization regressions
+        working-directory: desktop-v11
+        run: npx playwright test --config playwright.config.ts optimization.shell.spec.ts own-posts.shell.spec.ts chat-settings.shell.spec.ts ux.shell.spec.ts --grep "后台窗口|阅读历史时|重启恢复|成功发送后草稿|紧凑窗口|检查失败|我的读取失败|投票失败保留时长"
       - name: Test local Windows frontend
         run: npm --prefix desktop-v11 test
-      - name: Upload membership UI previews
+      - name: Upload desktop UI results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: desktop-membership-previews
-          path: /tmp/fw-member-*.png
+          path: |
+            /tmp/fw-member-*.png
+            desktop-v11/test-results
           if-no-files-found: ignore
           retention-days: 7

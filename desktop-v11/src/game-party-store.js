@@ -1,3 +1,4 @@
+import {uiErrorMessage} from './ui-errors.js';
 import {authStore} from './auth-store.js';
 import {socialStore} from './social-store.js';
 import {membershipStore} from './membership-store.js';
@@ -12,7 +13,7 @@ let refreshTimer=null;
 
 function snapshot(){return {...state,parties:[...state.parties],profiles:{...state.profiles},members:[...state.members],contacts:[...state.contacts],messages:[...state.messages],applicationAlerts:[...state.applicationAlerts]};}
 function emit(){const next=snapshot();listeners.forEach(listener=>listener(next));}
-function fail(result,label){if(result?.error)throw new Error(`${label}：${result.error.message}`);return result?.data;}
+function fail(result,label){if(result?.error)throw new Error(uiErrorMessage(result.error,`${label}，请稍后重试。`));return result?.data;}
 function currentUser(){const user=authStore.state.user;return user&&!user.cached?user:null;}
 function requireUser(){const user=currentUser();if(!user)throw new Error('请先登录。');if(user.disabled)throw new Error('这个账号已被停用。');return user;}
 function count(){if(window.__FW_DESKTOP_V11__)window.__FW_DESKTOP_V11__.contentRequests=(window.__FW_DESKTOP_V11__.contentRequests||0)+1;}
