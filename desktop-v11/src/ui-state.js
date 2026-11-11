@@ -20,9 +20,14 @@ export function handleMessageEnter(event,{allowWebMeta=false}={}){
   if(event.defaultPrevented||event.key!=='Enter'||event.isComposing||event.keyCode===229||composing.has(event.target))return;
   if(browserClient){
     if(!event.ctrlKey&&!(allowWebMeta&&event.metaKey))return;
-  }else if(event.ctrlKey||event.shiftKey||event.altKey||event.metaKey){
-    // Chromium handles modified Enter as text editing in a textarea.
-    return;
+  }else{
+    if(event.shiftKey||event.altKey||event.metaKey)return;
+    if(event.ctrlKey){
+      event.preventDefault();
+      // Use the editor's insertion command to retain undo and input events.
+      document.execCommand('insertText',false,'\n');
+      return;
+    }
   }
   event.preventDefault();
   if(event.repeat)return;
