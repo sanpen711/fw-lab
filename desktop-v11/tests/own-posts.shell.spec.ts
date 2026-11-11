@@ -79,7 +79,7 @@ for(const reply of [false,true])test(`精神广场${reply?'回复':'评论'}按 
   await page.goto('/');
   await page.locator('.nav-item[data-nav="square"]').click();
   await page.locator('[data-square-mine-toggle]').click();
-  await page.locator('[data-open-post="100"]').click();
+  await page.locator('.square-post[data-open-post="100"]').click();
   if(reply)await page.locator('[data-reply-comment="800"]').click();
   const form=page.locator('[data-comment-form]');
   const input=form.locator('textarea');
