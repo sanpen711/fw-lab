@@ -192,10 +192,10 @@ async function nativeUpdates(page:Page,result:any){
       return null;
     }}};
   },result);
-  await boot(page);await page.locator('[data-sidebar-more-toggle]').click();await page.locator('[data-nav="settings"]').click();
+  await boot(page);await page.locator('[data-sidebar-more-toggle]').click();await page.locator('[data-nav="about"]').click();
 }
 
-test('设置显示原生版本号，检查中防止重复点击，无更新时明确反馈',async({page})=>{
+test('关于页显示原生版本号，检查中防止重复点击，无更新时明确反馈',async({page})=>{
   await page.setViewportSize({width:760,height:560});await nativeUpdates(page,'hold');await expect(page.locator('[data-app-version]')).toHaveText('9.8.7');
   const button=page.locator('[data-check-updates]');await button.click();await expect(button).toBeDisabled();await expect(button).toHaveText('检查中…');await expect(page.locator('[data-update-check-status]')).toContainText('正在检查更新');
   expect(await page.evaluate(()=>(window as any).__updateCalls)).toBe(1);

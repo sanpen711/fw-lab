@@ -201,11 +201,31 @@ export function adaptHtml(source){
   source=once(source,'<main class="main-content">',`<main class="main-content" id="web-main" tabindex="-1">
       <header class="web-page-intro" data-web-page-intro hidden><p data-web-page-description></p></header>`,'website main');
   source=once(source,'    </main>','    </main>\n    <footer class="web-site-footer"><div><strong>F.w 研究所</strong><span>允许低功耗运行</span></div><nav aria-label="网站信息"><a href="/privacy.html" target="_blank" rel="noopener">隐私政策</a><a href="/download/fw-lab-windows-latest.exe" download>客户端下载</a></nav><a class="web-filing" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">黑ICP备2026012853号-1</a></footer>','website footer');
-  const start=source.indexOf('            <section class="settings-card">\n              <header><div><h2>应用显示'),end=source.indexOf('            <section class="settings-card settings-cache-card">',start);
-  assert(start>=0&&end>start);source=source.slice(0,start)+source.slice(end);
-  source=source.replace('管理当前账号和这台电脑上的客户端显示。','管理个人资料和当前浏览器。')
+  // Keep account, cache and site information in the browser settings.
+  source=source.replace(/^[ \t]*<button class="sidebar-about-entry"[^>]*>.*<\/button>\r?\n/m,'');
+  const tabsStart=source.indexOf('          <div class="settings-tab-bar">');
+  const tabsEnd=source.indexOf('          <div class="settings-scroll">',tabsStart);
+  assert(tabsStart>=0&&tabsEnd>tabsStart);
+  source=source.slice(0,tabsStart)+source.slice(tabsEnd);
+  const desktopStart=source.indexOf('            <section class="settings-card" id="settings-display"');
+  const desktopEnd=source.indexOf('            <section class="settings-card settings-cache-card"',desktopStart);
+  assert(desktopStart>=0&&desktopEnd>desktopStart);
+  source=source.slice(0,desktopStart)+source.slice(desktopEnd);
+  const aboutStart=source.indexOf('      <section class="view" data-view-panel="about">');
+  const aboutEnd=source.indexOf('      <section class="view" data-view-panel="pending">',aboutStart);
+  const infoRows=source.slice(aboutStart,aboutEnd).match(/<div class="settings-version-row">[\s\S]*?<\/details>/)?.[0];
+  const cacheEnd=source.indexOf('            </section>',desktopStart)+'            </section>'.length;
+  assert(aboutStart>cacheEnd&&aboutEnd>aboutStart&&infoRows);
+  source=source.slice(0,cacheEnd)+`
+            <section class="settings-card">
+              <header><div><h2>网站说明</h2></div></header>
+              ${infoRows.replace(/^.*<span>官方网站<\/span>.*\n/m,'')}
+            </section>`+source.slice(cacheEnd,aboutStart)+source.slice(aboutEnd);
+  source=source.replace('settings-page settings-page--tabbed','settings-page')
+    .replace(' id="settings-profile" role="tabpanel" aria-labelledby="settings-tab-profile"','')
+    .replace(' id="settings-cache" role="tabpanel" aria-labelledby="settings-tab-cache" hidden','')
     .replace('清理帖子、图片等本机临时缓存，不会删除账号、登录状态、表情、游戏文件或应用显示设置。','清理网页临时缓存，保留登录状态、个人资料和已上传的表情。')
-    .replace('软件说明','网站说明').replace('data-check-updates>检查更新','data-web-reload>刷新网页')
+    .replace('data-check-updates>检查更新','data-web-reload>刷新网页')
     .replace(/<p class="phase-note">[^<]*<\/p>/,'');
   source=source.replace(/<button[^>]+data-game-open="contra"[^>]*>[\s\S]*?<\/button>/,'');
   source=source.replace(/<script type="module" src="\/src\/(app|alignment-nav-fix|feature-alignment|game-center)\.js"><\/script>\s*/g,'');

@@ -361,7 +361,7 @@ html body .sidebar-more-wrap:has(.sidebar-more-menu .active)>.sidebar-more-butto
 html body .sidebar-more-menu button{display:flex;align-items:center;gap:10px;width:100%;min-height:39px;padding:0 11px;border:0;border-radius:8px;background:transparent;color:#263a34;text-align:left;cursor:pointer;}
 html body .sidebar-more-menu button:hover,
 html body .sidebar-more-menu button.active{background:#fff2f3;color:#ff7f8b;}
-html body .sidebar-more-menu .sidebar-settings-entry{margin-top:4px;border-top:1px solid #eee8e0;border-radius:0 0 8px 8px;}
+html body .sidebar-more-menu :is(.sidebar-about-entry,.sidebar-settings-entry:not(.sidebar-about-entry + .sidebar-settings-entry)){margin-top:4px;border-top:1px solid #eee8e0;border-radius:0 0 8px 8px;}
 html body .sidebar-more-menu .nav-icon{display:block;width:17px;height:17px;flex:0 0 17px;background-color:currentColor;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain;}
 html body .sidebar-more-menu b{font-size:12px;}
 
@@ -553,8 +553,6 @@ html body .nav-icon-chatrooms{-webkit-mask-image:url('/nav-icons/chatrooms.svg')
 .behavior-check input{flex:none;width:17px;height:17px;margin:1px 0 0;accent-color:#c96380}
 .behavior-check span{display:grid;gap:5px;min-width:0}
 .behavior-check b{font-size:13px}.behavior-check small{color:#80767c;font-size:12px;line-height:1.6}
-.behavior-shortcut{display:flex;align-items:center;gap:16px;font-size:12px}
-.behavior-shortcut select{max-width:100%;min-height:36px;padding:5px 12px;border:1px solid #e3dce0;border-radius:8px;background:#fff;color:#3a3037}
 .network-banner{position:fixed;z-index:85;top:12px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 32px);display:flex;align-items:center;gap:12px;padding:10px 16px;border:1px solid #ead7df;border-radius:10px;background:#fff7fa;box-shadow:0 6px 24px #30202812;color:#754758;font-size:12px}
 .network-banner[hidden]{display:none}.network-banner button{flex:none;border:0;background:transparent;text-decoration:underline;color:inherit;cursor:pointer}
 html body .settings-actions{flex-wrap:wrap}
@@ -598,4 +596,51 @@ html body .chat-timeline [data-chat-bubbles]{min-width:0}
   html body .square-heading .section-actions{flex-wrap:nowrap!important;gap:6px!important}
   html body .square-heading{padding-inline:12px!important}
   html body .square-heading .section-actions button{padding-inline:12px!important}
+}
+
+/* Keep the heading and category tabs visible while the active settings panel scrolls. */
+html:has(body:not(.fw-browser) #app:is([data-view="settings"],[data-view="about"])),
+body:not(.fw-browser):has(#app:is([data-view="settings"],[data-view="about"])){min-height:0;overflow:hidden}
+html body .settings-page:is(.settings-page--tabbed,.settings-page--about){
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  min-height:0;
+  background:#f7f6f4;
+}
+html body .settings-page.settings-page--tabbed{grid-template-rows:auto auto minmax(0,1fr)}
+html body .settings-page:is(.settings-page--tabbed,.settings-page--about) .settings-heading{height:auto;min-height:68px;padding:16px 30px}
+html body .settings-page:is(.settings-page--tabbed,.settings-page--about) .settings-scroll{height:auto;min-height:0;align-content:start;overflow-y:auto}
+.settings-tab-bar{padding:0 30px;border-bottom:1px solid #e6ded5;background:#fff}
+.settings-tabs{display:flex;flex-wrap:wrap;gap:6px;width:min(920px,100%);margin:0 auto}
+.settings-tabs button{min-height:47px;padding:0 14px;border:0;border-bottom:2px solid transparent;background:transparent;color:#646661;cursor:pointer;font-size:13px;font-weight:700}
+.settings-tabs button:hover{color:#152b25;background:#fcf8f6}
+.settings-tabs button[aria-selected="true"]{border-bottom-color:#bd5468;color:#9f3e52}
+.settings-card[hidden],.shortcut-controls [hidden],.identity-preview>span[hidden],.settings-avatar-row input[hidden]{display:none}
+.settings-avatar-row{display:flex;align-items:center;gap:13px}
+.settings-avatar-row>div{flex:1;min-width:0}
+.settings-avatar-row strong{display:block;overflow-wrap:anywhere}
+.settings-avatar-row .avatar{flex:none}
+.settings-avatar-row button{flex:none}
+.settings-profile-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0;padding:13px 15px;border:1px solid #ebe3da;border-radius:12px;background:#fbf8f5}
+.settings-profile-meta dt{color:var(--muted);font-size:12px}
+.settings-profile-meta dd{margin:4px 0 0;font-size:13px;font-weight:700;overflow-wrap:anywhere}
+.identity-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(165px,.44fr);gap:12px}
+.identity-overview .settings-mode-list{grid-template-columns:1fr}
+.identity-overview .identity-preview{min-width:0;overflow-wrap:anywhere}
+.identity-preview>span[data-identity-preview-brand],.about-mark{display:grid;flex:none;place-items:center;border-radius:12px;background:#ffe6e8;color:#152b25;font:900 18px/1 Georgia,serif}
+.behavior-form fieldset{display:grid;gap:19px;min-width:0;margin:0;padding:0;border:0}
+.behavior-shortcut{display:grid;gap:10px;padding:16px;border:1px solid #ebe3da;border-radius:12px;background:#fbf8f5}
+.behavior-shortcut h3{margin:0;font-size:14px}
+.behavior-shortcut p,.behavior-shortcut small{margin:4px 0 0;color:#666963;font-size:12px;line-height:1.6}
+.shortcut-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.shortcut-key{min-width:76px;padding:8px 11px;border:1px solid #e4d9d0;border-radius:8px;background:white;font-weight:700;text-align:center}
+.shortcut-key[data-recording]{border-color:#bd5468;color:#9f3e52}
+.settings-status:empty{display:none}
+.settings-about-card .about-product{align-items:center;justify-content:flex-start}
+.about-mark{width:56px;height:56px;font-size:22px}
+.settings-about-card .settings-version-row{padding-bottom:0}
+@media(max-width:820px){
+  .settings-tab-bar{padding-inline:14px}
+  .settings-tabs button{padding-inline:10px}
+  .settings-profile-meta{grid-template-columns:1fr}
 }

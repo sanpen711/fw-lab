@@ -43,6 +43,7 @@
               <button type="button" role="menuitem" data-align-nav="rules"><span class="nav-icon nav-icon-info" aria-hidden="true"></span><b>入馆须知</b></button>
               <button type="button" role="menuitem" data-align-nav="moderation"><span class="nav-icon nav-icon-notice" aria-hidden="true"></span><b>处理公告</b></button>
               <button type="button" role="menuitem" data-feedback-open><span class="nav-icon nav-icon-discussion" aria-hidden="true"></span><b>反馈意见</b></button>
+              <button class="sidebar-about-entry" type="button" role="menuitem" data-nav="about"><span class="nav-icon nav-icon-info" aria-hidden="true"></span><b>关于</b></button>
               <button class="sidebar-settings-entry" type="button" role="menuitem" data-nav="settings"><span class="nav-icon nav-icon-settings" aria-hidden="true"></span><b>设置</b></button>
             </div>
           </div>
@@ -246,30 +247,45 @@
       </section>
 
       <section class="view" data-view-panel="settings">
-        <div class="settings-page">
-          <header class="section-heading settings-heading">
-            <div><h1>设置</h1><span>管理当前账号和这台电脑上的客户端显示。</span></div>
-          </header>
+        <div class="settings-page settings-page--tabbed">
+          <header class="section-heading settings-heading"><div><h1>设置</h1></div></header>
+          <div class="settings-tab-bar">
+            <div class="settings-tabs" role="tablist" aria-label="设置分类">
+              <button type="button" id="settings-tab-profile" role="tab" aria-controls="settings-profile" aria-selected="true">个人资料</button>
+              <button type="button" id="settings-tab-display" role="tab" aria-controls="settings-display" aria-selected="false" tabindex="-1">应用显示</button>
+              <button type="button" id="settings-tab-window" role="tab" aria-controls="settings-window" aria-selected="false" tabindex="-1">窗口与快捷键</button>
+              <button type="button" id="settings-tab-privacy" role="tab" aria-controls="settings-privacy" aria-selected="false" tabindex="-1">消息隐私</button>
+              <button type="button" id="settings-tab-cache" role="tab" aria-controls="settings-cache" aria-selected="false" tabindex="-1">缓存管理</button>
+            </div>
+          </div>
           <div class="settings-scroll">
-            <section class="settings-card">
+            <section class="settings-card" id="settings-profile" role="tabpanel" aria-labelledby="settings-tab-profile">
               <header><div><h2>个人资料</h2><p>头像和昵称会同步到网页端与手机端。</p></div></header>
               <form class="account-form settings-profile-form" data-settings-profile>
-                <div class="profile-summary"><span class="avatar" data-profile-avatar>FW</span><div><strong data-profile-name>研究员</strong><span data-profile-email></span></div></div>
-                <div class="settings-form-grid">
-                  <label>实验品编号<input name="labCode" maxlength="7" disabled></label>
-                  <label>昵称<input name="nickname" maxlength="12" required></label>
+                <div class="settings-avatar-row">
+                  <span class="avatar" data-profile-avatar>FW</span>
+                  <div><strong data-profile-name>研究员</strong><small class="avatar-upload-hint">支持 JPG、PNG、WebP，最大 10 MB。</small></div>
+                  <button class="secondary compact" type="button" data-change-avatar>更换头像</button>
+                  <input name="avatar" type="file" accept="image/jpeg,image/png,image/webp" hidden>
                 </div>
-                <label>头像<input name="avatar" type="file" accept="image/jpeg,image/png,image/webp"><small class="avatar-upload-hint">支持 JPG、PNG、WebP；预览按中心裁成正方形，保存时自动压缩。</small></label>
+                <dl class="settings-profile-meta">
+                  <div><dt>登录邮箱</dt><dd data-profile-email></dd></div>
+                  <div><dt>实验品编号</dt><dd data-profile-lab-code></dd></div>
+                </dl>
+                <label>昵称<input name="nickname" maxlength="12" required></label>
                 <div class="settings-actions"><button class="primary" type="submit">保存资料</button><span class="settings-status" data-profile-status aria-live="polite"></span></div>
               </form>
             </section>
 
-            <section class="settings-card">
+            <section class="settings-card" id="settings-display" role="tabpanel" aria-labelledby="settings-tab-display" hidden>
               <header><div><h2>应用显示</h2><p>仅修改这台电脑上的桌面快捷方式、窗口标题、任务栏和切换窗口显示。</p></div></header>
               <form class="identity-form" data-identity-form>
+                <div class="identity-overview">
                 <div class="settings-mode-list">
                   <label class="settings-mode-option"><input type="radio" name="mode" value="default" checked><span><b>默认模式</b><small>保持 F.w 研究所名称和原来的客户端图标。</small></span></label>
                   <label class="settings-mode-option"><input type="radio" name="mode" value="custom"><span><b>自定义模式</b><small>使用自定义名称和常见办公图标，只在本机生效。</small></span></label>
+                </div>
+                <div class="identity-preview"><span data-identity-preview-brand aria-hidden="true">F.W</span><span data-identity-preview-custom hidden><img data-identity-preview-icon src="/app-icons/folder.png" alt=""></span><div><small>显示预览</small><b data-identity-preview-name>F.w 研究所</b></div></div>
                 </div>
                 <div class="identity-custom" data-identity-custom hidden>
                   <label class="identity-name-label">应用名称<input name="displayName" maxlength="24" autocomplete="off" placeholder="例如：KS资料"></label>
@@ -287,32 +303,63 @@
                       <label><input type="radio" name="icon" value="network"><span><img src="/app-icons/network.png" alt=""><b>网络</b></span></label>
                     </div>
                   </fieldset>
-                  <div class="identity-preview"><span><img data-identity-preview-icon src="/app-icons/folder.png" alt=""></span><div><small>显示预览</small><b data-identity-preview-name>KS资料</b></div></div>
                 </div>
                 <div class="settings-actions"><button class="primary" type="submit">保存应用显示</button><span class="settings-status" data-identity-status aria-live="polite"></span></div>
               </form>
             </section>
 
-            <section class="settings-card">
-              <header><div><h2>窗口与隐私</h2><p>快捷隐藏、关闭行为与消息预览仅在这台电脑上生效。</p></div></header>
+            <section class="settings-card" id="settings-window" role="tabpanel" aria-labelledby="settings-tab-window" hidden>
+              <header><div><h2>窗口与快捷键</h2><p>这些设置仅在这台电脑上生效。</p></div></header>
               <form class="behavior-form" data-behavior-form>
-                <label class="behavior-check"><input type="checkbox" name="closeToTray"><span><b>关闭窗口时收起到托盘</b><small>可从托盘菜单打开窗口或彻底退出。</small></span></label>
-                <label class="behavior-check"><input type="checkbox" name="shortcutEnabled" checked><span><b>启用快捷隐藏 / 恢复</b><small>在其他软件中也可使用；快捷键冲突时可更换组合。</small></span></label>
-                <label class="behavior-shortcut">快捷键<select name="shortcut"><option>Ctrl+Alt+H</option><option>Ctrl+Alt+Q</option><option>Ctrl+Shift+F9</option></select></label>
-                <label class="behavior-check"><input type="checkbox" name="messagePreview" checked><span><b>显示会话列表消息预览</b><small>关闭后仍显示未读数量，隐藏消息正文。</small></span></label>
-                <div class="settings-actions"><button class="primary" type="submit">保存窗口与隐私设置</button><span class="settings-status" data-behavior-status role="status" aria-live="polite"></span></div>
+                <fieldset data-window-options disabled>
+                  <label class="behavior-check"><input type="checkbox" name="closeToTray"><span><b>关闭窗口时收起到托盘</b><small>点击右上角 × 后，可从任务栏右下角的托盘图标打开窗口。右键托盘图标可退出软件。</small></span></label>
+                  <div class="behavior-shortcut">
+                    <div>
+                      <h3>快捷隐藏 / 恢复</h3>
+                      <p>按一下隐藏窗口，再按一下恢复。软件运行时，在其他应用中也能触发。</p>
+                    </div>
+                    <div class="shortcut-controls">
+                      <output class="shortcut-key" data-shortcut-value aria-label="快捷键" aria-live="polite">未设置</output>
+                      <button class="secondary compact" type="button" data-record-shortcut aria-describedby="shortcut-hint">设置快捷键</button>
+                      <button class="secondary compact" type="button" data-clear-shortcut hidden>清除</button>
+                    </div>
+                    <small id="shortcut-hint">支持单键（如 F9）或组合键。保存后生效。</small>
+                  </div>
+                  <div class="settings-actions"><button class="primary" type="submit">保存窗口设置</button></div>
+                </fieldset>
+                <p class="settings-status" data-behavior-status role="status"></p>
               </form>
             </section>
 
-            <section class="settings-card settings-cache-card">
+            <section class="settings-card" id="settings-privacy" role="tabpanel" aria-labelledby="settings-tab-privacy" hidden>
+              <header><div><h2>消息隐私</h2><p>控制这台电脑上的会话列表显示。</p></div></header>
+              <form class="behavior-form" data-privacy-form>
+                <label class="behavior-check"><input type="checkbox" name="messagePreview" checked><span><b>显示会话列表消息预览</b><small>关闭后仍显示未读数量，隐藏消息正文。</small></span></label>
+                <div class="settings-actions"><button class="primary" type="submit">保存消息隐私</button><span class="settings-status" data-privacy-status role="status"></span></div>
+              </form>
+            </section>
+
+            <section class="settings-card settings-cache-card" id="settings-cache" role="tabpanel" aria-labelledby="settings-tab-cache" hidden>
               <header><div><h2>缓存管理</h2><p>清理帖子、图片等本机临时缓存，不会删除账号、登录状态、表情、游戏文件或应用显示设置。</p></div></header>
               <div class="cache-summary"><div><small>当前缓存</small><strong data-cache-size>正在统计…</strong><span data-cache-detail></span></div><button class="secondary" type="button" data-clear-cache>清理缓存</button></div>
               <p class="settings-status" data-cache-status aria-live="polite"></p>
             </section>
-            <section class="settings-card">
-              <header><div><h2>软件说明</h2></div></header>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="about">
+        <div class="settings-page settings-page--about">
+          <header class="section-heading settings-heading"><div><h1>关于</h1></div></header>
+          <div class="settings-scroll">
+            <section class="settings-card settings-about-card">
+              <header class="about-product">
+                <span class="about-mark" aria-hidden="true">F.W</span>
+                <div><h2>F.w 研究所</h2><p>给上班族的匿名交流空间。吐槽日常、和同频的人聊聊，也可以找搭子一起放松。</p></div>
+              </header>
               <div class="settings-version-row"><div><span>当前版本</span><strong data-app-version>正在读取…</strong></div><button class="secondary" type="button" data-check-updates>检查更新</button></div>
               <p class="settings-status" data-update-check-status role="status" aria-live="polite"></p>
+              <div class="settings-filing"><span>官方网站</span><a href="https://fwyanjiusuo.com/" data-external-link="https://fwyanjiusuo.com/" target="_blank" rel="noopener noreferrer">fwyanjiusuo.com</a></div>
               <div class="settings-filing"><span>网站备案信息</span><a href="https://beian.miit.gov.cn/" data-external-link="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" title="在默认浏览器打开工信部备案查询">黑ICP备2026012853号-1</a></div>
               <details class="game-licenses">
                 <summary>开源许可</summary>

@@ -44,18 +44,82 @@ test('成功发送后草稿从本机移除，失败仍保留',async({page})=>{
   await input.fill('网络失败后保留');await page.locator('[data-chat-compose] [type="submit"]').click();await expect(page.locator('[data-toast]')).toHaveText('网络连接异常，请检查网络后重试。');await expect(input).toHaveValue('网络失败后保留');
 });
 
+async function openSettings(page:any){
+  await page.locator('[data-sidebar-more-toggle]').click();
+  await page.locator('[data-nav="settings"]').click();
+}
+
+async function stubDesktopPreferences(page:any){
+  await page.addInitScript(()=>{
+    const state={closeToTray:false,shortcut:null as string|null,messagePreview:true,shortcutRegistered:false};
+    (window as any).__TAURI__={core:{invoke:async(command,args)=>{
+      if(command==='desktop_behavior_get')return {...state};
+      if(command==='desktop_behavior_set'){
+        const {change}=args;
+        (window as any).__savedBehavior=change;
+        if(change.section==='privacy')state.messagePreview=change.messagePreview;
+        if(change.section==='window'){
+          if(change.shortcut==='Ctrl+Shift+F9')throw '快捷键已被占用或由系统保留，请换一个键。';
+          state.closeToTray=change.closeToTray;
+          state.shortcut=change.shortcut;
+          state.shortcutRegistered=Boolean(change.shortcut);
+        }
+        return {...state};
+      }
+      return null;
+    }}};
+  });
+}
+
 test('隐藏预览仍保留消息列表，设置保存后立即生效',async({page})=>{
-  await page.addInitScript(()=>{(window as any).__TAURI__={core:{invoke:async(command,args)=>{if(command==='desktop_behavior_get')return{closeToTray:false,shortcutEnabled:true,shortcut:'Ctrl+Alt+H',messagePreview:true,shortcutRegistered:true};if(command==='desktop_behavior_set'){(window as any).__savedBehavior=args.preferences;return args.preferences;}return null;}}};});
-  await boot(page);await page.locator('[data-sidebar-more-toggle]').click();await page.locator('[data-nav="settings"]').click();const form=page.locator('[data-behavior-form]');await form.locator('[name="closeToTray"]').check();await form.locator('[name="messagePreview"]').uncheck();await form.locator('[name="shortcut"]').selectOption('Ctrl+Alt+Q');await form.locator('[type="submit"]').click();
-  await expect(page.locator('[data-behavior-status]')).toContainText('已保存');expect(await page.evaluate(()=>(window as any).__savedBehavior)).toEqual({closeToTray:true,shortcutEnabled:true,shortcut:'Ctrl+Alt+Q',messagePreview:false});
-  await page.locator('.nav-item[data-nav="buddy"]').click();await expect(page.locator('[data-buddy-list]')).toContainText('消息内容已隐藏');
+  await stubDesktopPreferences(page);await boot(page);await openSettings(page);
+  await page.getByRole('tab',{name:'消息隐私'}).click();
+  const form=page.locator('[data-privacy-form]');
+  await form.locator('[name="messagePreview"]').uncheck();
+  await form.locator('[type="submit"]').click();
+  await expect(page.locator('[data-privacy-status]')).toContainText('已保存');
+  expect(await page.evaluate(()=>(window as any).__savedBehavior)).toEqual({section:'privacy',messagePreview:false});
+  await page.locator('.nav-item[data-nav="buddy"]').click();
+  await expect(page.locator('[data-buddy-list]')).toContainText('消息内容已隐藏');
+});
+
+test('快捷键默认未设置，可录入单键和组合键，冲突保留原快捷键，可清除',async({page})=>{
+  await stubDesktopPreferences(page);await boot(page);await openSettings(page);
+  await page.getByRole('tab',{name:'窗口与快捷键'}).click();
+  const key=page.locator('[data-shortcut-value]');
+  const record=page.locator('[data-record-shortcut]');
+  const save=page.locator('[data-behavior-form] [type="submit"]');
+  const status=page.locator('[data-behavior-status]');
+  await expect(key).toHaveText('未设置');
+  await record.click();
+  await page.keyboard.press('Escape');
+  await expect(key).toHaveText('未设置');
+  await record.click();
+  await page.keyboard.press('F9');
+  await expect(key).toHaveText('F9');
+  await page.locator('[data-behavior-form] [name="closeToTray"]').check();
+  await save.click();
+  await expect(status).toContainText('已保存');
+  expect(await page.evaluate(()=>(window as any).__savedBehavior)).toEqual({section:'window',closeToTray:true,shortcut:'F9'});
+  await record.click();
+  await page.keyboard.press('Control+Shift+F9');
+  await expect(key).toHaveText('Ctrl+Shift+F9');
+  await save.click();
+  await expect(status).toContainText('快捷键已被占用');
+  await expect(key).toHaveText('F9');
+  await page.locator('[data-clear-shortcut]').click();
+  await save.click();
+  await expect(status).toContainText('已保存');
+  await expect(key).toHaveText('未设置');
+  expect(await page.evaluate(()=>(window as any).__savedBehavior)).toEqual({section:'window',closeToTray:true,shortcut:null});
 });
 
 for(const size of [{width:760,height:560},{width:853,height:547},{width:1066,height:640}])test(`紧凑窗口 ${size.width}×${size.height} 保留编辑与设置操作`,async({page})=>{
   await page.setViewportSize(size);await boot(page);await openChat(page);await expect(page.locator('[data-chat-compose] [type="submit"]')).toBeInViewport();
   await page.locator('.nav-item[data-nav="square"]').click();await expect(page.locator('[data-square-refresh]')).toBeInViewport();await expect(page.locator('[data-square-echo-toggle]')).toBeInViewport();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.locator('[data-sidebar-more-toggle]').click();await page.locator('[data-nav="settings"]').click();const save=page.locator('[data-behavior-form] [type="submit"]');await save.scrollIntoViewIfNeeded();await expect(save).toBeInViewport();
+  await openSettings(page);await page.getByRole('tab',{name:'窗口与快捷键'}).click();const save=page.locator('[data-behavior-form] [type="submit"]');await save.scrollIntoViewIfNeeded();await expect(save).toBeInViewport();
+  expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(true);
   await page.screenshot({path:test.info().outputPath('compact-settings.png')});
 });
 

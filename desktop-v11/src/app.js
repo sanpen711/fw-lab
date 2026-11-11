@@ -34,7 +34,7 @@ const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
 const routes={
   activities:['活动','查看活动介绍与参与方式'],announcements:['公告','查看站点公告'],
-  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],chatrooms:['闲聊房间','找一个房间，坐下来聊聊'],play:['下班开黑','找到今晚一起玩的队友'],games:['小游戏','不用跳出软件，点开直接玩'],buddy:['搭子','左边选人，右边直接聊天'],membership:['会员','查看会员权益、套餐和订单'],archive:['档案','翻一翻被留下来的研究记录'],settings:['设置','管理个人资料、应用显示和本机缓存']
+  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],chatrooms:['闲聊房间','找一个房间，坐下来聊聊'],play:['下班开黑','找到今晚一起玩的队友'],games:['小游戏','不用跳出软件，点开直接玩'],buddy:['搭子','左边选人，右边直接聊天'],membership:['会员','查看会员权益、套餐和订单'],archive:['档案','翻一翻被留下来的研究记录'],settings:['设置','管理个人资料、应用显示和本机缓存'],about:['关于','软件说明和版本信息']
 };
 const EMOJIS=[
   ['😀','1f600'],['😁','1f601'],['😂','1f602'],['🤣','1f923'],['😄','1f604'],['😅','1f605'],['😆','1f606'],['😊','1f60a'],['😉','1f609'],['😌','1f60c'],
@@ -253,12 +253,13 @@ function renderAccount(next){
   $('[data-account-label]').textContent=user?user.nickname:(next.ready?'注册 / 登录':'正在连接…');
   setAvatar($('[data-account-avatar]'),user);setAvatar($('[data-profile-avatar]'),user);
   $('[data-profile-name]').textContent=user?.nickname||'研究员';$('[data-profile-email]').textContent=user?.email||'';
-  const profile=$('[data-settings-profile]');if(profile&&user){profile.elements.labCode.value=user.labCode||'';profile.elements.nickname.value=user.nickname||'';}
+  $('[data-profile-lab-code]').textContent=user?.labCode||'—';
+  const profile=$('[data-settings-profile]');if(profile&&user)profile.elements.nickname.value=user.nickname||'';
   $$('[data-account-modal] button, [data-account-modal] input').forEach(node=>{
     if(node.matches('[data-close-account]'))return;
     node.disabled=Boolean(next.busy);
   });
-  $$('[data-settings-profile] button, [data-settings-profile] input').forEach(node=>{node.disabled=node.name==='labCode'||Boolean(next.busy);});
+  $$('[data-settings-profile] button, [data-settings-profile] input').forEach(node=>{node.disabled=Boolean(next.busy);});
   if(next.ready&&previousUserId!==String(user?.id||''))renderSocial();
   if(next.ready)renderFeed();
   if(next.ready)renderPolls();
@@ -289,7 +290,7 @@ function navigate(view){
   const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;membershipPayment.setVisible(view==='membership'&&['purchase','orders'].includes(membershipTab));membershipShop.setVisible(view==='membership'&&membershipTab==='shop');
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===(['activities','announcements'].includes(view)?'home':view)));
   homeContent.setVisible(view);
-  const localViews=['home','compose','square','rooms','chatrooms','play','games','buddy','membership','archive','settings','announcements','activities'];
+  const localViews=['home','compose','square','rooms','chatrooms','play','games','buddy','membership','archive','settings','about','announcements','activities'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
   if(!localViews.includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
   $('[data-emoji-panel]').hidden=true;
@@ -315,6 +316,7 @@ function navigate(view){
   if(view==='games')window.__FW_GAMES__?.activate();
   if(view==='membership'){renderMembershipContent();membershipStore.load(true).catch(error=>toast(error.message||'会员信息读取失败。'));}
   if(view==='archive')archiveStore.load().catch(error=>toast(error.message||'废话档案读取失败。'));
+  if(view!=='settings')desktopSettings.cancelRecording?.();
   if(view==='settings')desktopSettings.activate();
 }
 
@@ -670,6 +672,7 @@ function bindForms(){
   $('[data-auth-view="register"]').addEventListener('submit',event=>{event.preventDefault();runForm(event.currentTarget,fd=>authStore.beginRegistration({email:fd.get('email'),password:fd.get('password'),password2:fd.get('password2'),labCode:fd.get('labCode')}),result=>{$('[data-verify-tip]').textContent=`验证码已发送至 ${result.email}。`;showAuth('verify');});});
   $('[data-auth-view="verify"]').addEventListener('submit',event=>{event.preventDefault();runForm(event.currentTarget,fd=>authStore.finishRegistration(fd.get('token')),()=>{toast('注册成功，请登录。');showAuth('login');});});
   installPasswordRecovery({authStore,showAuth,toast});
+  $('[data-change-avatar]').addEventListener('click',()=> $('[data-settings-profile] input[name="avatar"]').click());
   $('[data-settings-profile]').addEventListener('submit',async event=>{event.preventDefault();setProfileStatus('正在保存…');try{const fd=new FormData(event.currentTarget);await authStore.updateProfile({nickname:fd.get('nickname'),avatarFile:fd.get('avatar')});setProfileStatus('资料已保存。');toast('资料已保存。');}catch(error){setProfileStatus(error.message||'保存失败，请稍后重试。',true);}});
   $('[data-resend-code]').addEventListener('click',()=>runForm($('[data-auth-view="verify"]'),()=>authStore.resendRegistration(),result=>{toast(`验证码已重新发送至 ${result.email}。`);}));
   $('[data-sign-out]').addEventListener('click',async event=>{if(!window.confirm('确定退出当前账号吗？'))return;event.currentTarget.disabled=true;try{closeAccountMenu();await authStore.signOut();toast('已退出登录。');showAuth('login');}catch(error){toast(error.message||'退出登录失败。');}finally{event.currentTarget.disabled=false;}});

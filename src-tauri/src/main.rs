@@ -685,6 +685,7 @@ fn main() {
             desktop_behavior::desktop_window_is_active,
             desktop_behavior::desktop_behavior_get,
             desktop_behavior::desktop_behavior_set,
+            desktop_behavior::desktop_shortcut_capture,
             desktop_app_version,
             desktop_install_ready_update,
             desktop_check_for_updates,
@@ -710,7 +711,11 @@ fn main() {
                 tauri::WindowEvent::CloseRequested { api, .. } if !UPDATE_INSTALLING.load(Ordering::Acquire) && desktop_behavior::close_to_tray(window.app_handle()) => {
                     api.prevent_close(); let _ = window.hide(); desktop_behavior::notify_attention(window.app_handle());
                 },
-                tauri::WindowEvent::Focused(_) | tauri::WindowEvent::Resized(_) => desktop_behavior::notify_attention(window.app_handle()),
+                tauri::WindowEvent::Focused(false) => {
+                    desktop_behavior::desktop_shortcut_capture(window.app_handle().clone(), false);
+                    desktop_behavior::notify_attention(window.app_handle());
+                }
+                tauri::WindowEvent::Focused(true) | tauri::WindowEvent::Resized(_) => desktop_behavior::notify_attention(window.app_handle()),
                 _ => ()
             }
         })

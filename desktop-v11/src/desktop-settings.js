@@ -9,6 +9,20 @@ const ICONS=new Set(['folder','document','computer','drive','image','archive','t
 let identity={...DEFAULT_IDENTITY};
 let notify=()=>{};
 let checkingUpdate=false;
+let behaviorReady=false;
+let shortcutDraft=null;
+let recording=false;
+let recordingSession=0;
+
+const SHORTCUT_KEYS=new Set([
+  'Backquote','Backslash','BracketLeft','BracketRight','Comma','Equal','Minus',
+  'Period','Quote','Semicolon','Slash','Backspace','CapsLock','Enter','Space','Tab',
+  'Delete','End','Home','Insert','PageDown','PageUp','PrintScreen','ScrollLock',
+  'ArrowDown','ArrowLeft','ArrowRight','ArrowUp','NumLock','Pause','NumpadAdd',
+  'NumpadDecimal','NumpadDivide','NumpadEnter','NumpadEqual','NumpadMultiply',
+  'NumpadSubtract','AudioVolumeDown','AudioVolumeUp','AudioVolumeMute',
+  'MediaPlayPause','MediaStop','MediaTrackNext','MediaTrackPrevious'
+]);
 
 const $=selector=>document.querySelector(selector);
 
@@ -50,9 +64,11 @@ function renderIdentity(next=identity){
 function renderIdentityDraft(){
   const form=$('[data-identity-form]');if(!form)return;const draft=currentDraft();const custom=draft.mode==='custom';
   const customPanel=$('[data-identity-custom]');if(customPanel)customPanel.hidden=!custom;
-  const name=String(form.elements.displayName.value||'').trim()||'自定义名称';
+  const name=custom?(String(form.elements.displayName.value||'').trim()||'自定义名称'):DEFAULT_IDENTITY.displayName;
   const icon=form.elements.icon.value||'folder';const previewIcon=$('[data-identity-preview-icon]');const previewName=$('[data-identity-preview-name]');
   if(previewIcon)previewIcon.src=iconUrl(icon);if(previewName)previewName.textContent=name;
+  $('[data-identity-preview-brand]').hidden=custom;
+  $('[data-identity-preview-custom]').hidden=!custom;
 }
 
 async function loadIdentity(){
@@ -111,6 +127,19 @@ async function clearCache(button){
   }catch(error){setStatus('[data-cache-status]',error?.message||String(error)||'缓存清理失败。',true);}finally{button.disabled=false;}
 }
 
+function selectTab(tab){
+  if(!tab)return;
+  cancelRecording();
+  for(const item of document.querySelectorAll('.settings-tabs [role="tab"]')){
+    const selected=item===tab;
+    item.setAttribute('aria-selected',String(selected));
+    item.tabIndex=selected?0:-1;
+    document.getElementById(item.getAttribute('aria-controls')).hidden=!selected;
+  }
+  $('.settings-page--tabbed .settings-scroll').scrollTop=0;
+  if(tab.id==='settings-tab-cache')refreshCache();
+}
+
 function bind(){
   const form=$('[data-identity-form]');
   form?.addEventListener('change',renderIdentityDraft);form?.addEventListener('input',renderIdentityDraft);
@@ -118,24 +147,140 @@ function bind(){
   $('[data-clear-cache]')?.addEventListener('click',event=>clearCache(event.currentTarget));
   $('[data-check-updates]')?.addEventListener('click',event=>checkUpdates(event.currentTarget));
   $('[data-behavior-form]')?.addEventListener('submit',saveBehavior);
+  $('[data-privacy-form]')?.addEventListener('submit',saveBehavior);
+
+  const tabs=Array.from(document.querySelectorAll('.settings-tabs [role="tab"]'));
+  tabs.forEach((tab,index)=>{
+    tab.addEventListener('click',()=>selectTab(tab));
+    tab.addEventListener('keydown',event=>{
+      const next={ArrowLeft:(index+tabs.length-1)%tabs.length,ArrowRight:(index+1)%tabs.length,Home:0,End:tabs.length-1}[event.key];
+      if(next===undefined)return;
+      event.preventDefault();
+      selectTab(tabs[next]);
+      tabs[next].focus();
+    });
+  });
+
+  const recorder=$('[data-record-shortcut]');
+  recorder?.addEventListener('click',startRecording);
+  recorder?.addEventListener('blur',cancelRecording);
+  $('[data-clear-shortcut]')?.addEventListener('click',()=>{
+    cancelRecording();
+    shortcutDraft=null;
+    renderShortcut();
+    recorder.focus();
+    setStatus('[data-behavior-status]','保存窗口设置后清除快捷键。');
+  });
+  window.addEventListener('blur',cancelRecording);
+  window.addEventListener('keydown',captureKey,true);
+  window.addEventListener('fw:registered-shortcut-captured',()=>{
+    if(recording&&desktopPreferences.value.shortcut)finishRecording(desktopPreferences.value.shortcut);
+  });
 }
 
-function renderBehavior(){
-  const form=$('[data-behavior-form]');if(!form)return;const value=desktopPreferences.value;
-  form.elements.closeToTray.checked=value.closeToTray;form.elements.shortcutEnabled.checked=value.shortcutEnabled;form.elements.shortcut.value=value.shortcut;form.elements.messagePreview.checked=value.messagePreview;
-  for(const name of ['closeToTray','shortcutEnabled','shortcut'])form.elements[name].disabled=typeof invoke!=='function';
+function renderShortcut(){
+  const output=$('[data-shortcut-value]');
+  output.textContent=recording?'请按键…':shortcutDraft||'未设置';
+  output.toggleAttribute('data-recording',recording);
+  $('[data-record-shortcut]').textContent=recording?'取消录入':shortcutDraft?'修改':'设置快捷键';
+  $('[data-clear-shortcut]').hidden=recording||!shortcutDraft;
+  $('#shortcut-hint').textContent=recording?'按下想用的键，按 Esc 取消。':'支持单键（如 F9）或组合键。保存后生效。';
 }
+
+function startRecording(){
+  if(recording){cancelRecording();return;}
+  recording=true;
+  const session=++recordingSession;
+  setStatus('[data-behavior-status]');
+  renderShortcut();
+  invoke('desktop_shortcut_capture',{active:true}).catch(()=>{
+    if(session!==recordingSession||!recording)return;
+    cancelRecording();
+    setStatus('[data-behavior-status]','快捷键录入暂时不可用，请重试。',true);
+  });
+}
+
+function cancelRecording(){
+  if(!recording)return;
+  recording=false;
+  invoke('desktop_shortcut_capture',{active:false}).catch(()=>{});
+  renderShortcut();
+}
+
+function finishRecording(shortcut){
+  shortcutDraft=shortcut;
+  cancelRecording();
+  setStatus('[data-behavior-status]','保存窗口设置后启用快捷键。');
+}
+
+function captureKey(event){
+  if(!recording)return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  if(event.repeat)return;
+  if(event.code==='Escape'&&!event.ctrlKey&&!event.altKey&&!event.shiftKey&&!event.metaKey){cancelRecording();return;}
+  if(/^(Control|Alt|Shift|Meta)(Left|Right)$/.test(event.code))return;
+  const code=event.code;
+  const key=/^(Key[A-Z]|Digit[0-9])$/.test(code)?code.replace(/^(Key|Digit)/,''):code;
+  if(!/^(?:[A-Z0-9]|F(?:[1-9]|1[0-9]|2[0-4])|Numpad[0-9]|Escape)$/.test(key)&&!SHORTCUT_KEYS.has(key)){
+    setStatus('[data-behavior-status]','这个按键无法录入，请换一个键。',true);
+    return;
+  }
+  const modifiers=[];
+  if(event.ctrlKey)modifiers.push('Ctrl');
+  if(event.altKey)modifiers.push('Alt');
+  if(event.shiftKey)modifiers.push('Shift');
+  if(event.metaKey)modifiers.push('Super');
+  finishRecording([...modifiers,key].join('+'));
+}
+
 async function loadBehavior(){
-  if(typeof invoke==='function')try{const value=await invoke('desktop_behavior_get');if(value&&typeof value==='object')desktopPreferences.apply(value);}catch{}
-  renderBehavior();
+  if(typeof invoke==='function'){
+    try{
+      const value=await invoke('desktop_behavior_get');
+      if(value&&typeof value==='object'){desktopPreferences.apply(value);behaviorReady=true;}
+    }catch{}
+  }
   const value=desktopPreferences.value;
-  if(value.shortcutEnabled&&value.shortcutRegistered===false)setStatus('[data-behavior-status]','快捷键被其他软件占用，请选择其他组合后保存。',true);
+  shortcutDraft=behaviorReady?value.shortcut:null;
+  $('[data-behavior-form]').elements.closeToTray.checked=value.closeToTray;
+  $('[data-privacy-form]').elements.messagePreview.checked=value.messagePreview;
+  $('[data-window-options]').disabled=!behaviorReady;
+  renderShortcut();
+  if(!behaviorReady)setStatus('[data-behavior-status]',typeof invoke==='function'?'暂时无法读取窗口设置，请重启客户端后重试。':'请在 Windows 客户端中设置托盘和快捷键。');
+  else if(value.shortcut&&!value.shortcutRegistered)setStatus('[data-behavior-status]','已保存的快捷键当前无法启用，可以修改后再保存。',true);
 }
+
 async function saveBehavior(event){
-  event.preventDefault();const form=event.currentTarget,button=form.querySelector('[type="submit"]');button.disabled=true;
-  const preferences={closeToTray:form.elements.closeToTray.checked,shortcutEnabled:form.elements.shortcutEnabled.checked,shortcut:form.elements.shortcut.value,messagePreview:form.elements.messagePreview.checked};
-  try{const value=typeof invoke==='function'?await invoke('desktop_behavior_set',{preferences}):preferences;desktopPreferences.apply(value||preferences);renderBehavior();setStatus('[data-behavior-status]','已保存，本机立即生效。');}
-  catch(error){setStatus('[data-behavior-status]',error,true);}finally{button.disabled=false;}
+  event.preventDefault();
+  const form=event.currentTarget;
+  const windowSettings=form.matches('[data-behavior-form]');
+  const status=windowSettings?'[data-behavior-status]':'[data-privacy-status]';
+  const button=form.querySelector('[type="submit"]');
+  if(button.disabled||(windowSettings&&!behaviorReady))return;
+  cancelRecording();
+  button.disabled=true;
+  const change=windowSettings
+    ?{section:'window',closeToTray:form.elements.closeToTray.checked,shortcut:shortcutDraft}
+    :{section:'privacy',messagePreview:form.elements.messagePreview.checked};
+  if(windowSettings)$('[data-window-options]').disabled=true;
+  try{
+    const value=typeof invoke==='function'
+      ?await invoke('desktop_behavior_set',{change})
+      :{...desktopPreferences.value,messagePreview:change.messagePreview};
+    desktopPreferences.apply(value);
+    if(windowSettings){
+      shortcutDraft=desktopPreferences.value.shortcut;
+      renderShortcut();
+    }
+    setStatus(status,'已保存，本机立即生效。');
+  }catch(error){
+    if(windowSettings){shortcutDraft=desktopPreferences.value.shortcut;renderShortcut();}
+    setStatus(status,error,true);
+  }finally{
+    if(windowSettings)$('[data-window-options]').disabled=false;
+    button.disabled=false;
+  }
 }
 
 async function loadVersion(){
@@ -160,6 +305,6 @@ async function checkUpdates(button){
 }
 
 async function init(options={}){notify=options.toast||notify;bind();await Promise.all([loadIdentity(),loadVersion(),loadBehavior()]);}
-function activate(){refreshCache();renderIdentity(identity);renderBehavior();}
+function activate(){selectTab($('#settings-tab-profile'));}
 
-export const desktopSettings={init,activate,refreshCache};
+export const desktopSettings={init,activate,refreshCache,cancelRecording};
