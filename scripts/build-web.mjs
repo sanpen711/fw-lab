@@ -17,4 +17,6 @@ await cp(resolve(root,'desktop-v11/styles.css'),resolve(stage,'styles.css'));
 await cp(resolve(root,'web-client/web.css'),resolve(stage,'web.css'));
 await cp(resolve(root,'web-client/overrides'),resolve(stage,'src'),{recursive:true});
 await writeFile(resolve(stage,'index.html'),adaptHtml(await readFile(resolve(root,'desktop-v11/index.html'),'utf8')));
-await build({configFile:false,root:stage,base:'/web/',resolve:{alias:{'@supabase/supabase-js':createRequire(resolve(root,'desktop-v11/package.json')).resolve('@supabase/supabase-js')}},build:{outDir:out,emptyOutDir:true,target:'es2022',sourcemap:false,rollupOptions:{input:resolve(stage,'index.html')}}});
+const desktopRequire=createRequire(resolve(root,'desktop-v11/package.json'));
+const desktopDependencies=['@supabase/supabase-js','pinyin-pro'];
+await build({configFile:false,root:stage,base:'/web/',resolve:{alias:Object.fromEntries(desktopDependencies.map(name=>[name,desktopRequire.resolve(name)]))},build:{outDir:out,emptyOutDir:true,target:'es2022',sourcemap:false,rollupOptions:{input:resolve(stage,'index.html')}}});

@@ -210,3 +210,104 @@ for(const [name,result,text] of [
 ] as const)test(`手动检查更新：${name}有结果且按钮可再次使用`,async({page})=>{
   await nativeUpdates(page,result);const button=page.locator('[data-check-updates]');await button.click();await expect(page.locator('[data-update-check-status]')).toContainText(text);await expect(button).toBeEnabled();await expect(button).toHaveText('检查更新');
 });
+
+test('私聊表情框跟随笑脸并固定高度，小表情在光标处插入且发送后收起',async({page})=>{
+  await page.setViewportSize({width:760,height:560});
+  await boot(page);
+  await openChat(page);
+  const form=page.locator('[data-chat-compose]'),input=form.locator('[name="message"]');
+  const button=form.locator('[data-emoji-toggle]'),panel=form.locator('[data-emoji-panel]');
+  await input.fill('甲乙');
+  await input.evaluate((node:HTMLInputElement)=>node.setSelectionRange(1,1));
+  await button.click();
+  await expect(panel).toBeVisible();
+  const initial=(await panel.boundingBox())!,anchor=(await button.boundingBox())!;
+  expect(Math.abs(initial.x-anchor.x)).toBeLessThan(2);
+  expect(initial.x+initial.width).toBeLessThanOrEqual(760);
+  await form.locator('[data-emoji-tab="stickers"]').click();
+  expect((await panel.boundingBox())!.height).toBe(initial.height);
+  await form.locator('[data-emoji-tab="fufu1"]').click();
+  expect((await panel.boundingBox())!.height).toBe(initial.height);
+  await form.locator('[data-emoji-tab="emoji"]').click();
+  await form.locator('[data-insert-emoji="😀"]').click();
+  await expect(input).toHaveValue('甲😀乙');
+  await expect(input).toHaveCSS('font-family',/FW Emoji/);
+  expect(await input.evaluate(async()=> (await document.fonts.load('16px "FW Emoji"','😀')).length)).toBe(1);
+  await expect(panel).toBeVisible();
+  const sent=page.waitForRequest(req=>req.url().endsWith('/fw_send_private_message_to_user'));
+  await input.press('Enter');
+  expect((await sent).postDataJSON()).toMatchObject({message_text:'甲😀乙'});
+  await expect(panel).toBeHidden();
+  await expect(page.locator('[data-chat-messages] img[alt="😀"]')).toHaveCount(1);
+});
+
+test('私聊本机图片和伏伏表情先进入预览，确认发送前不上传',async({page})=>{
+  await boot(page);
+  await openChat(page);
+  const form=page.locator('[data-chat-compose]'),preview=form.locator('[data-chat-attachment-draft]');
+  let uploads=0;
+  const sent:string[]=[];
+  await page.route('**/storage/v1/object/chat-media/**',async route=>{
+    uploads++;
+    await route.fulfill({json:{Key:'chat-media/test.png'}});
+  });
+  await page.route('**/rest/v1/rpc/fw_send_private_message_to_user',async route=>{
+    sent.push(route.request().postDataJSON().message_text);
+    await route.fulfill({json:601});
+  });
+  const file={name:'preview.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM2UAAAAASUVORK5CYII=','base64')};
+  await form.locator('[data-align-chat-media-file]').setInputFiles(file);
+  await expect(preview.locator('img')).toHaveAttribute('src',/^blob:/);
+  await preview.locator('[data-lightbox-src]').click();
+  await expect(page.locator('[data-media-lightbox]')).toBeVisible();
+  await page.locator('[data-media-lightbox-close]').click();
+  expect(uploads).toBe(0);
+  expect(sent).toEqual([]);
+  await form.locator('[data-remove-chat-attachment]').click();
+  await expect(preview).toBeHidden();
+  await form.locator('[data-emoji-toggle]').click();
+  await form.locator('[data-emoji-tab="fufu1"]').click();
+  await form.locator('[data-chat-fufu]').first().click();
+  await expect(preview.locator('img')).toHaveAttribute('src',/\/emoji\/fufu1\//);
+  expect(sent).toEqual([]);
+  await form.locator('button[type="submit"]').click();
+  await expect(preview).toBeHidden();
+  expect(sent).toEqual(['[伏伏1:01]']);
+  await form.locator('[data-align-chat-media-file]').setInputFiles(file);
+  await form.locator('[name="message"]').press('Enter');
+  await expect(preview).toBeHidden();
+  expect(uploads).toBe(1);
+  expect(sent[1]).toMatch(/^\[\[FW_MEDIA_IMAGE:/);
+});
+
+test('私聊仅自己的近期消息可撤回，撤回后气泡与会话预览同步更新',async({page})=>{
+  await boot(page);
+  const rows=[
+    {id:20,conversation_id:601,sender_id:me,content:'较早的消息',created_at:new Date(Date.now()-180000).toISOString(),is_deleted:false},
+    {id:21,conversation_id:601,sender_id:other,content:'对方的消息',created_at:new Date().toISOString(),is_deleted:false},
+    {id:22,conversation_id:601,sender_id:me,content:'需要撤回的消息',created_at:new Date().toISOString(),is_deleted:false},
+  ];
+  await page.route('**/rest/v1/private_messages**',route=>{
+    const url=new URL(route.request().url());
+    return route.fulfill({json:url.searchParams.get('order')?.startsWith('created_at.desc')?[...rows].reverse():queried(rows,url)});
+  });
+  await page.route('**/rest/v1/rpc/fw_recall_private_message',route=>{
+    expect(String(route.request().postDataJSON().p_message_id)).toBe('22');
+    const recalled={...rows[2],content:'已撤回一条消息',recalled_at:new Date().toISOString()};
+    rows[2]=recalled;
+    return route.fulfill({json:recalled});
+  });
+  await openChat(page);
+  for(const id of [20,21]){
+    const message=page.locator(`[data-chat-message-id="${id}"]`);
+    await message.locator('summary').focus();
+    await page.keyboard.press('Enter');
+    await expect(message.locator('[data-chat-recall]')).toBeHidden();
+  }
+  const latest=page.locator('[data-chat-message-id="22"]');
+  await latest.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  await latest.locator('[data-chat-recall]').click();
+  await expect(latest).toContainText('你撤回了一条消息');
+  await expect(page.locator(`[data-buddy-list] [data-open-chat="${other}"]`)).toContainText('已撤回一条消息');
+});
