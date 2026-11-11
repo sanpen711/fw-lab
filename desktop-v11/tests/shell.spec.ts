@@ -304,8 +304,11 @@ test('头像菜单只显示退出登录，个人资料与电脑端选项集中�
   await page.locator('[data-sidebar-more-toggle]').click();
   await page.locator('.sidebar-more-menu [data-nav="settings"]').click();
   await expect(page.locator('[data-view-panel="settings"]')).toHaveClass(/active/);
-  await expect(page.locator('[data-settings-profile] input[name="labCode"]')).toBeDisabled();
+  await expect(page.locator('[data-profile-lab-code]')).toHaveText('FWTEST1');
   await expect(page.locator('[data-settings-profile] input[name="nickname"]')).toHaveValue('测试研究员');
+  await expect(page.locator('#settings-display')).toBeHidden();
+  await page.getByRole('tab',{name:'应用显示'}).click();
+  await expect(page.locator('#settings-profile')).toBeHidden();
   await expect(page.locator('[data-identity-form] input[value="default"]')).toBeChecked();
   await page.locator('[data-identity-form] input[value="custom"]').check();
   await expect(page.locator('[data-identity-custom]')).toBeVisible();
@@ -316,6 +319,7 @@ test('头像菜单只显示退出登录，个人资料与电脑端选项集中�
   await page.locator('[data-identity-form]').evaluate((form:HTMLFormElement)=>form.requestSubmit());
   await expect(page.locator('[data-identity-status]')).toContainText('已保存');
   await expect(page).toHaveTitle('工作资料');
+  await page.getByRole('tab',{name:'缓存管理'}).click();
   await expect(page.locator('[data-cache-size]')).toHaveText('仅客户端可用');
 });
 

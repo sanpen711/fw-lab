@@ -1,6 +1,6 @@
 # Current release
 
-Public **1.0.2**, native installer/update **1.3.39**. This release improves visible-message receipts, durable drafts, incremental chat rendering, tray/hotkeys, background updates, compact windows and Chinese failure messages. Archived game/resource exclusions remain in force.
+Public **1.0.3**, native installer/update **1.3.40**. This release introduces settings tabs, a dedicated About page and configurable global shortcuts with no default binding. Archived game/resource exclusions remain in force.
 
 # Windows versions
 
