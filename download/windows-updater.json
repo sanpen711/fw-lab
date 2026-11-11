@@ -1,12 +1,12 @@
 {
+  "displayVersion": "1.0.5",
+  "pub_date": "2026-11-11T10:09:09.3002029Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlpnMk4zOUs5aHA5UlpGSktrZ0FYUm9NdHNCMVZFUlZ6V29SNnlISEx2ZTFVK1E0cmZMeVJSZnZoYU9meXh4SHhJUjQ1OEpvWnlOQ3ZxMUhIdlhyQ3dJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0Mzc4MjIzCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuNDFfeDY0LXNldHVwLmV4ZQpiM1VSZUx2SW1QN3d0ZFA1ckNtaUJFbmVmRW1JdGVrU05Cc3lRMkxybSs4bGJOSUFRS0xPblgvdjJxTExJeXJSNkpYeElIa1g1T0lGNTJ4SWkra01CZz09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.41-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmU4TjZoM0UxZ1pIUnk0SlZrQWtNN0twWklNbWNOY1ZkNVdwb2ZkV3VlNnk3Ykw0dDFOWDBEU1ZoOVRGZWJ2VXd0ZC96WjBZeGFRLzl2UUplTVZ2MFFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0MzkxNzM1CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuNDJfeDY0LXNldHVwLmV4ZQpxRDc4bk41WG0wV1dXdGRhMHA5VGFzeFVXcThxcDVuY3kyUnBYQk9VV01jeE1XdmJqZDMvL3pBNXcreUY1VmY1bDdjT0k5RzAwMUdXV2xoRnNFN1JBUT09Cg==",
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.42-setup.exe"
     }
   },
-  "pub_date": "2026-11-11T06:23:58.1920303Z",
-  "notes": "Windows 1.0.4：精神广场评论、回复与闲聊房间改用 Enter 发送，Ctrl + Enter 换行。",
-  "displayVersion": "1.0.4",
-  "version": "1.3.41"
+  "version": "1.3.42",
+  "notes": "Windows 1.0.5：优化搭子私聊的表情面板、附件预览和昵称排序，增加两分钟内的消息撤回。"
 }

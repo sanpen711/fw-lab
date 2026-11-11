@@ -1,12 +1,12 @@
 {
   "available": true,
-  "version": "1.3.41",
-  "publishedAt": "2026-11-11T06:23:58.1920303Z",
-  "rollbackVersion": "1.0.5",
-  "notes": "Windows 1.0.4：精神广场评论、回复与闲聊房间改用 Enter 发送，Ctrl + Enter 换行。",
-  "sha256": "c092643307bd63f581c8076e8ecb080527fcdff39fe316911f2f2f53271977a5",
-  "displayVersion": "1.0.4",
   "platform": "Windows 10/11 64 位",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.41-setup.exe",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
+  "rollbackVersion": "1.0.5",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.42-setup.exe",
+  "version": "1.3.42",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "sha256": "7175b257ebcda948bb19e41bdc44f598a9ae6c1dda81cac63f05e68f91cad577",
+  "publishedAt": "2026-11-11T10:09:09.3002029Z",
+  "displayVersion": "1.0.5",
+  "notes": "Windows 1.0.5：优化搭子私聊的表情面板、附件预览和昵称排序，增加两分钟内的消息撤回。"
 }
