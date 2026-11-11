@@ -53,6 +53,23 @@ for(const password of [false,true])for(const approval of [false,true])test(`${pa
  expect(calls.some(c=>c.op==='join')).toBe(true);expect(rooms[0].has_password).toBe(password);
 });
 
+test('闲聊房间按 Enter 发送，Ctrl + Enter 换行',async({page})=>{
+ const {calls}=await setup(page,{owned:true});
+ await enter(page);
+ const form=page.locator('[data-room-send-form]');
+ const input=form.locator('textarea');
+ await expect(form).toContainText('Enter 发送 · Ctrl + Enter 换行');
+ await input.fill('第一行');
+ await input.press('Control+Enter');
+ await input.press('End');
+ await input.type('第二行');
+ await expect(input).toHaveValue('第一行\n第二行');
+ expect(calls.filter(call=>call.op==='send')).toHaveLength(0);
+ await input.press('Enter');
+ await expect(page.locator('[data-room-message="2"] .room-message-bubble br')).toHaveCount(1);
+ expect(calls.filter(call=>call.op==='send').map(call=>call.p_payload.content)).toEqual(['第一行\n第二行']);
+});
+
 test('普通用户创建房间可选四种期限、密码和审核，永久房间创建后进入聊天',async({page})=>{
  const {calls}=await setup(page);await page.goto('/');await page.locator('.nav-item[data-nav="chatrooms"]').click();await page.locator('[data-room-create]').click();
  await expect(page.locator('[name="retention_days"] option')).toHaveText(['3 天','7 天','30 天','永久保存']);

@@ -13,6 +13,23 @@ document.addEventListener('compositionend',event=>{
   },0);
 },true);
 
+const browserClient=document.body.classList.contains('fw-browser');
+export const messageShortcutHint=browserClient?'Ctrl + Enter 发送':'Enter 发送 · Ctrl + Enter 换行';
+
+export function handleMessageEnter(event,{allowWebMeta=false}={}){
+  if(event.defaultPrevented||event.key!=='Enter'||event.isComposing||event.keyCode===229||composing.has(event.target))return;
+  if(browserClient){
+    if(!event.ctrlKey&&!(allowWebMeta&&event.metaKey))return;
+  }else if(event.ctrlKey||event.shiftKey||event.altKey||event.metaKey){
+    // Chromium handles modified Enter as text editing in a textarea.
+    return;
+  }
+  event.preventDefault();
+  if(event.repeat)return;
+  const submit=event.target.form?.querySelector('button[type="submit"]:enabled');
+  if(submit)submit.form.requestSubmit(submit);
+}
+
 export function deferWhileComposing(host,render){
   if(![...composing].some(element=>host.contains(element)))return false;
   deferred.set(host,render);
