@@ -1,3 +1,4 @@
+import {fileKind} from './private-chat-media.js';
 import {authStore} from './auth-store.js';
 import {feedStore} from './feed-store.js';
 import {socialStore} from './social-store.js';
@@ -11,7 +12,6 @@ const $$=(selector,root=document)=>Array.from(root.querySelectorAll(selector));
 const client=authStore.client;
 let activeExtraView='';
 let enhanceTimer=0;
-let chatMediaBusy=false;
 let publicLogsCache=[];
 let profileOpenToken=0;
 let profileAnchor=null;
@@ -27,20 +27,7 @@ function toast(message){
   clearTimeout(toast.timer);toast.timer=setTimeout(()=>node.classList.remove('show'),3000);
 }
 function currentUser(){const user=authStore.state.user;return user&&!user.cached?user:null;}
-function requireUser(){const user=currentUser();if(!user)throw new Error('请先登录。');if(user.disabled)throw new Error('这个账号已被停用。');return user;}
 function safeUrl(encoded){try{const url=new URL(atob(String(encoded||'')));return ['http:','https:'].includes(url.protocol)?url.href:'';}catch{return'';}}
-function marker(kind,url){return `[[${kind}:${btoa(String(url||''))}]]`;}
-function fileKind(file){
-  const type=String(file?.type||'').toLowerCase();const name=String(file?.name||'').toLowerCase();
-  if(type.startsWith('image/')||/\.(jpe?g|png|webp|gif)$/i.test(name))return'image';
-  if(type.startsWith('video/')||/\.(mp4|mov|webm|m4v)$/i.test(name))return'video';
-  return'';
-}
-function isGif(file){return /gif/i.test(String(file?.type||''))||/\.gif$/i.test(String(file?.name||''));}
-function extension(file,fallback='bin'){
-  const match=String(file?.name||'').match(/\.([a-z0-9]+)$/i);if(match)return match[1].toLowerCase()==='jpeg'?'jpg':match[1].toLowerCase();
-  const type=String(file?.type||'').toLowerCase();if(type.includes('jpeg'))return'jpg';if(type.includes('png'))return'png';if(type.includes('webp'))return'webp';if(type.includes('gif'))return'gif';if(type.includes('mp4'))return'mp4';if(type.includes('quicktime'))return'mov';if(type.includes('webm'))return'webm';return fallback;
-}
 function clipboardImages(event){
   const clipboard=event.clipboardData;if(!clipboard)return[];
   const itemFiles=Array.from(clipboard.items||[]).filter(item=>item.kind==='file').map(item=>item.getAsFile()).filter(file=>fileKind(file)==='image');
@@ -57,39 +44,10 @@ function handoffClipboardFiles(input,files){
   const bridge=new CustomEvent('fw:clipboard-files',{bubbles:true,cancelable:true,detail:{files}});input.dispatchEvent(bridge);if(bridge.defaultPrevented)return true;
   try{const transfer=new DataTransfer();files.forEach(file=>transfer.items.add(file));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true;}catch{return false;}
 }
-async function videoDuration(file){
-  const url=URL.createObjectURL(file);
-  try{return await new Promise((resolve,reject)=>{const video=document.createElement('video');const timer=setTimeout(()=>reject(new Error('视频读取超时，请换一个视频。')),10000);video.preload='metadata';video.onloadedmetadata=()=>{clearTimeout(timer);resolve(Number(video.duration||0));};video.onerror=()=>{clearTimeout(timer);reject(new Error('视频读取失败，请换一个视频。'));};video.src=url;});}
-  finally{URL.revokeObjectURL(url);}
-}
-async function prepareImage(file){
-  if(isGif(file)){if(file.size>3*1024*1024)throw new Error('GIF 不能超过 3MB。');return{file,kind:'image',ext:'gif'};}
-  if(file.size<=800*1024)return{file,kind:'image',ext:extension(file,'jpg')};
-  const url=URL.createObjectURL(file);
-  try{
-    const image=await new Promise((resolve,reject)=>{const node=new Image();node.onload=()=>resolve(node);node.onerror=()=>reject(new Error('图片读取失败，请换一张图片。'));node.src=url;});
-    const width=image.naturalWidth||image.width;const height=image.naturalHeight||image.height;const scale=Math.min(1,1280/Math.max(width,height));
-    const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(width*scale));canvas.height=Math.max(1,Math.round(height*scale));const context=canvas.getContext('2d',{alpha:true});if(!context)throw new Error('当前环境无法处理这张图片。');context.drawImage(image,0,0,canvas.width,canvas.height);
-    let quality=.84;let blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',quality));
-    while(blob&&blob.size>800*1024&&quality>.42){quality=Math.max(.42,quality-.08);blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',quality));}
-    if(!blob||blob.size>800*1024)throw new Error('图片压缩后仍超过 800KB，请换一张图片。');
-    return{file:new File([blob],`fw_media_${Date.now().toString(36)}.webp`,{type:'image/webp'}),kind:'image',ext:'webp'};
-  }finally{URL.revokeObjectURL(url);}
-}
-async function prepareMedia(file){
-  const kind=fileKind(file);if(!kind)throw new Error('只支持图片、GIF 或视频。');if(kind==='image')return prepareImage(file);
-  if(file.size>20*1024*1024)throw new Error('视频不能超过 20MB。');const duration=await videoDuration(file);if(duration>31)throw new Error('视频请控制在 30 秒以内。');return{file,kind:'video',ext:extension(file,'mp4')};
-}
-async function uploadMedia(file,scope){
-  const user=requireUser();const prepared=await prepareMedia(file);const path=`${user.id}/${scope}/${prepared.kind}/${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}.${prepared.ext}`;
-  const uploaded=await client.storage.from('chat-media').upload(path,prepared.file,{upsert:false,cacheControl:'31536000',contentType:prepared.file.type||undefined});
-  if(uploaded.error)throw new Error(`媒体上传失败：${uploaded.error.message}`);const url=client.storage.from('chat-media').getPublicUrl(path).data.publicUrl;if(!url)throw new Error('媒体地址生成失败。');return{url,kind:prepared.kind};
-}
-
 function injectStyles(){
   if($('#fw-align-style'))return;const style=document.createElement('style');style.id='fw-align-style';style.textContent=`
     .align-chat-media-trigger{width:42px;height:42px;min-width:42px;border:1px solid rgba(28,28,24,.16);border-radius:999px;background:#fffdf7;color:#171715;font-size:22px;font-weight:950;cursor:pointer;display:grid;place-items:center;padding:0}.align-chat-media-trigger:disabled{opacity:.45;cursor:not-allowed}
-    .chat-compose.align-media-ready{grid-template-columns:auto auto minmax(0,1fr) auto!important}.chat-bubble.align-media{padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}.chat-bubble.align-media img,.chat-bubble.align-media video{display:block;max-width:260px;max-height:320px;object-fit:contain;border-radius:12px;background:#111}.chat-bubble.align-media img{background:#fffdf7;border:1px solid rgba(0,0,0,.08);cursor:zoom-in}
+    .chat-bubble.align-media{padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}.chat-bubble.align-media img,.chat-bubble.align-media video{display:block;max-width:260px;max-height:320px;object-fit:contain;border-radius:12px;background:#111}.chat-bubble.align-media img{background:#fffdf7;border:1px solid rgba(0,0,0,.08);cursor:zoom-in}
     .align-more-wrap{position:relative;display:inline-flex}.align-more-button{min-width:34px;height:34px;border:1px solid rgba(28,28,24,.16);border-radius:999px;background:#fffdf7;color:#171715;font-size:20px;line-height:1;cursor:pointer}.align-more-menu{display:none;position:absolute;right:0;top:40px;z-index:80;min-width:150px;padding:6px;border:1px solid rgba(28,28,24,.15);border-radius:12px;background:#fffdf7;box-shadow:0 18px 48px rgba(0,0,0,.18)}.align-more-wrap.open .align-more-menu{display:grid}.align-more-menu button{height:34px;border:0;border-radius:8px;background:transparent;text-align:left;padding:0 10px;font:inherit;font-size:12px;font-weight:900;cursor:pointer}.align-more-menu button:hover{background:#f3efe7}.align-more-menu button.danger{color:#a14747}
     .align-profile-modal{position:fixed;z-index:15000;width:min(320px,calc(100vw - 20px));pointer-events:none}.align-profile-modal::before{content:'';position:absolute;z-index:1;top:18px;width:10px;height:10px;background:#fffdf7;border:solid rgba(28,28,24,.14);transform:rotate(45deg)}.align-profile-modal[data-profile-side="right"]::before{left:-5px;border-width:0 0 1px 1px}.align-profile-modal[data-profile-side="left"]::before{right:-5px;border-width:1px 1px 0 0}.align-profile-card{box-sizing:border-box;position:relative;z-index:2;width:100%;max-height:calc(100vh - 20px);padding:16px;border:1px solid rgba(28,28,24,.14);border-radius:14px;background:#fffdf7;box-shadow:0 18px 50px rgba(0,0,0,.2);overflow:auto;pointer-events:auto}.align-profile-card>button{position:absolute;right:9px;top:9px;width:26px;height:26px;border:0;border-radius:999px;background:transparent;color:#69645c;font-size:18px;cursor:pointer}.align-profile-card>button:hover{background:#f2ede5}.align-profile-avatar{width:56px;height:56px;min-width:56px;border-radius:12px;overflow:hidden;display:grid;place-items:center;background:#171715;color:#fff;font-size:17px;font-weight:950}.align-profile-avatar img{width:100%;height:100%;object-fit:cover}.align-profile-name-row{display:flex;align-items:center;gap:6px;min-width:0}.align-member-badge{flex:0 0 auto;padding:3px 6px;border-radius:999px;background:#ffe1e5;color:#c75664;font-size:9px;font-weight:950}
     [data-profile-user],[data-profile-anonymous]{cursor:pointer}[data-profile-user]:focus-visible,[data-profile-anonymous]:focus-visible{outline:3px solid rgba(255,133,145,.48);outline-offset:3px}
@@ -107,15 +65,7 @@ function renderChatMedia(){
   $$('.buddy-main > span').forEach(node=>{const media=exactMedia(node.textContent.replace(/^我：/,''));if(media)node.textContent=(node.textContent.startsWith('我：')?'我：':'')+(media.kind==='video'?'视频':'图片');});
 }
 
-function enhanceChatUploader(){
-  const form=$('[data-chat-compose]');if(!form)return;form.classList.add('align-media-ready');let button=$('[data-align-chat-media]',form);if(!button){button=document.createElement('button');button.type='button';button.className='align-chat-media-trigger';button.dataset.alignChatMedia='1';button.setAttribute('aria-label','发送图片、GIF或视频');button.innerHTML='<svg class="ui-symbol" aria-hidden="true"><use href="/ui-icons.svg#media"></use></svg>';const emoji=$('[data-emoji-toggle]',form);form.insertBefore(button,emoji||form.firstChild);const input=document.createElement('input');input.type='file';input.accept='image/*,video/*';input.hidden=true;input.dataset.alignChatMediaFile='1';form.appendChild(input);}
-  const textInput=$('input[name="message"]',form);button.disabled=chatMediaBusy||!textInput||textInput.disabled;
-}
-async function sendChatMedia(file){
-  if(chatMediaBusy)return;const targetId=String(socialStore.state.chat.targetId||'');if(!targetId)throw new Error('先选择一个搭子。');chatMediaBusy=true;enhanceChatUploader();
-  try{toast('正在处理媒体...');const uploaded=await uploadMedia(file,'private');const payload=marker(uploaded.kind==='video'?'FW_MEDIA_VIDEO':'FW_MEDIA_IMAGE',uploaded.url);await socialStore.sendMessage(payload);toast(uploaded.kind==='video'?'视频已发送。':'图片已发送。');}
-  finally{chatMediaBusy=false;enhanceChatUploader();}
-}
+
 
 function enhanceCommentReports(){
   $$('.post-comment[data-comment-id]').forEach(row=>{const actions=$('.comment-actions',row);if(!actions||$('[data-delete-comment]',actions)||$('[data-align-report-comment]',actions))return;const button=document.createElement('button');button.type='button';button.dataset.alignReportComment=row.dataset.commentId;button.textContent='举报';actions.appendChild(button);});
@@ -184,7 +134,7 @@ function renderPublicLogs(){
   if(!publicLogsCache.length){host.innerHTML='<div class="align-empty">暂时没有处理公告。说明大家今天还算体面。</div>';return;}host.innerHTML=publicLogsCache.map(row=>{const action=actions[row.action]||row.action||'处理';const desc=[`对象：${targets[row.target_type]||row.target_type||'对象'}`,row.duration_text?`时长：${row.duration_text}`:'',row.reason?`原因：${row.reason}`:''].filter(Boolean).join(' · ');return `<article class="align-log"><time>${esc(new Date(row.created_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}))}</time><div><b>${esc(row.target_display_name||'某位研究员')} 处理：${esc(action)}</b><span>${esc(desc)}</span></div><span class="align-chip ${danger.has(row.action)?'warn':''}">${esc(action)}</span></article>`;}).join('');
 }
 
-function enhanceAll(){injectStyles();injectExtraViews();renderChatMedia();enhanceChatUploader();enhanceCommentReports();}
+function enhanceAll(){injectStyles();injectExtraViews();renderChatMedia();enhanceCommentReports();}
 function scheduleEnhance(){clearTimeout(enhanceTimer);enhanceTimer=setTimeout(enhanceAll,35);}
 function bind(){
   document.addEventListener('contextmenu',event=>{if(event.target.closest?.('[data-profile-user],[data-profile-anonymous]'))event.preventDefault();},true);
@@ -196,11 +146,9 @@ function bind(){
     const compose=target.closest('[data-compose-form]');if(compose&&target.matches('textarea')){event.preventDefault();handoffClipboardFiles($('[data-compose-image]',compose),images);return;}
     const comment=target.closest('[data-comment-form]');if(comment&&target.matches('textarea')){event.preventDefault();handoffClipboardFiles($('[data-comment-image]',comment),images);return;}
     const room=target.closest('[data-room-send-form]');if(room&&target.matches('textarea')){event.preventDefault();handoffClipboardFiles($('[data-room-image]',room),images.slice(0,1));return;}
-    const chat=target.closest('[data-chat-compose]');if(chat&&target.matches('input[name="message"]')){event.preventDefault();sendChatMedia(images[0]).catch(error=>toast(error.message||'发送失败。'));}
+    const chat=target.closest('[data-chat-compose]');if(chat&&target.matches('input[name="message"]')){event.preventDefault();handoffClipboardFiles($('[data-align-chat-media-file]',chat),images.slice(0,1));}
   },true);
-  document.addEventListener('change',event=>{
-    if(event.target.matches('[data-align-chat-media-file]')){const file=event.target.files?.[0];event.target.value='';if(file)sendChatMedia(file).catch(error=>toast(error.message||'发送失败。'));}
-  },true);
+
   document.addEventListener('submit',async event=>{
     const form=event.target.closest?.('[data-profile-report-form]');if(!form)return;event.preventDefault();event.stopPropagation();const data=new FormData(form);const reason=String(data.get('reason')||'').trim();const detail=String(data.get('detail')||'').trim();if(reason==='其他'&&detail.length<2){toast('选择“其他”时，请补充至少 2 个字。');return;}profileCard.busy=true;renderProfile();try{await feedStore.report('user',profileCard.userId,detail?`${reason}：${detail}`:reason);profileCard.busy=false;profileCard.reportOpen=false;renderProfile();toast('举报已提交，管理员会处理。');}catch(error){profileCard.busy=false;renderProfile();toast(error.message||'举报失败。');}
   },true);
@@ -220,11 +168,10 @@ function bind(){
     const respond=event.target.closest?.('[data-profile-respond]');if(respond){event.preventDefault();event.stopPropagation();const accept=respond.dataset.profileRespond==='accept';try{await mutateProfile(async()=>{const result=await client.rpc('fw_respond_friendship',{target_friendship_id:Number(profileCard.relation?.id),accept_request:accept});if(result.error)throw new Error(`处理申请失败：${result.error.message}`);},accept?'已同意搭子申请。':'已拒绝搭子申请。');}catch(error){toast(error.message||'处理失败。');}return;}
     const remove=event.target.closest?.('[data-profile-remove]');if(remove){event.preventDefault();event.stopPropagation();const mode=remove.dataset.profileRemove;if(mode==='friend'&&!window.confirm('确定解除搭子关系吗？'))return;try{await mutateProfile(async()=>{const result=await client.rpc('fw_remove_friendship',{target_friendship_id:Number(profileCard.relation?.id)});if(result.error)throw new Error(`操作失败：${result.error.message}`);if(String(socialStore.state.chat.targetId)===String(profileCard.userId))socialStore.closeChat();},mode==='unblock'?'已解除拉黑。':mode==='withdraw'?'申请已撤回。':'已解除搭子关系。');}catch(error){toast(error.message||'操作失败。');}return;}
     if(event.target.closest?.('[data-profile-block]')){event.preventDefault();event.stopPropagation();try{await blockBuddy(profileCard.userId);}catch(error){toast(error.message||'拉黑失败。');}return;}
-    if(event.target.closest?.('[data-profile-chat]')){event.preventDefault();event.stopPropagation();const target=profileCard.userId;closeProfile();$('[data-nav="buddy"]')?.click();try{await socialStore.loadBuddy();await socialStore.openChat(target);$('[data-chat-compose] input')?.focus();}catch(error){toast(error.message||'私聊打开失败。');}return;}
+    if(event.target.closest?.('[data-profile-chat]')){event.preventDefault();event.stopPropagation();const target=profileCard.userId;closeProfile();$('[data-nav="buddy"]')?.click();try{await socialStore.loadBuddy();await socialStore.openChat(target);$('[data-chat-compose] input[name="message"]')?.focus();}catch(error){toast(error.message||'私聊打开失败。');}return;}
     const regular=event.target.closest?.('[data-nav]');if(regular&&activeExtraView){activeExtraView='';$$('[data-align-nav]').forEach(node=>node.classList.remove('active'));}
     const extra=event.target.closest?.('[data-align-nav]');if(extra){event.preventDefault();event.stopPropagation();const sidebarMore=$('[data-sidebar-more-wrap]');sidebarMore?.classList.remove('open');$('[data-sidebar-more-toggle]')?.setAttribute('aria-expanded','false');showExtraView(extra.dataset.alignNav);return;}
     if(event.target.closest?.('[data-align-open-rules]')){event.preventDefault();const modal=$('[data-account-modal]');if(modal)modal.hidden=true;document.body.classList.remove('modal-open');showExtraView('rules');return;}
-    const mediaButton=event.target.closest?.('[data-align-chat-media]');if(mediaButton){event.preventDefault();event.stopPropagation();$('[data-align-chat-media-file]')?.click();return;}
     const reportComment=event.target.closest?.('[data-align-report-comment]');if(reportComment){event.preventDefault();event.stopPropagation();const reason=window.prompt('请输入举报原因（至少 2 个字）：','评论内容不适当 / 骚扰 / 攻击他人 / 其他');if(reason==null)return;try{await feedStore.report('comment',reportComment.dataset.alignReportComment,reason);toast('举报已提交，管理员会处理。');}catch(error){toast(error.message||'举报失败。');}return;}
     if(event.target.closest?.('[data-align-refresh-logs]')){loadPublicLogs();return;}
   },true);

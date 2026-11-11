@@ -35,6 +35,18 @@ export function handleMessageEnter(event,{allowWebMeta=false}={}){
   if(submit)submit.form.requestSubmit(submit);
 }
 
+export function insertComposerText(input,text){
+  if(!input||input.disabled)return false;
+  const {selectionStart:start,selectionEnd:end,value,maxLength}=input;
+  if(maxLength>=0&&value.length-(end-start)+text.length>maxLength)return false;
+  input.focus({preventScroll:true});
+  if(!document.execCommand('insertText',false,text)){
+    input.setRangeText(text,start,end,'end');
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+  return true;
+}
+
 export function deferWhileComposing(host,render){
   if(![...composing].some(element=>host.contains(element)))return false;
   deferred.set(host,render);

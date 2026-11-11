@@ -47,3 +47,41 @@ html body .buddy-page .chat-message .chat-bubble.sticker,html body .buddy-page .
 .buddy-page .chat-messages>.state-card{align-self:stretch}
 @media(hover:none){.buddy-page .chat-actions{opacity:1}}
 @media(max-width:1050px){.buddy-page .chat-messages{padding-right:14px;padding-left:14px}.buddy-page .chat-message{gap:7px;max-width:96%}.buddy-page .chat-heading{padding-right:14px;padding-left:14px}}
+
+/* The input glyphs use the same bundled Twemoji artwork as the picker. */
+@font-face{
+  font-family:"FW Emoji";
+  src:url("/emoji/fw-emoji.ttf") format("truetype");
+  font-display:swap;
+}
+html body :is([data-compose-form] textarea,[data-comment-form] textarea,[data-room-send-form] textarea,[data-chat-compose] input[name="message"]){
+  font-family:"FW Emoji","Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;
+}
+
+.buddy-page .chat-column{container-type:inline-size}
+.buddy-page .chat-compose{grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center}
+.chat-emoji-anchor{position:relative;display:grid;align-items:center}
+.buddy-page .chat-emoji-anchor .emoji-panel{
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  left:0;
+  right:auto;
+  bottom:calc(100% + 12px);
+  width:min(330px,calc(100cqw - 74px));
+  height:min(338px,44vh);
+  max-height:none;
+}
+.buddy-page .chat-emoji-anchor .emoji-panel[hidden]{display:none}
+.chat-emoji-anchor .emoji-tabs button{min-width:0;padding-inline:4px;white-space:nowrap}
+.chat-emoji-anchor .emoji-body{min-height:0;max-height:none;overflow:auto;scrollbar-gutter:stable}
+.chat-emoji-anchor .emoji-body :is(.emoji-grid,.sticker-grid,.fufu-grid){max-height:none;overflow:visible}
+.chat-attachment-draft{grid-column:1 / -1;display:flex;align-items:center;gap:11px;min-width:0;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:#fffaf5}
+.chat-attachment-draft[hidden]{display:none}
+.chat-attachment-draft>span{display:grid;flex:1;min-width:0;gap:4px;font-size:12px}
+.chat-attachment-draft small{overflow:hidden;color:var(--muted);text-overflow:ellipsis;white-space:nowrap}
+.chat-attachment-draft :is(.chat-attachment-thumb,video){width:62px;height:52px;padding:0;border:1px solid var(--line);border-radius:7px;background:#fff;object-fit:contain}
+.chat-attachment-thumb{cursor:zoom-in}
+.chat-attachment-thumb img{display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit}
+.buddy-page .chat-action-menu [data-chat-recall]{color:#a14747}
+.buddy-page .chat-action-menu [hidden]{display:none}
+html body .buddy-page .chat-message .chat-bubble.recalled{padding-block:5px;background:transparent!important;color:#64736c!important;font-size:12px}

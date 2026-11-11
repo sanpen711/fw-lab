@@ -1,6 +1,6 @@
 # Current release
 
-Public **1.0.4**, native installer/update **1.3.41**. Comments, replies and chat room messages use Enter to send and Ctrl + Enter for a new line. Archived game/resource exclusions remain in force.
+Public **1.0.5**, native installer/update **1.3.42**. Private chats include attachment previews, a consistent emoji picker, and a two-minute message recall window. Archived game/resource exclusions remain in force.
 
 # Windows versions
 

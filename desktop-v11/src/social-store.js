@@ -52,6 +52,13 @@ function cacheUser(){return authStore.state.user||null;}
 function currentUser(){return authStore.state.user && !authStore.state.user.cached ? authStore.state.user : null;}
 function unique(values){return Array.from(new Set((values||[]).filter(Boolean).map(String)));}
 function contentSignature(...values){try{return JSON.stringify(values);}catch{return'';}}
+const PRIVATE_MESSAGE_FIELDS='id,conversation_id,sender_id,content,is_deleted,created_at,recalled_at';
+const RECALL_WINDOW_MS=120000;
+export function canRecallPrivateMessage(row,userId){
+  return Boolean(row&&userId&&String(row.sender_id)===String(userId)&&!row.__pending&&!row.recalled_at&&!row.is_deleted&&
+    Date.now()-new Date(row.created_at).getTime()<=RECALL_WINDOW_MS);
+}
+
 function emptyChat(){return{targetId:'',conversationId:null,profile:null,rows:[],loading:false,sending:false,hasMore:false,historyCursor:null,historyLoading:false,historyError:'',historyPage:0};}
 
 async function hydrateBadgesCache(userId){
@@ -176,6 +183,12 @@ function startBadgeChannel(userId){
         }
       }
     })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'private_messages'},payload=>{
+      if(state.userId!==userId||!payload.new?.recalled_at)return;
+      applyPrivateRecall(payload.new);
+      if(state.buddy.loaded)scheduleBuddyReload();
+      scheduleBadges();
+    })
     .on('postgres_changes',{event:'*',schema:'public',table:'friendships',filter:`receiver_id=eq.${userId}`},()=>{if(state.userId!==userId)return;scheduleBadges();if(state.buddy.loaded)scheduleBuddyReload();})
     .on('postgres_changes',{event:'*',schema:'public',table:'friendships',filter:`requester_id=eq.${userId}`},()=>{if(state.userId!==userId)return;if(state.buddy.loaded)scheduleBuddyReload();})
     .subscribe();
@@ -295,7 +308,7 @@ async function loadBuddy(force=false){
       const convIds=Object.keys(convToBuddy).map(Number);
       if(convIds.length){
         countContent();
-        const messages=await client.from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').in('conversation_id',convIds).eq('is_deleted',false).order('created_at',{ascending:false}).limit(Math.max(160,convIds.length*8));
+        const messages=await client.from('private_messages').select(PRIVATE_MESSAGE_FIELDS).in('conversation_id',convIds).eq('is_deleted',false).order('created_at',{ascending:false}).limit(Math.max(160,convIds.length*8));
         if(messages.error) throw messages.error;
         (messages.data||[]).forEach(row=>{const oid=convToBuddy[String(row.conversation_id)];if(oid&&!latest[oid]) latest[oid]=row;});
       }
@@ -349,7 +362,11 @@ async function markPrivateRead(actorId,force=false){
 }
 
 function mergeMessages(...groups){
-  const byId=new Map();groups.flat().filter(row=>row&&!row.is_deleted).forEach(row=>byId.set(String(row.id),row));
+  const byId=new Map();
+  groups.flat().filter(row=>row&&!row.is_deleted).forEach(row=>{
+    const key=String(row.id);
+    if(!byId.get(key)?.recalled_at||row.recalled_at)byId.set(key,row);
+  });
   return Array.from(byId.values()).sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0)||String(a.id).localeCompare(String(b.id),undefined,{numeric:true}));
 }
 function mergeRealtimeMessage(row){
@@ -357,9 +374,45 @@ function mergeRealtimeMessage(row){
   if(!String(row.id).startsWith('pending-')){const pendingIndex=rows.findIndex(item=>item.__pending&&String(item.sender_id)===String(row.sender_id)&&item.content===row.content);if(pendingIndex>=0)rows=rows.filter((_,index)=>index!==pendingIndex);}
   return mergeMessages(rows,row);
 }
+function applyPrivateRecall(row){
+  if(!row?.recalled_at)return;
+  const owner=currentUser()?.id;
+  if(!owner)return;
+  const conversation=state.buddy.conversations.find(item=>String(item.id)===String(row.conversation_id));
+  const open=String(state.chat.conversationId)===String(row.conversation_id);
+  const target=open?state.chat.targetId:conversation
+    ?String(String(conversation.user_one_id)===String(owner)?conversation.user_two_id:conversation.user_one_id)
+    :'';
+  const matches=item=>item&&[String(row.id),'notice-'+row.id].includes(String(item.id));
+
+  if(open&&state.chat.rows.some(matches)){
+    state.chat={...state.chat,rows:mergeMessages(state.chat.rows,row)};
+    persistChatCache(owner).catch(()=>{});
+  }else if(target&&!open){
+    desktopCache.read('chat',owner,target).then(cached=>{
+      if(state.userId!==owner||state.chat.targetId===target||!cached?.payload?.rows?.some(matches))return;
+      const payload=cached.payload;
+      return desktopCache.write('chat',owner,{...payload,rows:mergeMessages(payload.rows,row)},target);
+    }).catch(()=>{});
+  }
+  if(target&&matches(state.buddy.latest[target])){
+    state.buddy={...state.buddy,latest:{...state.buddy.latest,[target]:row}};
+    persistBuddyCache(owner).catch(()=>{});
+  }
+  emit();
+}
+
+async function recallMessage(id){
+  const owner=currentUser()?.id;
+  const message=state.chat.rows.find(row=>String(row.id)===String(id));
+  if(!canRecallPrivateMessage(message,owner))throw new Error('只能在 2 分钟内撤回自己发送的消息。');
+  const recalled=fail(await client.rpc('fw_recall_private_message',{p_message_id:id}),'撤回失败');
+  if(currentUser()?.id===owner)applyPrivateRecall(recalled);
+}
+
 function reconcileSentMessage(conversationId,targetId){
   if(!Number.isFinite(Number(conversationId))||Number(conversationId)<=0)return;
-  countContent();client.from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id',conversationId).eq('is_deleted',false).order('id',{ascending:false}).limit(1).then(result=>{
+  countContent();client.from('private_messages').select(PRIVATE_MESSAGE_FIELDS).eq('conversation_id',conversationId).eq('is_deleted',false).order('id',{ascending:false}).limit(1).then(result=>{
     const row=result?.data?.[0];if(result?.error||!row)return;
     state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:row}};
     if(String(state.chat.targetId)===String(targetId)&&Number(state.chat.conversationId)===Number(conversationId)){state.chat={...state.chat,rows:mergeRealtimeMessage(row)};persistChatCache().catch(()=>{});}emit();persistBuddyCache().catch(()=>{});
@@ -394,10 +447,10 @@ async function openChat(targetId){
     if(!Number.isFinite(convId)||convId<=0) throw new Error('私聊会话创建失败。');
     state.chat={...state.chat,targetId:wantedTarget,conversationId:convId,profile:profiles[wantedTarget]||null,loading:true};subscribeChat(convId);emit();
     countContent();
-    const rows=fail(await client.from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id',convId).eq('is_deleted',false).order('id',{ascending:false}).limit(CHAT_PAGE_SIZE+1),'读取私聊失败')||[];
+    const rows=fail(await client.from('private_messages').select(PRIVATE_MESSAGE_FIELDS).eq('conversation_id',convId).eq('is_deleted',false).order('id',{ascending:false}).limit(CHAT_PAGE_SIZE+1),'读取私聊失败')||[];
     if(openToken!==chatOpenToken)return;
     const page=rows.slice(0,CHAT_PAGE_SIZE);
-    state.chat={...state.chat,targetId:wantedTarget,conversationId:convId,profile:profiles[wantedTarget]||null,rows:mergeMessages(page.slice().reverse(),state.chat.rows),loading:false,sending:false,hasMore:rows.length>CHAT_PAGE_SIZE,historyCursor:page.at(-1)?.id||null};await persistChatCache(user.id);emit();
+    state.chat={...state.chat,targetId:wantedTarget,conversationId:convId,profile:profiles[wantedTarget]||null,rows:mergeMessages(state.chat.rows,page.slice().reverse()),loading:false,sending:false,hasMore:rows.length>CHAT_PAGE_SIZE,historyCursor:page.at(-1)?.id||null};await persistChatCache(user.id);emit();
     markPrivateRead(wantedTarget).catch(()=>{});
   }catch(error){if(openToken!==chatOpenToken)return;state.chat={...state.chat,loading:false};emit();if(!cacheHit)throw error;}
 }
@@ -409,10 +462,10 @@ async function loadEarlierChat(){
   const current=()=>openToken===chatOpenToken&&String(currentUser()?.id||'')===String(user.id)&&state.chat.targetId===targetId&&state.chat.conversationId===conversationId;
   state.chat={...chat,historyLoading:true,historyError:''};emit();
   try{
-    countContent();const rows=fail(await client.from('private_messages').select('id,conversation_id,sender_id,content,is_deleted,created_at').eq('conversation_id',conversationId).eq('is_deleted',false).lt('id',historyCursor).order('id',{ascending:false}).limit(CHAT_PAGE_SIZE+1),'读取更早消息失败')||[];
+    countContent();const rows=fail(await client.from('private_messages').select(PRIVATE_MESSAGE_FIELDS).eq('conversation_id',conversationId).eq('is_deleted',false).lt('id',historyCursor).order('id',{ascending:false}).limit(CHAT_PAGE_SIZE+1),'读取更早消息失败')||[];
     if(!current())return;
     const page=rows.slice(0,CHAT_PAGE_SIZE);
-    state.chat={...state.chat,rows:mergeMessages(page.slice().reverse(),state.chat.rows),hasMore:rows.length>CHAT_PAGE_SIZE,historyCursor:page.at(-1)?.id||historyCursor,historyLoading:false,historyError:'',historyPage:state.chat.historyPage+1};emit();persistChatCache(user.id).catch(()=>{});
+    state.chat={...state.chat,rows:mergeMessages(state.chat.rows,page.slice().reverse()),hasMore:rows.length>CHAT_PAGE_SIZE,historyCursor:page.at(-1)?.id||historyCursor,historyLoading:false,historyError:'',historyPage:state.chat.historyPage+1};emit();persistChatCache(user.id).catch(()=>{});
   }catch(error){if(current()){state.chat={...state.chat,historyLoading:false,historyError:'更早的消息暂时读取失败，请重试。'};emit();}}
 }
 
@@ -495,7 +548,7 @@ membershipStore.subscribe(()=>{
 });
 
 export const socialStore={
-  state,ECHO_TYPES,refreshBadges,loadEcho,markEchoRead,markAllEchoRead,loadBuddy,setBuddyTab,searchProfiles,sendFriendRequest,respondFriendship,removeFriendship,openChat,loadEarlierChat,closeChat,sendMessage,markPrivateRead,loadStickers,uploadSticker,deleteSticker,
+  state,ECHO_TYPES,refreshBadges,loadEcho,markEchoRead,markAllEchoRead,loadBuddy,setBuddyTab,searchProfiles,sendFriendRequest,respondFriendship,removeFriendship,openChat,loadEarlierChat,closeChat,sendMessage,recallMessage,markPrivateRead,loadStickers,uploadSticker,deleteSticker,
   subscribe(listener){listeners.add(listener);listener({...state,badges:{...state.badges}});return()=>listeners.delete(listener);}
 };
 

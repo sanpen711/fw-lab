@@ -223,15 +223,20 @@
             <div class="chat-messages" data-chat-messages><div class="state-card">还没有选择聊天对象。</div></div>
             <button class="chat-new-messages secondary compact" type="button" data-chat-new-messages hidden>有新消息 · 查看</button>
             <form class="chat-compose" data-chat-compose>
-              <button class="emoji-trigger" type="button" data-emoji-toggle aria-label="打开表情"><svg class="ui-symbol" aria-hidden="true"><use href="/ui-icons.svg#face"></use></svg></button>
+              <div class="chat-attachment-draft" data-chat-attachment-draft hidden></div>
+              <button class="align-chat-media-trigger" type="button" data-align-chat-media aria-label="添加图片、GIF 或视频" disabled><svg class="ui-symbol" aria-hidden="true"><use href="/ui-icons.svg#media"></use></svg></button>
+              <input type="file" accept="image/*,video/*" data-align-chat-media-file hidden>
+              <div class="chat-emoji-anchor">
+                <button class="emoji-trigger" type="button" data-emoji-toggle aria-label="打开表情" aria-controls="chat-emoji-panel" aria-expanded="false" disabled><svg class="ui-symbol" aria-hidden="true"><use href="/ui-icons.svg#face"></use></svg></button>
+                <div class="emoji-panel" id="chat-emoji-panel" data-emoji-panel hidden>
+                  <div class="emoji-tabs"><button class="active" type="button" data-emoji-tab="emoji">小表情</button><button type="button" data-emoji-tab="stickers">我的表情</button><button type="button" data-emoji-tab="fufu1">伏伏1</button></div>
+                  <div class="emoji-body" data-emoji-body></div>
+                  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-sticker-file hidden>
+                </div>
+              </div>
               <input name="message" maxlength="300" autocomplete="off" placeholder="先从左侧选择一个搭子" disabled>
               <button class="primary" type="submit" disabled>发送</button>
             </form>
-            <div class="emoji-panel" data-emoji-panel hidden>
-              <div class="emoji-tabs"><button class="active" type="button" data-emoji-tab="emoji">小表情</button><button type="button" data-emoji-tab="stickers">我的表情</button><button type="button" data-emoji-tab="fufu1">伏伏1</button></div>
-              <div class="emoji-body" data-emoji-body></div>
-              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-sticker-file hidden>
-            </div>
           </section>
         </div>
       </section>

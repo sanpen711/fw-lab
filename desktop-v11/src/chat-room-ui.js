@@ -2,7 +2,7 @@ import {reportButton} from './content-review-ui.js';
 import {chatRoomStore} from './chat-room-store.js';
 import {authStore} from './auth-store.js';
 import {socialStore} from './social-store.js';
-import {captureUiState,restoreUiState,deferWhileComposing,handleMessageEnter,messageShortcutHint} from './ui-state.js';
+import {captureUiState,restoreUiState,deferWhileComposing,handleMessageEnter,messageShortcutHint,insertComposerText} from './ui-state.js';
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let helpers={},state=chatRoomStore.state,mode='chat',myFilter='mine',pickerTab='emoji',editor=null,lastUser='',lastRoom='',active=false;
 const drafts=new Map();
@@ -87,7 +87,7 @@ function bind(){
   if(target.closest('[data-room-history]')){const old=$('[data-room-messages]'),height=old?.scrollHeight||0,top=old?.scrollTop||0;try{await chatRoomStore.readRoom(state.selectedId,true);const now=$('[data-room-messages]');if(now)now.scrollTop=top+now.scrollHeight-height;}catch(e){helpers.toast(e.message);}return;}
   if(target.closest('[data-room-picker-toggle]')){const d=draft();d.picker=!d.picker;if(d.picker)socialStore.loadStickers().catch(()=>{});renderDetail();return;}
   const tab=target.closest('[data-room-picker-tab]');if(tab){pickerTab=tab.dataset.roomPickerTab;renderDetail();return;}
-  const emoji=target.closest('[data-room-emoji]');if(emoji){const d=draft();if(d.text.length+emoji.dataset.roomEmoji.length>1000){helpers.toast('消息最多 1000 字。');return;}d.text+=emoji.dataset.roomEmoji;d.picker=false;renderDetail();$('[data-room-send-form] textarea')?.focus();return;}
+  const emoji=target.closest('[data-room-emoji]');if(emoji){const d=draft();if(!insertComposerText($('[data-room-send-form] textarea'),emoji.dataset.roomEmoji)){helpers.toast('消息最多 1000 字。');return;}d.picker=false;renderDetail();$('[data-room-send-form] textarea')?.focus();return;}
   const sticker=target.closest('[data-room-sticker]');if(sticker){const d=draft();release(d);d.file=null;d.preview='';d.stickerUrl=sticker.dataset.roomSticker;d.picker=false;renderDetail();return;}
   if(target.closest('[data-room-attachment-remove]')){const d=draft();release(d);d.file=null;d.preview='';d.stickerUrl='';renderDetail();return;}
  });

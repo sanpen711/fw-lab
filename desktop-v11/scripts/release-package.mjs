@@ -9,7 +9,7 @@ export const PUBLIC_ENTRIES=Object.freeze([
   'brand-theme.css','chat-rooms.css','game-center.css','game-party.css',
   'hero-fufu-office-banner.webp','mascot-fufu.webp','membership-experience.css',
   'membership-shop.css','private-chat.css','site-content.css','ui-icons.svg',
-  'emoji','membership-badges',
+  'emoji','membership-badges','third-party-licenses/pinyin-pro.txt',
   ...appIcons.map(name=>'app-icons/'+name+'.png'),
   ...navIcons.map(name=>'nav-icons/'+name+'.svg'),
   ...ACTIVE_GAMES.map(name=>'games/'+name),'games/THIRD_PARTY_NOTICES.txt'
