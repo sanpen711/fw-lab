@@ -1,3 +1,5 @@
+import {handleMessageEnter} from './ui-state.js';
+
 let openPickerKey='';
 let enhanceQueued=false;
 
@@ -59,7 +61,7 @@ document.addEventListener('click',event=>{
 document.addEventListener('submit',event=>{if(event.target.matches?.('[data-compose-form],[data-comment-form]'))openPickerKey='';},true);
 document.addEventListener('keydown',event=>{
   if(event.key==='Escape'&&openPickerKey==='compose'){event.preventDefault();openPickerKey='';enhanceCompose();document.querySelector('[data-compose-form] [data-compact-picker-toggle]')?.focus({preventScroll:true});return;}
-  if(!event.ctrlKey||event.key!=='Enter')return;const form=event.target.closest?.('[data-comment-form]');if(!form||event.target.tagName!=='TEXTAREA')return;event.preventDefault();form.requestSubmit();
+  if(event.target.matches?.('[data-comment-form] textarea'))handleMessageEnter(event);
 });
 
 const observer=new MutationObserver(scheduleEnhance);

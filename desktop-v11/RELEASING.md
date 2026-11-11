@@ -1,6 +1,6 @@
 # Current release
 
-Public **1.0.3**, native installer/update **1.3.40**. This release introduces settings tabs, a dedicated About page and configurable global shortcuts with no default binding. Archived game/resource exclusions remain in force.
+Public **1.0.4**, native installer/update **1.3.41**. Comments, replies and chat room messages use Enter to send and Ctrl + Enter for a new line. Archived game/resource exclusions remain in force.
 
 # Windows versions
 

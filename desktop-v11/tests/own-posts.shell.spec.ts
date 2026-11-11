@@ -74,6 +74,35 @@ test('我的按账号读取旧帖，分页后能发表评论和删除并切回�
   await expect(feed).toContainText('其他研究员的新帖');
 });
 
+for(const reply of [false,true])test(`精神广场${reply?'回复':'评论'}按 Enter 发送，Ctrl + Enter 换行`,async({page})=>{
+  await setup(page);
+  await page.goto('/');
+  await page.locator('.nav-item[data-nav="square"]').click();
+  await page.locator('[data-square-mine-toggle]').click();
+  await page.locator('.square-post[data-open-post="100"]').click();
+  if(reply)await page.locator('[data-reply-comment="800"]').click();
+  const form=page.locator('[data-comment-form]');
+  const input=form.locator('textarea');
+  await expect(form).toContainText('Enter 发送 · Ctrl + Enter 换行');
+  await input.fill('第一行第二行');
+  await input.evaluate((element:HTMLTextAreaElement)=>element.setSelectionRange(3,3));
+  await input.press('Control+Enter');
+  await expect(input).toHaveValue('第一行\n第二行');
+  const compositionEnter=await input.evaluate(element=>{
+    element.dispatchEvent(new CompositionEvent('compositionstart',{bubbles:true}));
+    const accepted=element.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+    element.dispatchEvent(new CompositionEvent('compositionend',{bubbles:true}));
+    return accepted;
+  });
+  expect(compositionEnter).toBe(true);
+  const sent=page.waitForRequest(request=>request.method()==='POST'&&new URL(request.url()).pathname.endsWith('/comments'));
+  await input.press('Enter');
+  expect((await sent).postDataJSON()).toMatchObject({
+    post_id:100,content:'第一行\n第二行',...(reply?{reply_to_comment_id:800}:{})
+  });
+  await expect(page.locator('[data-comment-id="801"] br')).toHaveCount(1);
+});
+
 test('我的读取失败可重试，空列表有提示，最小窗口四个操作在同一排',async({page})=>{
   const {own,recover}=await setup(page,{failure:true});await page.setViewportSize({width:760,height:560});await page.goto('/');await page.locator('.nav-item[data-nav="square"]').click();await page.locator('[data-square-mine-toggle]').click();
   await expect(page.locator('[data-square-feed]')).toContainText('我的牢骚暂时读取失败');
