@@ -683,14 +683,14 @@ function renderChat(){
   if(signature===lastChatRenderSignature)return;
   const changedTarget=messages.dataset.target!==target,top=messages.scrollTop,nearBottom=messages.scrollHeight-top-messages.clientHeight<70;
   const olderPage=!changedTarget&&messages.dataset.historyPage!==String(chat.historyPage||0);
-  const containerTop=messages.getBoundingClientRect().top;
-  const anchor=Array.from(messages.querySelectorAll('[data-chat-message-id]')).find(node=>node.getBoundingClientRect().bottom>containerTop);
-  const anchorId=anchor?.dataset.chatMessageId,anchorOffset=anchor?anchor.getBoundingClientRect().top-containerTop:0;
   const newRows=changedTarget||olderPage?[]:(chat.rows||[]).filter(row=>!chatMessageIds.has(String(row.id)));
   const shouldScroll=!olderPage&&(changedTarget||chatScroll.following||nearBottom||newRows.some(row=>String(row.sender_id)===String(accountState.user?.id)));
+  const containerTop=shouldScroll?0:messages.getBoundingClientRect().top;
+  const anchor=shouldScroll?null:Array.from(messages.querySelectorAll('[data-chat-message-id]')).find(node=>node.getBoundingClientRect().bottom>containerTop);
+  const anchorId=anchor?.dataset.chatMessageId,anchorOffset=anchor?anchor.getBoundingClientRect().top-containerTop:0;
   const notice=$('[data-chat-new-messages]');if(changedTarget||shouldScroll)notice.hidden=true;else if(newRows.length)notice.hidden=false;
   messages.dataset.target=target;messages.dataset.historyPage=String(chat.historyPage||0);chatMessageIds=new Set((chat.rows||[]).map(row=>String(row.id)));lastChatRenderSignature=signature;
-  if(shouldScroll)chatScroll.follow();else chatScroll.pause();
+  if(shouldScroll)chatScroll.follow(false);else chatScroll.pause();
   if(chat.loading&&!chat.rows.length){messages.innerHTML='<div class="state-card">正在打开私聊...</div>';chatScroll.afterRender();return;}if(!chat.targetId){messages.innerHTML='<div class="state-card">还没有选择聊天对象。</div>';chatScroll.afterRender();return;}if(!chat.rows.length){messages.innerHTML='<div class="state-card">还没有私聊消息。可以先低功耗地打个招呼。</div>';chatScroll.afterRender();return;}
   const history=chat.hasMore?`<div class="chat-history"><button class="secondary compact" type="button" data-chat-load-older ${chat.historyLoading||chat.loading?'disabled':''}>${chat.historyLoading?'正在加载…':chat.historyError?'重试加载更早消息':'加载更早消息'}</button>${chat.historyError?`<p role="status">${esc(chat.historyError)}</p>`:''}</div>`:chat.historyPage?'<div class="chat-history">没有更早的消息了</div>':'';
   let timeline=messages.querySelector('[data-chat-timeline]');

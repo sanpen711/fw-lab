@@ -1,18 +1,20 @@
 // Follow the current conversation through async media and layout changes until
-// the reader scrolls away. A queued frame always uses the latest rendered DOM.
+// the reader scrolls away. Read receipts run after layout, outside rendering.
 export function createChatScroll(container,onAtBottom=()=>{}){
   let target='',following=false,frame=0,recordedTop=container.scrollTop,content=null;
   const nearBottom=()=>container.scrollHeight-container.clientHeight-container.scrollTop<70;
   const pause=()=>{following=false;if(frame)cancelAnimationFrame(frame);frame=0;};
-  const schedule=()=>{
-    if(frame||!following||!target)return;
-    frame=requestAnimationFrame(()=>{
-      frame=0;if(!following||container.dataset.target!==target||!container.clientHeight)return;
-      container.scrollTop=container.scrollHeight;recordedTop=container.scrollTop;
-      if(nearBottom())onAtBottom();
+  const pinToBottom=()=>{
+    if(!following||!target||container.dataset.target!==target||!container.clientHeight)return;
+    // Set the position before the browser paints the new list or media size.
+    container.scrollTop=container.scrollHeight;
+    recordedTop=container.scrollTop;
+    if(!frame)frame=requestAnimationFrame(()=>{
+      frame=0;
+      if(following&&container.dataset.target===target&&nearBottom())onAtBottom();
     });
   };
-  const observer=new ResizeObserver(schedule);observer.observe(container);
+  const observer=new ResizeObserver(pinToBottom);observer.observe(container);
   container.addEventListener('scroll',()=>{
     const top=container.scrollTop;
     // Height changes can leave the same scrollTop temporarily far from bottom.
@@ -29,13 +31,13 @@ export function createChatScroll(container,onAtBottom=()=>{}){
   return{
     get following(){return following;},
     setTarget(value){const next=String(value||'');if(next===target)return;pause();target=next;following=Boolean(next);},
-    follow(){following=Boolean(target);schedule();},
+    follow(scrollNow=true){following=Boolean(target);if(scrollNow)pinToBottom();},
     pause,
     afterRender(){
       recordedTop=container.scrollTop;
       const next=container.querySelector('[data-chat-timeline]');
       if(next!==content){if(content)observer.unobserve(content);content=next;if(content)observer.observe(content);}
-      schedule();
+      pinToBottom();
     }
   };
 }

@@ -115,6 +115,62 @@ function privateRow(id:number,conversation=601,sender=other){
     created_at:new Date(Date.parse(stamp)+id*1000).toISOString()};
 }
 
+test('私聊首屏并行读取，本机缓存迟到时保留最新消息，首次绘制即贴底',async({page})=>{
+  const rows=Array.from({length:60},(_,i)=>privateRow(i+1));
+  let authorize!:()=>void;
+  const authorization=new Promise<void>(resolve=>authorize=resolve);
+  let initialLimit:string|null=null;
+  await page.addInitScript(()=>{
+    (window as any).__TAURI__={core:{invoke:async(command:string,args:{key?:string}={})=>{
+      if(command==='desktop_persistent_cache_read'&&args.key?.startsWith('chat-')){
+        return new Promise(resolve=>(window as any).__finishChatCache=resolve);
+      }
+      return null;
+    }}};
+  });
+  await page.route('**/rest/v1/rpc/fw_get_or_create_conversation',async route=>{
+    await authorization;
+    return route.fulfill({json:601});
+  });
+  await page.route('**/rest/v1/private_messages**',route=>{
+    const url=new URL(route.request().url());
+    if(url.searchParams.get('conversation_id')==='eq.601'&&!url.searchParams.has('id')){
+      initialLimit=url.searchParams.get('limit');
+    }
+    return route.fulfill({json:queried(rows,url)});
+  });
+  await boot(page);
+  await page.locator('.nav-item[data-nav="buddy"]').click();
+  const messages=page.locator('[data-chat-messages]');
+  await messages.evaluate(box=>{
+    const observer=new MutationObserver(()=>{
+      if(!box.querySelector('.chat-message'))return;
+      (window as any).__firstChatBottomGap=box.scrollHeight-box.clientHeight-box.scrollTop;
+      observer.disconnect();
+    });
+    observer.observe(box,{childList:true,subtree:true});
+  });
+  await page.locator(`[data-open-chat="${other}"]`).first().click();
+  try{
+    await expect.poll(()=>initialLimit).toBe('51');
+    await expect(messages.locator('.chat-message')).toHaveCount(0);
+  }finally{
+    authorize();
+  }
+  const bubbles=messages.locator('.chat-message');
+  await expect(bubbles).toHaveCount(50);
+  await expect(bubbles.last()).toHaveAttribute('data-chat-message-id','60');
+  expect(await page.evaluate(()=>(window as any).__firstChatBottomGap)).toBeLessThan(2);
+  const cachedLast=await page.evaluate(async({older,owner,partner})=>{
+    (window as any).__finishChatCache({payload:{conversationId:601,rows:older}});
+    await Promise.resolve();
+    const entry=await (window as any).__FW_PERSISTENT_CACHE__.read('chat',owner,partner);
+    return entry.payload.rows.at(-1).id;
+  },{older:rows.slice(0,50),owner:me,partner:other});
+  expect(cachedLast).toBe(60);
+  await expect(bubbles.last()).toHaveAttribute('data-chat-message-id','60');
+});
+
 test('重连分批补齐漏收消息，通知还能找回较旧的漏收消息',async({page})=>{
   const rows=[privateRow(1),privateRow(3)];
   const readFilters:string[]=[];
@@ -251,10 +307,10 @@ test('私聊历史跨200条分页无遗漏，保留阅读位置、草稿与后�
     authStore.client.channel=(...args)=>{const channel=original(...args),on=channel.on.bind(channel);channel.on=(type,filter,callback)=>{if(filter.table==='private_messages')(window as any).__privateIncoming=callback;return on(type,filter,callback);};return channel;};
   });
   await openChat(page);const messages=page.locator('[data-chat-messages]'),items=messages.locator('.chat-message');
-  await expect(items).toHaveCount(200);await expect(items.first()).toHaveAttribute('data-chat-message-id','251');await expect(items.last()).toHaveAttribute('data-chat-message-id','450');
+  await expect(items).toHaveCount(50);await expect(items.first()).toHaveAttribute('data-chat-message-id','401');await expect(items.last()).toHaveAttribute('data-chat-message-id','450');
   await page.locator('[data-chat-compose] input[name="message"]').fill('保留未发送文字');await messages.evaluate(el=>el.scrollTop=0);
-  const anchor=messages.locator('[data-chat-message-id="251"]'),before=await anchor.evaluate(el=>el.getBoundingClientRect().top);
-  await messages.locator('[data-chat-load-older]').click();await expect(items).toHaveCount(400);
+  const anchor=messages.locator('[data-chat-message-id="401"]'),before=await anchor.evaluate(el=>el.getBoundingClientRect().top);
+  await messages.locator('[data-chat-load-older]').click();await expect(items).toHaveCount(250);
   expect(Math.abs((await anchor.evaluate(el=>el.getBoundingClientRect().top))-before)).toBeLessThan(2);
   await expect(page.locator('[data-chat-new-messages]')).toBeHidden();await expect(page.locator('[data-chat-compose] input[name="message"]')).toHaveValue('保留未发送文字');
   await messages.evaluate(el=>el.scrollTop=0);await messages.locator('[data-chat-load-older]').click();await expect(items).toHaveCount(450);
@@ -274,7 +330,7 @@ test('私聊历史失败可重试，切换搭子后迟到响应不会串入新�
     await pending;return route.fallback();
   });
   await boot(page);await openChat(page);const messages=page.locator('[data-chat-messages]');
-  await messages.locator('[data-chat-load-older]').click();await expect(messages).toContainText('更早的消息暂时读取失败');await expect(messages.locator('.chat-message')).toHaveCount(200);
+  await messages.locator('[data-chat-load-older]').click();await expect(messages).toContainText('更早的消息暂时读取失败');await expect(messages.locator('.chat-message')).toHaveCount(50);
   fail=false;await messages.locator('[data-chat-load-older]').click();await expect(messages.locator('[data-chat-load-older]')).toBeDisabled();
   await page.locator(`[data-open-chat="${third}"]`).first().click();await expect(page.locator('[data-chat-title]')).toContainText('搭子乙');await expect(page.locator('[data-chat-compose] input[name="message"]')).toBeEnabled();
   const finished=page.waitForResponse(r=>r.url().includes('/private_messages')&&new URL(r.url()).searchParams.get('id')?.startsWith('lt.')&&r.status()===200);

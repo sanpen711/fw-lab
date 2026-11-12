@@ -7,6 +7,7 @@ import {windowIsActive,onWindowAttention} from './window-attention.js';
 const ECHO_TYPES=['like','comment','comment_reply'];
 const PRIVATE_TYPE='private_message';
 const PRIVATE_UNREAD_CACHE_VERSION=2;
+const CHAT_INITIAL_SIZE=50;
 const CHAT_PAGE_SIZE=200;
 const PARTY_ALERT_TYPES=['game_party_apply','game_party_joined','game_party_accepted','game_party_rejected'];
 const REPLY_READ_PREFIX='fw:desktop:v11:reply-read:';
@@ -92,14 +93,21 @@ async function hydrateChatCache(session){
   const {userId,targetId}=session;
   hydratedChatUser=userId;
   const cached=await desktopCache.read('chat',userId,targetId);const payload=cached?.payload;
-  if(!isCurrentChat(session))return false;
-  if(!payload||!Array.isArray(payload.rows))return false;
-  state.chat={...emptyChat(),targetId:String(targetId),conversationId:payload.conversationId||null,profile:state.buddy.profiles[targetId]||payload.profile||null,rows:payload.rows.filter(row=>!row.__pending).slice(-CHAT_PAGE_SIZE),loading:true};emit();return true;
+  if(!isCurrentChat(session)||session.ready)return false;
+  if(!payload||!Array.isArray(payload.rows)||(session.conversationId&&Number(payload.conversationId)!==session.conversationId))return false;
+  const cachedRows=payload.rows.filter(row=>!row.__pending&&!session.hiddenIds.has(messageId(row))).slice(-CHAT_INITIAL_SIZE);
+  session.cachedRows=new Set(cachedRows);
+  state.chat={...state.chat,conversationId:session.conversationId||payload.conversationId||null,
+    profile:state.buddy.profiles[targetId]||state.chat.profile||payload.profile||null,rows:mergePrivateRows(cachedRows,state.chat.rows)};
+  emit();
+  return true;
 }
 function persistChatCache(userId=cacheUser()?.id){
   if(!userId||!state.chat.targetId)return Promise.resolve(false);
-  const rows=state.chat.rows.filter(row=>!row.__pending);return desktopCache.write('chat',userId,{conversationId:state.chat.conversationId,profile:state.chat.profile,rows:rows.slice(-200)},state.chat.targetId);
+  const rows=state.chat.rows.filter(row=>!row.__pending);
+  return desktopCache.write('chat',userId,{conversationId:state.chat.conversationId,profile:state.chat.profile,rows:rows.slice(-CHAT_INITIAL_SIZE)},state.chat.targetId);
 }
+
 async function hydrateStickersCache(userId){
   if(!userId||hydratedStickersUser===userId)return false;hydratedStickersUser=userId;
   const cached=await desktopCache.read('stickers',userId);const payload=cached?.payload;
@@ -508,6 +516,7 @@ function discardChatSession(){
   if(!previous)return;
   clearTimeout(previous.noticeTimer);
   clearTimeout(previous.joinTimer);
+  previous.initialRead.abort();
   if(previous.channel)client.removeChannel(previous.channel);
 }
 
@@ -650,6 +659,19 @@ function refreshChatProfile(session){
   }).catch(()=>{});
 }
 
+function knownChatConversation(userId,targetId){
+  const conversation=state.buddy.conversations.find(row=>
+    (String(row.user_one_id)===userId&&String(row.user_two_id)===targetId)||
+    (String(row.user_two_id)===userId&&String(row.user_one_id)===targetId));
+  return messageId(conversation);
+}
+
+function readLatestChat(conversationId,signal){
+  countContent();
+  return client.from('private_messages').select(PRIVATE_MESSAGE_FIELDS).eq('conversation_id',conversationId)
+    .eq('is_deleted',false).order('id',{ascending:false}).limit(CHAT_INITIAL_SIZE+1).abortSignal(signal);
+}
+
 async function openChat(targetId){
   const identity=cacheUser();
   if(!identity?.id)throw new Error('请先登录。');
@@ -664,36 +686,51 @@ async function openChat(targetId){
   }
   discardChatSession();
   const session={userId,targetId:wantedTarget,channel:null,conversationId:null,opening:null,fetching:false,ready:false,
-    cursor:0,refreshQueued:false,verifyRecent:false,syncing:null,missingIds:new Set(),hiddenIds:new Set(),noticeTimer:null,joinTimer:null,noticeFailures:0};
+    cursor:0,refreshQueued:false,verifyRecent:false,syncing:null,cachedRows:new Set(),initialRead:new AbortController(),missingIds:new Set(),hiddenIds:new Set(),noticeTimer:null,joinTimer:null,noticeFailures:0};
   chatSession=session;
+  state.chat={...emptyChat(),targetId:wantedTarget,profile:state.buddy.profiles[wantedTarget]||null,loading:true};
+  emit();
   session.opening=(async()=>{
-    const cacheHit=await hydrateChatCache(session);
-    if(!isCurrentChat(session))return;
-    if(!cacheHit){
-      state.chat={...emptyChat(),targetId:wantedTarget,profile:state.buddy.profiles[wantedTarget]||null,loading:true};
-      emit();
-    }
-    if(!currentUser()?.id)return state.chat.rows;
+    const cache=hydrateChatCache(session);
+    if(!currentUser()?.id){await cache;return state.chat.rows;}
     refreshChatProfile(session);
+    const knownId=knownChatConversation(userId,wantedTarget);
+    // Known conversation IDs can start the smaller message read immediately,
+    // but server authorization still decides which conversation is displayed.
+    const prefetched=knownId?Promise.resolve().then(()=>readLatestChat(knownId,session.initialRead.signal)).catch(()=>null):null;
     try{
       countContent();
       const convId=Number(fail(await client.rpc('fw_get_or_create_conversation',{target_user_id:wantedTarget}),'打开私聊失败'));
       if(!isCurrentChat(session))return;
       if(!Number.isFinite(convId)||convId<=0)throw new Error('私聊会话创建失败。');
+      const cacheMismatch=state.chat.conversationId&&Number(state.chat.conversationId)!==convId;
       session.conversationId=convId;
       state.chat={...state.chat,conversationId:convId};
-      subscribeChat(session);
-      countContent();
+      if(cacheMismatch){
+        state.chat={...state.chat,rows:[]};
+        session.cachedRows.clear();
+        emit();
+      }
       session.fetching=true;
-      const rows=fail(await client.from('private_messages').select(PRIVATE_MESSAGE_FIELDS).eq('conversation_id',convId)
-        .eq('is_deleted',false).order('id',{ascending:false}).limit(CHAT_PAGE_SIZE+1),'读取私聊失败')||[];
+      subscribeChat(session);
+      if(knownId&&knownId!==convId){
+        session.initialRead.abort();
+        session.initialRead=new AbortController();
+      }
+      const snapshot=knownId===convId?await prefetched:null;
       if(!isCurrentChat(session))return;
-      const page=rows.slice(0,CHAT_PAGE_SIZE);
+      const result=snapshot??await readLatestChat(convId,session.initialRead.signal);
+      if(!isCurrentChat(session))return;
+      const rows=fail(result,'读取私聊失败')||[];
+      const page=rows.slice(0,CHAT_INITIAL_SIZE);
+      const visible=page.filter(row=>!session.hiddenIds.has(messageId(row)));
+      const visibleIds=new Set(visible.map(messageId));
+      const live=state.chat.rows.filter(row=>!session.cachedRows.has(row)||(row.recalled_at&&visibleIds.has(messageId(row))));
+      session.cachedRows.clear();
       session.cursor=messageId(page[0]);
       session.ready=true;
-      const visible=page.filter(row=>!session.hiddenIds.has(messageId(row)));
-      state.chat={...state.chat,rows:mergePrivateRows(state.chat.rows,visible),loading:false,
-        hasMore:rows.length>CHAT_PAGE_SIZE,historyCursor:page.at(-1)?.id||null};
+      state.chat={...state.chat,rows:mergePrivateRows(live,visible),loading:false,
+        hasMore:rows.length>CHAT_INITIAL_SIZE,historyCursor:page.at(-1)?.id||null};
       for(const row of state.chat.rows){if(!row.__pending)session.missingIds.delete(messageId(row));}
       if(visible[0])updateBuddyPreview(wantedTarget,visible[0]);
       emit();
@@ -702,6 +739,8 @@ async function openChat(targetId){
       requestAnimationFrame(()=>{if(isCurrentChat(session))markPrivateRead(wantedTarget);});
       if(session.refreshQueued||session.missingIds.size)refreshChat().catch(()=>{});
     }catch(error){
+      session.initialRead.abort();
+      const cacheHit=await cache;
       if(!isCurrentChat(session))return;
       state.chat={...state.chat,loading:false};
       emit();
