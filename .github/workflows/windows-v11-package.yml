@@ -7,6 +7,7 @@ on:
       - 'assets/fw-user-activity.mjs'
       - 'assets/fw-auth-errors.mjs'
       - 'tests/user-activity.test.mjs'
+      - 'scripts/test-windows-upgrade.ps1'
       - 'src-tauri/tauri.v11.conf.json'
       - 'src-tauri/src/**'
       - '.github/workflows/windows-v11-package.yml'
