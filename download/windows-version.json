@@ -1,12 +1,12 @@
 {
-  "available": true,
-  "platform": "Windows 10/11 64 位",
-  "rollbackVersion": "1.0.5",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.42-setup.exe",
-  "version": "1.3.42",
+  "displayVersion": "1.0.6",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "sha256": "7175b257ebcda948bb19e41bdc44f598a9ae6c1dda81cac63f05e68f91cad577",
-  "publishedAt": "2026-11-11T10:09:09.3002029Z",
-  "displayVersion": "1.0.5",
-  "notes": "Windows 1.0.5：优化搭子私聊的表情面板、附件预览和昵称排序，增加两分钟内的消息撤回。"
+  "version": "1.3.43",
+  "publishedAt": "2026-11-12T01:45:00.2488197Z",
+  "rollbackVersion": "1.0.5",
+  "sha256": "7e191cdca277ec193799e45bd8622ab1a83148216ac6c3709457ea2ce9cdf102",
+  "notes": "Windows 1.0.6：修复搭子私聊未读重复计数和已读提醒残留，发送文字后立即清空输入框。",
+  "platform": "Windows 10/11 64 位",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.43-setup.exe",
+  "available": true
 }
