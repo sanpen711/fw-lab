@@ -25,6 +25,71 @@ test('阅读历史时保持未读，新消息保留原气泡节点与阅读位�
   await page.locator('[data-chat-new-messages]').click();await expect.poll(()=>reads).toBeGreaterThan(0);
 });
 
+test('已读立即清掉两处角标，迟到的旧未读结果不会恢复角标',async({page})=>{
+  let reads=0,snapshots=0,holdSnapshot=false,releaseSnapshot=()=>{};
+  await page.route('**/rest/v1/rpc/fw_private_unread_counts',async route=>{
+    snapshots++;
+    const unread=reads?[]:[{actor_id:other,unread:5}];
+    if(holdSnapshot){
+      holdSnapshot=false;
+      await new Promise<void>(resolve=>{releaseSnapshot=resolve;});
+    }
+    await route.fulfill({json:unread});
+  });
+  await page.route('**/rest/v1/notifications?**',async route=>{
+    if(route.request().method()!=='PATCH')return route.fallback();
+    const params=new URL(route.request().url()).searchParams;
+    expect(params.get('actor_id')).toBe('eq.'+other);
+    expect(params.get('created_at')).toBe('lte.2026-10-12T00:44:00.000Z');
+    reads++;
+    await route.fulfill({status:204});
+  });
+  await boot(page);
+  const badge=page.locator('[data-badge="buddy"]');
+  await expect(badge).toHaveText('5');
+  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('fw:window-attention',{detail:{active:false}})));
+  await openChat(page);
+  await expect(page.locator(`[data-open-chat="${other}"] .unread-dot`)).toHaveText('5');
+  expect(reads).toBe(0);
+  holdSnapshot=true;
+  const starting=snapshots;
+  await page.evaluate(async()=>{const {socialStore}=await import('/src/social-store.js');void socialStore.refreshBadges(true);});
+  await expect.poll(()=>snapshots).toBeGreaterThan(starting);
+  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('fw:window-attention',{detail:{active:true}})));
+  await expect.poll(()=>reads).toBe(1);
+  await expect(badge).toBeHidden();
+  await expect(page.locator(`[data-open-chat="${other}"] .unread-dot`)).toHaveCount(0);
+  await badge.evaluate(node=>{
+    (window as any).__seenUnread=[];
+    new MutationObserver(()=>{if(!node.hidden)(window as any).__seenUnread.push(node.textContent);})
+      .observe(node,{attributes:true,childList:true});
+  });
+  releaseSnapshot();
+  await expect.poll(()=>snapshots).toBeGreaterThan(starting+1);
+  await expect(badge).toBeHidden();
+  expect(await page.evaluate(()=>(window as any).__seenUnread)).toEqual([]);
+});
+
+test('私聊等待发送确认时输入框已经清空，新输入的草稿保留',async({page})=>{
+  let releaseSend=()=>{};
+  await page.route('**/rest/v1/rpc/fw_send_private_message_to_user',async route=>{
+    await new Promise<void>(resolve=>{releaseSend=resolve;});
+    await route.fulfill({json:601});
+  });
+  await boot(page);await openChat(page);
+  const input=page.locator('[data-chat-compose] input[name="message"]');
+  const submit=page.locator('[data-chat-compose] [type="submit"]');
+  const request=page.waitForRequest('**/rest/v1/rpc/fw_send_private_message_to_user');
+  await input.fill('等待服务器确认');await input.press('Enter');await request;
+  await expect(input).toHaveValue('');
+  await expect(page.locator('[data-chat-messages] .chat-bubble').getByText('等待服务器确认')).toBeVisible();
+  await expect(submit).toBeDisabled();
+  await input.fill('接下来想说的话');
+  releaseSend();
+  await expect(submit).toBeEnabled();
+  await expect(input).toHaveValue('接下来想说的话');
+});
+
 test('重启恢复发帖文字和附件、评论及各个私聊对象的草稿',async({page})=>{
   await boot(page);await page.locator('.hero-actions [data-nav="compose"]').click();await page.locator('[data-compose-form] textarea').fill('重启后保留的帖子');
   await page.locator('[data-compose-image]').setInputFiles({name:'draft.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM2UAAAAASUVORK5CYII=','base64')});
@@ -38,7 +103,7 @@ test('重启恢复发帖文字和附件、评论及各个私聊对象的草稿',
 });
 
 test('成功发送后草稿从本机移除，失败仍保留',async({page})=>{
-  await boot(page);await openChat(page);const input=page.locator('[data-chat-compose] input[name="message"]');await input.fill('成功发送一次');await page.locator('[data-chat-compose] [type="submit"]').click();await expect(input).toHaveValue('');
+  await boot(page);await openChat(page);const input=page.locator('[data-chat-compose] input[name="message"]');await input.fill('成功发送一次');await page.locator('[data-chat-compose] [type="submit"]').click();await expect(input).toHaveValue('');await expect(page.locator('[data-chat-compose] [type="submit"]')).toBeEnabled();
   await page.reload();await expect(page.locator('#app')).toBeVisible();await openChat(page);await expect(input).toHaveValue('');
   await page.route('**/rest/v1/rpc/fw_send_private_message_to_user',r=>r.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'Failed to fetch: private server detail'})}));
   await input.fill('网络失败后保留');await page.locator('[data-chat-compose] [type="submit"]').click();await expect(page.locator('[data-toast]')).toHaveText('网络连接异常，请检查网络后重试。');await expect(input).toHaveValue('网络失败后保留');

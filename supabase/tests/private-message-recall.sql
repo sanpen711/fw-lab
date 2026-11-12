@@ -19,8 +19,6 @@ begin
     values(conversation,sender,'过期测试消息',now()-interval '3 minutes') returning id into old;
   insert into public.private_messages(conversation_id,sender_id,content)
     values(conversation,sender,'待撤回测试消息') returning id into recent;
-  insert into public.notifications(user_id,actor_id,type,target_type,target_id,content)
-    values(recipient,sender,'private_message','private_message',recent::text,'待撤回测试消息');
   perform set_config('fw.test.sender',sender::text,true);
   perform set_config('fw.test.recipient',recipient::text,true);
   perform set_config('fw.test.outsider',outsider::text,true);
