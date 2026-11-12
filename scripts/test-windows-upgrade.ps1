@@ -8,32 +8,43 @@ $directory = Join-Path $root '自定义 安装目录'
 $executable = Join-Path $directory 'fw-lab-desktop.exe'
 $desktop = [Environment]::GetFolderPath('DesktopDirectory')
 $programs = [Environment]::GetFolderPath('Programs')
+$originalShortcut = Join-Path $desktop 'F.w 研究所.lnk'
 $shortcut = Join-Path $desktop ('FW upgrade test ' + [Guid]::NewGuid().ToString('N') + '.lnk')
 $cached = Join-Path $directory 'Cache\keep.txt'
 $app = $null
-$process = $null
 
 function Get-ProductShortcuts {
     Get-ChildItem -LiteralPath $desktop, $programs -Filter 'F.w 研究所.lnk' -Recurse -ErrorAction SilentlyContinue |
         ForEach-Object FullName | Sort-Object
 }
 
-try {
-    New-Item -ItemType Directory -Path (Split-Path $cached) -Force | Out-Null
-    Set-Content -LiteralPath $executable -Value 'previous executable'
-    Set-Content -LiteralPath $cached -Value 'existing user cache'
+function Invoke-Installer([string]$Path, [string]$Arguments) {
+    $process = Start-Process -FilePath $Path -ArgumentList $Arguments -PassThru
+    try {
+        if (-not $process.WaitForExit(90000)) { throw 'Silent install did not finish.' }
+        if ($process.ExitCode -ne 0) { throw "Silent install failed ($($process.ExitCode))." }
+    }
+    finally {
+        if (-not $process.HasExited) { $process | Stop-Process -Force -ErrorAction SilentlyContinue }
+        $process.Dispose()
+    }
+}
 
-    $link = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut)
-    $link.TargetPath = $executable
-    $link.IconLocation = "$env:SystemRoot\System32\shell32.dll,2"
-    $link.Save()
+try {
+    # Install the previous public build, so the fixture has genuine registry
+    # entries and shortcuts from a normal Windows installation.
+    $previous = (Resolve-Path 'download/fw-lab-windows-latest.exe').Path
+    Invoke-Installer $previous "/S /D=$directory"
+    if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) { throw 'The previous app was not installed.' }
+
+    New-Item -ItemType Directory -Path (Split-Path $cached) -Force | Out-Null
+    Set-Content -LiteralPath $cached -Value 'existing user cache'
+    Move-Item -LiteralPath $originalShortcut -Destination $shortcut
     $shortcutHash = (Get-FileHash -LiteralPath $shortcut).Hash
     $before = @(Get-ProductShortcuts) -join [Environment]::NewLine
 
     # Match Tauri's quiet NSIS invocation. The unquoted /D path is last.
-    $process = Start-Process -FilePath $installer.FullName -ArgumentList "/S /R /UPDATE /ARGS --fw-update-restart /NS /D=$directory" -PassThru
-    if (-not $process.WaitForExit(90000)) { throw 'Silent install did not finish.' }
-    if ($process.ExitCode -ne 0) { throw "Silent install failed ($($process.ExitCode))." }
+    Invoke-Installer $installer.FullName "/S /R /UPDATE /ARGS --fw-update-restart /NS /D=$directory"
 
     $expected = (Get-FileHash 'src-tauri/target/release/fw-lab-desktop.exe').Hash
     if ((Get-FileHash -LiteralPath $executable).Hash -ne $expected) { throw 'The running directory was not overwritten.' }
@@ -56,6 +67,5 @@ try {
 }
 finally {
     if ($app) { $app | Stop-Process -Force -ErrorAction SilentlyContinue }
-    if ($process -and -not $process.HasExited) { $process | Stop-Process -Force -ErrorAction SilentlyContinue }
     Remove-Item -LiteralPath $shortcut, $root -Recurse -Force -ErrorAction SilentlyContinue
 }
