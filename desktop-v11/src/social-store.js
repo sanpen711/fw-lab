@@ -192,7 +192,6 @@ function teardownChannels(){
 
 function startBadgeChannel(userId){
   if(badgeChannel) client.removeChannel(badgeChannel);
-  let subscribed=false;
   badgeChannel=client.channel(`desktop-v11-unread-${userId}`)
     .on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:`user_id=eq.${userId}`},payload=>{
       if(state.userId!==userId)return;
@@ -216,9 +215,7 @@ function startBadgeChannel(userId){
     .on('postgres_changes',{event:'*',schema:'public',table:'friendships',filter:`receiver_id=eq.${userId}`},()=>{if(state.userId!==userId)return;scheduleBadges();if(state.buddy.loaded)scheduleBuddyReload();})
     .on('postgres_changes',{event:'*',schema:'public',table:'friendships',filter:`requester_id=eq.${userId}`},()=>{if(state.userId!==userId)return;if(state.buddy.loaded)scheduleBuddyReload();})
     .subscribe(status=>{
-      if(status!=='SUBSCRIBED'||state.userId!==userId)return;
-      if(subscribed)scheduleBadges();
-      subscribed=true;
+      if(status==='SUBSCRIBED'&&state.userId===userId)scheduleBadges();
     });
 }
 
