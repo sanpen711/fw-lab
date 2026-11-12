@@ -20,6 +20,7 @@ async function read(scope,userId,suffix=''){
   if(typeof invoke!=='function')return null;
   try{
     const value=await invoke('desktop_persistent_cache_read',{key});
+    if(memory.has(key))return clone(memory.get(key));
     memory.set(key,value??null);
     return clone(value??null);
   }catch(error){
