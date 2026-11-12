@@ -1,12 +1,12 @@
 {
-  "displayVersion": "1.0.6",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
-  "version": "1.3.43",
-  "publishedAt": "2026-11-12T01:45:00.2488197Z",
+  "sha256": "a645c8e7f3d37a73b360ddb45a3ba2acc7c96409d4b754ab1aef711c29a7fffa",
+  "publishedAt": "2026-11-12T06:38:15.1863091Z",
   "rollbackVersion": "1.0.5",
-  "sha256": "7e191cdca277ec193799e45bd8622ab1a83148216ac6c3709457ea2ce9cdf102",
-  "notes": "Windows 1.0.6：修复搭子私聊未读重复计数和已读提醒残留，发送文字后立即清空输入框。",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.44-setup.exe",
+  "displayVersion": "1.0.7",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
   "platform": "Windows 10/11 64 位",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.43-setup.exe",
-  "available": true
+  "notes": "Windows 1.0.7：优化搭子私聊同步和对话打开速度，重连自动补齐消息，减少聊天窗口闪动和列表预览回跳。",
+  "available": true,
+  "version": "1.3.44"
 }

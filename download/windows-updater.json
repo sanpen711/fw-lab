@@ -1,12 +1,12 @@
 {
+  "version": "1.3.44",
+  "displayVersion": "1.0.7",
+  "pub_date": "2026-11-12T06:38:15.1863091Z",
+  "notes": "Windows 1.0.7：优化搭子私聊同步和对话打开速度，重连自动补齐消息，减少聊天窗口闪动和列表预览回跳。",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmQ2bk1wcW1GL01GcUFBNmJFcktyR1M4UFZBZFZBSjdib3h6b2Q1YlhzL00zTXhtdDRGZ0tyK2REWW9aa09UeGh4MDNMa3IxV0dIemZnZEtJRTRkYkF3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NDQ3ODg0CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuNDNfeDY0LXNldHVwLmV4ZQpVeVR4RUtsd1VKZDVxYUxMeXh1UEtsU3dHRTRjSjdxc1FQZUxPS0Q3OFBqQTdmNU95NytZYXcxYXBiVUdKZXkwRHFhcE9KSTluZEsrYmM5WDJ2b1JEZz09Cg==",
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.43-setup.exe"
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.44-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlZ2MldmYTNva0VPdXoyT3h1RnlHMEl6Q0I4RW5BaW1Id0swUzZwZkd6MSttaFJ5THd4VjFWMi9kUDlYYWwxVlZsMXNoci95Q2R1RzB3bG1qRzhhY3dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NDY1NDgwCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuNDRfeDY0LXNldHVwLmV4ZQo2T0RpYXhINWJHRzU4WDBadjM4eXBTa3BkUlRaWUlZYUFsWFpHVVhTTnRoNzExa2srQmRmWUFta05TOTVBME5kejIyMWZpeGV6MUR3UlYvWXdGbDRBZz09Cg=="
     }
-  },
-  "notes": "Windows 1.0.6：修复搭子私聊未读重复计数和已读提醒残留，发送文字后立即清空输入框。",
-  "pub_date": "2026-11-12T01:45:00.2488197Z",
-  "displayVersion": "1.0.6",
-  "version": "1.3.43"
+  }
 }
