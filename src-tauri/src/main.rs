@@ -11,6 +11,7 @@ mod desktop_behavior;
 use serde::Serialize;
 use serde_json::Value;
 use std::{
+    ffi::OsString,
     fs,
     fs::OpenOptions,
     io::Write,
@@ -258,6 +259,9 @@ fn render_update_ui(
 }
 
 fn show_update_error(app: &AppHandle, detail: String) {
+    if let Ok(mut pending) = app.state::<PendingUpdate>().0.lock() {
+        *pending = None;
+    }
     UPDATE_INSTALL_ACTIVE.store(false, Ordering::Release);
     UPDATE_INSTALLING.store(false, Ordering::Release);
     update_log(app, format!("error {detail}"));
@@ -280,9 +284,17 @@ fn show_update_error(app: &AppHandle, detail: String) {
 
 async fn check_manifest_endpoint(app: &AppHandle, endpoint: &'static str, direct: bool) -> Result<Option<Update>, String> {
     update_log(app, format!("check_endpoint direct={direct} url={endpoint}"));
-    let builder = app.updater_builder()
+    let mut builder = app.updater_builder()
         .endpoints(vec![endpoint.parse().map_err(|error| format!("endpoint {error:?}"))?])
         .map_err(|error| format!("endpoint {error:?}"))?;
+    if cfg!(target_os = "windows") {
+        let executable = std::env::current_exe().map_err(|error| format!("current_exe {error}"))?;
+        let directory = executable.parent().ok_or("current_exe missing directory")?;
+        // NSIS expects /D to be the last argument, with an unquoted path.
+        let mut destination = OsString::from("/D=");
+        destination.push(directory);
+        builder = builder.installer_args([OsString::from("/NS"), destination]);
+    }
     let updater = if direct {
         builder.no_proxy().configure_client(|client| client
             .connect_timeout(Duration::from_secs(UPDATE_CONNECT_TIMEOUT_SECS))
@@ -321,7 +333,7 @@ fn check_for_updates_direct_auto(app: AppHandle) {
         match check_manifests(&app, true).await {
             Ok(Some(update)) => {
                 update_log(&app, format!("fallback_direct_found version={}", update.version));
-                install_latest_update(app, update, UPDATE_MODE_DIRECT.to_owned());
+                download_update(app, update, UPDATE_MODE_DIRECT.to_owned());
             }
             Ok(None) => show_update_error(&app, "direct_no_update_after_system_failure".to_owned()),
             Err(error) => show_update_error(&app, format!("direct_check {error}")),
@@ -329,7 +341,7 @@ fn check_for_updates_direct_auto(app: AppHandle) {
     });
 }
 
-fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
+fn download_update(app: AppHandle, update: Update, network_mode: String) {
     UPDATE_INSTALL_ACTIVE.store(true, Ordering::Release);
     let version = release_version::update_display_version(&update.raw_json, &update.version);
     if let Some(window) = app.get_webview_window("main") {
@@ -341,7 +353,7 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
         &app,
         "connecting",
         "正在连接更新服务器…",
-        format!("正在后台下载 {version}，你可以继续使用软件。"),
+        format!("正在下载 {version}，完成后自动安装并重启。"),
         None,
         0,
         None,
@@ -405,7 +417,7 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
                             &chunk_app,
                             "downloading",
                             "正在下载更新…",
-                            "正在后台下载，完成后由你选择重启安装。",
+                            "下载完成后自动安装并重启。",
                             percent,
                             current,
                             (known_total > 0).then_some(known_total),
@@ -436,7 +448,7 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
                     &finish_app,
                     "verifying",
                     "安装包已下载，正在校验…",
-                    "正在检查更新包，你可以继续使用软件。",
+                    "校验通过后将自动安装并重启。",
                     Some(100),
                     current,
                     (total > 0).then_some(total),
@@ -500,7 +512,7 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
                     &app,
                     "connecting",
                     "当前线路持续低速，正在自动换线…",
-                    "你可以继续使用软件，下载完成后会提醒你。",
+                    "下载完成后将自动安装并重启。",
                     None,
                     0,
                     (known_total > 0).then_some(known_total),
@@ -517,29 +529,36 @@ fn install_latest_update(app: AppHandle, update: Update, network_mode: String) {
         );
         let size = bytes.len() as u64;
         if let Ok(mut pending) = app.state::<PendingUpdate>().0.lock() {
-            *pending = Some((update.clone(), bytes));
+            *pending = Some((update, bytes));
         } else {
             show_update_error(&app, "pending_update_lock".into()); return;
         }
-        UPDATE_INSTALL_ACTIVE.store(false, Ordering::Release);
-        if let Some(window) = app.get_webview_window("main") { let _ = window.set_title(&desktop_identity::display_name(&app)); }
-        render_update_ui(&app, "ready", "更新已准备好", "方便时重启安装即可。未发送的草稿已保存在本机。", Some(100), size, Some(size), 0);
+        // Freeze editing and flush any drafts written during the download before
+        // handing control to the verified installer.
+        ensure_update_ui(&app);
+        render_update_ui(&app, "installing", "正在安装更新…", "软件将自动重新打开。", Some(100), size, Some(size), 0);
     });
 }
 
 
 #[tauri::command]
-async fn desktop_install_ready_update(app: AppHandle) -> Result<(), String> {
+async fn desktop_install_ready_update(app: AppHandle, drafts_saved: bool) -> Result<(), String> {
     let pending = app.state::<PendingUpdate>().0.lock().map_err(|_| "更新状态暂时不可用。")?.take();
-    let Some((update, bytes)) = pending else { return Err("还没有准备好的更新包，请先检查更新。".into()); };
-    UPDATE_INSTALL_ACTIVE.store(true, Ordering::Release);
+    let Some((update, bytes)) = pending else {
+        return Err("还没有准备好的更新包，请重新检查更新。".into());
+    };
+    if !drafts_saved {
+        show_update_error(&app, "draft_flush_failed".into());
+        return Ok(());
+    }
     UPDATE_INSTALLING.store(true, Ordering::Release);
-    render_update_ui(&app, "installing", "正在安装更新…", "软件将自动重新打开，请稍候。", Some(100), bytes.len() as u64, Some(bytes.len() as u64), 0);
-    // Start installation on the next task so the UI can paint and drafts flush.
     tauri::async_runtime::spawn(async move {
-        tokio::time::sleep(Duration::from_millis(500)).await;
-        if let Err(error) = update.install(bytes) { show_update_error(&app, format!("install {error}")); return; }
-        update_log(&app, "install_returned_ok"); app.restart();
+        if let Err(error) = update.install(bytes) {
+            show_update_error(&app, format!("install {error}"));
+            return;
+        }
+        update_log(&app, "install_returned_ok");
+        app.restart();
     });
     Ok(())
 }
@@ -595,12 +614,6 @@ fn check_for_updates(app: AppHandle) {
 }
 
 async fn run_update_check(app: AppHandle) -> Result<UpdateCheckResult, String> {
-    let ready_version = app.state::<PendingUpdate>().0.lock().ok().and_then(|value| value.as_ref().map(|(update, _)| release_version::update_display_version(&update.raw_json, &update.version)));
-    if let Some(version) = ready_version {
-        ensure_update_ui(&app);
-        render_update_ui(&app, "ready", "更新已准备好", "方便时重启安装即可。未发送的草稿已保存在本机。", Some(100), 0, None, 0);
-        return Ok(UpdateCheckResult { status: "ready", version: Some(version) });
-    }
     if UPDATE_INSTALL_ACTIVE.load(Ordering::Acquire) {
         return Ok(UpdateCheckResult { status: "busy", version: None });
     }
@@ -640,18 +653,18 @@ async fn run_update_check(app: AppHandle) -> Result<UpdateCheckResult, String> {
         let install_app = app.clone();
         app.dialog()
             .message(format!(
-                "当前版本 {} → 新版本 {version}\n\n{}\n\n更新包将在后台下载，完成后由你选择重启安装。", release_version::current_display_version(), update.body.as_deref().unwrap_or("改进使用体验与运行稳定性。").chars().take(300).collect::<String>()
+                "当前版本 {} → 新版本 {version}\n\n{}\n\n更新后将自动重新打开软件。", release_version::current_display_version(), update.body.as_deref().unwrap_or("改进使用体验与运行稳定性。").chars().take(300).collect::<String>()
             ))
             .title(format!("{}更新", desktop_identity::display_name(&app)))
             .kind(MessageDialogKind::Info)
             .buttons(MessageDialogButtons::OkCancelCustom(
-                "后台下载".to_owned(),
-                "稍后".to_owned(),
+                "更新并重启".to_owned(),
+                "暂不安装".to_owned(),
             ))
             .show(move |confirmed| {
                 let _check_guard = guard;
                 if confirmed {
-                    install_latest_update(install_app, update, network_mode);
+                    download_update(install_app, update, network_mode);
                 }
             });
         Ok(result)

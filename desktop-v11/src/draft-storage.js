@@ -22,7 +22,7 @@ async function mediaRecord(owner,value,write=false){
 }
 function entries(snapshot){return [['compose',snapshot.compose],...Object.entries(snapshot.comments||{}).map(([id,value])=>['comment:'+id,value])];}
 export function saveDraftSnapshot(owner,snapshot){
-  if(!owner)return;
+  if(!owner)return true;
   const media={},drafts={};
   for(const [key,draft] of entries(snapshot)){
     const attachments=(draft?.attachments||[]).map(item=>{
@@ -34,12 +34,16 @@ export function saveDraftSnapshot(owner,snapshot){
     if(draft?.text||attachments.length)drafts[key]={text:String(draft?.text||'').slice(0,300),pickerTab:draft?.pickerTab||'emoji',attachments};
   }
   const chats=Object.fromEntries(Object.entries(snapshot.chats||{}).filter(([,text])=>text).map(([id,text])=>[id,String(text).slice(0,300)]));
-  try{localStorage.setItem(PREFIX+owner,JSON.stringify({version:1,drafts,chats}));}catch{report();return;}
+  try{localStorage.setItem(PREFIX+owner,JSON.stringify({version:1,drafts,chats}));}catch{report();return false;}
   const signature=Object.keys(media).sort().join('|');
-  if(mediaSignatures.get(owner)===signature)return;
+  if(mediaSignatures.get(owner)===signature)return true;
   mediaSignatures.set(owner,signature);
-  const pending=(mediaWrites.get(owner)||Promise.resolve()).catch(()=>{}).then(()=>mediaRecord(owner,media,true)).catch(()=>{mediaSignatures.delete(owner);report();});
+  const pending=(mediaWrites.get(owner)||Promise.resolve()).then(()=>mediaRecord(owner,media,true)).then(
+    ()=>true,
+    ()=>{mediaSignatures.delete(owner);report();return !signature;}
+  );
   mediaWrites.set(owner,pending);
+  return true;
 }
 export async function loadDraftSnapshot(owner){
   let saved;try{saved=JSON.parse(localStorage.getItem(PREFIX+owner)||'null');}catch{report();}
@@ -61,4 +65,7 @@ export async function loadDraftSnapshot(owner){
   return result;
 }
 
-export async function flushDraftWrites(){await Promise.all(mediaWrites.values());}
+export async function flushDraftWrites(owner){
+  await Promise.all(mediaWrites.values());
+  if((await mediaWrites.get(owner))===false)throw new Error('附件草稿未能保存。');
+}

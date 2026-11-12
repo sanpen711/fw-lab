@@ -74,7 +74,7 @@
         "https://raw.githubusercontent.com/sanpen711/fw-lab/main/download/windows-updater.json"
       ],
       "windows": {
-        "installMode": "basicUi"
+        "installMode": "quiet"
       }
     }
   }
