@@ -194,11 +194,29 @@ test('断网状态明确提示，恢复网络可同步且不丢失草稿',async(
   await page.evaluate(()=>{Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});window.dispatchEvent(new Event('online'));});await expect(page.locator('.network-banner')).toBeHidden();await expect(input).toHaveValue('网络恢复前保留');
 });
 
-test('后台更新可继续操作，收起后不反复弹出，安装前先保存草稿',async({page})=>{
-  await page.setContent('<main id="app"><button onclick="this.textContent=\'可以继续使用\'">原有操作</button></main>');await page.addScriptTag({content:readFileSync(new URL('../../src-tauri/src/update_ui.js',import.meta.url),'utf8')});
-  await page.evaluate(()=>{const w=window as any;w.__order=[];w.__FW_FLUSH_DRAFTS__=async()=>w.__order.push('drafts');w.__TAURI__={core:{invoke:async(command)=>w.__order.push(command)}};w.__FW_UPDATE_RENDER__({phase:'downloading',title:'正在后台下载',detail:'可以继续使用软件',percent:20});});
-  await page.getByRole('button',{name:'原有操作'}).click();await expect(page.getByRole('button',{name:'可以继续使用'})).toBeVisible();await page.getByRole('button',{name:'收起',exact:true}).click();
-  await page.evaluate(()=>(window as any).__FW_UPDATE_RENDER__({phase:'downloading',percent:50}));await expect(page.locator('#fw-update-overlay')).toBeHidden();
-  await page.evaluate(()=>(window as any).__FW_UPDATE_RENDER__({phase:'ready',title:'更新已准备好'}));await expect(page.locator('#fw-update-overlay')).toBeVisible();expect(await page.evaluate(()=>(window as any).__order)).toEqual([]);
-  await page.getByRole('button',{name:'重启安装'}).click();expect(await page.evaluate(()=>(window as any).__order)).toEqual(['drafts','desktop_install_ready_update']);
+test('确认更新后下载期间可继续操作，校验通过自动保存草稿并安装',async({page})=>{
+  await page.setContent('<main id="app"><button>原有操作</button></main>');
+  await page.addScriptTag({content:readFileSync(new URL('../../src-tauri/src/update_ui.js',import.meta.url),'utf8')});
+  await page.evaluate(()=>{
+    const w=window as any;
+    w.__order=[];
+    document.querySelector('#app button')?.addEventListener('click',()=>w.__order.push('continue'));
+    w.__FW_FLUSH_DRAFTS__=()=>new Promise<void>(resolve=>{w.__order.push('drafts');w.__finishDrafts=resolve;});
+    w.__TAURI__={core:{invoke:async(command,args)=>w.__order.push([command,args])}};
+    w.__FW_UPDATE_RENDER__({phase:'downloading',title:'正在下载更新',percent:20});
+  });
+  await page.getByRole('button',{name:'原有操作'}).click();
+  await expect(page.getByRole('dialog').getByRole('button')).toHaveCount(0);
+  await page.evaluate(()=>{
+    const w=window as any;
+    w.__FW_UPDATE_RENDER__({phase:'installing',title:'正在安装更新',percent:100});
+    w.__FW_UPDATE_RENDER__({phase:'installing',title:'正在安装更新',percent:100});
+  });
+  await expect(page.locator('#app')).toHaveAttribute('inert','');
+  await expect(page.getByRole('dialog').getByRole('button')).toHaveCount(0);
+  expect(await page.evaluate(()=>(window as any).__order)).toEqual(['continue','drafts']);
+  await page.evaluate(()=>(window as any).__finishDrafts());
+  await expect.poll(()=>page.evaluate(()=>(window as any).__order)).toEqual([
+    'continue','drafts',['desktop_install_ready_update',{draftsSaved:true}]
+  ]);
 });

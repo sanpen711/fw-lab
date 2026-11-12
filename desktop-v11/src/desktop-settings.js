@@ -292,12 +292,10 @@ async function checkUpdates(button){
   if(checkingUpdate)return;
   if(typeof invoke!=='function'){setStatus('[data-update-check-status]','请在 Windows 客户端中检查更新。');return;}
   checkingUpdate=true;button.disabled=true;button.textContent='检查中…';setStatus('[data-update-check-status]','正在检查更新…');
-  window.__FW_UPDATE_REOPEN__?.();
   try{
     const result=await invoke('desktop_check_for_updates');
     if(result?.status==='latest')setStatus('[data-update-check-status]','当前已是最新版本。');
     else if(result?.status==='available')setStatus('[data-update-check-status]',`发现新版本${result.version?' '+result.version:''}，可在更新提示中选择更新。`);
-    else if(result?.status==='ready')setStatus('[data-update-check-status]','更新已准备好，可在更新提示中重启安装。');
     else if(result?.status==='busy')setStatus('[data-update-check-status]','正在检查或处理更新，请稍候再试。');
     else throw new Error('检查更新暂未完成，请重试。');
   }catch(error){setStatus('[data-update-check-status]',error?.message||String(error)||'检查更新失败，请稍后重试。',true);}

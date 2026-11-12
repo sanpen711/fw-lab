@@ -1,6 +1,6 @@
 # Current release
 
-Public **1.0.7**, native installer/update **1.3.44**. Private chats catch up after realtime reconnects and preserve the open conversation, draft and scroll position during background sync. Archived game/resource exclusions remain in force.
+Public **1.0.8**, native installer/update **1.3.45**. In-app updates ask once, then install silently into the current executable directory and reopen the app. Archived game/resource exclusions remain in force.
 
 # Windows versions
 

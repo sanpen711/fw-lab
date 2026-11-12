@@ -265,10 +265,12 @@ fn refresh_shortcuts_if_needed(app: &AppHandle, identity: &DesktopIdentity) -> R
     update_shortcuts(app, identity)
 }
 
-pub fn apply_saved(app: &AppHandle) -> Result<DesktopIdentity, String> {
+pub fn apply_saved(app: &AppHandle, refresh_shortcuts: bool) -> Result<DesktopIdentity, String> {
     let identity = read(app);
     apply_window(app, &identity)?;
-    let _ = refresh_shortcuts_if_needed(app, &identity);
+    if refresh_shortcuts {
+        let _ = refresh_shortcuts_if_needed(app, &identity);
+    }
     Ok(identity)
 }
 

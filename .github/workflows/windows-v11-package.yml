@@ -48,6 +48,10 @@ jobs:
         run: npx tauri build --config src-tauri/tauri.v11.conf.json --bundles nsis
       - name: Audit packaged frontend resources
         run: npm --prefix desktop-v11 run verify:release
+      - name: Verify silent upgrade in a custom install directory
+        shell: pwsh
+        run: ./scripts/test-windows-upgrade.ps1
+
       - name: Test native URL restrictions
         env:
           TAURI_CONFIG: '{"build":{"frontendDist":"../desktop-v11/dist"}}'

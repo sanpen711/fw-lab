@@ -36,3 +36,23 @@ test('更新重试防重复，确认已是最新版后关闭错误卡片',async(
   await page.evaluate(()=>(window as any).finishUpdateCheck({status:'latest'}));
   await expect(page.locator('#fw-update-overlay')).toBeHidden();
 });
+
+test('草稿保存失败时终止自动安装并恢复页面操作',async({page})=>{
+  await page.setContent('<main id="app"><button>原有操作</button></main>');
+  await page.addScriptTag({content:updateUi});
+  await page.evaluate(()=>{
+    const w=window as any;
+    w.updateCalls=[];
+    w.__FW_FLUSH_DRAFTS__=async()=>{throw new Error('draft storage error');};
+    w.__TAURI__={core:{invoke:async(command,args)=>{
+      w.updateCalls.push([command,args]);
+      w.__FW_UPDATE_RENDER__({phase:'error',title:'自动更新没有完成'});
+    }}};
+    w.__FW_UPDATE_RENDER__({phase:'installing',title:'正在安装更新'});
+  });
+  await expect(page.locator('#fw-update-title')).toHaveText('自动更新没有完成');
+  await expect(page.locator('#app')).not.toHaveAttribute('inert');
+  expect(await page.evaluate(()=>(window as any).updateCalls)).toEqual([
+    ['desktop_install_ready_update',{draftsSaved:false}]
+  ]);
+});

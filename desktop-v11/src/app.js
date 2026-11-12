@@ -91,12 +91,13 @@ let chatComposerTarget='';
 let chatMessageIds=new Set();
 let draftOwner='',draftHydrating=false,draftGeneration=0;
 let draftTouched=new Set();
+let draftRestore=Promise.resolve();
 function persistDrafts(key){
-  if(!draftOwner)return;if(typeof key==='string')draftTouched.add(key);
-  if(draftHydrating)return;
+  if(!draftOwner)return true;if(typeof key==='string')draftTouched.add(key);
+  if(draftHydrating)return false;
   const chats=Object.fromEntries(chatDrafts);
   for(const [target,sendingText] of chatSends){if(sendingText&&!chats[target])chats[target]=sendingText;}
-  saveDraftSnapshot(draftOwner,{compose:composeDraft,comments:Object.fromEntries(commentDrafts),chats});
+  return saveDraftSnapshot(draftOwner,{compose:composeDraft,comments:Object.fromEntries(commentDrafts),chats});
 }
 async function restoreDrafts(owner){
   const generation=draftGeneration;draftHydrating=true;
@@ -257,7 +258,7 @@ function renderAuthGate(next){
 }
 function renderAccount(next){
   const previousUserId=String(accountState.user?.id||'');accountState=next;const user=next.user;
-  if(previousUserId!==String(user?.id||'')){persistDrafts();releasePreview(composeDraft);composeDraft.text='';commentDrafts.forEach(releasePreview);commentDrafts.clear();chatDrafts.clear();for(const id of chatAttachments.keys())setChatAttachment(id,null);chatSends.clear();chatComposerTarget='';chatMessageIds.clear();lastChatRenderSignature='';$('[data-chat-compose] input[name="message"]').value='';draftOwner=String(user?.id||'');draftGeneration++;draftTouched=new Set();draftHydrating=false;if(draftOwner)restoreDrafts(draftOwner).catch(()=>toast('草稿暂时无法恢复，请稍后重试。'));}
+  if(previousUserId!==String(user?.id||'')){persistDrafts();releasePreview(composeDraft);composeDraft.text='';commentDrafts.forEach(releasePreview);commentDrafts.clear();chatDrafts.clear();for(const id of chatAttachments.keys())setChatAttachment(id,null);chatSends.clear();chatComposerTarget='';chatMessageIds.clear();lastChatRenderSignature='';$('[data-chat-compose] input[name="message"]').value='';draftOwner=String(user?.id||'');draftGeneration++;draftTouched=new Set();draftHydrating=false;draftRestore=draftOwner?restoreDrafts(draftOwner).catch(()=>toast('草稿暂时无法恢复，请稍后重试。')):Promise.resolve();}
   $('[data-account-label]').textContent=user?user.nickname:(next.ready?'注册 / 登录':'正在连接…');
   setAvatar($('[data-account-avatar]'),user);setAvatar($('[data-profile-avatar]'),user);
   $('[data-profile-name]').textContent=user?.nickname||'研究员';$('[data-profile-email]').textContent=user?.email||'';
@@ -891,7 +892,11 @@ document.addEventListener('paste',event=>{if(event.clipboardData?.files?.length)
 window.addEventListener('pagehide',persistDrafts);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)persistDrafts();});
 
-window.__FW_FLUSH_DRAFTS__=async()=>{persistDrafts();await flushDraftWrites();};
+window.__FW_FLUSH_DRAFTS__=async()=>{
+  await draftRestore;
+  if(!persistDrafts())throw new Error('文字草稿未能保存。');
+  await flushDraftWrites(draftOwner);
+};
 
 window.addEventListener('fw:desktop-preferences',()=>{socialRenderMemo=null;renderSocial();});
 
