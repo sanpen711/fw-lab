@@ -11,6 +11,7 @@ $programs = [Environment]::GetFolderPath('Programs')
 $originalShortcut = Join-Path $desktop 'F.w 研究所.lnk'
 $shortcut = Join-Path $desktop ('FW upgrade test ' + [Guid]::NewGuid().ToString('N') + '.lnk')
 $cached = Join-Path $directory 'Cache\keep.txt'
+$registration = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\F.w 研究所'
 $app = $null
 
 function Get-ProductShortcuts {
@@ -36,6 +37,8 @@ try {
     $previous = (Resolve-Path 'download/fw-lab-windows-latest.exe').Path
     Invoke-Installer $previous "/S /D=$directory"
     if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) { throw 'The previous app was not installed.' }
+    $previousHash = (Get-FileHash -LiteralPath $executable).Hash
+    $previousVersion = (Get-ItemProperty -LiteralPath $registration).DisplayVersion
 
     New-Item -ItemType Directory -Path (Split-Path $cached) -Force | Out-Null
     Set-Content -LiteralPath $cached -Value 'existing user cache'
@@ -46,8 +49,16 @@ try {
     # Match Tauri's quiet NSIS invocation. The unquoted /D path is last.
     Invoke-Installer $installer.FullName "/S /R /UPDATE /ARGS --fw-update-restart /NS /D=$directory"
 
-    $expected = (Get-FileHash 'src-tauri/target/release/fw-lab-desktop.exe').Hash
-    if ((Get-FileHash -LiteralPath $executable).Hash -ne $expected) { throw 'The running directory was not overwritten.' }
+    # Tauri adds bundle metadata to the embedded executable, then restores
+    # the unpatched build output. Compare the two installed copies instead.
+    $expectedVersion = (Get-Content 'src-tauri/tauri.v11.conf.json' -Raw | ConvertFrom-Json).version
+    $installed = Get-ItemProperty -LiteralPath $registration
+    if ($installed.DisplayVersion -ne $expectedVersion -or $installed.InstallLocation.Trim('"') -ne $directory) {
+        throw "Expected version $expectedVersion in $directory, got $($installed.DisplayVersion) in $($installed.InstallLocation)."
+    }
+    if ($previousVersion -ne $expectedVersion -and (Get-FileHash -LiteralPath $executable).Hash -eq $previousHash) {
+        throw 'The executable was not replaced.'
+    }
     if ((Get-Content -LiteralPath $cached -Raw).Trim() -ne 'existing user cache') { throw 'Existing cache was modified.' }
     for ($attempt = 0; $attempt -lt 25; $attempt++) {
         $app = Get-Process -Name 'fw-lab-desktop' -ErrorAction SilentlyContinue |
