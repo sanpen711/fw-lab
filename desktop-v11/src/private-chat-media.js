@@ -3,6 +3,16 @@ import {socialStore} from './social-store.js';
 
 const client=authStore.client;
 
+export function decodeChatMedia(value){
+  const match=String(value||'').trim().match(/^\[\[(FW_MEDIA_IMAGE|FW_MEDIA_VIDEO):([A-Za-z0-9+/=]+)\]\]$/);
+  if(!match)return null;
+  try{
+    const url=new URL(atob(match[2]));
+    if(!['http:','https:'].includes(url.protocol))return null;
+    return{kind:match[1]==='FW_MEDIA_VIDEO'?'video':'image',url:url.href};
+  }catch{return null;}
+}
+
 export function fileKind(file){
   const type=String(file?.type||'').toLowerCase();const name=String(file?.name||'').toLowerCase();
   if(type.startsWith('image/')||/\.(jpe?g|png|webp|gif)$/i.test(name))return'image';

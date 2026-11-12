@@ -1,6 +1,6 @@
 # Current release
 
-Public **1.0.6**, native installer/update **1.3.43**. Private chats use consistent unread counts, clear reminders after reading, and clear the text field immediately on send. Archived game/resource exclusions remain in force.
+Public **1.0.7**, native installer/update **1.3.44**. Private chats catch up after realtime reconnects and preserve the open conversation, draft and scroll position during background sync. Archived game/resource exclusions remain in force.
 
 # Windows versions
 

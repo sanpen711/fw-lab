@@ -27,7 +27,6 @@ function toast(message){
   clearTimeout(toast.timer);toast.timer=setTimeout(()=>node.classList.remove('show'),3000);
 }
 function currentUser(){const user=authStore.state.user;return user&&!user.cached?user:null;}
-function safeUrl(encoded){try{const url=new URL(atob(String(encoded||'')));return ['http:','https:'].includes(url.protocol)?url.href:'';}catch{return'';}}
 function clipboardImages(event){
   const clipboard=event.clipboardData;if(!clipboard)return[];
   const itemFiles=Array.from(clipboard.items||[]).filter(item=>item.kind==='file').map(item=>item.getAsFile()).filter(file=>fileKind(file)==='image');
@@ -58,14 +57,6 @@ function injectStyles(){
     @media(max-width:900px){.align-card-grid{grid-template-columns:1fr}.align-log{grid-template-columns:1fr}.align-extra-page{padding:24px}.align-extra-head{align-items:flex-start;flex-direction:column}}
   `;document.head.appendChild(style);
 }
-
-function exactMedia(value){const match=String(value||'').trim().match(/^\[\[(FW_MEDIA_IMAGE|FW_MEDIA_VIDEO):([A-Za-z0-9+/=]+)\]\]$/);if(!match)return null;const url=safeUrl(match[2]);return url?{kind:match[1]==='FW_MEDIA_VIDEO'?'video':'image',url}:null;}
-function renderChatMedia(){
-  $$('.chat-bubble:not(.sticker)').forEach(bubble=>{if(bubble.dataset.alignMedia==='1')return;const media=exactMedia(bubble.textContent);if(!media)return;bubble.dataset.alignMedia='1';bubble.classList.add('align-media');bubble.textContent='';const node=document.createElement(media.kind==='video'?'video':'img');node.src=media.url;if(media.kind==='video'){node.controls=true;node.preload='metadata';node.playsInline=true;}else{node.alt='聊天图片，点击查看原图';node.dataset.lightboxSrc=media.url;}bubble.appendChild(node);});
-  $$('.buddy-main > span').forEach(node=>{const media=exactMedia(node.textContent.replace(/^我：/,''));if(media)node.textContent=(node.textContent.startsWith('我：')?'我：':'')+(media.kind==='video'?'视频':'图片');});
-}
-
-
 
 function enhanceCommentReports(){
   $$('.post-comment[data-comment-id]').forEach(row=>{const actions=$('.comment-actions',row);if(!actions||$('[data-delete-comment]',actions)||$('[data-align-report-comment]',actions))return;const button=document.createElement('button');button.type='button';button.dataset.alignReportComment=row.dataset.commentId;button.textContent='举报';actions.appendChild(button);});
@@ -134,7 +125,7 @@ function renderPublicLogs(){
   if(!publicLogsCache.length){host.innerHTML='<div class="align-empty">暂时没有处理公告。说明大家今天还算体面。</div>';return;}host.innerHTML=publicLogsCache.map(row=>{const action=actions[row.action]||row.action||'处理';const desc=[`对象：${targets[row.target_type]||row.target_type||'对象'}`,row.duration_text?`时长：${row.duration_text}`:'',row.reason?`原因：${row.reason}`:''].filter(Boolean).join(' · ');return `<article class="align-log"><time>${esc(new Date(row.created_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}))}</time><div><b>${esc(row.target_display_name||'某位研究员')} 处理：${esc(action)}</b><span>${esc(desc)}</span></div><span class="align-chip ${danger.has(row.action)?'warn':''}">${esc(action)}</span></article>`;}).join('');
 }
 
-function enhanceAll(){injectStyles();injectExtraViews();renderChatMedia();enhanceCommentReports();}
+function enhanceAll(){injectStyles();injectExtraViews();enhanceCommentReports();}
 function scheduleEnhance(){clearTimeout(enhanceTimer);enhanceTimer=setTimeout(enhanceAll,35);}
 function bind(){
   document.addEventListener('contextmenu',event=>{if(event.target.closest?.('[data-profile-user],[data-profile-anonymous]'))event.preventDefault();},true);
