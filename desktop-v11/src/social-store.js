@@ -6,6 +6,7 @@ import {windowIsActive,onWindowAttention} from './window-attention.js';
 
 const ECHO_TYPES=['like','comment','comment_reply'];
 const PRIVATE_TYPE='private_message';
+const PRIVATE_UNREAD_CACHE_VERSION=2;
 const CHAT_PAGE_SIZE=200;
 const PARTY_ALERT_TYPES=['game_party_apply','game_party_joined','game_party_accepted','game_party_rejected'];
 const REPLY_READ_PREFIX='fw:desktop:v11:reply-read:';
@@ -35,6 +36,8 @@ let pendingMessageSequence=0;
 const privateReadPromises=new Map();
 const privateReadQueued=new Set();
 const privateReadMessages=new Map();
+let privateReadRevision=0;
+let privateUnreadReady=false;
 let replyCache={userId:'',at:0,rows:[]};
 let hydratedEchoUser='';
 let hydratedBuddyUser='';
@@ -64,10 +67,10 @@ function emptyChat(){return{targetId:'',conversationId:null,profile:null,rows:[]
 async function hydrateBadgesCache(userId){
   if(!userId||hydratedBadgesUser===userId)return false;hydratedBadgesUser=userId;
   const cached=await desktopCache.read('badges',userId);const payload=cached?.payload;
-  if(!payload?.badges)return false;
-  state.badges={echo:Number(payload.badges.echo||0),buddy:Number(payload.badges.buddy||0),play:Number(payload.badges.play||0)};emit();return true;
+  if(String(cacheUser()?.id)!==String(userId)||!payload?.badges)return false;
+  state.badges={echo:Number(payload.badges.echo||0),buddy:privateUnreadReady?state.badges.buddy:payload.unreadVersion===PRIVATE_UNREAD_CACHE_VERSION?Number(payload.badges.buddy||0):0,play:Number(payload.badges.play||0)};emit();return true;
 }
-function persistBadgesCache(userId=cacheUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('badges',userId,{badges:state.badges});}
+function persistBadgesCache(userId=cacheUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('badges',userId,{badges:state.badges,unreadVersion:PRIVATE_UNREAD_CACHE_VERSION});}
 async function hydrateEchoCache(userId){
   if(!userId||hydratedEchoUser===userId)return false;hydratedEchoUser=userId;
   const cached=await desktopCache.read('echo',userId);const payload=cached?.payload;
@@ -78,12 +81,12 @@ function persistEchoCache(userId=cacheUser()?.id){if(!userId)return Promise.reso
 async function hydrateBuddyCache(userId){
   if(!userId||hydratedBuddyUser===userId)return false;hydratedBuddyUser=userId;
   const cached=await desktopCache.read('buddy',userId);const payload=cached?.payload;
-  if(!payload||!Array.isArray(payload.rows))return false;
-  state.buddy={...state.buddy,loaded:true,loading:false,rows:payload.rows,profiles:payload.profiles||{},conversations:payload.conversations||[],latest:payload.latest||{},unread:payload.unread||{},search:[],searching:false};emit();return true;
+  if(String(cacheUser()?.id)!==String(userId)||!payload||!Array.isArray(payload.rows))return false;
+  state.buddy={...state.buddy,loaded:true,loading:false,rows:payload.rows,profiles:payload.profiles||{},conversations:payload.conversations||[],latest:payload.latest||{},unread:privateUnreadReady?state.buddy.unread:payload.unreadVersion===PRIVATE_UNREAD_CACHE_VERSION?payload.unread||{}:{},search:[],searching:false};emit();return true;
 }
 function persistBuddyCache(userId=cacheUser()?.id){
   if(!userId)return Promise.resolve(false);
-  return desktopCache.write('buddy',userId,{rows:state.buddy.rows,profiles:state.buddy.profiles,conversations:state.buddy.conversations,latest:state.buddy.latest,unread:state.buddy.unread});
+  return desktopCache.write('buddy',userId,{rows:state.buddy.rows,profiles:state.buddy.profiles,conversations:state.buddy.conversations,latest:state.buddy.latest,unread:state.buddy.unread,unreadVersion:PRIVATE_UNREAD_CACHE_VERSION});
 }
 async function hydrateChatCache(userId,targetId,openToken=chatOpenToken){
   hydratedChatUser=userId;
@@ -146,41 +149,62 @@ async function refreshBadges(force=false){
   if(!user?.id)return state.badges;
   if(!force&&hydratedBadgesUser!==user.id)await hydrateBadgesCache(user.id);
   if(badgePromise){if(force)badgeRefreshQueued=true;return badgePromise;}
+  const revision=privateReadRevision;
   badgePromise=(async()=>{
     const [echoResult,privateResult,requestResult,partyResult]=await Promise.all([
       client.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',user.id).eq('is_read',false).in('type',ECHO_TYPES),
-      client.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',user.id).eq('is_read',false).eq('type',PRIVATE_TYPE),
+      client.rpc('fw_private_unread_counts'),
       client.from('friendships').select('id',{count:'exact',head:true}).eq('receiver_id',user.id).eq('status','pending'),
       client.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',user.id).eq('is_read',false).in('type',PARTY_ALERT_TYPES)
     ]);
-    if(state.userId!==user.id) return state.badges;
-    const next={echo:Number(echoResult.count||0),buddy:Number(privateResult.count||0)+Number(requestResult.count||0),play:Number(partyResult.count||0)};const changed=contentSignature(state.badges)!==contentSignature(next);
-    state.badges=next;await persistBadgesCache(user.id);if(changed)emit();return state.badges;
-  })().catch(()=>state.badges).finally(()=>{badgePromise=null;if(badgeRefreshQueued){badgeRefreshQueued=false;queueMicrotask(()=>refreshBadges(false));}});
+    if(state.userId!==user.id)return state.badges;
+    const next={
+      echo:echoResult.error?state.badges.echo:Number(echoResult.count||0),
+      buddy:state.badges.buddy,
+      play:partyResult.error?state.badges.play:Number(partyResult.count||0)
+    };
+    let unreadChanged=false;
+    if(!privateResult.error&&!requestResult.error&&revision===privateReadRevision&&!privateReadPromises.size){
+      const unread=Object.fromEntries((privateResult.data||[]).map(row=>[String(row.actor_id),Number(row.unread)||0]));
+      next.buddy=Object.values(unread).reduce((total,count)=>total+count,Number(requestResult.count||0));
+      unreadChanged=contentSignature(state.buddy.unread)!==contentSignature(unread);
+      if(unreadChanged)state.buddy={...state.buddy,unread};
+      privateUnreadReady=true;
+    }
+    const changed=contentSignature(state.badges)!==contentSignature(next);
+    state.badges=next;
+    if(changed||unreadChanged)emit();
+    persistBadgesCache(user.id).catch(()=>{});
+    if(unreadChanged&&state.buddy.loaded)persistBuddyCache(user.id).catch(()=>{});
+    return state.badges;
+  })().catch(()=>state.badges).finally(()=>{
+    badgePromise=null;
+    if(badgeRefreshQueued){badgeRefreshQueued=false;queueMicrotask(()=>refreshBadges(false));}
+  });
   return badgePromise;
 }
 
 function teardownChannels(){
-  clearTimeout(badgeTimer);clearTimeout(buddyTimer);clearTimeout(echoTimer);badgeRefreshQueued=false;buddyRefreshQueued=false;chatOpenToken+=1;privateReadPromises.clear();privateReadQueued.clear();privateReadMessages.clear();
+  clearTimeout(badgeTimer);clearTimeout(buddyTimer);clearTimeout(echoTimer);badgeRefreshQueued=false;buddyRefreshQueued=false;chatOpenToken+=1;privateReadPromises.clear();privateReadQueued.clear();privateReadMessages.clear();privateReadRevision++;privateUnreadReady=false;
   if(badgeChannel){client.removeChannel(badgeChannel);badgeChannel=null;}
   if(chatChannel){client.removeChannel(chatChannel);chatChannel=null;}
 }
 
 function startBadgeChannel(userId){
   if(badgeChannel) client.removeChannel(badgeChannel);
+  let subscribed=false;
   badgeChannel=client.channel(`desktop-v11-unread-${userId}`)
     .on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:`user_id=eq.${userId}`},payload=>{
       if(state.userId!==userId)return;
       const row=payload?.new||payload?.old||{};scheduleBadges();
       if(ECHO_TYPES.includes(row.type)&&state.echo.loaded)scheduleEchoReload();
-      if(payload?.eventType==='INSERT'&&row.type===PRIVATE_TYPE&&state.buddy.loaded){
-        const actorId=String(row.actor_id||'');const active=canReadPrivate(actorId);
-        if(actorId){
-          const unread={...state.buddy.unread,[actorId]:active?0:Number(state.buddy.unread[actorId]||0)+1};
-          const preview={id:`notice-${row.target_id||row.id}`,sender_id:actorId,content:row.content||'',created_at:row.created_at};
-          state.buddy={...state.buddy,unread,latest:{...state.buddy.latest,[actorId]:preview}};emit();persistBuddyCache(userId).catch(()=>{});
-          if(active)markPrivateRead(actorId,true).catch(()=>{});
-        }
+      if(payload?.eventType==='INSERT'&&row.type===PRIVATE_TYPE&&state.buddy.loaded&&row.actor_id){
+        const actorId=String(row.actor_id);
+        const previous=state.buddy.latest[actorId];
+        if(previous&&Date.parse(previous.created_at)>=Date.parse(row.created_at))return;
+        const preview={id:`notice-${row.target_id||row.id}`,sender_id:actorId,content:row.content||'',created_at:row.created_at};
+        state.buddy={...state.buddy,latest:{...state.buddy.latest,[actorId]:preview}};
+        emit();persistBuddyCache(userId).catch(()=>{});
       }
     })
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'private_messages'},payload=>{
@@ -191,7 +215,11 @@ function startBadgeChannel(userId){
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'friendships',filter:`receiver_id=eq.${userId}`},()=>{if(state.userId!==userId)return;scheduleBadges();if(state.buddy.loaded)scheduleBuddyReload();})
     .on('postgres_changes',{event:'*',schema:'public',table:'friendships',filter:`requester_id=eq.${userId}`},()=>{if(state.userId!==userId)return;if(state.buddy.loaded)scheduleBuddyReload();})
-    .subscribe();
+    .subscribe(status=>{
+      if(status!=='SUBSCRIBED'||state.userId!==userId)return;
+      if(subscribed)scheduleBadges();
+      subscribed=true;
+    });
 }
 
 function replyReadSet(userId){try{return new Set(JSON.parse(localStorage.getItem(REPLY_READ_PREFIX+userId)||'[]').map(String));}catch{return new Set();}}
@@ -288,7 +316,7 @@ async function loadBuddy(force=false){
   if(!user?.id){if(!state.buddy.loaded&&!state.buddy.loading){state.buddy={...state.buddy,loading:true};emit();}return state.buddy.rows;}
   if(buddyPromise){if(force)buddyRefreshQueued=true;return buddyPromise;}
   if(!force&&state.buddy.loaded){refreshBuddyProfiles().catch(()=>{});return state.buddy.rows;}
-  const showInitial=!state.buddy.loaded;const previousSignature=contentSignature(state.buddy.rows,state.buddy.profiles,state.buddy.conversations,state.buddy.latest,state.buddy.unread);
+  const showInitial=!state.buddy.loaded;const previousSignature=contentSignature(state.buddy.rows,state.buddy.profiles,state.buddy.conversations,state.buddy.latest);
   state.buddy={...state.buddy,loading:true};if(showInitial)emit();
   buddyPromise=(async()=>{try{
     countContent();
@@ -296,11 +324,8 @@ async function loadBuddy(force=false){
     const profiles=await fetchProfiles(friendships.flatMap(row=>[row.requester_id,row.receiver_id]),state.buddy.profiles,true);
     const accepted=friendships.filter(row=>row.status==='accepted');
     const buddyIds=accepted.map(row=>otherId(row,user.id));
-    let unread={};let conversations=[];let latest={};
+    let conversations=[];let latest={};
     if(buddyIds.length){
-      countContent();
-      const notices=await client.from('notifications').select('id,actor_id').eq('user_id',user.id).eq('is_read',false).eq('type',PRIVATE_TYPE).in('actor_id',buddyIds);
-      (notices.data||[]).forEach(row=>{const key=String(row.actor_id||'');if(key) unread[key]=(unread[key]||0)+1;});
       countContent();
       const conv=await client.from('conversations').select('id,user_one_id,user_two_id,updated_at').or(`user_one_id.eq.${user.id},user_two_id.eq.${user.id}`).order('updated_at',{ascending:false});
       if(conv.error) throw conv.error;conversations=conv.data||[];
@@ -314,8 +339,8 @@ async function loadBuddy(force=false){
       }
     }
     if(state.userId!==user.id)return state.buddy.rows;
-    const changed=previousSignature!==contentSignature(friendships,profiles,conversations,latest,unread);
-    state.buddy={...state.buddy,loaded:true,loading:false,rows:friendships,profiles,conversations,latest,unread};await persistBuddyCache(user.id);if(changed||showInitial)emit();return state.buddy.rows;
+    const changed=previousSignature!==contentSignature(friendships,profiles,conversations,latest);
+    state.buddy={...state.buddy,loaded:true,loading:false,rows:friendships,profiles,conversations,latest};await persistBuddyCache(user.id);if(changed||showInitial)emit();return state.buddy.rows;
   }catch(error){if(state.userId===user.id){state.buddy={...state.buddy,loaded:true,loading:false};state.error=error.message||'搭子读取失败';if(showInitial)emit();}return state.buddy.rows;}
   finally{buddyPromise=null;if(buddyRefreshQueued){buddyRefreshQueued=false;queueMicrotask(()=>loadBuddy(true));}}})();
   return buddyPromise;
@@ -342,23 +367,53 @@ async function removeFriendship(id){return runBuddyMutation('fw_remove_friendshi
 
 function canReadPrivate(actorId){
   const box=document.querySelector('[data-chat-messages]');
-  return Boolean(actorId&&String(state.chat.targetId)===String(actorId)&&!state.chat.loading&&windowIsActive()&&document.querySelector('#app')?.dataset.view==='buddy'&&box?.clientHeight&&box.scrollHeight-box.scrollTop-box.clientHeight<70);
+  return Boolean(actorId&&String(state.chat.targetId)===String(actorId)&&box?.dataset.target===String(actorId)&&
+    !state.chat.loading&&windowIsActive()&&document.querySelector('#app')?.dataset.view==='buddy'&&
+    box.clientHeight&&box.scrollHeight-box.scrollTop-box.clientHeight<70);
 }
-async function markPrivateRead(actorId,force=false){
-  const user=currentUser();if(!user?.id||!canReadPrivate(actorId)) return;
-  const key=String(actorId);const existing=privateReadPromises.get(key);if(existing){privateReadQueued.add(key);return existing;}
-  const newest=String(state.chat.rows.at(-1)?.id||'empty');
+async function markPrivateRead(actorId){
+  const user=currentUser();
+  if(!user?.id||!canReadPrivate(actorId))return;
+  const key=String(actorId);
+  const newest=state.chat.rows.findLast(row=>!row.__pending&&row.created_at);
+  if(!newest||privateReadMessages.get(key)===String(newest.id))return;
+  const existing=privateReadPromises.get(key);
+  if(existing){privateReadQueued.add(key);return existing;}
+
   const previousUnread=Number(state.buddy.unread[key]||0);
-  if(!force&&!previousUnread&&privateReadMessages.get(key)===newest)return;
-  if(previousUnread>0){state.buddy={...state.buddy,unread:{...state.buddy.unread,[key]:0}};state.badges={...state.badges,buddy:Math.max(0,state.badges.buddy-previousUnread)};emit();persistBuddyCache(user.id).catch(()=>{});persistBadgesCache(user.id).catch(()=>{});}
-  const promise=client.from('notifications').update({is_read:true}).eq('user_id',user.id).eq('is_read',false).eq('type',PRIVATE_TYPE).eq('actor_id',key).then(result=>{
-    if(state.userId!==user.id)return;
-    if(result?.error){
-      if(previousUnread){const restored=Math.max(previousUnread,Number(state.buddy.unread[key]||0));state.buddy={...state.buddy,unread:{...state.buddy.unread,[key]:restored}};emit();}
+  privateReadRevision++;
+  const promise=client.from('notifications').update({is_read:true})
+    .eq('user_id',user.id).eq('is_read',false).eq('type',PRIVATE_TYPE).eq('actor_id',key)
+    .lte('created_at',newest.created_at)
+    .then(result=>{
+      if(result.error)throw result.error;
+      if(state.userId===user.id){
+        privateReadMessages.set(key,String(newest.id));
+        if(state.buddy.loaded)persistBuddyCache(user.id).catch(()=>{});
+      }
+    }).catch(()=>{
+      if(state.userId!==user.id||!previousUnread)return;
+      state.buddy={...state.buddy,unread:{...state.buddy.unread,[key]:previousUnread}};
+      state.badges={...state.badges,buddy:state.badges.buddy+previousUnread};
+      emit();
+    }).finally(()=>{
+      if(privateReadPromises.get(key)!==promise)return;
+      privateReadPromises.delete(key);
+      privateReadRevision++;
       scheduleBadges();
-    }else privateReadMessages.set(key,newest);
-  }).finally(()=>{if(privateReadPromises.get(key)===promise)privateReadPromises.delete(key);if(privateReadQueued.delete(key)&&state.userId===user.id)queueMicrotask(()=>markPrivateRead(key,true));});
-  privateReadPromises.set(key,promise);return promise;
+      if(privateReadQueued.delete(key)&&privateReadMessages.get(key)===String(newest.id)){
+        queueMicrotask(()=>markPrivateRead(key));
+      }
+    });
+  privateReadPromises.set(key,promise);
+  if(previousUnread){
+    const unread={...state.buddy.unread};
+    delete unread[key];
+    state.buddy={...state.buddy,unread};
+    state.badges={...state.badges,buddy:Math.max(0,state.badges.buddy-previousUnread)};
+    emit();
+  }
+  return promise;
 }
 
 function mergeMessages(...groups){
@@ -410,10 +465,10 @@ async function recallMessage(id){
   if(currentUser()?.id===owner)applyPrivateRecall(recalled);
 }
 
-function reconcileSentMessage(conversationId,targetId){
+function reconcileSentMessage(conversationId,targetId,userId){
   if(!Number.isFinite(Number(conversationId))||Number(conversationId)<=0)return;
   countContent();client.from('private_messages').select(PRIVATE_MESSAGE_FIELDS).eq('conversation_id',conversationId).eq('is_deleted',false).order('id',{ascending:false}).limit(1).then(result=>{
-    const row=result?.data?.[0];if(result?.error||!row)return;
+    const row=result?.data?.[0];if(currentUser()?.id!==userId||result?.error||!row)return;
     state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:row}};
     if(String(state.chat.targetId)===String(targetId)&&Number(state.chat.conversationId)===Number(conversationId)){state.chat={...state.chat,rows:mergeRealtimeMessage(row)};persistChatCache().catch(()=>{});}emit();persistBuddyCache().catch(()=>{});
   }).catch(()=>{});
@@ -424,10 +479,10 @@ function subscribeChat(conversationId){
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'private_messages',filter:`conversation_id=eq.${conversationId}`},payload=>{
       const row=payload.new;if(!row||row.is_deleted||state.chat.conversationId!==conversationId)return;
       if(!state.chat.rows.some(item=>String(item.id)===String(row.id))){
-        const targetId=String(state.chat.targetId);const user=currentUser();const incoming=user&&String(row.sender_id)!==String(user.id);const previousUnread=Number(state.buddy.unread[targetId]||0);
+        const targetId=String(state.chat.targetId);const user=currentUser();const incoming=user&&String(row.sender_id)!==String(user.id);
         state.chat={...state.chat,rows:mergeRealtimeMessage(row)};
         state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:row}};
-        emit();persistChatCache().catch(()=>{});persistBuddyCache().catch(()=>{});if(incoming)markPrivateRead(targetId).catch(()=>{});
+        emit();persistChatCache().catch(()=>{});persistBuddyCache().catch(()=>{});if(incoming)requestAnimationFrame(()=>markPrivateRead(targetId));
       }
     }).subscribe();
 }
@@ -450,8 +505,8 @@ async function openChat(targetId){
     const rows=fail(await client.from('private_messages').select(PRIVATE_MESSAGE_FIELDS).eq('conversation_id',convId).eq('is_deleted',false).order('id',{ascending:false}).limit(CHAT_PAGE_SIZE+1),'读取私聊失败')||[];
     if(openToken!==chatOpenToken)return;
     const page=rows.slice(0,CHAT_PAGE_SIZE);
-    state.chat={...state.chat,targetId:wantedTarget,conversationId:convId,profile:profiles[wantedTarget]||null,rows:mergeMessages(state.chat.rows,page.slice().reverse()),loading:false,sending:false,hasMore:rows.length>CHAT_PAGE_SIZE,historyCursor:page.at(-1)?.id||null};await persistChatCache(user.id);emit();
-    markPrivateRead(wantedTarget).catch(()=>{});
+    state.chat={...state.chat,targetId:wantedTarget,conversationId:convId,profile:profiles[wantedTarget]||null,rows:mergeMessages(state.chat.rows,page.slice().reverse()),loading:false,sending:false,hasMore:rows.length>CHAT_PAGE_SIZE,historyCursor:page.at(-1)?.id||null};emit();persistChatCache(user.id).catch(()=>{});
+    requestAnimationFrame(()=>markPrivateRead(wantedTarget));
   }catch(error){if(openToken!==chatOpenToken)return;state.chat={...state.chat,loading:false};emit();if(!cacheHit)throw error;}
 }
 
@@ -477,14 +532,26 @@ async function sendMessage(text,{stickerUrl=''}={}){
   const targetId=state.chat.targetId;const content=stickerUrl?stickerPayload(stickerUrl):String(text||'').trim();
   if(!targetId) throw new Error('先选择一个搭子。');if(!content) return;
   if(!stickerUrl&&content.length>300) throw new Error('私聊最多 300 字。');if(!stickerUrl&&hasLink(content)) throw new Error('私聊暂不支持链接。');
-  const user=currentUser();const previousLatest=state.buddy.latest[targetId]||null;const pendingId=`pending-${Date.now()}-${++pendingMessageSequence}`;const pending={id:pendingId,conversation_id:state.chat.conversationId,sender_id:user?.id,content,is_deleted:false,created_at:new Date().toISOString(),__pending:true};
+  const user=currentUser();if(!user?.id)throw new Error('请先登录。');
+  const previousLatest=state.buddy.latest[targetId]||null;const pendingId=`pending-${Date.now()}-${++pendingMessageSequence}`;const pending={id:pendingId,conversation_id:state.chat.conversationId,sender_id:user?.id,content,is_deleted:false,created_at:new Date().toISOString(),__pending:true};
   state.chat={...state.chat,sending:true,rows:mergeMessages(state.chat.rows,pending)};state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:pending}};emit();
   try{
     countContent();const convId=Number(fail(await client.rpc('fw_send_private_message_to_user',{target_user_id:targetId,message_text:content}),'发送失败'));
+    if(currentUser()?.id!==user.id)return;
     if(String(state.chat.targetId)===String(targetId)&&Number.isFinite(convId)&&convId>0&&state.chat.conversationId!==convId){state.chat={...state.chat,conversationId:convId};subscribeChat(convId);}
-    reconcileSentMessage(convId||state.chat.conversationId,targetId);
-  }catch(error){if(String(state.chat.targetId)===String(targetId))state.chat={...state.chat,rows:state.chat.rows.filter(row=>String(row.id)!==pendingId)};if(String(state.buddy.latest[targetId]?.id)===pendingId)state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:previousLatest}};throw error;
-  }finally{if(String(state.chat.targetId)===String(targetId))state.chat={...state.chat,sending:false};emit();persistChatCache().catch(()=>{});persistBuddyCache().catch(()=>{});}
+    reconcileSentMessage(convId||pending.conversation_id,targetId,user.id);
+  }catch(error){
+    if(currentUser()?.id===user.id){
+      if(String(state.chat.targetId)===String(targetId))state.chat={...state.chat,rows:state.chat.rows.filter(row=>String(row.id)!==pendingId)};
+      if(String(state.buddy.latest[targetId]?.id)===pendingId)state.buddy={...state.buddy,latest:{...state.buddy.latest,[targetId]:previousLatest}};
+    }
+    throw error;
+  }finally{
+    if(currentUser()?.id===user.id){
+      if(String(state.chat.targetId)===String(targetId))state.chat={...state.chat,sending:false};
+      emit();persistChatCache().catch(()=>{});persistBuddyCache().catch(()=>{});
+    }
+  }
   return targetId;
 }
 

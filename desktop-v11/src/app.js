@@ -84,7 +84,7 @@ const composeDraft={text:'',attachments:[],pickerTab:'emoji'};
 const commentDrafts=new Map();
 const chatDrafts=new Map();
 const chatAttachments=new Map();
-const chatSends=new Set();
+const chatSends=new Map();
 const buddyNameOrder=new Intl.Collator('en',{numeric:true,sensitivity:'base'});
 let chatComposerTarget='';
 let chatMessageIds=new Set();
@@ -93,7 +93,9 @@ let draftTouched=new Set();
 function persistDrafts(key){
   if(!draftOwner)return;if(typeof key==='string')draftTouched.add(key);
   if(draftHydrating)return;
-  saveDraftSnapshot(draftOwner,{compose:composeDraft,comments:Object.fromEntries(commentDrafts),chats:Object.fromEntries(chatDrafts)});
+  const chats=Object.fromEntries(chatDrafts);
+  for(const [target,sendingText] of chatSends){if(sendingText&&!chats[target])chats[target]=sendingText;}
+  saveDraftSnapshot(draftOwner,{compose:composeDraft,comments:Object.fromEntries(commentDrafts),chats});
 }
 async function restoreDrafts(owner){
   const generation=draftGeneration;draftHydrating=true;
@@ -592,7 +594,12 @@ async function submitPrivateChat(event){
   const {targetId,sending,loading}=socialState.chat,owner=accountState.user?.id;
   const target=String(targetId||''),text=input.value,attachment=chatAttachments.get(target);
   if(!target||loading||sending||chatSends.has(target)||(!attachment&&!text.trim()))return;
-  chatSends.add(target);
+  chatSends.set(target,attachment?'':text);
+  if(!attachment){
+    input.value='';
+    chatDrafts.delete(target);
+    persistDrafts('chat:'+target);
+  }
   renderChat();
   try{
     if(attachment?.file)await sendPrivateMedia(attachment.file,owner,target);
@@ -603,14 +610,22 @@ async function submitPrivateChat(event){
     if(attachment){
       if(chatAttachments.get(target)===attachment)setChatAttachment(target,null);
       if(!attachment.file&&!attachment.token)rememberSticker(attachment.url);
-    }else{
-      if(chatDrafts.get(target)===text)chatDrafts.delete(target);
-      if(String(socialState.chat.targetId)===target&&input.value===text)input.value='';
-      persistDrafts('chat:'+target);
     }
     if(String(socialState.chat.targetId)===target){closeEmojiPanel();input.focus({preventScroll:true});}
-  }catch(error){if(accountState.user?.id===owner)toast(error.message||'发送失败。');}
-  finally{if(accountState.user?.id===owner){chatSends.delete(target);renderChat();}}
+  }catch(error){
+    if(accountState.user?.id!==owner)return;
+    if(!attachment&&!chatDrafts.get(target)){
+      chatDrafts.set(target,text);
+      if(String(socialState.chat.targetId)===target&&!input.value)input.value=text;
+    }
+    toast(error.message||'发送失败。');
+  }finally{
+    if(accountState.user?.id===owner){
+      chatSends.delete(target);
+      if(!attachment)persistDrafts('chat:'+target);
+      renderChat();
+    }
+  }
 }
 
 function renderChat(){

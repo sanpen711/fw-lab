@@ -1,6 +1,6 @@
 # Current release
 
-Public **1.0.5**, native installer/update **1.3.42**. Private chats include attachment previews, a consistent emoji picker, and a two-minute message recall window. Archived game/resource exclusions remain in force.
+Public **1.0.6**, native installer/update **1.3.43**. Private chats use consistent unread counts, clear reminders after reading, and clear the text field immediately on send. Archived game/resource exclusions remain in force.
 
 # Windows versions
 
