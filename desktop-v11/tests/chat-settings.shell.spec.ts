@@ -9,7 +9,12 @@ const user={id:me,aud:'authenticated',role:'authenticated',email:'desktop-test@e
 
 function queried(rows:any[],url:URL){
   let selected=[...rows];
-  const before=url.searchParams.get('id');if(before?.startsWith('lt.'))selected=selected.filter(row=>row.id<Number(before.slice(3)));
+  const conversation=url.searchParams.get('conversation_id');
+  if(conversation?.startsWith('eq.'))selected=selected.filter(row=>row.conversation_id===Number(conversation.slice(3)));
+  const filter=url.searchParams.get('id')||'';
+  if(filter.startsWith('lt.'))selected=selected.filter(row=>row.id<Number(filter.slice(3)));
+  if(filter.startsWith('gt.'))selected=selected.filter(row=>row.id>Number(filter.slice(3)));
+  if(filter.startsWith('in.')){const ids=filter.slice(4,-1).split(',').map(Number);selected=selected.filter(row=>ids.includes(row.id));}
   const order=url.searchParams.get('order')||'';
   selected.sort((a,b)=>order.startsWith('id.desc')?b.id-a.id:a.id-b.id);
   return selected.slice(0,Number(url.searchParams.get('limit')||selected.length));
@@ -54,7 +59,7 @@ async function privateFixture(page:Page){
 }
 
 
-test('打开私聊后延迟加载的表情仍贴底，主动上翻后保持阅读位置，再点搭子回到最新消息',async({page})=>{
+test('打开私聊后延迟加载的表情仍贴底，主动上翻后保持阅读位置，再点当前搭子保留阅读位置',async({page})=>{
   let release!:()=>void;const pending=new Promise<void>(resolve=>release=resolve);
   const image='http://127.0.0.1:1421/slow-chat-sticker.svg';
   const rows=Array.from({length:60},(_,i)=>({id:i+1,conversation_id:601,sender_id:i%2?me:other,content:i>=56?'[[FW_USER_STICKER:'+Buffer.from(image).toString('base64')+']]':'消息 '+(i+1),is_deleted:false,created_at:stamp}));
@@ -73,7 +78,105 @@ test('打开私聊后延迟加载的表情仍贴底，主动上翻后保持阅�
   await expect(messages.locator('.sticker img').last()).toHaveCSS('height','220px');
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   expect(Math.abs(await messages.evaluate(el=>el.scrollTop)-top)).toBeLessThan(2);
-  await page.locator('[data-open-chat="'+other+'"]').first().click();await expect.poll(bottomGap).toBeLessThan(2);
+  const draft=page.locator('[data-chat-compose] input[name="message"]');
+  await draft.fill('再次点击仍保留');
+  await messages.evaluate(el=>(window as any).__sameChatTop=el.scrollTop);
+  let reopened=0;
+  page.on('request',r=>{if(r.url().includes('fw_get_or_create_conversation'))reopened++;});
+  await page.locator('[data-open-chat="'+other+'"]').first().click();
+  await expect(draft).toHaveValue('再次点击仍保留');
+  await expect.poll(()=>messages.evaluate(el=>Math.abs(el.scrollTop-(window as any).__sameChatTop))).toBeLessThan(2);
+  expect(reopened).toBe(0);
+});
+
+async function captureChatSubscription(page:Page){
+  await page.evaluate(async()=>{
+    const {authStore}=await import('/src/auth-store.js');
+    const original=authStore.client.channel.bind(authStore.client);
+    authStore.client.channel=(...args)=>{
+      const channel=original(...args);
+      if(!String(args[0]).startsWith('desktop-v11-chat-'))return channel;
+      const on=channel.on.bind(channel),subscribe=channel.subscribe.bind(channel);
+      channel.on=(type,filter,handler)=>{
+        if(filter.table==='private_messages')(window as any).__chatInsert=handler;
+        return on(type,filter,handler);
+      };
+      channel.subscribe=(handler,...params)=>{
+        (window as any).__chatStatus=handler;
+        return subscribe(handler,...params);
+      };
+      return channel;
+    };
+  });
+}
+
+function privateRow(id:number,conversation=601,sender=other){
+  return {id,conversation_id:conversation,sender_id:sender,content:'同步消息 '+id,is_deleted:false,
+    created_at:new Date(Date.parse(stamp)+id*1000).toISOString()};
+}
+
+test('重连分批补齐漏收消息，通知还能找回较旧的漏收消息',async({page})=>{
+  const rows=[privateRow(1),privateRow(3)];
+  const readFilters:string[]=[];
+  await page.route('**/rest/v1/private_messages**',route=>{
+    const url=new URL(route.request().url());
+    if(url.searchParams.get('conversation_id')==='eq.601')readFilters.push(url.searchParams.get('id')||'initial');
+    return route.fulfill({json:queried(rows,url)});
+  });
+  await boot(page);await captureChatSubscription(page);await openChat(page);
+  const messages=page.locator('[data-chat-messages]');
+  await expect(messages.locator('[data-chat-message-id="3"]')).toBeVisible();
+  await messages.locator('[data-chat-message-id="3"]').evaluate(node=>(window as any).__existingBubble=node);
+  rows.push(...Array.from({length:205},(_,i)=>privateRow(i+4)));
+  await page.evaluate(row=>(window as any).__chatInsert({new:row}),rows.at(-1));
+  await expect(messages.locator('[data-chat-message-id="208"]')).toBeVisible();
+  await expect(messages.locator('[data-chat-message-id="4"]')).toHaveCount(0);
+  await page.evaluate(()=>(window as any).__chatStatus('SUBSCRIBED'));
+  await expect(messages.locator('[data-chat-message-id]')).toHaveCount(207);
+  expect(readFilters).toContain('gt.201');
+  expect(await messages.locator('[data-chat-message-id="3"]').evaluate(node=>node===(window as any).__existingBubble)).toBe(true);
+  rows.push(privateRow(2));
+  await page.evaluate(async({actor,created})=>{
+    const {authStore}=await import('/src/auth-store.js');
+    const channel=authStore.client.getChannels().find(c=>c.topic.includes('desktop-v11-unread-'));
+    const handler=channel?.bindings.postgres_changes.find(binding=>binding.filter.table==='notifications')?.callback;
+    handler?.({eventType:'INSERT',new:{id:111,actor_id:actor,type:'private_message',target_type:'private_message',
+      target_id:'2',created_at:created,content:'同步消息 2'}});
+  },{actor:other,created:rows.at(-1)!.created_at});
+  await expect(messages.locator('[data-chat-message-id="2"]')).toBeVisible();
+  expect(readFilters).toContain('in.(2)');
+});
+
+test('迟到的列表刷新保留新消息预览，也保留未变动的搭子卡片',async({page})=>{
+  let hold=false,release=()=>{},requested=()=>{};
+  const gate=new Promise<void>(resolve=>release=resolve);
+  const started=new Promise<void>(resolve=>requested=resolve);
+  await page.route('**/rest/v1/private_messages**',async route=>{
+    const url=new URL(route.request().url());
+    if(hold&&url.searchParams.get('conversation_id')?.startsWith('in.')){
+      hold=false;
+      requested();
+      await gate;
+    }
+    return route.fulfill({json:queried([privateRow(1),privateRow(2,602,third)],url)});
+  });
+  await boot(page);await captureChatSubscription(page);await openChat(page);
+  const current=page.locator(`[data-open-chat="${other}"]`);
+  const unchanged=page.locator(`[data-open-chat="${third}"]`);
+  await expect(current).toContainText('同步消息 1');
+  await unchanged.evaluate(node=>(window as any).__otherCard=node);
+  hold=true;
+  await page.evaluate(async()=>{
+    const {socialStore}=await import('/src/social-store.js');
+    (window as any).__refreshDone=socialStore.loadBuddy(true);
+  });
+  await started;
+  await page.evaluate(row=>(window as any).__chatInsert({new:row}),privateRow(3));
+  await expect(current).toContainText('同步消息 3');
+  release();
+  await page.evaluate(()=>(window as any).__refreshDone);
+  await expect(current).toContainText('同步消息 3');
+  expect(await unchanged.evaluate(node=>node===(window as any).__otherCard)).toBe(true);
 });
 
 test('私聊按间隔显示时间，举报收进菜单，支持复制与键盘关闭',async({page})=>{
