@@ -9,6 +9,7 @@ on:
       - 'assets/fw-user-activity.mjs'
       - 'assets/fw-auth-errors.mjs'
       - 'tests/user-activity.test.mjs'
+      - 'scripts/test-windows-upgrade.ps1'
       - 'src-tauri/**'
       - 'package.json'
       - 'package-lock.json'
