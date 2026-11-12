@@ -9,6 +9,8 @@ const user={id:me,aud:'authenticated',role:'authenticated',email:'desktop-test@e
 
 function queried(rows:any[],url:URL){
   let selected=[...rows];
+  const conversation=url.searchParams.get('conversation_id');
+  if(conversation?.startsWith('eq.'))selected=selected.filter(row=>row.conversation_id===Number(conversation.slice(3)));
   const filter=url.searchParams.get('id')||'';
   if(filter.startsWith('lt.'))selected=selected.filter(row=>row.id<Number(filter.slice(3)));
   if(filter.startsWith('gt.'))selected=selected.filter(row=>row.id>Number(filter.slice(3)));

@@ -616,12 +616,14 @@ function subscribeChat(session){
   const channel=client.channel(`desktop-v11-chat-${conversationId}-${++chatSessionSequence}`);
   session.channel=channel;
   const current=()=>isCurrentChat(session)&&session.channel===channel;
-  const catchUp=()=>{
+  const catchUp=(attempt=0)=>{
     if(!current()||(!session.ready&&!session.fetching))return;
     clearTimeout(session.joinTimer);
     session.joinTimer=setTimeout(()=>{
-      if(current())refreshChat({verifyRecent:session.ready}).catch(()=>{});
-    },80);
+      if(current())refreshChat({verifyRecent:session.ready}).catch(()=>{
+        if(attempt<2)catchUp(attempt+1);
+      });
+    },attempt?500*attempt:80);
   };
   channel.on('postgres_changes',{event:'INSERT',schema:'public',table:'private_messages',filter:`conversation_id=eq.${conversationId}`},payload=>{
     const row=payload.new;
