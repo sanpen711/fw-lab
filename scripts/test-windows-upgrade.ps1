@@ -31,18 +31,13 @@ try {
     $before = @(Get-ProductShortcuts) -join [Environment]::NewLine
 
     # Match Tauri's quiet NSIS invocation. The unquoted /D path is last.
-    $process = Start-Process -FilePath $installer.FullName -ArgumentList "/S /R /UPDATE /ARGS /NS /D=$directory" -PassThru
+    $process = Start-Process -FilePath $installer.FullName -ArgumentList "/S /R /UPDATE /ARGS --fw-update-restart /NS /D=$directory" -PassThru
     if (-not $process.WaitForExit(90000)) { throw 'Silent install did not finish.' }
     if ($process.ExitCode -ne 0) { throw "Silent install failed ($($process.ExitCode))." }
 
     $expected = (Get-FileHash 'src-tauri/target/release/fw-lab-desktop.exe').Hash
     if ((Get-FileHash -LiteralPath $executable).Hash -ne $expected) { throw 'The running directory was not overwritten.' }
     if ((Get-Content -LiteralPath $cached -Raw).Trim() -ne 'existing user cache') { throw 'Existing cache was modified.' }
-    if ((Get-FileHash -LiteralPath $shortcut).Hash -ne $shortcutHash) { throw 'The custom shortcut was modified.' }
-    if ((@(Get-ProductShortcuts) -join [Environment]::NewLine) -ne $before) {
-        throw 'The upgrade changed the set of desktop or Start Menu shortcuts.'
-    }
-
     for ($attempt = 0; $attempt -lt 25; $attempt++) {
         $app = Get-Process -Name 'fw-lab-desktop' -ErrorAction SilentlyContinue |
             Where-Object Path -EQ $executable | Select-Object -First 1
@@ -50,6 +45,13 @@ try {
         Start-Sleep -Milliseconds 800
     }
     if (-not $app) { throw 'The installed app did not restart from the custom directory.' }
+    $commandLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$($app.Id)").CommandLine
+    if ($commandLine -notlike '*--fw-update-restart*') { throw 'The app did not receive the upgrade restart argument.' }
+    if ((Get-FileHash -LiteralPath $shortcut).Hash -ne $shortcutHash) { throw 'The custom shortcut was modified.' }
+    if ((@(Get-ProductShortcuts) -join [Environment]::NewLine) -ne $before) {
+        throw 'The upgrade changed the set of desktop or Start Menu shortcuts.'
+    }
+
     Write-Host 'Quiet upgrade replaced the installed executable, preserved existing files and shortcuts, and restarted the app.'
 }
 finally {

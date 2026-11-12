@@ -39,6 +39,7 @@ const UPDATE_SLOW_SAMPLE_SECS: u64 = 4;
 const UPDATE_SLOW_MIN_BPS: u64 = 96 * 1024;
 const UPDATE_MODE_DIRECT: &str = "direct-http1-ipv4";
 const UPDATE_MODE_SYSTEM: &str = "system-network";
+const UPDATE_RESTART_ARG: &str = "--fw-update-restart";
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -291,6 +292,9 @@ async fn check_manifest_endpoint(app: &AppHandle, endpoint: &'static str, direct
         let executable = std::env::current_exe().map_err(|error| format!("current_exe {error}"))?;
         let directory = executable.parent().ok_or("current_exe missing directory")?;
         // NSIS expects /D to be the last argument, with an unquoted path.
+        if !is_update_restart() {
+            builder = builder.installer_arg(UPDATE_RESTART_ARG);
+        }
         let mut destination = OsString::from("/D=");
         destination.push(directory);
         builder = builder.installer_args([OsString::from("/NS"), destination]);
@@ -674,6 +678,10 @@ async fn run_update_check(app: AppHandle) -> Result<UpdateCheckResult, String> {
     }
 }
 
+fn is_update_restart() -> bool {
+    std::env::args_os().any(|argument| argument == UPDATE_RESTART_ARG)
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(PendingUpdate(Mutex::new(None)))
@@ -688,7 +696,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
-            let _ = desktop_identity::apply_saved(app.handle());
+            let _ = desktop_identity::apply_saved(app.handle(), !is_update_restart());
             let _ = persistent_cache::init(app.handle());
             if let Err(error) = desktop_behavior::initialize(app.handle()) { update_log(app.handle(), format!("desktop_behavior_init {error}")); }
             check_for_updates(app.handle().clone());
