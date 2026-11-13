@@ -26,7 +26,12 @@ mod tests {
     #[test]
     fn restarted_display_number_keeps_a_newer_installer_version() {
         let release: Value = serde_json::from_str(RELEASE).unwrap();
-        assert_eq!(current_display_version(), "1.0.9");
+        let display_version = release["version"].as_str().expect("display version");
+        assert_eq!(current_display_version(), display_version);
+        assert_eq!(
+            update_display_version(&json!({"displayVersion": display_version}), ""),
+            display_version
+        );
         assert_eq!(release["buildVersion"], env!("CARGO_PKG_VERSION"));
         let build: Vec<u64> = env!("CARGO_PKG_VERSION").split('.').map(|part| part.parse().unwrap()).collect();
         assert!(build.as_slice() > [1, 3, 36].as_slice());
