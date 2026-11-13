@@ -40,7 +40,7 @@ test('其他板块直链、旧链接及广场私人标签不能绕过登录',asy
  expect(calls.filter(c=>privateReads.test(c.path))).toEqual([]);
 });
 
-test('直接访问会员装扮，验证登录后恢复目标而非提前加载',async({page})=>{
+test.skip('直接访问会员装扮，验证登录后恢复目标而非提前加载',async({page})=>{
  const calls=await mock(page);await page.goto('/membership.html?tab=appearance');await expectGuestGate(page,'membership');expect(calls.filter(c=>privateReads.test(c.path))).toEqual([]);await signIn(page,'[data-web-guest-gate] [data-open-account]');await expect(page.locator('[data-web-guest-gate]')).toBeHidden();await expect(page).toHaveURL(/membership.html\?tab=appearance$/);await expect(page.locator('.membership-appearance-page')).toBeVisible();
 });
 

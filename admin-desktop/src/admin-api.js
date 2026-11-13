@@ -71,6 +71,24 @@ async function listMemberships(){
   return rpc('admin_list_memberships',{},'读取会员列表失败');
 }
 
+async function getAppearanceTest(){
+  return fail(await client.rpc('admin_get_appearance_test'),'读取装扮测试失败');
+}
+
+async function saveAppearanceTest(values){
+  return rpc('admin_save_appearance_test',values,'保存装扮测试失败');
+}
+
+async function listAppearancePosts(userId){
+  return fail(await client.from('posts').select('id,content').eq('user_id',userId)
+    .eq('is_deleted',false).order('created_at',{ascending:false}).limit(100),'读取代表作失败')||[];
+}
+
+async function listMembershipOrders(userId){
+  return fail(await client.from('membership_orders').select('order_no,amount_cents,status,created_at')
+    .eq('user_id',userId).order('created_at',{ascending:false}).limit(100),'读取会员订单失败')||[];
+}
+
 async function listPosts(){
   return fail(await client.from('posts')
     .select('id,user_id,content,is_deleted,created_at,profiles!posts_user_id_fkey(nickname,avatar_url,lab_code)')
@@ -203,7 +221,7 @@ async function deleteUserAccount({targetUserId,confirmCode,confirmText,reason}){
 }
 
 export const adminApi={
-  rpc,client,restoreAdmin,signIn,signOut,listUsers,listReports,listFeedback,listMemberships,listPosts,listComments,listChats,listParties,
+  rpc,client,restoreAdmin,signIn,signOut,getAppearanceTest,saveAppearanceTest,listAppearancePosts,listMembershipOrders,listUsers,listReports,listFeedback,listMemberships,listPosts,listComments,listChats,listParties,
   listBirdPosts,listBirdComments,listPolls,listPartyMessages,listLogs,
   moderateUser,moderatePost,moderateComment,moderateChat,resolveReport,updateFeedback,moderateParty,
   moderateBirdPost,moderateBirdComment,moderatePoll,deletePartyMessage,deleteUserAccount,grantMembership,cancelMembership,

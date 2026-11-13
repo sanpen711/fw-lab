@@ -27,13 +27,6 @@
       return '<img class="mobile-fufu-inline" src="'+item.url+'" alt="'+esc(item.label)+'" loading="lazy">';
     });
   }
-  async function stickerLimit(user){
-    if(!user || !user.id || !window.fwDb || !window.fwDb.client) return 80;
-    var result=await window.fwDb.client.from('memberships').select('status,expires_at').eq('user_id',user.id).maybeSingle();
-    if(result.error) throw result.error;
-    var row=result.data;
-    return row && row.status==='active' && row.expires_at && new Date(row.expires_at).getTime()>Date.now()?160:80;
-  }
   async function uploadVideo(file,user,scope){
     if(!isVideo(file)) throw new Error('请选择视频文件。');
     if(file.size>20*1024*1024) throw new Error('视频不能超过 20MB。');
@@ -59,7 +52,7 @@
     if(!url) throw new Error('视频地址生成失败。');
     return {url:url,marker:'[[FW_MEDIA_VIDEO:'+btoa(url)+']]'};
   }
-  window.FWMobileMedia={fufu:fufu,emoji:emoji,fufuHtml:fufuHtml,isVideo:isVideo,safeUrl:safeUrl,stickerLimit:stickerLimit,uploadVideo:uploadVideo};
+  window.FWMobileMedia={fufu:fufu,emoji:emoji,fufuHtml:fufuHtml,isVideo:isVideo,safeUrl:safeUrl,stickerLimit:function(){return 80;},uploadVideo:uploadVideo};
 })();
 
 (function(){

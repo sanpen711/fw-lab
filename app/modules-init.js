@@ -49,8 +49,7 @@
       echo:true,
       profile:true,
       play:true,
-      'play-detail':true,
-      membership:true
+      'play-detail':true
     };
     return allowed[hash] ? hash : '';
   }

@@ -190,7 +190,8 @@ test('档案独立放在会员上方，入馆须知和处理公告保留在更�
   const mainLabels=await page.locator('.nav-primary-group .nav-item b').allTextContents();
   expect(mainLabels).toEqual(['首页','精神广场','学术研讨','闲聊房间','下班开黑','小游戏']);
   await expect(page.locator('.nav-primary-group [data-nav="play"] + [data-nav="games"]')).toBeVisible();
-  await expect(page.locator('.nav-lower-group [data-nav="archive"] + [data-nav="membership"]')).toBeVisible();
+  await expect(page.locator('.nav-lower-group [data-nav="archive"]')).toBeVisible();
+  await expect(page.locator('[data-nav="membership"]')).toHaveCount(0);
   await page.locator('.nav-lower-group [data-nav="archive"]').click();
   await expect(page.locator('[data-view-panel="archive"]')).toHaveClass(/active/);
   await page.locator('[data-sidebar-more-toggle]').click();

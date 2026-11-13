@@ -9,7 +9,7 @@ test('活动时间按北京时间解析并拒绝无效日期与倒置时间',()=
 });
 test('参与入口拒绝脚本与带凭证网址，内部入口不保存遗留外链',()=>{
  for(const participation_url of ['javascript:alert(1)','file:///etc/passwd','https://user:pass@example.com'])assert.throws(()=>siteContentValues('activities',{...draft,participation_url}));
- const v=siteContentValues('activities',{...draft,target:'shop'});assert.equal(v.target_view,'shop');assert.equal(v.participation_url,'');
+ const v=siteContentValues('activities',{...draft,target:'play'});assert.equal(v.target_view,'play');assert.equal(v.participation_url,'');
 });
 test('标题按字符限制，活动封面只读取指定存储桶下的图片',()=>{
  assert.doesNotThrow(()=>siteContentValues('announcements',{title:'🙂'.repeat(80),body:'正文'}));assert.throws(()=>siteContentValues('announcements',{title:'🙂'.repeat(81),body:'正文'}));assert.equal(activityImage('https://example.com/tracker.png','https://example.supabase.co'),'');assert.equal(activityImage('activities/../../secret.svg','https://example.supabase.co'),'');

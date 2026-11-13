@@ -435,8 +435,7 @@
         .select('id,image_url,file_name,file_size,mime_type,storage_path,created_at')
         .eq('user_id', user.id)
         .or('is_deleted.eq.false,is_deleted.is.null')
-        .order('created_at', {ascending:false})
-        .limit(await window.FWMobileMedia.stickerLimit(user));
+        .order('created_at', {ascending:false});
       if(res.error) throw res.error;
       stickerCache = (res.data || []).filter(function(row){ return row && row.image_url; });
       return stickerCache;

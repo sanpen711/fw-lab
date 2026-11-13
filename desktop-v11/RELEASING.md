@@ -1,6 +1,6 @@
 # Current release
 
-Public **1.0.9**, native installer/update **1.3.46**. In-app updates ask once, then install silently into the current executable directory and reopen the app. Archived game/resource exclusions remain in force.
+Public **1.0.10**, native installer/update **1.3.47**. In-app updates ask once, then install silently into the current executable directory and reopen the app. Archived game/resource exclusions remain in force.
 
 # Windows versions
 

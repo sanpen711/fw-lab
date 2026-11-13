@@ -88,53 +88,12 @@
     fail(await client().auth.updateUser({data:{fw_feedback:entry,fw_feedback_history:[entry].concat(previous).slice(0,5)}}),'反馈提交失败');form.reset();closeHomeTool();toast('反馈已收到，谢谢你。');
   }
 
-  /* 会员中心 */
-  var membership={loaded:false,loading:false,userId:'',plans:[],active:null,orders:[],theme:'rose_gold',styles:{},tab:'benefits',selected:'',payment:'wechat'};
-  var defaultPlans=[
-    {id:'monthly',name:'月度会员',duration_months:1,price_cents:200,compare_at_price_cents:990,sort_order:1},
-    {id:'quarterly',name:'季度会员',duration_months:3,price_cents:2500,compare_at_price_cents:2970,sort_order:2},
-    {id:'yearly',name:'年度会员',duration_months:12,price_cents:8800,compare_at_price_cents:11880,is_recommended:true,sort_order:3}
-  ];
-  function money(cents){var number=Number(cents||0)/100;return '¥'+number.toFixed(Number(cents||0)%100?1:0);}
-  function activeMembership(){var row=membership.active;if(!row||row.status!=='active'||!row.expires_at)return null;return new Date(row.expires_at).getTime()>Date.now()?row:null;}
-  function partyLimit(){return activeMembership()?15:5;}
-  async function loadMembership(force){
-    var user=me();if(!user){membership={loaded:true,loading:false,userId:'',plans:defaultPlans.slice(),active:null,orders:[],theme:'rose_gold',styles:{},tab:membership.tab||'benefits',selected:'',payment:'wechat'};renderMembership();return;}
-    if(membership.loading||(!force&&membership.loaded&&membership.userId===String(user.id)))return;
-    membership.loading=true;membership.userId=String(user.id);renderMembership();
-    try{
-      var results=await Promise.all([
-        client().from('membership_plans').select('id,name,duration_months,price_cents,compare_at_price_cents,is_recommended,sort_order').eq('is_active',true).order('sort_order',{ascending:true}),
-        client().from('memberships').select('user_id,plan_id,status,starts_at,expires_at,source,updated_at').eq('user_id',user.id).maybeSingle(),
-        client().from('membership_orders').select('id,order_no,plan_id,amount_cents,payment_method,status,created_at,paid_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(20),
-        client().rpc('fw_get_active_membership_styles',{p_user_ids:[user.id]})
-      ]);
-      membership.plans=fail(results[0],'读取会员套餐失败')||[];if(!membership.plans.length)membership.plans=defaultPlans.slice();membership.active=fail(results[1],'读取会员状态失败')||null;membership.orders=fail(results[2],'读取订单失败')||[];
-      var styleRows=fail(results[3],'读取会员装扮失败')||[];membership.theme=styleRows[0]&&styleRows[0].theme||'rose_gold';membership.styles[String(user.id)]=activeMembership()?membership.theme:'';
-    }catch(e){membership.plans=membership.plans.length?membership.plans:defaultPlans.slice();toast(e.message||'会员信息读取失败。');}
-    membership.loaded=true;membership.loading=false;renderMembership();enhanceProfiles();
-  }
+  var membership={styles:{}};
+  function partyLimit(){return 5;}
   async function ensureMemberStyles(ids){
     var user=me();if(!user)return;ids=Array.from(new Set((ids||[]).filter(Boolean).map(String))).filter(function(id){return membership.styles[id]===undefined;});if(!ids.length)return;
     try{var rows=fail(await client().rpc('fw_get_active_membership_styles',{p_user_ids:ids}),'读取会员身份失败')||[], found={};rows.forEach(function(row){found[String(row.user_id)]=row.theme||'rose_gold';});ids.forEach(function(id){membership.styles[id]=found[id]||'';});enhanceProfiles();}catch(e){}
   }
-  function benefitsHtml(){var rows=[['会员标识','昵称与资料展示会员身份'],['专属资料卡','使用更醒目的会员资料样式'],['表情扩容','我的表情上限由 80 个提升至 160 个'],['组队扩容','同时创建的组队由 5 个提升至 15 个'],['优先体验','新的小功能优先开放']];return '<section class="mobile-membership-section"><header><h3>会员权益</h3><p>基础功能不会因未开通会员而受限</p></header><div class="mobile-membership-benefits">'+rows.map(function(row,index){return '<article><i>'+String(index+1).padStart(2,'0')+'</i><div><b>'+row[0]+'</b><span>'+row[1]+'</span></div></article>';}).join('')+'</div></section>';}
-  function renderMembership(){
-    var host=$('[data-mobile-membership-content]');if(!host)return;$$('[data-mobile-membership-tab]').forEach(function(button){button.classList.toggle('active',button.dataset.mobileMembershipTab===membership.tab);});
-    if(membership.loading&&!membership.loaded){host.innerHTML='<div class="mobile-sync-empty">正在读取会员信息…</div>';return;}
-    if(membership.tab==='orders'){
-      var orders=membership.orders.length?membership.orders.map(function(order){var plan=membership.plans.find(function(row){return String(row.id)===String(order.plan_id);})||{};return '<article class="mobile-membership-order"><div><b>'+esc(plan.name||'研究所会员')+'</b><span>'+esc(order.order_no||'订单号生成中')+'</span></div><div><b>'+money(order.amount_cents)+'</b><span>'+esc(({pending:'待支付',paid:'已支付',closed:'已关闭',refunded:'已退款',failed:'支付失败'})[order.status]||'处理中')+' · '+dateText(order.created_at)+'</span></div></article>';}).join(''):'<div class="mobile-sync-empty">'+(me()?'暂无会员订单':'登录后查看订单')+'</div>';
-      host.innerHTML='<section class="mobile-membership-section"><h3>订单记录</h3>'+orders+'</section>';return;
-    }
-    var active=activeMembership(), plan=membership.plans.find(function(row){return String(row.id)===String(active&&active.plan_id);})||{}, selected=membership.plans.find(function(row){return String(row.id)===String(membership.selected);});
-    var status='<section class="mobile-membership-card '+(active?'vip-theme-'+esc(membership.theme):'')+'"><div class="mobile-membership-status"><div><small>当前状态</small><h2>'+(active?'会员身份已点亮':me()?'普通研究员':'尚未登录')+'</h2></div>'+(active?'<span>VIP</span>':'')+'</div><p>'+(active?esc(plan.name||'会员')+' · '+new Date(active.expires_at).toLocaleDateString('zh-CN')+' 到期':me()?'当前可以正常使用全部基础功能。':'登录后查看会员状态和订单记录。')+'</p></section>';
-    var themes=active?'<section class="mobile-membership-section"><h3>会员装扮</h3><div class="mobile-membership-themes">'+[['rose_gold','玫瑰金'],['black_gold','黑金色'],['pink_starlight','粉色星光']].map(function(row){return '<button class="mobile-theme-choice '+(membership.theme===row[0]?'selected':'')+'" data-mobile-theme="'+row[0]+'" data-theme="'+row[0]+'"><i></i>'+row[1]+'</button>';}).join('')+'</div></section>':'';
-    var plans='<section class="mobile-membership-section"><header><h3>'+(active?'续费会员':'选择会员时长')+'</h3><p>一次购买固定时长，不会自动扣费</p></header><div class="mobile-membership-plans">'+membership.plans.map(function(row){var chosen=String(row.id)===String(membership.selected);return '<article class="mobile-membership-plan '+(chosen?'selected':'')+'"><div class="mobile-membership-plan-head"><strong>'+esc(row.name)+'</strong><span>'+money(row.price_cents)+'</span></div><p>'+Number(row.duration_months)+' 个月'+(row.is_recommended?' · 推荐':'')+(String(row.id)==='monthly'?' · 限时':'')+'</p><button type="button" data-mobile-plan="'+esc(row.id)+'">'+(chosen?'已选择':'选择套餐')+'</button></article>';}).join('')+'</div></section>';
-    var checkout=selected?'<section class="mobile-membership-checkout"><h3>'+esc(selected.name)+' · '+money(selected.price_cents)+'</h3><div class="mobile-payment-row"><button class="'+(membership.payment==='wechat'?'active':'')+'" data-mobile-payment="wechat">微信支付</button><button class="'+(membership.payment==='alipay'?'active':'')+'" data-mobile-payment="alipay">支付宝</button></div><p>支付接口待接入，当前页面不会创建订单，也不会产生扣款。</p></section>':'';
-    host.innerHTML=status+themes+plans+checkout+benefitsHtml();
-  }
-  async function setMembershipTheme(theme){var result=await client().rpc('fw_set_membership_theme',{p_theme:theme});fail(result,'保存会员装扮失败');membership.theme=theme;membership.styles[String(me().id)]=theme;renderMembership();enhanceProfiles();toast('会员装扮已切换。');}
-
   /* 下班开黑 */
   var party={loaded:false,loading:false,busy:false,error:'',rows:[],members:[],contacts:[],messages:[],profiles:{},alerts:[],openId:'',filter:'open',createOpen:false,channel:null};
   var partyAlertTypes=['game_party_apply','game_party_joined','game_party_accepted','game_party_rejected'];
@@ -214,14 +173,13 @@
   }
 
   function bind(){
-    document.addEventListener('fw:app-viewchange',function(event){var view=event.detail&&event.detail.view;if(view==='home'){renderHomeDate();renderWeather();loadWeather(false);scheduleCountdown();}else stopCountdown();if(view==='play'||view==='play-detail'){loadParties(false);subscribeParty();}else unsubscribeParty();if(view==='membership')loadMembership(false);if(view==='square'||view==='square-detail'||view==='buddy'||view==='bird')setTimeout(enhanceProfiles,80);});
+    document.addEventListener('fw:app-viewchange',function(event){var view=event.detail&&event.detail.view;if(view==='home'){renderHomeDate();renderWeather();loadWeather(false);scheduleCountdown();}else stopCountdown();if(view==='play'||view==='play-detail'){loadParties(false);subscribeParty();}else unsubscribeParty();if(view==='square'||view==='square-detail'||view==='buddy'||view==='bird')setTimeout(enhanceProfiles,80);});
     document.addEventListener('fw:app-visibility',function(event){var visible=!!(event&&event.detail&&event.detail.visible),view=window.FWApp&&window.FWApp.state&&window.FWApp.state.view;if(!visible){stopCountdown();unsubscribeParty();return;}if(view==='home')scheduleCountdown();if(view==='play'||view==='play-detail')subscribeParty();});
-    document.addEventListener('fw:app-userchange',function(){membership.loaded=false;party.loaded=false;party.rows=[];party.members=[];party.alerts=[];unsubscribeParty();loadMembership(true);if(window.FWApp&&['play','play-detail'].includes(window.FWApp.state.view)){loadParties(true);subscribeParty();}});
+    document.addEventListener('fw:app-userchange',function(){membership.styles={};party.loaded=false;party.rows=[];party.members=[];party.alerts=[];unsubscribeParty();enhanceProfiles();if(window.FWApp&&['play','play-detail'].includes(window.FWApp.state.view)){loadParties(true);subscribeParty();}});
     document.addEventListener('click',async function(event){
       var target=event.target;
       if(target.closest('[data-mobile-weather-open]')){openHomeTool('weather');return;}if(target.closest('[data-mobile-offwork-open]')){openHomeTool('offwork');return;}if(target.closest('[data-mobile-feedback-open]')){openHomeTool('feedback');return;}if(target.closest('[data-mobile-home-close]')||target.matches('[data-mobile-home-modal]')){closeHomeTool();return;}
       var choice=target.closest('[data-mobile-weather-choice]');if(choice){var location=weatherResults[Number(choice.dataset.mobileWeatherChoice)];if(!location)return;var selected={provider:'qweather',query:location.name,label:location.label||location.name,locationId:location.id,latitude:location.latitude,longitude:location.longitude,timezone:location.timezone||'Asia/Shanghai'};write(WEATHER_LOCATION_KEY,selected);write(WEATHER_CACHE_KEY,null);setHomeStatus('正在读取 '+selected.label+' 的天气…');try{await fetchWeather(selected);closeHomeTool();toast('天气地区已设置。');}catch(e){setHomeStatus(e.message||'天气读取失败。');}return;}
-      var memberTab=target.closest('[data-mobile-membership-tab]');if(memberTab){membership.tab=memberTab.dataset.mobileMembershipTab;renderMembership();return;}var plan=target.closest('[data-mobile-plan]');if(plan){membership.selected=plan.dataset.mobilePlan;renderMembership();return;}var payment=target.closest('[data-mobile-payment]');if(payment){membership.payment=payment.dataset.mobilePayment;renderMembership();return;}var theme=target.closest('[data-mobile-theme]');if(theme){try{await setMembershipTheme(theme.dataset.mobileTheme);}catch(e){toast(e.message||'装扮切换失败。');}return;}
       var filter=target.closest('[data-mobile-party-filter]');if(filter){party.filter=filter.dataset.mobilePartyFilter;renderPartyList();return;}if(target.closest('[data-mobile-party-refresh]')){loadParties(true);return;}if(target.closest('[data-mobile-party-create-toggle]')){if(!me()){toast('请先登录。');window.FWApp.setView('profile');return;}party.createOpen=!party.createOpen;renderPartyCreate();return;}var partyOpen=target.closest('[data-mobile-party-open]');if(partyOpen){openParty(partyOpen.dataset.mobilePartyOpen).catch(function(e){toast(e.message||'房间读取失败。');});return;}if(target.closest('[data-mobile-party-detail-back]')){party.openId='';party.messages=[];window.FWApp.setView('play');return;}
       var decide=target.closest('[data-mobile-party-decide]');if(decide){try{await partyMutation(function(){return client().rpc('fw_decide_game_party',{p_party_id:Number(decide.dataset.party),p_user_id:decide.dataset.user,p_accept:decide.dataset.mobilePartyDecide==='accept'}).then(function(r){return fail(r,'处理申请失败');});});toast(decide.dataset.mobilePartyDecide==='accept'?'已同意加入。':'已拒绝申请。');}catch(e){toast(e.message||'处理失败。');}return;}
       var leave=target.closest('[data-mobile-party-leave]');if(leave){if(!confirm('确定要退出或撤回申请吗？'))return;try{await partyMutation(function(){return client().rpc('fw_leave_game_party',{p_party_id:Number(leave.dataset.mobilePartyLeave)}).then(function(r){return fail(r,'退出失败');});});party.openId='';window.FWApp.setView('play');toast('已退出这个组队。');}catch(e){toast(e.message||'退出失败。');}return;}
@@ -245,6 +203,6 @@
     },true);
     var observer=new MutationObserver(function(){clearTimeout(observer.timer);observer.timer=setTimeout(enhanceProfiles,120);});observer.observe($('#appMain')||document.body,{childList:true,subtree:true});
   }
-  function start(){bind();renderHomeDate();renderWeather();scheduleCountdown();setTimeout(function(){loadWeather(false);loadMembership(false);enhanceProfiles();},100);}
+  function start(){bind();renderHomeDate();renderWeather();scheduleCountdown();setTimeout(function(){loadWeather(false);enhanceProfiles();},100);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();

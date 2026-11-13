@@ -15,8 +15,7 @@
     echo:'#echo',
     profile:'#profile',
     play:'#play',
-    'play-detail':'#play-detail',
-    membership:'#membership'
+    'play-detail':'#play-detail'
   };
 
   function $(selector, root){ return (root || document).querySelector(selector); }
