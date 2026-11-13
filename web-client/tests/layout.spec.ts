@@ -7,7 +7,7 @@ for(const viewport of [{width:760,height:560},{width:1440,height:900}]){
   await page.setViewportSize(viewport);await mock(page,{loggedIn:true});await page.goto('/');
   await expect(page.locator('.web-header')).toBeVisible();await expect(page.locator('.sidebar')).toHaveCount(0);
   const navigation=await page.locator('.web-nav .nav-item').evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect();return{x:r.x,y:r.y,right:r.right,bottom:r.bottom};}));
-  expect(navigation).toHaveLength(10);
+  expect(navigation).toHaveLength(9);
   expect(new Set(navigation.map(r=>Math.round(r.y))).size).toBe(1);
   for(const item of navigation){expect(item.x).toBeGreaterThanOrEqual(0);expect(item.right).toBeLessThanOrEqual(viewport.width);}
   const main=await page.locator('.main-content').boundingBox();expect(main!.width).toBeLessThanOrEqual(1200);expect(Math.abs(main!.x-(viewport.width-main!.width)/2)).toBeLessThan(1);

@@ -34,7 +34,7 @@ test('游客进入其他板块后只显示居中登录提示与按钮，不读�
 
 test('其他板块直链、旧链接及广场私人标签不能绕过登录',async({page})=>{
  test.setTimeout(90000);const calls=await mock(page);
- for(const route of ['rooms','chatrooms','play','games','buddy','archive','membership','shop','compose','settings','activities','announcements','rules','moderation','bird','echo','square.html?tab=echo','square.html?tab=mine']){
+ for(const route of ['rooms','chatrooms','play','games','buddy','archive','compose','settings','activities','announcements','rules','moderation','bird','echo','square.html?tab=echo','square.html?tab=mine']){
   await page.goto('/'+(route.includes('.html')?route:route+'.html'));await expectGuestGate(page);const path='/'+(route.includes('.html')?route:route+'.html');expect(new URL(page.url()).pathname).toBe(path.split('?')[0]);
  }
  expect(calls.filter(c=>privateReads.test(c.path))).toEqual([]);

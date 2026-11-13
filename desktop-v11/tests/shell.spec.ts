@@ -216,8 +216,8 @@ test('下班开黑是本地双栏页面并说明游戏 ID 的可见边界',async
   await page.locator('[data-party-create-toggle]').click();
   await expect(page.locator('[data-party-detail]')).toBeHidden();
   await expect(page.locator('[data-party-create-host]')).toBeVisible();
-  await expect(page.locator('[data-party-create-form]')).toHaveCount(0);
-  await expect(page.locator('[data-party-create-host]')).toContainText('会员才能创建组队');
+  await expect(page.locator('[data-party-create-form]')).toBeVisible();
+  await expect(page.locator('[data-party-create-form]')).toContainText('5 个组队');
 });
 
 test('复制的图片可以直接粘贴到发布输入框',async({page})=>{

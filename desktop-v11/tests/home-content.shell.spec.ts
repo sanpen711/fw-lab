@@ -46,7 +46,7 @@ test('活动读取失败可以重试，已结束的活动没有参与按钮',asy
  const c=await setup(page);c.fail=true;await page.locator('.home-activities-card').click();await expect(page.locator('[data-site-content="activities"] [role="alert"]')).toBeVisible({timeout:18000});c.fail=false;await page.locator('[data-site-refresh="activities"]').click();await expect(page.locator('[data-site-content="activities"] [role="alert"]')).toHaveCount(0);await page.locator(`[data-site-open="${id(4)}"]`).click();await expect(page.locator('.site-content-detail')).toContainText('已经结束');await expect(page.locator('.site-content-action')).toHaveCount(0);
 });
 test('退出账号清除公告和活动展示，重新登录前不能进入活动',async({page})=>{
- await setup(page);await page.locator('.home-activities-card').click();await page.evaluate(async()=>{const {authStore}=await import('/src/auth-store.js');await authStore.signOut();});await expect(page.locator('#app')).toBeHidden();expect(await page.locator('[data-site-content="activities"]').innerHTML()).not.toContain('进行中的活动');
+ await setup(page);await page.locator('.home-activities-card').click();await page.locator('[data-open-account]').first().click();page.once('dialog',dialog=>dialog.accept());await page.locator('[data-sign-out]').click();await expect(page.locator('#app')).toBeHidden();expect(await page.locator('[data-site-content="activities"]').innerHTML()).not.toContain('进行中的活动');
 });
 test('公告栏直接展示正文，长内容滚动可暂停，短内容和减少动态模式保持静止',async({page},testInfo)=>{
  const c=await setup(page),button=page.locator('.announcement-message'),track=button.locator('.announcement-track');

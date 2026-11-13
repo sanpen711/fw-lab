@@ -12,8 +12,13 @@ test('游客可读广场和评论数量，投票板块与互动提示登录',asy
  await page.locator('[data-nav="rooms"]').click();await expectGuestGate(page,'rooms');
  expect(calls.filter(c=>/\/(fw_vote_poll|fw_create_poll_v2|polls|comments)$/.test(c.path))).toEqual([]);
 });
-test.skip('游客商城直链先提示登录，不读取商品和订单',async({page})=>{
- const calls=await mock(page);await page.goto('/shop.html');await expectGuestGate(page,'shop');await expect(page.locator('.shop-product-card:visible')).toHaveCount(0);expect(calls.some(c=>/\/(shop_products|shop_orders)$/.test(c.path))).toBe(false);
+test('旧会员与商城直链回到首页，不读取商品和订单',async({page})=>{
+ const calls=await mock(page);
+ for(const path of ['/shop.html','/membership.html?tab=appearance']){
+  await page.goto(path);await expect(page).toHaveURL(/index.html$/);
+  await expect(page.locator('[data-nav="membership"],[data-membership-content],[data-shop-checkout]')).toHaveCount(0);
+ }
+ expect(calls.some(c=>/\/(shop_products|shop_orders|membership_orders)$/.test(c.path))).toBe(false);
 });
 test('登录用户可发布新版投票并保留补充权限',async({page})=>{
  const calls=await mock(page,{loggedIn:true});await page.goto('/rooms.html');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');await form.locator('[name="title"]').fill('网页研究');await form.locator('[name="option1"]').fill('甲');await form.locator('[name="option2"]').fill('乙');await form.locator('[name="durationDays"]').selectOption('30');await form.locator('[name="allowUserOptions"]').check();await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('已发布');expect(calls.find(c=>c.path.endsWith('/fw_create_poll_v2'))?.body).toEqual({p_title:'网页研究',p_options:['甲','乙'],p_is_official:false,p_duration_days:30,p_allow_user_options:true});
@@ -37,8 +42,8 @@ test('未开放补充的投票不显示输入框，投票失败可重试',async(
 test('投票重复选项不提交，网络失败保留完整输入',async({page})=>{
  const calls=await mock(page,{loggedIn:true,fail:'fw_create_poll_v2'});await page.goto('/rooms.html');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');await form.locator('[name="title"]').fill('保留输入');await form.locator('[name="option1"]').fill('重复');await form.locator('[name="option2"]').fill('重复');await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('不能重复');expect(calls.some(c=>c.path.endsWith('/fw_create_poll_v2'))).toBe(false);await form.locator('[name="option2"]').fill('另一个');await form.locator('[name="durationDays"]').selectOption('15');await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('模拟网络失败');await expect(form.locator('[name="title"]')).toHaveValue('保留输入');await expect(form.locator('[name="durationDays"]')).toHaveValue('15');
 });
-test('非会员仍能浏览和加入组队，创建显示会员说明',async({page})=>{
- await mock(page,{loggedIn:true,member:false});await page.goto('/play.html');await expect(page.locator('[data-party-list]')).toContainText('今晚一起开黑');await page.locator('[data-party-create-toggle]').click();await expect(page.locator('[data-party-create-host]')).toContainText('会员才能创建组队');
+test('普通账号可以创建组队，最多同时拥有 5 个房间',async({page})=>{
+ await mock(page,{loggedIn:true,member:false});await page.goto('/play.html');await expect(page.locator('[data-party-list]')).toContainText('今晚一起开黑');await page.locator('[data-party-create-toggle]').click();await expect(page.locator('[data-party-create-form]')).toContainText('5 个组队');
 });
 test('登录后闲聊房间接入新界面与创建表单',async({page})=>{
  const calls=await mock(page,{loggedIn:true});await page.goto('/chatrooms.html');await expect.poll(()=>calls.some(c=>c.path.endsWith('/fw_chat_room_list'))).toBe(true);await page.locator('[data-room-create]').click();await expect(page.locator('[data-room-editor-form]')).toBeVisible();await expect(page.locator('[data-room-editor-form]')).toContainText('创建');

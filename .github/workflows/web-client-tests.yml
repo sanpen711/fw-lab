@@ -18,6 +18,7 @@ jobs:
       - run: npm --prefix desktop-v11 ci
       - run: node scripts/build-web.mjs
       - run: node scripts/prepare-web-site.mjs
+      - run: node web-client/tests/prepare-site.mjs
       - run: node --test web-client/tests/contracts.test.mjs desktop-v11/tests/membership-levels.test.mjs desktop-v11/tests/square-media.test.mjs desktop-v11/tests/shop-model.test.mjs desktop-v11/tests/site-content-model.test.mjs
       - working-directory: desktop-v11
         run: npx playwright install --with-deps chromium
