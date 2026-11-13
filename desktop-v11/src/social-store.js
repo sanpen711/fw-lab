@@ -1,7 +1,7 @@
 import {uiErrorMessage} from './ui-errors.js';
 import {authStore} from './auth-store.js';
 import {desktopCache} from './desktop-persistent-cache.js';
-import {membershipStore} from './membership-store.js';
+import {STICKER_LIMIT} from './community-limits.js';
 import {windowIsActive,onWindowAttention} from './window-attention.js';
 
 const ECHO_TYPES=['like','comment','comment_reply'];
@@ -112,9 +112,9 @@ async function hydrateStickersCache(userId){
   if(!userId||hydratedStickersUser===userId)return false;hydratedStickersUser=userId;
   const cached=await desktopCache.read('stickers',userId);const payload=cached?.payload;
   if(!payload||!Array.isArray(payload.rows))return false;
-  state.stickers={loaded:true,loading:false,rows:payload.rows.slice(0,membershipStore.stickerLimit())};emit();return true;
+  state.stickers={loaded:true,loading:false,rows:payload.rows};emit();return true;
 }
-function persistStickersCache(userId=cacheUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('stickers',userId,{rows:state.stickers.rows.slice(0,membershipStore.stickerLimit())});}
+function persistStickersCache(userId=cacheUser()?.id){if(!userId)return Promise.resolve(false);return desktopCache.write('stickers',userId,{rows:state.stickers.rows});}
 
 function clearSocialState(){
   state.userId='';state.ready=true;state.error='';state.badges={echo:0,buddy:0,play:0};
@@ -807,7 +807,7 @@ async function loadStickers(force=false){
   const user=currentUser();if(!user?.id){if(!state.stickers.loaded&&!state.stickers.loading){state.stickers={...state.stickers,loading:true};emit();}return state.stickers.rows;}
   if(state.stickers.loading||(!force&&state.stickers.loaded)) return state.stickers.rows;
   const showInitial=!state.stickers.loaded;const previousSignature=contentSignature(state.stickers.rows);state.stickers={...state.stickers,loading:true};if(showInitial)emit();
-  try{countContent();const rows=fail(await client.from('user_stickers').select('id,image_url,file_name,file_size,mime_type,storage_path,created_at').eq('user_id',user.id).eq('is_deleted',false).order('created_at',{ascending:false}).limit(membershipStore.stickerLimit()),'读取我的表情失败')||[];if(state.userId!==user.id)return state.stickers.rows;const changed=previousSignature!==contentSignature(rows);state.stickers={loaded:true,loading:false,rows};await persistStickersCache(user.id);if(changed||showInitial)emit();return rows;}
+  try{countContent();const rows=fail(await client.from('user_stickers').select('id,image_url,file_name,file_size,mime_type,storage_path,created_at').eq('user_id',user.id).eq('is_deleted',false).order('created_at',{ascending:false}),'读取我的表情失败')||[];if(state.userId!==user.id)return state.stickers.rows;const changed=previousSignature!==contentSignature(rows);state.stickers={loaded:true,loading:false,rows};await persistStickersCache(user.id);if(changed||showInitial)emit();return rows;}
   catch(error){state.stickers={...state.stickers,loaded:true,loading:false};if(showInitial)emit();if(state.stickers.rows.length)return state.stickers.rows;throw error;}
 }
 
@@ -816,7 +816,7 @@ async function uploadSticker(file){
   if(!file?.size) throw new Error('没有选择图片。');
   if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)) throw new Error('只支持 JPG、PNG、WebP、GIF 图片。');
   if(file.size>1048576) throw new Error('表情图片不能超过 1MB。');
-  const limit=membershipStore.stickerLimit();if(state.stickers.rows.length>=limit) throw new Error(`我的表情最多保存 ${limit} 个。`);
+  const limit=STICKER_LIMIT;if(state.stickers.rows.length>=limit) throw new Error(`我的表情最多保存 ${limit} 个。`);
   const safe=String(file.name||'sticker').replace(/[^a-zA-Z0-9._-]/g,'_').slice(-60)||'sticker';
   const path=`${user.id}/${Date.now()}_${safe}`;
   state.stickers={...state.stickers,loading:true};emit();
@@ -826,7 +826,7 @@ async function uploadSticker(file){
     const imageUrl=client.storage.from('stickers').getPublicUrl(path).data.publicUrl;
     const saved=await client.from('user_stickers').insert({user_id:user.id,image_url:imageUrl,storage_path:path,file_name:file.name||safe,file_size:file.size,mime_type:file.type}).select('id,image_url,file_name,file_size,mime_type,storage_path,created_at').single();
     if(saved.error){await client.storage.from('stickers').remove([path]);throw saved.error;}
-    state.stickers={loaded:true,loading:false,rows:[saved.data,...state.stickers.rows].slice(0,limit)};emit();persistStickersCache(user.id).catch(()=>{});return saved.data;
+    state.stickers={loaded:true,loading:false,rows:[saved.data,...state.stickers.rows]};emit();persistStickersCache(user.id).catch(()=>{});return saved.data;
   }catch(error){state.stickers={...state.stickers,loading:false};emit();throw new Error(`添加表情失败：${error.message||error}`);}
 }
 
@@ -852,12 +852,6 @@ authStore.subscribe(auth=>{
   if(!auth.ready)return;
   if(!auth.user){clearSocialState();return;}
   bootForUser(auth.user.id).catch(()=>{});
-});
-
-let lastStickerLimit=membershipStore.stickerLimit();
-membershipStore.subscribe(()=>{
-  const nextLimit=membershipStore.stickerLimit();if(nextLimit===lastStickerLimit)return;lastStickerLimit=nextLimit;
-  if(stickersRequested&&currentUser()?.id)loadStickers(true).catch(()=>{});
 });
 
 export const socialStore={

@@ -4,7 +4,7 @@ export const ACTIVITY_BUCKET='activity-covers';
 export const SITE_TABLES={announcements:'site_announcements',activities:'site_activities'};
 export const SITE_FIELDS='id,title,body,is_pinned,published_at,updated_at';
 export const ACTIVITY_FIELDS=SITE_FIELDS+',summary,cover_path,starts_at,ends_at,target_view,participation_url';
-export const ACTIVITY_TARGETS={square:'精神广场',rooms:'学术研讨',play:'下班开黑',shop:'周边商城'};
+export const ACTIVITY_TARGETS={square:'精神广场',rooms:'学术研讨',play:'下班开黑'};
 export function activityStatus(row,now=Date.now()){
   if(now>=new Date(row.ends_at).getTime())return '已结束';
   return now<new Date(row.starts_at).getTime()?'未开始':'进行中';

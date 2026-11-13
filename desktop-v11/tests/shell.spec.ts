@@ -190,7 +190,8 @@ test('档案独立放在会员上方，入馆须知和处理公告保留在更�
   const mainLabels=await page.locator('.nav-primary-group .nav-item b').allTextContents();
   expect(mainLabels).toEqual(['首页','精神广场','学术研讨','闲聊房间','下班开黑','小游戏']);
   await expect(page.locator('.nav-primary-group [data-nav="play"] + [data-nav="games"]')).toBeVisible();
-  await expect(page.locator('.nav-lower-group [data-nav="archive"] + [data-nav="membership"]')).toBeVisible();
+  await expect(page.locator('.nav-lower-group [data-nav="archive"]')).toBeVisible();
+  await expect(page.locator('[data-nav="membership"]')).toHaveCount(0);
   await page.locator('.nav-lower-group [data-nav="archive"]').click();
   await expect(page.locator('[data-view-panel="archive"]')).toHaveClass(/active/);
   await page.locator('[data-sidebar-more-toggle]').click();
@@ -215,8 +216,8 @@ test('下班开黑是本地双栏页面并说明游戏 ID 的可见边界',async
   await page.locator('[data-party-create-toggle]').click();
   await expect(page.locator('[data-party-detail]')).toBeHidden();
   await expect(page.locator('[data-party-create-host]')).toBeVisible();
-  await expect(page.locator('[data-party-create-form]')).toHaveCount(0);
-  await expect(page.locator('[data-party-create-host]')).toContainText('会员才能创建组队');
+  await expect(page.locator('[data-party-create-form]')).toBeVisible();
+  await expect(page.locator('[data-party-create-form]')).toContainText('5 个组队');
 });
 
 test('复制的图片可以直接粘贴到发布输入框',async({page})=>{

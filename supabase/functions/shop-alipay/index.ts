@@ -28,6 +28,7 @@ const uuidPattern =
 function databaseError(message: string) {
   const codes: Record<string, number> = {
     ACCOUNT_UNAVAILABLE: 403,
+    PAYMENT_NOT_OPEN: 503,
     PRODUCT_UNAVAILABLE: 400,
     PRODUCT_OVER_PAYMENT_LIMIT: 400,
     PRODUCT_PRICE_CHANGED: 409,
@@ -83,10 +84,11 @@ Deno.serve(async (request: Request) => {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
       throw new PaymentError("INVALID_REQUEST");
     }
+    const publicCheckoutEnabled = false;
     const settings = readPaymentSettings((name) => Deno.env.get(name));
     if (payload.action === "config") {
       return reply(200, {
-        enabled: settings.enabled,
+        enabled: publicCheckoutEnabled,
         configured: settings.missing.length === 0,
         max_amount_cents: Number.isSafeInteger(settings.maxAmountCents)
           ? settings.maxAmountCents
@@ -101,7 +103,7 @@ Deno.serve(async (request: Request) => {
       return reply(200,{order:data?publicShopOrder(data as ShopOrder):null});
     }
     if (payload.action === "create") {
-      if (!settings.enabled) throw new PaymentError("PAYMENT_NOT_OPEN", 503);
+      if (!publicCheckoutEnabled) throw new PaymentError("PAYMENT_NOT_OPEN", 503);
       if (
         typeof payload.product_id !== "string" ||
         !uuidPattern.test(payload.product_id) ||
@@ -158,7 +160,7 @@ Deno.serve(async (request: Request) => {
       if (order.status === "paid") {
         return reply(200, { order: publicShopOrder(order) });
       }
-      if (!settings.enabled) throw new PaymentError("PAYMENT_NOT_OPEN", 503);
+      if (!publicCheckoutEnabled) throw new PaymentError("PAYMENT_NOT_OPEN", 503);
       if (order.payment_app_id !== settings.appId || order.payment_seller_id !== settings.sellerId) {
         throw new PaymentError("PAYMENT_ACCOUNT_MISMATCH");
       }

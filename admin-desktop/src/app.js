@@ -2,6 +2,7 @@ import {contentReview} from './content-review.js';
 import {adminApi} from './admin-api.js';
 import {APP_VERSION} from './config.js';
 import {shopAdmin} from './shop-admin.js';
+import {membershipAppearanceForm,membershipAppearanceInput} from './membership-appearance.js';
 import {siteContentAdmin} from './site-content-admin.js';
 
 const app=document.querySelector('#app');
@@ -18,7 +19,7 @@ const viewMeta={
   reports:['举报中心','统一处理用户、帖子、评论和房间消息举报'],
   feedback:['问题反馈','接收问题和建议，记录内部处理结果'],
   users:['用户管理','搜索账号并处理禁言和封禁'],
-  memberships:['会员管理','为用户增加会员时间或取消会员'],
+  memberships:['会员管理','查看历史会员记录，测试管理员自己的装扮'],
   shop:['商城管理','管理周边商品、收货信息与订单发货'],
   siteContent:['公告与活动','发布首页公告，管理活动内容与参与入口'],
   content:['内容管理','统一管理广场、树洞、投票、房间和组队内容'],
@@ -227,7 +228,7 @@ function renderMemberships(){
   const active=withoutTestRows(state.rows.memberships).filter(row=>row.is_active).length;
   return `<div class="workspace ${state.selection?.type==='membership'?'with-detail':''}">
     <section class="panel">
-      <div class="panel-heading"><div><h2>会员用户</h2><p>当前有效 ${active} 人；可搜索任意用户开通或续期</p></div><div class="panel-tools"><input class="toolbar-search" data-search value="${esc(state.query)}" placeholder="搜索昵称、编号或账号"></div></div>
+      <div class="panel-heading"><div><h2>会员用户</h2><p>历史记录中有 ${active} 人尚在有效期内</p></div><div class="panel-tools"><button class="button primary compact" type="button" data-member-appearance-test>装扮测试</button><input class="toolbar-search" data-search value="${esc(state.query)}" placeholder="搜索昵称、编号或账号"></div></div>
       ${rows.length?`<div class="table-wrap"><table class="data-table"><colgroup><col style="width:28%"><col style="width:20%"><col style="width:27%"><col></colgroup><thead><tr><th>用户</th><th>会员状态</th><th>到期时间</th><th>剩余时间</th></tr></thead><tbody>${rows.map(row=>`<tr data-select-type="membership" data-select-id="${esc(row.user_id)}" class="${isSelected('membership',row.user_id)?'selected':''}"><td><strong class="ellipsis">${esc(row.nickname||'研究员')} ${row.is_test_account?'<span class="inline-tag">测试</span>':''}</strong><small class="ellipsis">${esc(row.lab_code||row.email_search||row.user_id)}</small></td><td>${membershipStatusBadge(row)}<small>${esc(row.plan_name||'无套餐')}</small></td><td>${esc(fmt(row.expires_at))}</td><td>${row.is_active?`<strong>${Number(row.remaining_days||0)} 天</strong><small>有效期内</small>`:'—'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state">没有符合条件的用户。</div>'}
     </section>
     ${state.selection?.type==='membership'?renderMembershipDetail(state.selection.row):''}
@@ -324,7 +325,7 @@ function renderMembershipDetail(row){
     <div class="detail-block"><h3>会员时间</h3><p>开始：${esc(fmt(row.starts_at))}<br>到期：${esc(fmt(row.expires_at))}${row.is_active?`<br>剩余：${Number(row.remaining_days||0)} 天`:''}</p></div>
     <div class="detail-block"><h3>开通信息</h3><p>套餐：${esc(row.plan_name||'未指定')}<br>来源：${esc(membershipSourceText[row.source]||row.source||'未开通')}</p></div>`;
   const cancel=row.is_active?`<button class="button danger" type="button" data-action="membership-cancel" data-id="${esc(row.user_id)}">取消会员</button>`:'';
-  return detailShell(row.nickname||'会员详情',row.lab_code||'未设置编号',body,`<button class="button primary" type="button" data-action="membership-grant" data-id="${esc(row.user_id)}">增加会员时间</button>${cancel}`);
+  return detailShell(row.nickname||'会员详情',row.lab_code||'未设置编号',body,`<button class="button primary" type="button" data-action="membership-grant" data-id="${esc(row.user_id)}">增加会员时间</button><button class="button" type="button" data-member-order-history>会员订单</button>${cancel}`);
 }
 
 function renderContentDetail(row,kind){
@@ -350,8 +351,34 @@ function selectRow(type,id,kind=''){
 
 function openDialog({title,description='',body,submitLabel='确认处理',danger=false,onSubmit}){
   dialogSubmit=onSubmit;
-  dialog.innerHTML=`<form method="dialog" data-action-form><div class="dialog-head"><div><h2>${esc(title)}</h2><p>${esc(description)}</p></div><button class="icon-button" type="button" data-dialog-close aria-label="关闭">×</button></div><div class="dialog-body">${body}</div><div class="dialog-actions"><button class="button" type="button" data-dialog-close>取消</button><button class="button ${danger?'danger-solid':'primary'}" type="submit">${esc(submitLabel)}</button></div></form>`;
+  dialog.innerHTML=`<form method="dialog" data-action-form><div class="dialog-head"><div><h2>${esc(title)}</h2><p>${esc(description)}</p></div><button class="icon-button" type="button" data-dialog-close aria-label="关闭">×</button></div><div class="dialog-body">${body}</div><div class="dialog-actions"><button class="button" type="button" data-dialog-close>${onSubmit?'取消':'关闭'}</button>${onSubmit?`<button class="button ${danger?'danger-solid':'primary'}" type="submit">${esc(submitLabel)}</button>`:''}</div></form>`;
   dialog.showModal();
+}
+
+async function openMembershipAppearanceTest(){
+  const admin=state.admin;
+  const [value,posts]=await Promise.all([adminApi.getAppearanceTest(),adminApi.listAppearancePosts(admin.id)]);
+  if(state.admin!==admin||state.view!=='memberships'||dialog.open)return;
+  openDialog({
+    title:'装扮测试',
+    description:`当前管理员 · ${admin.nickname}`,
+    body:membershipAppearanceForm(value,posts,esc),
+    submitLabel:'保存装扮',
+    onSubmit:data=>adminApi.saveAppearanceTest(membershipAppearanceInput(data))
+  });
+}
+
+async function openMembershipOrderHistory(row){
+  const orders=await adminApi.listMembershipOrders(row.user_id);
+  if(state.view!=='memberships'||dialog.open)return;
+  openDialog({
+    title:'会员订单记录',
+    description:row.nickname||'研究员',
+    body:orders.length?`<div class="table-wrap"><table class="data-table">
+      <thead><tr><th>订单号</th><th>金额</th><th>状态</th><th>下单时间</th></tr></thead>
+      <tbody>${orders.map(order=>`<tr><td>${esc(order.order_no)}</td><td>¥${(order.amount_cents/100).toFixed(2)}</td><td>${esc(({paid:'已支付',pending:'待支付',closed:'已关闭',refunded:'已退款',failed:'支付失败'})[order.status]||order.status)}</td><td>${esc(fmt(order.created_at))}</td></tr>`).join('')}</tbody>
+    </table></div>`:'<div class="empty-state">暂无会员订单。</div>'
+  });
 }
 
 function openReportAction(row){
@@ -387,7 +414,7 @@ function priorityOption(value,label,current){return `<option value="${value}" ${
 
 function openMembershipGrantAction(row){
   openDialog({title:'增加会员时间',description:`${row.nickname||'用户'} · ${row.lab_code||'未设置编号'}`,submitLabel:'确认增加',body:`
-    <div class="dialog-note">已有有效会员会从原到期日继续累加；未开通或已到期则从现在开始。</div>
+    <div class="dialog-note">仅更新会员记录。有效记录从原到期日累加，其他记录从现在开始。</div>
     <label class="field">增加时长<select name="duration"><option value="monthly">月度会员 · 增加 1 个月</option><option value="quarterly">季度会员 · 增加 3 个月</option><option value="yearly">年度会员 · 增加 12 个月</option><option value="custom">自定义天数</option></select></label>
     <label class="field">自定义天数<small>只有选择“自定义天数”时填写，范围 1–730 天。</small><input name="customDays" type="number" min="1" max="730" placeholder="例如：30"></label>
     <label class="field">操作原因<textarea name="reason" maxlength="240" required>管理员手动开通或续期会员</textarea></label>`,onSubmit:data=>{
@@ -504,6 +531,12 @@ document.addEventListener('click',async event=>{
   const open=event.target.closest('[data-open-kind]');if(open){state.view=open.dataset.openKind==='report'?'reports':'feedback';state.filter='all';selectRow(open.dataset.openKind,open.dataset.openId);return;}
   if(event.target.closest('[data-close-detail]')){state.selection=null;shellView();return;}
   if(event.target.closest('[data-dialog-close]')){dialog.close();dialogSubmit=null;return;}
+  if(event.target.closest('[data-member-appearance-test]')){
+    await openMembershipAppearanceTest().catch(error=>toast(error.message,true));return;
+  }
+  if(event.target.closest('[data-member-order-history]')&&state.selection?.type==='membership'){
+    await openMembershipOrderHistory(state.selection.row).catch(error=>toast(error.message,true));return;
+  }
   const action=event.target.closest('[data-action]');
   if(action){const kind=action.dataset.action;const lookup=kind==='content'?'content':kind==='user-delete'?'user':kind.startsWith('membership-')?'membership':kind;const row=findRow(lookup,action.dataset.id,action.dataset.kind||'');if(!row)return;if(kind==='report')openReportAction(row);if(kind==='feedback')openFeedbackAction(row);if(kind==='user')openUserAction(row);if(kind==='user-delete')openDeleteUserAction(row);if(kind==='membership-grant')openMembershipGrantAction(row);if(kind==='membership-cancel')openMembershipCancelAction(row);if(kind==='content')openContentAction(row,action.dataset.kind);}
 });

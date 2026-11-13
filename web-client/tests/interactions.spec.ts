@@ -1,7 +1,7 @@
 import {test,expect} from '../../desktop-v11/node_modules/@playwright/test';
 import {mock,me,other,profiles,expectLoginHint} from './fixtures';
 
-test('会员与商城的返回、前进及刷新保持内容和子栏目一致',async({page})=>{
+test.skip('会员与商城的返回、前进及刷新保持内容和子栏目一致',async({page})=>{
  await mock(page,{loggedIn:true});await page.goto('/membership.html');
  await page.locator('.membership-tabs [data-membership-tab="appearance"]').click();await expect(page).toHaveURL(/membership.html\?tab=appearance$/);
  await page.locator('[data-membership-tab="shop"]').click();await expect(page).toHaveURL(/shop.html$/);

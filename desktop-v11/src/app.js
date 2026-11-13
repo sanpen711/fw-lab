@@ -13,12 +13,9 @@ import {archiveStore} from './archive-store.js';
 import {gamePartyUi} from './game-party-ui.js';
 import {homeWidgets} from './home-widgets.js';
 import {homeContent} from './home-content.js';
-import {membershipStore} from './membership-store.js';
-import {membershipPayment} from './membership-payment.js';
-import {membershipGrowthContent,membershipPurchasePage,membershipOrdersContent,dismissMembershipLevelNotice} from './membership-page.js';
-import {membershipShop,membershipShopContent} from './membership-shop.js';
+import {profileAppearanceStore} from './profile-appearance-store.js';
+import {STICKER_LIMIT} from './community-limits.js';
 import {identityClass,memberName,memberBadge} from './member-identity.js';
-import {membershipExperience,identityEditor} from './membership-experience.js';
 import {desktopSettings} from './desktop-settings.js';
 import {APP_VERSION} from './config.js';
 import {captureUiState,restoreUiState,deferWhileComposing,messageShortcutHint,insertComposerText} from './ui-state.js';
@@ -36,7 +33,7 @@ const $=selector=>document.querySelector(selector);
 const $$=selector=>Array.from(document.querySelectorAll(selector));
 const routes={
   activities:['活动','查看活动介绍与参与方式'],announcements:['公告','查看站点公告'],
-  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],chatrooms:['闲聊房间','找一个房间，坐下来聊聊'],play:['下班开黑','找到今晚一起玩的队友'],games:['小游戏','不用跳出软件，点开直接玩'],buddy:['搭子','左边选人，右边直接聊天'],membership:['会员','查看会员权益、套餐和订单'],archive:['档案','翻一翻被留下来的研究记录'],settings:['设置','管理个人资料、应用显示和本机缓存'],about:['关于','软件说明和版本信息']
+  home:['首页','放下个人素质，享受缺德人生'],compose:['发牢骚','把今天想说的话单独放在这里'],square:['精神广场','匿名说点真话，也听听别人的今天'],rooms:['学术研讨','一本正经地研究不太正经的问题'],chatrooms:['闲聊房间','找一个房间，坐下来聊聊'],play:['下班开黑','找到今晚一起玩的队友'],games:['小游戏','不用跳出软件，点开直接玩'],buddy:['搭子','左边选人，右边直接聊天'],archive:['档案','翻一翻被留下来的研究记录'],settings:['设置','管理个人资料、应用显示和本机缓存'],about:['关于','软件说明和版本信息']
 };
 const EMOJIS=[
   ['😀','1f600'],['😁','1f601'],['😂','1f602'],['🤣','1f923'],['😄','1f604'],['😅','1f605'],['😆','1f606'],['😊','1f60a'],['😉','1f609'],['😌','1f60c'],
@@ -63,11 +60,8 @@ let socialState=socialStore.state;
 let feedState=feedStore.state;
 let pollState=pollStore.state;
 let archiveState=archiveStore.state;
-let membershipState=membershipStore.state;
 let currentAuthView='login';
 let currentView='home';
-let membershipTab='benefits';
-let membershipPlanId='';
 
 let membershipStyleSignature='';
 let squareMode='feed';
@@ -136,12 +130,11 @@ function recentStickerUrls(){try{return JSON.parse(localStorage.getItem(RECENT_S
 function rememberSticker(url){if(!url)return;const next=[url,...recentStickerUrls().filter(item=>item!==url)].slice(0,12);try{localStorage.setItem(RECENT_STICKERS_KEY,JSON.stringify(next));}catch{}}
 function sortedStickers(){const recent=recentStickerUrls();return [...(socialState.stickers.rows||[])].sort((a,b)=>{const ai=recent.indexOf(a.image_url);const bi=recent.indexOf(b.image_url);return (ai<0?999:ai)-(bi<0?999:bi);});}
 function initials(name){return String(name||'FW').trim().slice(0,2).toUpperCase();}
-function vipTheme(userId){return membershipStore.themeFor(userId);}
 function vipThemeClass(userId){return identityClass(userId);}
 function vipBadgeHtml(userId){return memberBadge(userId);}
 function avatarHtml(profile,className='social-avatar',options={}){
   const name=profile?.nickname||profile?.name||'研究员';const url=profile?.avatar_url||profile?.avatarUrl||'';const userId=options.userId||profile?.id||profile?.user_id||'';const anonymous=Boolean(options.anonymous);const label=anonymous?(options.anonymousLabel||name):name;
-  if(userId&&!anonymous)membershipStore.ensureProfiles([userId]);
+  if(userId&&!anonymous)profileAppearanceStore.ensureProfiles([userId]);
   const interactive=anonymous?` data-profile-anonymous="${esc(label)}" role="button" tabindex="0" aria-label="查看匿名资料说明"`:userId?` data-profile-user="${esc(userId)}" role="button" tabindex="0" aria-label="查看${esc(name)}的资料"`:'';
   const memberClass=anonymous?'':vipThemeClass(userId);
   const motion='';
@@ -149,7 +142,7 @@ function avatarHtml(profile,className='social-avatar',options={}){
 }
 function setAvatar(element,user){
   if(!element)return;element.textContent='';element.style.backgroundImage='';
-  element.classList.remove('vip-identity','vip-theme-rose_gold','vip-theme-black_gold','vip-theme-pink_starlight','vip-frame-double','vip-frame-corners','vip-frame-ticket');
+  for(const name of [...element.classList])if(/^vip-(identity$|theme-|frame-)/.test(name))element.classList.remove(name);
   const memberClass=identityClass(user?.id);if(memberClass)element.classList.add(...memberClass.trim().split(' '));
   if(user?.avatarUrl){element.style.backgroundImage=`url("${String(user.avatarUrl).replace(/["\\]/g,'')}")`;element.classList.add('has-image');}
   else{element.textContent=initials(user?.nickname);element.classList.remove('has-image');}
@@ -171,52 +164,14 @@ function richContent(value){
   return `${clean?`<div class="rich-text${standaloneFufu?' fufu-only':''}">${renderWebLinks(clean,emojiText)}</div>`:''}${media.length?`<div class="rich-media media-gallery" data-media-count="${media.length}">${gallery}</div>`:''}`||'<div class="rich-text">（空白记录）</div>';
 }
 
-function memberDate(value){if(!value)return'';const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});}
-function activeMembership(){return membershipStore.isActive(membershipState.membership)?membershipState.membership:null;}
-function renderMembershipEntry(){
-  const active=activeMembership();const state=$('[data-membership-page-state]');
-  if(state)state.textContent=!accountState.user?'未登录':active?'会员有效':'普通研究员';
-  setAvatar($('[data-account-avatar]'),accountState.user);setAvatar($('[data-profile-avatar]'),accountState.user);
-}
-function membershipBenefits(){return [
-  ['会员装扮','头像框、昵称配色、短称号和资料卡自由组合，展示一句话介绍与代表作'],
-  ['发起开黑组队','会员可以创建房间，普通用户可以加入，进队申请由队长决定'],
-  ['我的表情扩容','沿用现有表情收藏：普通用户 80 个，会员 160 个']
-];}
-function membershipPurchaseContent(active){
-  const selected=membershipState.plans.find(row=>row.id===membershipPlanId)||membershipState.plans.find(row=>row.id==='monthly')||membershipState.plans[0];
-  membershipPlanId=selected?.id||'';return membershipPurchasePage(active,membershipPlanId,membershipBenefits());
-}
-function renderMembershipContent(){
-  const host=$('[data-membership-content]');if(!host)return;
-  const sameTab=host.dataset.membershipRenderedTab===membershipTab;
-  const scrollTop=sameTab?host.querySelector('.membership-page-scroll')?.scrollTop||0:0;
-  const growthExpanded=sameTab&&host.querySelector('[data-membership-growth]')?.open;
-  const focused=host.contains(document.activeElement)?document.activeElement:null;
-  const focusAttribute=focused?Array.from(focused.attributes).find(attribute=>/^data-(membership|payment|member-identity|shop)-/.test(attribute.name)):null;
-  const focusSelector=focused?.matches('[data-member-identity-choice]')?`[data-member-identity-choice="${CSS.escape(focused.dataset.memberIdentityChoice)}"][data-value="${CSS.escape(focused.dataset.value)}"]`:focused?.closest('[data-member-identity-form]')&&focused.name?`[data-member-identity-form] [name="${CSS.escape(focused.name)}"]`:focused?.closest('[data-shop-checkout]')&&focused.name?`[data-shop-checkout] [name="${CSS.escape(focused.name)}"]`:focusAttribute?`[${focusAttribute.name}="${CSS.escape(focusAttribute.value)}"]`:'';
-  const selection=typeof focused?.selectionStart==='number'?[focused.selectionStart,focused.selectionEnd]:null;
-  membershipPayment.setVisible(currentView==='membership'&&['purchase','orders'].includes(membershipTab));membershipShop.setVisible(currentView==='membership'&&membershipTab==='shop');renderMembershipEntry();
-  const tabs=`<nav class="membership-tabs" aria-label="会员栏目">${[['benefits','我的会员'],['appearance','会员装扮'],['orders','订单记录'],['shop','周边商城']].map(([value,label])=>`<button type="button" class="${membershipTab===value||membershipTab==='purchase'&&value==='benefits'?'active':''}" data-membership-tab="${value}">${label}</button>`).join('')}</nav>`;
-  const paint=content=>{
-    host.innerHTML=`${tabs}<div class="membership-page-scroll">${content}</div>`;host.dataset.membershipRenderedTab=membershipTab;
-    host.querySelector('.membership-page-scroll').scrollTop=scrollTop;
-    const target=focusSelector?host.querySelector(focusSelector):null;target?.focus({preventScroll:true});if(selection&&target?.setSelectionRange)target.setSelectionRange(...selection);
-  };
-  if(membershipTab==='shop'){paint(membershipShopContent());return;}
-  if(membershipState.loading&&!membershipState.loaded){paint('<div class="state-card">正在读取会员信息...</div>');return;}
-  const active=activeMembership();const plan=membershipState.plans.find(item=>String(item.id)===String(active?.plan_id));
-  if(membershipTab==='purchase'){paint(membershipPurchaseContent(active));return;}
-  if(membershipTab==='orders'){paint(membershipOrdersContent());return;}
-  if(membershipTab==='appearance'){paint(`<section class="membership-appearance-page" aria-label="会员装扮">${identityEditor(!!active)}<footer class="membership-appearance-footer"><p>保存后，装扮会展示在头像、帖子、评论和资料卡中。</p><button type="button" class="secondary compact" data-membership-tab="benefits">返回我的会员</button>${!active?'<button type="button" class="primary compact" data-membership-purchase>开通会员</button>':''}</footer></section>`);return;}
-  const status=active?`<section class="membership-vip-card vip-theme-${esc(membershipState.theme)}"><div class="membership-vip-glow" aria-hidden="true"></div><div class="membership-vip-head">${avatarHtml(accountState.user,'membership-vip-avatar',{userId:accountState.user?.id})}<div><small>我的会员</small><h2>${esc(accountState.user?.nickname||'研究所会员')} ${vipBadgeHtml(accountState.user?.id)}</h2><p>${esc(plan?.name||'会员')} · ${esc(memberDate(active.expires_at))} 到期</p></div><button class="membership-upgrade" type="button" data-membership-purchase>续费会员 <span aria-hidden="true">→</span></button></div><div class="membership-vip-foot"><span>自由组合身份</span><span>可以发起开黑</span><span>表情空间扩容</span></div></section>`:`<section class="membership-status"><div><small>当前状态</small><h3>${!accountState.user?'尚未登录':'普通研究员'}</h3><p>${!accountState.user?'登录后查看会员状态和订单记录。':'可以发帖、评论与加入组队。'}</p></div>${accountState.user?'<button class="membership-upgrade" type="button" data-membership-purchase>开通会员 <span aria-hidden="true">→</span></button>':'<button class="membership-login" type="button" data-open-account>登录账号</button>'}</section>`;
-  const benefits=`<section class="membership-section"><header><h3>会员权益</h3><span>发帖、评论、加入组队继续开放</span></header><div class="membership-benefits">${membershipBenefits().map(([title,copy],index)=>`<article><i>${String(index+1).padStart(2,'0')}</i><div><b>${esc(title)}</b><span>${esc(copy)}</span></div></article>`).join('')}</div></section>`;
-  paint(`<div class="membership-page-grid"><main class="membership-main-stack">${status}${membershipGrowthContent(growthExpanded)}<section class="membership-shortcuts"><button type="button" data-membership-tab="appearance">会员装扮 <b>搭配头像框与资料卡 →</b></button><button type="button" data-nav="play">发起开黑组队 <b>${active?'前往创建':'会员可创建'}</b></button></section>${membershipState.error?`<p class="membership-sync-note">${esc(membershipState.error)}</p>`:''}</main><aside class="membership-benefit-aside">${benefits}</aside></div>`);
-}
-
-function renderMembership(next=membershipState){
-  const nextSignature=JSON.stringify([next.publicAppearances||{},next.levels||{}]);const stylesChanged=membershipStyleSignature!==nextSignature;membershipStyleSignature=nextSignature;membershipState=next;renderMembershipContent();renderMembershipEntry();
-  if(stylesChanged){socialRenderMemo=null;renderFeed();renderSocial();chatRoomUi.render();renderArchive();}
+function renderProfileAppearances(next){
+  const signature=JSON.stringify([next.publicAppearances,next.levels]);
+  if(membershipStyleSignature===signature)return;
+  membershipStyleSignature=signature;
+  setAvatar($('[data-account-avatar]'),accountState.user);
+  setAvatar($('[data-profile-avatar]'),accountState.user);
+  socialRenderMemo=null;
+  renderFeed();renderSocial();chatRoomUi.render();renderArchive();
 }
 function authenticatedUser(next=accountState){
   const user=next.user;const sessionUser=next.session?.user;
@@ -227,13 +182,9 @@ function startProtectedApp(){
   if(protectedAppStarted)return;protectedAppStarted=true;
   setMascotGreeting();
   homeWidgets.init({toast,openAccount});
-  homeContent.init({navigate:view=>{if(view==='shop'){membershipTab='shop';navigate('membership');}else navigate(view);}});
+  homeContent.init({navigate});
   gamePartyUi.init({toast});
-  membershipStore.start();
-  membershipPayment.start();
-  membershipPayment.subscribe(()=>renderMembershipContent());
-  membershipExperience.init({toast,refreshMembership:renderMembershipContent});
-  membershipShop.init({toast,render:renderMembershipContent});
+  profileAppearanceStore.start();
 }
 function renderAuthGate(next){
   const app=$('#app');const modal=$('[data-account-modal]');const checking=$('[data-auth-checking]');const content=$('[data-auth-content]');
@@ -274,7 +225,6 @@ function renderAccount(next){
   if(next.ready)renderPolls();
   if(next.ready)chatRoomUi.render();
   if(next.ready)renderArchive();
-  renderMembershipEntry();
   renderAuthGate(next);
 }
 
@@ -294,12 +244,13 @@ function bindSidebarMore(){document.addEventListener('click',event=>{const toggl
 
 function navigate(view){
   closeSidebarMore();
+  if(view==='membership'||view==='shop')view='home';
   if(view==='echo'){view='square';squareMode='echo';}
   else if(view==='square')squareMode='feed';
-  const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;membershipPayment.setVisible(view==='membership'&&['purchase','orders'].includes(membershipTab));membershipShop.setVisible(view==='membership'&&membershipTab==='shop');
+  const route=routes[view]||routes.home;currentView=view;$('#app').dataset.view=view;
   $$('[data-nav]').forEach(node=>node.classList.toggle('active',node.dataset.nav===(['activities','announcements'].includes(view)?'home':view)));
   homeContent.setVisible(view);
-  const localViews=['home','compose','square','rooms','chatrooms','play','games','buddy','membership','archive','settings','about','announcements','activities'];
+  const localViews=['home','compose','square','rooms','chatrooms','play','games','buddy','archive','settings','about','announcements','activities'];
   $$('[data-view-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===(localViews.includes(view)?view:'pending')));
   if(!localViews.includes(view)){$('[data-pending-title]').textContent=route[0]+'正在迁移';$('[data-pending-copy]').textContent=`${route[0]}会直接接入共用数据库，不再加载网页版对应页面。当前 1.0.5 的原有功能不受影响。`;}
   closeEmojiPanel();
@@ -323,7 +274,6 @@ function navigate(view){
   if(view==='chatrooms')chatRoomUi.activate().catch(error=>toast(error.message||'闲聊房间读取失败。'));
   if(view==='play')gamePartyUi.activate().catch(error=>toast(error.message||'组队房间读取失败。'));
   if(view==='games')window.__FW_GAMES__?.activate();
-  if(view==='membership'){renderMembershipContent();membershipStore.load(true).catch(error=>toast(error.message||'会员信息读取失败。'));}
   if(view==='archive')archiveStore.load().catch(error=>toast(error.message||'废话档案读取失败。'));
   if(view!=='settings')desktopSettings.cancelRecording?.();
   if(view==='settings')desktopSettings.activate();
@@ -371,7 +321,7 @@ function sharedPicker(draft,context,postId=''){
   if(tab==='fufu1')return `${tabs}<div class="inline-fufu-grid${unifiedLayout?' labeled-sticker-pack':''}">${FUFU_PACK.map(item=>unifiedLayout?`<div class="fufu-pack-item"><button type="button" data-${context}-emoji="${esc(item[0])}"${suffix} aria-label="${esc(item[2])}">${fufuImage(item)}</button><span title="${esc(item[2])}">${esc(item[2])}</span></div>`:`<button type="button" data-${context}-emoji="${esc(item[0])}"${suffix} aria-label="${esc(item[2])}">${fufuImage(item)}</button>`).join('')}</div>`;
   if(socialState.stickers.loading&&!socialState.stickers.loaded)return `${tabs}<div class="state-card small">正在读取我的表情...</div>`;
   const rows=sortedStickers();const attribute=`data-${context}-sticker`;
-  const toolbar=unifiedLayout?`<div class="sticker-toolbar sticker-library-meta"><span>${rows.length}/${membershipStore.stickerLimit()}</span><small>最大 1MB · 与图片合计最多 4 张</small></div>`:`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>${uiIcon('media')}添加表情</button><span>${rows.length}/${membershipStore.stickerLimit()} · 最大 1MB · 发送时仅选 1 个</span></div>`;
+  const toolbar=unifiedLayout?`<div class="sticker-toolbar sticker-library-meta"><span>${rows.length}/${STICKER_LIMIT}</span><small>最大 1MB · 与图片合计最多 4 张</small></div>`:`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>${uiIcon('media')}添加表情</button><span>${rows.length}/${STICKER_LIMIT} · 最大 1MB · 发送时仅选 1 个</span></div>`;
   const addTile=unifiedLayout?`<div class="inline-sticker-item sticker-add-item"><button type="button" data-upload-sticker aria-label="添加表情"><b aria-hidden="true">＋</b><span>添加</span></button></div>`:'';
   const gridClass=`inline-sticker-grid${unifiedLayout?' unified-sticker-grid':''}${!rows.length?' is-empty':''}`;
   return `${tabs}${toolbar}<div class="${gridClass}"${!rows.length?' aria-label="我的表情为空"':''}>${addTile}${rows.map(row=>{const on=draft.attachments.some(item=>item.kind==='sticker'&&item.url===row.image_url);return `<div class="inline-sticker-item"><button class="${on?'selected':''}" type="button" ${attribute}="${esc(row.image_url)}"${suffix} aria-pressed="${on}" ${feedState.busy?'disabled':''}><img src="${esc(row.image_url)}" alt="我的表情"></button><button class="inline-sticker-delete" type="button" data-delete-sticker="${esc(row.id)}" aria-label="删除这个表情">×</button></div>`;}).join('')}</div>`;
@@ -714,7 +664,7 @@ function renderEmojiPanel(){
   if(emojiTab==='emoji'){body.innerHTML=`<div class="emoji-grid">${EMOJIS.map(item=>`<button type="button" data-insert-emoji="${esc(item[0])}" aria-label="${esc(item[0])}">${emojiImage(item)}</button>`).join('')}</div>`;return;}
   if(emojiTab==='fufu1'){body.innerHTML=`<div class="fufu-grid">${FUFU_PACK.map(item=>`<button type="button" data-chat-fufu="${esc(item[0])}" aria-label="${esc(item[2])}">${fufuImage(item)}</button>`).join('')}</div>`;return;}
   if(socialState.stickers.loading&&!socialState.stickers.loaded){body.innerHTML='<div class="state-card small">正在读取我的表情...</div>';return;}
-  const rows=sortedStickers();body.innerHTML=`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>${uiIcon('media')}添加表情</button><span>${rows.length}/${membershipStore.stickerLimit()} · 最大 1MB</span></div>`+(rows.length?`<div class="sticker-grid">${rows.map(row=>`<div class="sticker-item"><button type="button" data-send-sticker="${esc(row.image_url)}"><img src="${esc(row.image_url)}" alt="表情"></button><button class="sticker-delete" type="button" data-delete-sticker="${esc(row.id)}" aria-label="删除表情">×</button></div>`).join('')}</div>`:'<div class="state-card small">还没有添加自定义表情；可以添加 JPG、PNG、WebP 或 GIF。</div>');
+  const rows=sortedStickers();body.innerHTML=`<div class="sticker-toolbar"><button class="secondary compact" type="button" data-upload-sticker>${uiIcon('media')}添加表情</button><span>${rows.length}/${STICKER_LIMIT} · 最大 1MB</span></div>`+(rows.length?`<div class="sticker-grid">${rows.map(row=>`<div class="sticker-item"><button type="button" data-send-sticker="${esc(row.image_url)}"><img src="${esc(row.image_url)}" alt="表情"></button><button class="sticker-delete" type="button" data-delete-sticker="${esc(row.id)}" aria-label="删除表情">×</button></div>`).join('')}</div>`:'<div class="state-card small">还没有添加自定义表情；可以添加 JPG、PNG、WebP 或 GIF。</div>');
 }
 
 function renderSocial(next=socialState){
@@ -737,21 +687,6 @@ function bindNavigation(){
     if(event.target.closest('[data-feedback-open]')){closeSidebarMore(true);return;}
     if(event.target.closest('[data-open-account]')){openAccount();return;}if(event.target.closest('[data-close-account]')){closeAccount();return;}
     if(event.target.closest('[data-auth-retry]')){window.location.reload();return;}
-    const membershipTabButton=event.target.closest('[data-membership-tab]');if(membershipTabButton){membershipTab=membershipTabButton.dataset.membershipTab;membershipPlanId='';renderMembershipContent();return;}
-    if(event.target.closest('[data-membership-purchase]')){if(!accountState.user){openAccount();return;}membershipTab='purchase';renderMembershipContent();$('[data-membership-purchase-title]')?.focus({preventScroll:true});return;}
-    if(event.target.closest('[data-membership-return]')){membershipTab='benefits';membershipPlanId='';renderMembershipContent();$('[data-membership-purchase]')?.focus({preventScroll:true});return;}
-    const membershipThemeButton=event.target.closest('[data-membership-theme]');if(membershipThemeButton){membershipThemeButton.disabled=true;membershipStore.setTheme(membershipThemeButton.dataset.membershipTheme).then(()=>toast('会员装扮已切换。')).catch(error=>toast(error.message||'装扮切换失败。')).finally(()=>{membershipThemeButton.disabled=false;});return;}
-    const membershipPlanButton=event.target.closest('[data-membership-plan]');if(membershipPlanButton){if(!accountState.user){openAccount();return;}membershipPlanId=membershipPlanButton.dataset.membershipPlan;renderMembershipContent();$(`[data-membership-plan="${CSS.escape(membershipPlanId)}"]`)?.focus({preventScroll:true});return;}
-    const paymentCreate=event.target.closest('[data-payment-create]');if(paymentCreate){await membershipPayment.create(paymentCreate.dataset.paymentCreate);return;}
-    const paymentResume=event.target.closest('[data-payment-resume]');if(paymentResume){membershipTab='purchase';renderMembershipContent();await membershipPayment.resume(paymentResume.dataset.paymentResume);return;}
-    const paymentQuery=event.target.closest('[data-payment-query]');if(paymentQuery){await membershipPayment.query(paymentQuery.dataset.paymentQuery);if(membershipPayment.state.order?.status==='paid'){membershipTab='purchase';renderMembershipContent();}await membershipStore.load(true);return;}
-    const paymentCopy=event.target.closest('[data-payment-copy]');if(paymentCopy){try{await navigator.clipboard.writeText(paymentCopy.dataset.paymentCopy);toast('订单号已复制。');}catch{toast('复制失败，请手动复制订单号。');}return;}
-    if(event.target.closest('[data-payment-pause]')){membershipPayment.pause();return;}
-    if(event.target.closest('[data-payment-open]')){await membershipPayment.openCheckout();return;}
-    if(event.target.closest('[data-payment-config]')){await membershipPayment.loadConfig(true);return;}
-    if(event.target.closest('[data-payment-new]')){membershipPayment.newOrder();return;}
-    if(event.target.closest('[data-member-level-dismiss]')){dismissMembershipLevelNotice();renderMembershipContent();return;}
-    if(event.target.closest('[data-membership-refresh]')){membershipStore.load(true).catch(()=>{});return;}
     const switcher=event.target.closest('[data-show-auth]');if(switcher){showAuth(switcher.dataset.showAuth);return;}
     if(event.target.closest('[data-archive-refresh]')){archiveStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
     if(event.target.closest('[data-poll-refresh]')){pollStore.load(true).catch(error=>toast(error.message||'刷新失败。'));return;}
@@ -878,7 +813,7 @@ function bindForms(){
     const comment=event.target.closest?.('[data-comment-form]');if(comment){event.preventDefault();const postId=comment.dataset.commentForm;const draft=draftFor(postId);const owner=accountState.user?.id,text=draft.text,attachments=draft.attachments;try{await feedStore.createComment({postId,text,attachments});if(accountState.user?.id!==owner)return;if(draft.text===text&&draft.attachments===attachments){releasePreview(draft);draft.text='';}persistDrafts('comment:'+postId);toast('评论已发送。');renderPostDetail();}catch(error){toast(error.message||'评论失败。');}}
   });
 }
-bindExternalLinks({onError:toast});bindSidebarMore();bindChatActions();bindNavigation();bindForms();chatRoomUi.init({toast,avatarHtml,memberName,emojiText,emojiImage,fufuImage,emojis:EMOJIS,fufu:FUFU_PACK});desktopSettings.init({toast});authStore.subscribe(renderAccount);membershipStore.subscribe(renderMembership);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);archiveStore.subscribe(renderArchive);authStore.boot();
+bindExternalLinks({onError:toast});bindSidebarMore();bindChatActions();bindNavigation();bindForms();chatRoomUi.init({toast,avatarHtml,memberName,emojiText,emojiImage,fufuImage,emojis:EMOJIS,fufu:FUFU_PACK});desktopSettings.init({toast});authStore.subscribe(renderAccount);profileAppearanceStore.subscribe(renderProfileAppearances);socialStore.subscribe(renderSocial);feedStore.subscribe(renderFeed);pollStore.subscribe(renderPolls);archiveStore.subscribe(renderArchive);authStore.boot();
 
 installContentReviewUi({toast});
 

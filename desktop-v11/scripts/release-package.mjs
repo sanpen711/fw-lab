@@ -4,11 +4,11 @@ import {resolve,relative,dirname,sep,extname} from 'node:path';
 
 export const ACTIVE_GAMES=Object.freeze(['2048','minesweeper','sudoku','reaction']);
 const appIcons=['folder','document','computer','drive','image','archive','text','printer','network'];
-const navIcons=['home','brain','discussion','chatrooms','game','buddy','archive','membership','settings','info','notice'];
+const navIcons=['home','brain','discussion','chatrooms','game','buddy','archive','settings','info','notice'];
 export const PUBLIC_ENTRIES=Object.freeze([
   'brand-theme.css','chat-rooms.css','game-center.css','game-party.css',
   'hero-fufu-office-banner.webp','mascot-fufu.webp','membership-experience.css',
-  'membership-shop.css','private-chat.css','site-content.css','ui-icons.svg',
+  'private-chat.css','site-content.css','ui-icons.svg',
   'emoji','membership-badges','third-party-licenses/pinyin-pro.txt',
   ...appIcons.map(name=>'app-icons/'+name+'.png'),
   ...navIcons.map(name=>'nav-icons/'+name+'.svg'),

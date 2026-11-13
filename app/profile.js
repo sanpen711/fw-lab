@@ -151,7 +151,6 @@
         '<div class="profile-top-main"><h2>' + esc(user.nickname || '临时研究员') + '</h2><p>实验品编号：' + esc(user.lab_code || '未设置') + '</p></div>' +
       '</button>' +
       '<div class="profile-menu">' +
-        menuButton('member', 'blue', '◇', '会员中心') +
         menuButton('stickers', 'yellow', '☺', '表情管理') +
         menuButton('info', 'cyan', '⚙', '设置') +
       '</div>' +
@@ -337,8 +336,7 @@
     try{
       var c = client();
       if(!c) throw new Error('db');
-      var limit = await window.FWMobileMedia.stickerLimit(user);
-      var res = await c.from('user_stickers').select('id,image_url,storage_path,file_name,file_size,mime_type,created_at').eq('user_id', user.id).eq('is_deleted', false).order('created_at', {ascending:false}).limit(limit);
+      var res = await c.from('user_stickers').select('id,image_url,storage_path,file_name,file_size,mime_type,created_at').eq('user_id', user.id).eq('is_deleted', false).order('created_at', {ascending:false});
       if(res.error) throw res.error;
       stickers = res.data || [];
       stickersLoaded = true;
@@ -886,10 +884,6 @@
       var modeBtn = e.target.closest && e.target.closest('[data-profile-mode]');
       if(modeBtn){
         e.preventDefault();
-        if(modeBtn.dataset.profileMode === 'member'){
-          if(app() && app().setView) app().setView('membership');
-          return;
-        }
         mode = modeBtn.dataset.profileMode || 'home';
         render();
         return;

@@ -26,7 +26,6 @@
       bird:'bird',
       play:'play',
       'play-detail':'play-detail',
-      membership:'membership',
       archive:'archive',
       rules:'rules',
       moderation:'moderation',

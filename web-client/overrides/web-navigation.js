@@ -10,13 +10,12 @@ export function installWebNavigation({paths,aliases,onView}){
     const url=new URL(location.href),file=url.pathname.split('/').pop()||'index.html';
     let view=aliases[file]||Object.keys(paths).find(key=>paths[key]===file)||'home';
     const p=url.searchParams;if(view==='echo')view='square';
-    return {view,tab:p.get('tab')||'benefits',mode:file==='echo.html'?'echo':p.get('tab')||'feed',post:p.get('post')||'',item:p.get('item')||'',filter:p.get('filter')||'all'};
+    return {view,mode:file==='echo.html'?'echo':p.get('tab')||'feed',post:p.get('post')||'',item:p.get('item')||'',filter:p.get('filter')||'all'};
   };
   function address(view,options={}){
     const url=new URL(location.href),desktop=url.searchParams.get('desktop');url.pathname='/'+(paths[view]||paths.home);url.search='';url.hash='';
     if(desktop==='1')url.searchParams.set('desktop','1');
     if(view==='square'&&['echo','mine'].includes(options.mode))url.searchParams.set('tab',options.mode);
-    if(view==='membership'&&['appearance','orders','purchase'].includes(options.tab))url.searchParams.set('tab',options.tab);
     if(view==='square'&&options.post)url.searchParams.set('post',options.post);
     if(['activities','announcements'].includes(view)&&options.item)url.searchParams.set('item',options.item);
     if(view==='rooms'&&options.filter&&options.filter!=='all')url.searchParams.set('filter',options.filter);
@@ -45,8 +44,8 @@ export function installWebNavigation({paths,aliases,onView}){
   function commit(view,extra={}){
     if(applying)return;
     if(!webAccess.allow(view,{mode:extra.mode||app().state().mode}))return;
-    const state=app().state();if(view==='membership'&&state.tab==='shop')view='shop';
-    const route={view,tab:state.tab,mode:state.mode,filter:state.filter,...extra};
+    const state=app().state();
+    const route={view,mode:state.mode,filter:state.filter,...extra};
     if(view==='square')route.post=String(feedStore.state.openPostId||'');
     const url=address(view,route),previous=readRoute();
     if(url.href!==location.href){
@@ -55,7 +54,7 @@ export function installWebNavigation({paths,aliases,onView}){
       const web={key:newKey(),scroll:{y:0},postEntry:view==='square'&&Boolean(route.post)&&(history.state?.web?.postEntry||previous.view==='square'&&!previous.post),contentEntry:['activities','announcements'].includes(view)&&Boolean(route.item)&&(history.state?.web?.contentEntry||previous.view===view&&!previous.item)};
       if(samePostLayer)history.replaceState({...history.state,web:{...history.state?.web,postEntry:history.state?.web?.postEntry}},'',url);
       else history.pushState({web},'',url);
-      if(previous.view!==view||previous.tab!==route.tab||previous.filter!==route.filter)window.scrollTo({top:0,behavior:'instant'});
+      if(previous.view!==view||previous.mode!==route.mode||previous.filter!==route.filter)window.scrollTo({top:0,behavior:'instant'});
     }
     show(route);
   }
@@ -67,6 +66,7 @@ export function installWebNavigation({paths,aliases,onView}){
   async function apply({keepMenu=false,resetScroll=false}={}){
     const token=++generation;applying=true;pending=null;stopRestore();
     await webAccess.ready();if(token!==generation)return;
+    if(/\/(membership|shop)\.html$/.test(location.pathname))history.replaceState(history.state,'',address('home'));
     const route=readRoute(),scroll=resetScroll?{y:0}:history.state?.web?.scroll||{y:0};
     const locked=!webAccess.allow(route.view,route);
     const more=document.querySelector('[data-sidebar-more-wrap]'),menuOpen=keepMenu&&more.classList.contains('open');
@@ -91,13 +91,11 @@ export function installWebNavigation({paths,aliases,onView}){
   window.addEventListener('fw:web-before-view',save);
   document.addEventListener('scroll',()=>{if(!saveTimer)saveTimer=setTimeout(save,120);},{capture:true,passive:true});
   for(const type of ['wheel','pointerdown','keydown'])document.addEventListener(type,()=>{stopRestore();save();},{capture:true,passive:true});
-  document.addEventListener('click',event=>{if(event.target.closest?.('[data-nav],[data-open-post],[data-close-post],[data-membership-tab],[data-poll-filter],[data-site-open],[data-site-back],[data-square-echo-toggle],[data-square-mine-toggle]'))save();},true);
+  document.addEventListener('click',event=>{if(event.target.closest?.('[data-nav],[data-open-post],[data-close-post],[data-poll-filter],[data-site-open],[data-site-back],[data-square-echo-toggle],[data-square-mine-toggle]'))save();},true);
   window.addEventListener('fw:web-view',event=>queue(event.detail.view));
-  window.addEventListener('fw:web-membership',()=>queue('membership'));
   window.addEventListener('fw:web-poll-filter',()=>queue('rooms'));
   window.addEventListener('fw:web-square-mode',()=>{if(app().state().view==='square')queue('square');});
   document.addEventListener('click',event=>{
-    if(event.target.closest?.('[data-membership-tab],[data-membership-purchase],[data-membership-return],[data-payment-resume]'))queue('membership');
     if(event.target.closest?.('[data-poll-filter]'))queue('rooms');
   });
   window.addEventListener('fw:web-content',event=>{

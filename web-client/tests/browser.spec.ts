@@ -12,8 +12,13 @@ test('游客可读广场和评论数量，投票板块与互动提示登录',asy
  await page.locator('[data-nav="rooms"]').click();await expectGuestGate(page,'rooms');
  expect(calls.filter(c=>/\/(fw_vote_poll|fw_create_poll_v2|polls|comments)$/.test(c.path))).toEqual([]);
 });
-test('游客商城直链先提示登录，不读取商品和订单',async({page})=>{
- const calls=await mock(page);await page.goto('/shop.html');await expectGuestGate(page,'shop');await expect(page.locator('.shop-product-card:visible')).toHaveCount(0);expect(calls.some(c=>/\/(shop_products|shop_orders)$/.test(c.path))).toBe(false);
+test('旧会员与商城直链回到首页，不读取商品和订单',async({page})=>{
+ const calls=await mock(page);
+ for(const path of ['/shop.html','/membership.html?tab=appearance']){
+  await page.goto(path);await expect(page).toHaveURL(/index.html$/);
+  await expect(page.locator('[data-nav="membership"],[data-membership-content],[data-shop-checkout]')).toHaveCount(0);
+ }
+ expect(calls.some(c=>/\/(shop_products|shop_orders|membership_orders)$/.test(c.path))).toBe(false);
 });
 test('登录用户可发布新版投票并保留补充权限',async({page})=>{
  const calls=await mock(page,{loggedIn:true});await page.goto('/rooms.html');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');await form.locator('[name="title"]').fill('网页研究');await form.locator('[name="option1"]').fill('甲');await form.locator('[name="option2"]').fill('乙');await form.locator('[name="durationDays"]').selectOption('30');await form.locator('[name="allowUserOptions"]').check();await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('已发布');expect(calls.find(c=>c.path.endsWith('/fw_create_poll_v2'))?.body).toEqual({p_title:'网页研究',p_options:['甲','乙'],p_is_official:false,p_duration_days:30,p_allow_user_options:true});
@@ -32,28 +37,28 @@ test('广场“我的”和回声需要登录，登录用户可以使用',async(
  await mock(page,{loggedIn:true});await page.goto('/square.html');await page.locator('[data-square-mine-toggle]').click();await expect(page.locator('[data-square-mine-toggle]')).toHaveAttribute('aria-pressed','true');await page.locator('[data-square-echo-toggle]').click();await expect(page.locator('[data-square-echo-panel]')).toBeVisible();
 });
 test('未开放补充的投票不显示输入框，投票失败可重试',async({page})=>{
- await mock(page,{loggedIn:true,fail:'fw_vote_poll'});await page.goto('/rooms.html');await expect(page.locator('[data-poll-add-option]')).toHaveCount(0);await expect(page.locator('.poll-card')).toContainText('发起人未开放补充选项');await page.locator('[data-poll-vote]').first().click();await expect(page.locator('[data-toast]')).toContainText('模拟网络失败');await expect(page.locator('[data-poll-vote]').first()).toBeEnabled();
+ await mock(page,{loggedIn:true,fail:'fw_vote_poll'});await page.goto('/rooms.html');await expect(page.locator('[data-poll-add-option]')).toHaveCount(0);await expect(page.locator('.poll-card')).toContainText('发起人未开放补充选项');await page.locator('[data-poll-vote]').first().click();await expect(page.locator('[data-toast]')).toContainText('网络连接异常，请检查网络后重试。');await expect(page.locator('[data-poll-vote]').first()).toBeEnabled();
 });
 test('投票重复选项不提交，网络失败保留完整输入',async({page})=>{
- const calls=await mock(page,{loggedIn:true,fail:'fw_create_poll_v2'});await page.goto('/rooms.html');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');await form.locator('[name="title"]').fill('保留输入');await form.locator('[name="option1"]').fill('重复');await form.locator('[name="option2"]').fill('重复');await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('不能重复');expect(calls.some(c=>c.path.endsWith('/fw_create_poll_v2'))).toBe(false);await form.locator('[name="option2"]').fill('另一个');await form.locator('[name="durationDays"]').selectOption('15');await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('模拟网络失败');await expect(form.locator('[name="title"]')).toHaveValue('保留输入');await expect(form.locator('[name="durationDays"]')).toHaveValue('15');
+ const calls=await mock(page,{loggedIn:true,fail:'fw_create_poll_v2'});await page.goto('/rooms.html');await page.locator('[data-poll-create-toggle]').click();const form=page.locator('[data-poll-create-form]');await form.locator('[name="title"]').fill('保留输入');await form.locator('[name="option1"]').fill('重复');await form.locator('[name="option2"]').fill('重复');await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('不能重复');expect(calls.some(c=>c.path.endsWith('/fw_create_poll_v2'))).toBe(false);await form.locator('[name="option2"]').fill('另一个');await form.locator('[name="durationDays"]').selectOption('15');await form.locator('[type="submit"]').click();await expect(page.locator('[data-toast]')).toContainText('网络连接异常，请检查网络后重试。');await expect(form.locator('[name="title"]')).toHaveValue('保留输入');await expect(form.locator('[name="durationDays"]')).toHaveValue('15');
 });
-test('非会员仍能浏览和加入组队，创建显示会员说明',async({page})=>{
- await mock(page,{loggedIn:true,member:false});await page.goto('/play.html');await expect(page.locator('[data-party-list]')).toContainText('今晚一起开黑');await page.locator('[data-party-create-toggle]').click();await expect(page.locator('[data-party-create-host]')).toContainText('会员才能创建组队');
+test('普通账号可以创建组队，最多同时拥有 5 个房间',async({page})=>{
+ await mock(page,{loggedIn:true,member:false});await page.goto('/play.html');await expect(page.locator('[data-party-list]')).toContainText('今晚一起开黑');await page.locator('[data-party-create-toggle]').click();await expect(page.locator('[data-party-create-form]')).toContainText('5 个组队');
 });
 test('登录后闲聊房间接入新界面与创建表单',async({page})=>{
  const calls=await mock(page,{loggedIn:true});await page.goto('/chatrooms.html');await expect.poll(()=>calls.some(c=>c.path.endsWith('/fw_chat_room_list'))).toBe(true);await page.locator('[data-room-create]').click();await expect(page.locator('[data-room-editor-form]')).toBeVisible();await expect(page.locator('[data-room-editor-form]')).toContainText('创建');
 });
-test('会员展示等级、装扮、商城及订单入口',async({page})=>{
+test.skip('会员展示等级、装扮、商城及订单入口',async({page})=>{
  await mock(page,{loggedIn:true});await page.goto('/membership.html');await expect(page.locator('[data-membership-content]')).toContainText('会员权益');await expect(page.locator('[data-membership-content]')).toContainText('V2');await page.locator('[data-membership-tab="appearance"]').first().click();await expect(page.locator('.membership-appearance-page')).toBeVisible();await page.locator('[data-membership-tab="shop"]').click();await expect(page.locator('.shop-product-card')).toHaveCount(1);await page.locator('[data-membership-tab="orders"]').click();await expect(page.locator('.membership-orders-panel')).toBeVisible();
 });
-test('支付未开放时显示真实状态，不创建订单',async({page})=>{
+test.skip('支付未开放时显示真实状态，不创建订单',async({page})=>{
  const calls=await mock(page,{loggedIn:true});await page.goto('/membership.html');await page.locator('[data-membership-purchase]').first().click();await expect(page.locator('[data-payment-create]')).toBeDisabled();await expect(page.locator('.membership-checkout')).toContainText('支付宝支付暂未开放');expect(calls.some(c=>c.body?.action==='create')).toBe(false);
 });
 test('网页设置移除桌面伪装，清理缓存保留账号和手机缓存',async({page})=>{
  await mock(page,{loggedIn:true});await page.goto('/settings.html');await expect(page.locator('[data-identity-form]')).toHaveCount(0);await expect(page.locator('[data-app-version]')).toContainText('网页');await page.evaluate(async()=>{await caches.open('fw-mobile-test');await caches.open('fw-web-assets-test');});await page.locator('[data-clear-cache]').click();await expect(page.locator('[data-toast]')).toContainText('登录状态已保留');expect(await page.evaluate(()=>!!localStorage.getItem('sb-ekbovsmxbiplhyrzxoyw-auth-token'))).toBe(true);expect(await page.evaluate(()=>caches.keys())).toContain('fw-mobile-test');expect(await page.evaluate(()=>caches.keys())).not.toContain('fw-web-assets-test');await expect(page.locator('.settings-filing a')).toHaveAttribute('href','https://beian.miit.gov.cn/');
 });
-test('六款H5游戏可以打开，NES仍仅在电脑版提供',async({page})=>{
- await mock(page,{loggedIn:true});await page.goto('/games.html');await expect(page.locator('[data-game-open]')).toHaveCount(6);await expect(page.locator('[data-game-open="contra"]')).toHaveCount(0);await page.locator('[data-game-open="2048"]').click();await expect(page.locator('[data-game-frame]')).toHaveAttribute('src',/\/web\/games\/2048\/index.html/);await expect(page.frameLocator('[data-game-frame]').locator('body')).toContainText('2048');
+test('四款在用 H5 小游戏可以打开',async({page})=>{
+ await mock(page,{loggedIn:true});await page.goto('/games.html');await expect(page.locator('[data-game-open]')).toHaveCount(4);await expect(page.locator('[data-game-open="contra"]')).toHaveCount(0);await page.locator('[data-game-open="2048"]').click();await expect(page.locator('[data-game-frame]')).toHaveAttribute('src',/\/web\/games\/2048\/index.html/);await expect(page.frameLocator('[data-game-frame]').locator('body')).toContainText('2048');
 });
 test('登录后可通过更多打开规则和处理公告',async({page})=>{
  await mock(page,{loggedIn:true});await page.goto('/rules.html');await expect(page.locator('[data-align-view="rules"]')).toBeVisible();await page.locator('[data-sidebar-more-toggle]').click();await page.locator('[data-align-nav="moderation"]').click();await expect(page.locator('[data-align-view="moderation"]')).toBeVisible();
@@ -65,7 +70,7 @@ test('过期登录会回到访客状态，公开内容仍可浏览',async({page}
  await mock(page,{loggedIn:true});await page.route('**/auth/v1/user',route=>route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({message:'expired',code:'bad_jwt'})}));await page.goto('/square.html');await expect(page.locator('[data-account-label]')).toHaveText('注册 / 登录');await expect(page.locator('[data-square-feed]')).toContainText('今天也在低功耗运行');await expect(page.locator('[data-account-modal]')).toBeHidden();
 });
 test('手机访问网站仍进入原有PWA',async({browser})=>{
- const context=await browser.newContext({viewport:{width:390,height:844},userAgent:'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/138 Mobile Safari/537.36',isMobile:true,hasTouch:true});const page=await context.newPage();await mock(page);await page.goto('/');await expect(page).toHaveURL(/\/app\/index.html/);await expect(page.locator('[data-app-view="home"]')).toBeVisible();await context.close();
+ const context=await browser.newContext({viewport:{width:390,height:844},userAgent:'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/138 Mobile Safari/537.36',isMobile:true,hasTouch:true});const page=await context.newPage();await mock(page);await page.route('https://cdn.jsdelivr.net/**',route=>route.fulfill({contentType:'application/javascript',body:''}));await page.goto('/',{waitUntil:'domcontentloaded'});await expect(page).toHaveURL(/\/app\/index.html/);await expect(page.locator('[data-app-view="home"]')).toBeVisible();await context.close();
 });
 test('找回密码链接能进入独立的新密码表单',async({page})=>{
  await mock(page);await page.goto('/#access_token=web-recovery-token&refresh_token=web-recovery-refresh&expires_in=3600&token_type=bearer&type=recovery');await expect(page.locator('[data-web-password-recovery]')).toBeVisible();const form=page.locator('[data-web-password-recovery]');await form.locator('[name="password"]').fill('new-password');await form.locator('[name="confirm"]').fill('different-password');await form.locator('[type="submit"]').click();await expect(form).toContainText('两次密码不一致');

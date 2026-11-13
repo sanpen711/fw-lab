@@ -5,7 +5,7 @@ const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 async function setup(page:Page){
  const now=Date.now(),time=(d:number)=>new Date(now+d*86400000).toISOString();
  const c:any={fail:false,requests:[],notices:[{id:id(1),title:'置顶公告',body:'公告内容\nhttps://example.com/notice',is_pinned:true,published_at:time(-2),updated_at:time(-2)}],activities:[
-  {id:id(2),title:'进行中的活动',body:'参与说明\n<img src=x onerror=alert(1)>',summary:'活动简介',starts_at:time(-1),ends_at:time(1),target_view:'shop',cover_path:`activities/${id(2)}/${id(4)}.png`},
+  {id:id(2),title:'进行中的活动',body:'参与说明\n<img src=x onerror=alert(1)>',summary:'活动简介',starts_at:time(-1),ends_at:time(1),target_view:'play',cover_path:`activities/${id(2)}/${id(4)}.png`},
   {id:id(3),title:'之后的活动',body:'稍后开始',starts_at:time(1),ends_at:time(2)},
   {id:id(4),title:'过去的活动',body:'已经结束',starts_at:time(-2),ends_at:time(-1),participation_url:'https://example.com/ended'},
  ]};
@@ -35,8 +35,8 @@ test('首页公告在主视觉上方，活动合并两格，倒计时在右，�
  expect(c.requests.some((s:string)=>s.includes('fw-weather'))).toBe(false);await expect(page.locator('[data-weather-open]')).toHaveCount(0);
  await page.locator('[data-sidebar-more-toggle]').click();const labels=await page.locator('.sidebar-more-menu b').allTextContents();expect(labels.indexOf('反馈意见')).toBe(labels.indexOf('处理公告')+1);await page.locator('[data-feedback-open]').click();await expect(page.locator('[data-home-tool-view="feedback"]')).toBeVisible();await page.keyboard.press('Escape');await expect(page.locator('[data-sidebar-more-toggle]')).toBeFocused();
 });
-test('活动入口打开列表与详情，按时间显示状态，正文转义且参与入口可跳转商城',async({page},testInfo)=>{
- await setup(page);await page.locator('.home-activities-card').click();await expect(page.locator('.site-activity-card')).toHaveCount(3);await expect(page.locator('.site-activity-grid')).toContainText('进行中');await expect(page.locator('.site-activity-grid')).toContainText('未开始');await expect(page.locator('.site-activity-grid')).toContainText('已结束');await page.locator(`[data-site-open="${id(2)}"]`).click();await expect(page.locator('.site-content-detail')).toContainText('参与说明');await expect(page.locator('.site-content-body img')).toHaveCount(0);await expect(page.locator('.site-content-body')).toContainText('<img src=x');await page.screenshot({path:testInfo.outputPath('activity-detail.png')});await page.locator('[data-site-target="shop"]').click();await expect(page.locator('.membership-shop')).toBeVisible();
+test('活动入口打开列表与详情，按时间显示状态，正文转义且参与入口可跳转下班开黑',async({page},testInfo)=>{
+ await setup(page);await page.locator('.home-activities-card').click();await expect(page.locator('.site-activity-card')).toHaveCount(3);await expect(page.locator('.site-activity-grid')).toContainText('进行中');await expect(page.locator('.site-activity-grid')).toContainText('未开始');await expect(page.locator('.site-activity-grid')).toContainText('已结束');await page.locator(`[data-site-open="${id(2)}"]`).click();await expect(page.locator('.site-content-detail')).toContainText('参与说明');await expect(page.locator('.site-content-body img')).toHaveCount(0);await expect(page.locator('.site-content-body')).toContainText('<img src=x');await page.screenshot({path:testInfo.outputPath('activity-detail.png')});await page.locator('[data-site-target="play"]').click();await expect(page.locator('[data-view-panel="play"]')).toBeVisible();
 });
 test('公告查看后移除未读标记，更新正文后重新提示未读，支持历史列表',async({page})=>{
  const c=await setup(page);await expect(page.locator('.announcement-unread')).toBeVisible();await page.locator('[data-home-announcement] [data-site-open]').click();await expect(page.locator('[data-site-content="announcements"]')).toContainText('公告内容');await expect(page.locator('.site-content-body a')).toHaveAttribute('href','https://example.com/notice');await page.locator('[data-site-back="announcements"]').click();await expect(page.locator('.site-notice-row')).toHaveCount(1);await page.locator('[data-site-content="announcements"] [data-nav="home"]').click();await expect(page.locator('.announcement-unread')).toHaveCount(0);
@@ -46,7 +46,7 @@ test('活动读取失败可以重试，已结束的活动没有参与按钮',asy
  const c=await setup(page);c.fail=true;await page.locator('.home-activities-card').click();await expect(page.locator('[data-site-content="activities"] [role="alert"]')).toBeVisible({timeout:18000});c.fail=false;await page.locator('[data-site-refresh="activities"]').click();await expect(page.locator('[data-site-content="activities"] [role="alert"]')).toHaveCount(0);await page.locator(`[data-site-open="${id(4)}"]`).click();await expect(page.locator('.site-content-detail')).toContainText('已经结束');await expect(page.locator('.site-content-action')).toHaveCount(0);
 });
 test('退出账号清除公告和活动展示，重新登录前不能进入活动',async({page})=>{
- await setup(page);await page.locator('.home-activities-card').click();await page.evaluate(async()=>{const {authStore}=await import('/src/auth-store.js');await authStore.signOut();});await expect(page.locator('#app')).toBeHidden();expect(await page.locator('[data-site-content="activities"]').innerHTML()).not.toContain('进行中的活动');
+ await setup(page);await page.locator('.home-activities-card').click();await page.locator('[data-open-account]').first().click();page.once('dialog',dialog=>dialog.accept());await page.locator('[data-sign-out]').click();await expect(page.locator('#app')).toBeHidden();expect(await page.locator('[data-site-content="activities"]').innerHTML()).not.toContain('进行中的活动');
 });
 test('公告栏直接展示正文，长内容滚动可暂停，短内容和减少动态模式保持静止',async({page},testInfo)=>{
  const c=await setup(page),button=page.locator('.announcement-message'),track=button.locator('.announcement-track');

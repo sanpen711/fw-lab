@@ -28,6 +28,7 @@ const uuidPattern =
 function databaseError(message: string) {
   const codes: Record<string, number> = {
     ACCOUNT_UNAVAILABLE: 403,
+    PAYMENT_NOT_OPEN: 503,
     PLAN_UNAVAILABLE: 400,
     PLAN_OVER_PAYMENT_LIMIT: 400,
     CHECKOUT_REQUEST_CONFLICT: 409,
@@ -81,10 +82,11 @@ Deno.serve(async (request: Request) => {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
       throw new PaymentError("INVALID_REQUEST");
     }
+    const publicCheckoutEnabled = false;
     const settings = readPaymentSettings((name) => Deno.env.get(name));
     if (payload.action === "config") {
       return reply(200, {
-        enabled: settings.enabled,
+        enabled: publicCheckoutEnabled,
         configured: settings.missing.length === 0,
         max_amount_cents: Number.isSafeInteger(settings.maxAmountCents)
           ? settings.maxAmountCents
@@ -93,7 +95,7 @@ Deno.serve(async (request: Request) => {
       });
     }
     if (payload.action === "create") {
-      if (!settings.enabled) throw new PaymentError("PAYMENT_NOT_OPEN", 503);
+      if (!publicCheckoutEnabled) throw new PaymentError("PAYMENT_NOT_OPEN", 503);
       if (
         typeof payload.plan_id !== "string" ||
         !/^[a-z0-9_]{1,40}$/.test(payload.plan_id) ||
@@ -151,7 +153,7 @@ Deno.serve(async (request: Request) => {
       if (order.status === "paid") {
         return reply(200, { order: publicOrder(order), membership: await membership() });
       }
-      if (!settings.enabled) throw new PaymentError("PAYMENT_NOT_OPEN", 503);
+      if (!publicCheckoutEnabled) throw new PaymentError("PAYMENT_NOT_OPEN", 503);
       if (order.payment_app_id !== settings.appId || order.payment_seller_id !== settings.sellerId) {
         throw new PaymentError("PAYMENT_ACCOUNT_MISMATCH");
       }

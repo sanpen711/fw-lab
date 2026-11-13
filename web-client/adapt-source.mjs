@@ -8,6 +8,7 @@ function once(source, before, after, label){
   return source.replace(before,after);
 }
 export function adaptModule(name,source){
+  source=source.replaceAll('\r\n','\n');
   const change=(before,after)=>{source=once(source,before,after,name);};
   if(name==='feature-alignment.js'&&!source.includes("from '../../assets/fw-privacy-policy.mjs'")){
     // The public browser build shares current policy text without releasing a Windows installer.
@@ -60,9 +61,6 @@ function renderAuthGate(next){
     source=source.replaceAll(commentCount,'${webCommentCount(post)}');
     change('<div class="comment-list">${comments}</div>${signIn}', '<div class="comment-list">${webAccess.signed()?comments:\'\'}</div>${signIn}');
     change("const signIn=accountState.user?'':'<div class=\"state-card small\"><b>登录后参与评论</b>", "const signIn=webAccess.signed()?'':'<div class=\"state-card small web-comments-locked\"><b>登录后查看评论</b>");
-    change('if(nav){navigate(nav.dataset.nav);return;}',"if(nav){if(nav.dataset.nav==='membership')membershipTab='benefits';navigate(nav.dataset.nav);return;}");
-    change('function renderMembershipContent(){',`function renderMembershipContent(){
-  if(currentView==='membership')window.dispatchEvent(new CustomEvent('fw:web-membership'));`);
     change('function renderPolls(next=pollState){',`function renderPolls(next=pollState){
   if(currentView==='rooms')window.dispatchEvent(new CustomEvent('fw:web-poll-filter'));`);
     change('renderSquareFeed();syncSquarePostSelection();',`renderSquareFeed();syncSquarePostSelection();
@@ -91,15 +89,14 @@ function renderAuthGate(next){
     change("  if(!shouldScroll){const nextAnchor=",`  webMessages.update('private',{context:target,rows:chat.rows,ownerField:'sender_id',ownId:accountState.user?.id,scroller:messages,button:notice,nearBottom,forceBottom:shouldScroll});
   if(!shouldScroll){const nextAnchor=`);
     source+=`\nwindow.addEventListener('beforeunload',event=>{if(composeDraft.attachments.length){event.preventDefault();event.returnValue='';}});
-window.__FW_WEB_APP__={navigate,openAccount,notify:toast,openPost:id=>feedStore.openPostById(id),state:()=>({view:currentView,tab:membershipTab,mode:squareMode,filter:pollFilter}),
-  openGuestView(view,{mode='feed',tab='benefits',filter='all'}={}){
+window.__FW_WEB_APP__={navigate,openAccount,notify:toast,openPost:id=>feedStore.openPostById(id),state:()=>({view:currentView,mode:squareMode,filter:pollFilter}),
+  openGuestView(view,{mode='feed',filter='all'}={}){
     navigate('home');homeContent.setVisible('');
-    currentView=view;squareMode=mode;membershipTab=tab;pollFilter=filter;
+    currentView=view;squareMode=mode;pollFilter=filter;
     $('#app').dataset.view=view;
     $$('.view').forEach(panel=>panel.classList.remove('active'));
   },
-  openView(view,{tab='benefits',mode='feed',item='',filter='all'}={}){
-    if(view==='membership'||view==='shop'){membershipTab=view==='shop'?'shop':(['benefits','appearance','orders','purchase'].includes(tab)?tab:'benefits');navigate('membership');return;}
+  openView(view,{mode='feed',item='',filter='all'}={}){
     if(['rules','moderation'].includes(view)){document.querySelector('[data-align-nav="'+view+'"]').click();return;}
     if(view==='rooms')pollFilter=['all','official','user','ended','mine','voted'].includes(filter)?filter:'all';
     navigate(view==='square'&&mode==='echo'?'echo':view);
@@ -172,6 +169,7 @@ window.__FW_WEB_APP__={navigate,openAccount,notify:toast,openPost:id=>feedStore.
 }
 
 export function adaptHtml(source){
+  source=source.replaceAll('\r\n','\n');
   source=once(source,'data-reset-enter-code','data-web-recovery-enter-code','recovery code entry');
   source=once(source,'<body class="auth-required">','<body class="fw-browser">','body');
   source=once(source,'<div class="modal auth-gate-modal auth-gate-checking" data-account-modal data-auth-locked="true">','<div class="modal" data-account-modal data-auth-locked="false" hidden>','optional sign-in dialog');

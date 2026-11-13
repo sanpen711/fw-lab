@@ -17,7 +17,7 @@
     '🎉','🎁','🏆','🚀','☕','🍓','🍉','🐶','🐱','🐟'
   ];
 
-  var MAX_STICKERS = window.FWMobileMedia ? 80 : 30;
+  var MAX_STICKERS = 80;
   var MAX_GIF_SIZE = 1024 * 1024;
   var MAX_STATIC_SIZE = 200 * 1024;
   var TARGET_SIZE = 300;
@@ -292,7 +292,7 @@
     if(stickerOwnerId !== String(u.id)){stickerOwnerId = String(u.id); stickerCache = null;}
     if(stickerCache && !force) return stickerCache;
     var r = await withTimeout(
-      window.fwDb.client.from('user_stickers').select('id,image_url,file_name,file_size,mime_type,storage_path,created_at').eq('user_id', u.id).eq('is_deleted', false).order('created_at', {ascending:false}).limit(MAX_STICKERS),
+      window.fwDb.client.from('user_stickers').select('id,image_url,file_name,file_size,mime_type,storage_path,created_at').eq('user_id', u.id).eq('is_deleted', false).order('created_at', {ascending:false}),
       10000,
       '表情列表读取超时，请稍后重试。'
     );
@@ -445,7 +445,7 @@
       if(saved.error) throw saved.error;
 
       var newRow = saved.data || {id:String(Date.now()), image_url:publicUrl, file_name:file.name || 'sticker', file_size:uploadFile.size || file.size || 0, mime_type:prepared.mime || ''};
-      stickerCache = [newRow].concat((stickerCache || rows || [])).slice(0, MAX_STICKERS);
+      stickerCache = [newRow].concat((stickerCache || rows || []));
       if(activeTab === 'stickers') renderStickerList(stickerCache);
       toast('表情已添加。');
     }finally{
