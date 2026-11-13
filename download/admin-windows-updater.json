@@ -1,11 +1,11 @@
 {
+  "pub_date": "2026-11-13T03:52:54.5681200Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/sanpen711/fw-lab/releases/download/fw-admin-v6.0.5/FW-Admin-6.0.5-Windows-x64-Setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlVkZFBnbyswRGZWa3JTdDloNjVDYm14Ym9UbFE3K1RIMzBqQ3BVVU9zZ29uSXRidFFaSHd4dlhIYXN5ZzNtc1dVbkx0aHlXdW1JZEVObHB6NGw2Z1FRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyNTY5MjgyCWZpbGU6RlfnrqHnkIblj7BfNi4wLjVfeDY0LXNldHVwLmV4ZQpXcU1aTDg1T2xDTWdCT0xjVWFqRHk4bW9mNW5ldlprYmJMNXFwbFAyaTRlekIvK1JxZ3phWDlyQ2JGUlFDdkhQdjBSeForNU93ay9sN21sNG96N3BDQT09Cg=="
+      "url": "https://github.com/sanpen711/fw-lab/releases/download/fw-admin-v6.0.6/FW-Admin-6.0.6-Windows-x64-Setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmNsSFhOZm9ERCtRd0laZkhYcnpLUFFGcGtKL3gwdlM1TUp4TWwvOGt1VnVoajZud3k5YVFmaUl6TFNNYnNDRnhORGNvNGxXV1pwdC84Zjh0L09vOWdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NTQxOTY0CWZpbGU6RlfnrqHnkIblj7BfNi4wLjZfeDY0LXNldHVwLmV4ZQorTzRiaDdKUXU0Q3NRUlBOVFVvM2gyOERrY3hYNkFYbzJmK2RiMHpvWTVrTDNJWDJKYlRHL1VZaUtrb2dITTZndTBjNERmYnNZMXdDNmVNMGNEU1BDZz09Cg=="
     }
   },
-  "version": "6.0.5",
-  "pub_date": "2026-10-21T07:54:53.9186804Z",
-  "notes": "新增待审核：审核被举报内容和暂停发言账号，支持恢复、移除、永久禁言、附件预览和记录导出。"
+  "version": "6.0.6",
+  "notes": "会员管理新增管理员装扮测试和历史会员订单。"
 }
