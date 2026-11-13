@@ -51,12 +51,12 @@ for(const width of [320,360,390,430]){
     await page.locator('[data-app-nav="nav"]').click();
     await expect(page.locator('[data-app-view="nav"].is-active')).toBeVisible();
     const destinations=page.locator('.mobile-primary-grid [data-app-open]');
-    await expect(destinations).toHaveCount(5);
+    await expect(destinations).toHaveCount(4);
     const cards=await destinations.evaluateAll(elements=>elements.map(e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,target:(e as HTMLElement).dataset.appOpen};}));
-    expect(cards.map(r=>r.target)).toEqual(['square','rooms','bird','play','membership']);
+    expect(cards.map(r=>r.target)).toEqual(['square','rooms','bird','play']);
     expect(cards[0].width).toBeGreaterThan(cards[1].width*1.8);
     expect(Math.abs(cards[1].top-cards[2].top)).toBeLessThan(1);
-    expect(Math.abs(cards[3].top-cards[4].top)).toBeLessThan(1);
+    expect(cards[3].top).toBeGreaterThanOrEqual(cards[2].bottom);
     for(const card of cards){expect(card.left).toBeGreaterThanOrEqual(0);expect(card.right).toBeLessThanOrEqual(width);expect(card.height).toBeGreaterThanOrEqual(44);}
     await checkShell();
     await page.locator('[data-app-nav="buddy"]').click();
