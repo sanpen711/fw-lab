@@ -92,7 +92,7 @@ fn icon_png(name: &str) -> &'static [u8] {
         "text" => include_bytes!("../icons/identity/text.png"),
         "printer" => include_bytes!("../icons/identity/printer.png"),
         "network" => include_bytes!("../icons/identity/network.png"),
-        _ => include_bytes!("../icons/identity/default.png"),
+        _ => include_bytes!("../../desktop-v11/public/fw-client-logo.png"),
     }
 }
 
