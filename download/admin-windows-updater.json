@@ -1,11 +1,11 @@
 {
-  "pub_date": "2026-11-13T03:52:54.5681200Z",
+  "notes": "管理台恢复完整装扮编辑、实时预览和迁移前装扮。",
+  "version": "6.0.7",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/sanpen711/fw-lab/releases/download/fw-admin-v6.0.6/FW-Admin-6.0.6-Windows-x64-Setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmNsSFhOZm9ERCtRd0laZkhYcnpLUFFGcGtKL3gwdlM1TUp4TWwvOGt1VnVoajZud3k5YVFmaUl6TFNNYnNDRnhORGNvNGxXV1pwdC84Zjh0L09vOWdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NTQxOTY0CWZpbGU6RlfnrqHnkIblj7BfNi4wLjZfeDY0LXNldHVwLmV4ZQorTzRiaDdKUXU0Q3NRUlBOVFVvM2gyOERrY3hYNkFYbzJmK2RiMHpvWTVrTDNJWDJKYlRHL1VZaUtrb2dITTZndTBjNERmYnNZMXdDNmVNMGNEU1BDZz09Cg=="
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmNNZ1B3RFJhRDJOb0ZTZE5pTkZ6Rmp4a3NqUGRGMmZhREFQUHJaRmlYS0RKV0ZPQlArUUliblJOdEdUWjYza2RJUkVYS2hSQXc2ZExXZXZyV1c4TGdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NTU0ODgwCWZpbGU6RlfnrqHnkIblj7BfNi4wLjdfeDY0LXNldHVwLmV4ZQpiNEhnNDhzd05LQjZNbm1wSHpkZS9oMkhyYWREazE5Y056eVEvYWY1OHhBeEZJQTlEZFZNOWV4blBaN2RjSTU5eW5nTTI3QVpVK1BKbVhvaC9HUmxDUT09Cg==",
+      "url": "https://github.com/sanpen711/fw-lab/releases/download/fw-admin-v6.0.7/FW-Admin-6.0.7-Windows-x64-Setup.exe"
     }
   },
-  "version": "6.0.6",
-  "notes": "会员管理新增管理员装扮测试和历史会员订单。"
+  "pub_date": "2026-11-13T07:28:08.8624844Z"
 }
