@@ -2,7 +2,7 @@ import {contentReview} from './content-review.js';
 import {adminApi} from './admin-api.js';
 import {APP_VERSION} from './config.js';
 import {shopAdmin} from './shop-admin.js';
-import {membershipAppearanceForm,membershipAppearanceInput} from './membership-appearance.js';
+import {openMembershipAppearance} from './membership-appearance.js';
 import {siteContentAdmin} from './site-content-admin.js';
 
 const app=document.querySelector('#app');
@@ -357,14 +357,12 @@ function openDialog({title,description='',body,submitLabel='确认处理',danger
 
 async function openMembershipAppearanceTest(){
   const admin=state.admin;
-  const [value,posts]=await Promise.all([adminApi.getAppearanceTest(),adminApi.listAppearancePosts(admin.id)]);
+  const [saved,previous]=await Promise.all([adminApi.getAppearanceTest(),adminApi.getPreviousAppearance()]);
+  const posts=await adminApi.listAppearancePosts(admin.id,[saved?.featured_post_id,previous?.featured_post_id]);
   if(state.admin!==admin||state.view!=='memberships'||dialog.open)return;
-  openDialog({
-    title:'装扮测试',
-    description:`当前管理员 · ${admin.nickname}`,
-    body:membershipAppearanceForm(value,posts,esc),
-    submitLabel:'保存装扮',
-    onSubmit:data=>adminApi.saveAppearanceTest(membershipAppearanceInput(data))
+  openMembershipAppearance(dialog,{
+    admin,saved,previous,posts,escape:esc,
+    save:adminApi.saveAppearanceTest,onSaved:()=>toast('装扮已保存。')
   });
 }
 
@@ -531,8 +529,12 @@ document.addEventListener('click',async event=>{
   const open=event.target.closest('[data-open-kind]');if(open){state.view=open.dataset.openKind==='report'?'reports':'feedback';state.filter='all';selectRow(open.dataset.openKind,open.dataset.openId);return;}
   if(event.target.closest('[data-close-detail]')){state.selection=null;shellView();return;}
   if(event.target.closest('[data-dialog-close]')){dialog.close();dialogSubmit=null;return;}
-  if(event.target.closest('[data-member-appearance-test]')){
-    await openMembershipAppearanceTest().catch(error=>toast(error.message,true));return;
+  const appearanceButton=event.target.closest('[data-member-appearance-test]');
+  if(appearanceButton){
+    appearanceButton.disabled=true;
+    try{await openMembershipAppearanceTest();}catch(error){toast(error.message,true);}
+    finally{appearanceButton.disabled=false;}
+    return;
   }
   if(event.target.closest('[data-member-order-history]')&&state.selection?.type==='membership'){
     await openMembershipOrderHistory(state.selection.row).catch(error=>toast(error.message,true));return;

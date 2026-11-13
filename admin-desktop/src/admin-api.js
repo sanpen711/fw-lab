@@ -32,6 +32,7 @@ async function readAdmin(){
     email:auth.user.email||profile.email||'',
     nickname:profile.nickname||'管理员',
     avatarUrl:profile.avatar_url||'',
+    labCode:profile.lab_code||'',
     role:profile.role
   };
 }
@@ -75,13 +76,29 @@ async function getAppearanceTest(){
   return fail(await client.rpc('admin_get_appearance_test'),'读取装扮测试失败');
 }
 
+async function getPreviousAppearance(){
+  const previous=first(await rpc('fw_get_own_membership_appearance',{},'读取迁移前的装扮失败'));
+  if(!previous)return null;
+  const growth=await rpc('fw_get_own_membership_growth',{},'读取历史徽章等级失败');
+  return {...previous,level:Math.max(1,Number(growth?.level)||1)};
+}
+
 async function saveAppearanceTest(values){
   return rpc('admin_save_appearance_test',values,'保存装扮测试失败');
 }
 
-async function listAppearancePosts(userId){
-  return fail(await client.from('posts').select('id,content').eq('user_id',userId)
-    .eq('is_deleted',false).order('created_at',{ascending:false}).limit(100),'读取代表作失败')||[];
+async function listAppearancePosts(userId,featuredIds){
+  const ownPosts=()=>client.from('posts').select('id,content').eq('user_id',userId).eq('is_deleted',false);
+  const recent=fail(await ownPosts().order('created_at',{ascending:false}).limit(100),'读取代表作失败')||[];
+  const missing=[...new Set(featuredIds.filter(id=>id!=null&&!recent.some(post=>String(post.id)===String(id))))];
+  const older=missing.length?fail(await ownPosts().in('id',missing),'读取已选代表作失败')||[]:[];
+  const posts=[...recent,...older];
+  if(!posts.length)return posts;
+  const visible=await rpc('fw_content_review_visibility',{
+    p_refs:posts.map(post=>({kind:'post',id:String(post.id)}))
+  },'检查代表作可见状态失败');
+  const visibleIds=new Set(visible.filter(row=>row.visible).map(row=>String(row.target_id)));
+  return posts.filter(post=>visibleIds.has(String(post.id)));
 }
 
 async function listMembershipOrders(userId){
@@ -221,7 +238,7 @@ async function deleteUserAccount({targetUserId,confirmCode,confirmText,reason}){
 }
 
 export const adminApi={
-  rpc,client,restoreAdmin,signIn,signOut,getAppearanceTest,saveAppearanceTest,listAppearancePosts,listMembershipOrders,listUsers,listReports,listFeedback,listMemberships,listPosts,listComments,listChats,listParties,
+  rpc,client,restoreAdmin,signIn,signOut,getAppearanceTest,getPreviousAppearance,saveAppearanceTest,listAppearancePosts,listMembershipOrders,listUsers,listReports,listFeedback,listMemberships,listPosts,listComments,listChats,listParties,
   listBirdPosts,listBirdComments,listPolls,listPartyMessages,listLogs,
   moderateUser,moderatePost,moderateComment,moderateChat,resolveReport,updateFeedback,moderateParty,
   moderateBirdPost,moderateBirdComment,moderatePoll,deletePartyMessage,deleteUserAccount,grantMembership,cancelMembership,
