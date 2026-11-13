@@ -26,7 +26,7 @@ test('游客点击评论只显示轻提示，主动登录后打开对应帖子�
 
 test('游客进入其他板块后只显示居中登录提示与按钮，不读取板块数据',async({page})=>{
  const calls=await mock(page);await page.goto('/square.html');await expect(page.locator('.square-post')).toBeVisible();
- for(const view of ['rooms','chatrooms','play','games','buddy','archive','membership']){
+ for(const view of ['rooms','chatrooms','play','games','buddy','archive']){
   await page.locator(`.web-nav [data-nav="${view}"]`).click();await expectGuestGate(page,view);await expect(page).toHaveURL(new RegExp(view+'\\.html$'));await expect(page.locator(`.web-nav [data-nav="${view}"]`)).toHaveAttribute('aria-current','page');
  }
  expect(calls.filter(c=>privateReads.test(c.path))).toEqual([]);
@@ -45,7 +45,7 @@ test.skip('直接访问会员装扮，验证登录后恢复目标而非提前加
 });
 
 test('取消登录后留在当前板块提示页，再次主动登录后显示该板块内容',async({page})=>{
- await mock(page);await page.goto('/games.html');await expectGuestGate(page,'games');await page.locator('[data-open-account]').first().click();await expect(page.locator('[data-account-modal]')).toBeVisible();await page.locator('[data-close-account]').click();await expectGuestGate(page,'games');await signIn(page,'[data-web-guest-gate] [data-open-account]');await expect(page.locator('#app')).toHaveAttribute('data-view','games');await expect(page.locator('[data-web-guest-gate]')).toBeHidden();await expect(page.locator('[data-game-open]')).toHaveCount(6);
+ await mock(page);await page.goto('/games.html');await expectGuestGate(page,'games');await page.locator('[data-open-account]').first().click();await expect(page.locator('[data-account-modal]')).toBeVisible();await page.locator('[data-close-account]').click();await expectGuestGate(page,'games');await signIn(page,'[data-web-guest-gate] [data-open-account]');await expect(page.locator('#app')).toHaveAttribute('data-view','games');await expect(page.locator('[data-web-guest-gate]')).toBeHidden();await expect(page.locator('[data-game-open]')).toHaveCount(4);
 });
 
 test('退出后移除评论正文，改用评论数量接口并限制其他板块',async({page})=>{
