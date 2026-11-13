@@ -1,12 +1,12 @@
 {
-  "sha256": "c2318d00d21e478d5813edaddf00c41ad3bc87cd6e7eb0299c9e926b7da62e68",
-  "displayVersion": "1.0.9",
-  "publishedAt": "2026-11-12T09:00:58.6621359Z",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.47-setup.exe",
   "available": true,
-  "version": "1.3.46",
+  "sha256": "ba8ff6e12eed0ea93c8ebb98545ba4127900cfd0e8387c4b0a34fa12329024d0",
+  "displayVersion": "1.0.10",
+  "publishedAt": "2026-11-13T05:57:33.6304653Z",
   "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
   "rollbackVersion": "1.0.5",
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.46-setup.exe",
-  "notes": "Windows 1.0.9：加快搭子私聊首屏加载，修复点开对话时聊天记录上下闪动。",
-  "platform": "Windows 10/11 64 位"
+  "notes": "Windows 1.0.10：暂停会员与周边商城，开放组队创建并统一表情收藏上限。",
+  "platform": "Windows 10/11 64 位",
+  "version": "1.3.47"
 }
