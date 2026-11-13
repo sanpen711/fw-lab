@@ -1,12 +1,12 @@
 {
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.47-setup.exe",
-  "available": true,
-  "sha256": "ba8ff6e12eed0ea93c8ebb98545ba4127900cfd0e8387c4b0a34fa12329024d0",
-  "displayVersion": "1.0.10",
-  "publishedAt": "2026-11-13T05:57:33.6304653Z",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
   "rollbackVersion": "1.0.5",
-  "notes": "Windows 1.0.10：暂停会员与周边商城，开放组队创建并统一表情收藏上限。",
+  "sha256": "7a09766c8377dc85e96bc663ff5b534ce3bd3d868f349494fb2640f3ced291a6",
   "platform": "Windows 10/11 64 位",
-  "version": "1.3.47"
+  "displayVersion": "1.0.11",
+  "notes": "Windows 1.0.11：更换客户端默认 Logo 和 Windows 图标。",
+  "publishedAt": "2026-11-13T12:45:01.8460982Z",
+  "version": "1.3.48",
+  "available": true,
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.48-setup.exe",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
 }
