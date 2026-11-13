@@ -9,7 +9,7 @@ body.auth-required{overflow:hidden;background:#f6f6f4}
 .app-shell{min-height:100vh;padding-left:var(--rail)}
 .sidebar{position:fixed;z-index:20;inset:0 auto 0 0;width:var(--rail);display:flex;flex-direction:column;gap:7px;padding:18px 13px 14px;border-right:1px solid var(--line);background:#fbf7ef}
 .brand,.compose-button,.nav-item{width:100%;border:0;background:transparent;cursor:pointer}
-.brand{display:flex;align-items:baseline;gap:7px;padding:5px 12px 15px;text-align:left}.brand strong{font:900 25px/1 Georgia,serif;letter-spacing:-.06em}.brand span{font-size:12px;font-weight:800;color:var(--muted)}
+.brand{display:flex;align-items:center;justify-content:center;padding:5px 12px 15px}.brand img{display:block;object-fit:contain}
 .compose-button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;margin-bottom:4px;border-radius:14px;background:var(--deep);color:white;box-shadow:0 7px 18px rgba(20,63,51,.16)}.compose-button span{font-size:25px;font-weight:300}.compose-button b{font-size:14px}
 .nav-list{display:flex;flex:1;flex-direction:column;gap:3px}
 .nav-item{position:relative;display:flex;align-items:center;gap:11px;min-height:47px;padding:0 13px;border-radius:13px;text-align:left;color:#52625c}.nav-item>span:not(.avatar){width:22px;text-align:center;font-size:19px}.nav-item b{font-size:13px}.nav-item:hover{background:#f1ebe1}.nav-item.active{background:#e8dfd1;color:var(--deep)}

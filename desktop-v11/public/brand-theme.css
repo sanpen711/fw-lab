@@ -44,8 +44,6 @@ html body .sidebar{
   box-shadow:none!important;
 }
 html body .brand{padding:0 14px!important;color:#152b25!important;}
-html body .brand strong{color:#152b25!important;font:900 24px/1 Georgia,serif!important;letter-spacing:-.08em!important;}
-html body .brand span{display:none!important;}
 html body .compose-button{display:none!important;}
 html body .nav-list{gap:2px!important;margin-top:18px!important;}
 html body .nav-item{min-height:43px!important;gap:8px!important;padding:0 12px!important;border-radius:12px!important;color:#263a34!important;}
@@ -451,7 +449,7 @@ html body .auth-gate-modal .auth-gate-brand::after{
   transform:rotate(18deg);
 }
 html body .auth-brand-head{position:relative;z-index:1;display:flex;align-items:center;gap:11px;}
-html body .auth-brand-monogram{display:grid;width:44px;height:44px;place-items:center;border:1px solid #ddd7cf;border-radius:13px;background:#fff;color:#152b25;font:900 15px/1 Georgia,serif;letter-spacing:-.04em;box-shadow:0 8px 22px rgba(21,43,37,.06);}
+html body .auth-brand-logo{display:block;flex:none;object-fit:contain;}
 html body .auth-brand-head>span:last-child{display:grid;gap:2px;}
 html body .auth-brand-head b{font-size:13px;letter-spacing:.01em;}
 html body .auth-brand-head small{color:#818986;font-size:9px;letter-spacing:.08em;}
@@ -627,7 +625,6 @@ html body .settings-page:is(.settings-page--tabbed,.settings-page--about) .setti
 .identity-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(165px,.44fr);gap:12px}
 .identity-overview .settings-mode-list{grid-template-columns:1fr}
 .identity-overview .identity-preview{min-width:0;overflow-wrap:anywhere}
-.identity-preview>span[data-identity-preview-brand],.about-mark{display:grid;flex:none;place-items:center;border-radius:12px;background:#ffe6e8;color:#152b25;font:900 18px/1 Georgia,serif}
 .behavior-form fieldset{display:grid;gap:19px;min-width:0;margin:0;padding:0;border:0}
 .behavior-shortcut{display:grid;gap:10px;padding:16px;border:1px solid #ebe3da;border-radius:12px;background:#fbf8f5}
 .behavior-shortcut h3{margin:0;font-size:14px}
@@ -637,7 +634,7 @@ html body .settings-page:is(.settings-page--tabbed,.settings-page--about) .setti
 .shortcut-key[data-recording]{border-color:#bd5468;color:#9f3e52}
 .settings-status:empty{display:none}
 .settings-about-card .about-product{align-items:center;justify-content:flex-start}
-.about-mark{width:56px;height:56px;font-size:22px}
+.about-mark{flex:none;object-fit:contain}
 .settings-about-card .settings-version-row{padding-bottom:0}
 @media(max-width:820px){
   .settings-tab-bar{padding-inline:14px}

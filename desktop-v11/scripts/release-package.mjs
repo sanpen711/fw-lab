@@ -6,7 +6,7 @@ export const ACTIVE_GAMES=Object.freeze(['2048','minesweeper','sudoku','reaction
 const appIcons=['folder','document','computer','drive','image','archive','text','printer','network'];
 const navIcons=['home','brain','discussion','chatrooms','game','buddy','archive','settings','info','notice'];
 export const PUBLIC_ENTRIES=Object.freeze([
-  'brand-theme.css','chat-rooms.css','game-center.css','game-party.css',
+  'brand-theme.css','chat-rooms.css','fw-client-logo.png','game-center.css','game-party.css',
   'hero-fufu-office-banner.webp','mascot-fufu.webp','membership-experience.css',
   'private-chat.css','site-content.css','ui-icons.svg',
   'emoji','membership-badges','third-party-licenses/pinyin-pro.txt',
