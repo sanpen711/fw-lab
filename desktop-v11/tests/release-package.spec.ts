@@ -18,9 +18,10 @@ test.beforeEach(async({page})=>{
 test('生产包只提供四款启用游戏，旧记录或内部调用不能打开魂斗罗',async({page})=>{
   await page.goto('/');
   await expect(page.locator('.hero-card')).toBeVisible();
-  const logo=page.locator('.brand img');
-  await expect(logo).toBeVisible();
-  await expect.poll(()=>logo.evaluate((image:HTMLImageElement)=>image.complete&&image.naturalWidth)).toBe(256);
+  const brand=page.getByRole('button',{name:'F.w 研究所首页'});
+  await expect(brand.getByText('F.W',{exact:true})).toBeVisible();
+  await expect(brand.locator('img')).toHaveCount(0);
+  await expect(brand.getByText('研究所',{exact:true})).toBeHidden();
   await expect(page.locator('.hero-visual')).toHaveCount(0);
   await page.locator('.nav-item[data-nav="games"]').click();
   await expect(page.locator('[data-game-open]')).toHaveCount(4);
