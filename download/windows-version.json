@@ -1,12 +1,12 @@
 {
-  "rollbackVersion": "1.0.5",
-  "sha256": "7a09766c8377dc85e96bc663ff5b534ce3bd3d868f349494fb2640f3ced291a6",
-  "platform": "Windows 10/11 64 位",
-  "displayVersion": "1.0.11",
-  "notes": "Windows 1.0.11：更换客户端默认 Logo 和 Windows 图标。",
-  "publishedAt": "2026-11-13T12:45:01.8460982Z",
-  "version": "1.3.48",
   "available": true,
-  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.48-setup.exe",
-  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe"
+  "publishedAt": "2026-11-17T03:46:05.4674668Z",
+  "version": "1.3.49",
+  "rollbackVersion": "1.0.5",
+  "platform": "Windows 10/11 64 位",
+  "rollbackUrl": "https://fwyanjiusuo.com/download/fw-lab-windows-1.0.5-setup.exe",
+  "sha256": "0bf92648cb63ca952ee1158d220baac67afc45f64216ba5df4c02c6b4a45e3fe",
+  "notes": "Windows 1.0.12：恢复左侧导航顶部的 F.W 文字。",
+  "displayVersion": "1.0.12",
+  "downloadUrl": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.49-setup.exe"
 }

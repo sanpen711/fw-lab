@@ -1,12 +1,12 @@
 {
-  "displayVersion": "1.0.11",
+  "displayVersion": "1.0.12",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.48-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWlFkRHY2VWZ1K3Z2b0VJRHdMVjBkL1poOFlKdFl2Uy91RzhTV3ZzRmRCdXNreHVydFhvL2xKbHdxeFNGTHJldHIyK2ZhT2tZczJpWm0vdVBGVHpyM1FnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NTczODgxCWZpbGU6Ri53IOeglOeptuaJgF8xLjMuNDhfeDY0LXNldHVwLmV4ZQp4MWtBVUVITGJXWFhpb045WlpxOERjMGEwTklqVWJsTTZNam05OTBteFVHdTlsNzdWeE5VM3ZQYStCMG5UbWpMSW5GckhGT1FXdHI2MVpVcEY3NWxBZz09Cg=="
+      "url": "https://ekbovsmxbiplhyrzxoyw.supabase.co/storage/v1/object/public/app-releases/fw-lab-windows-1.3.49-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdWpRYTU0Qk9OWmNtaWNweS9pTTI3TGZ0eFByQUFqR1pYc2l3UHJlMUxPWnk0N2N1NmRxV3lWLzFTVThBQnM5UXBTU2ZhRlJZY3FkWHdtZzUwWHpvRGU0Yk80ajFZT0FBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0ODg3MTQ2CWZpbGU6Ri53IOeglOeptuaJgF8xLjMuNDlfeDY0LXNldHVwLmV4ZQpialFEN05CalJQWlBuOEtWU1ZDRHBnUU1ncUZtMjN1Qm0yRFJrWStsTXc2UHIyOWk4ZWkwZ2xoVXhPNTlwNXBONGNuMHVkb1ZyQytnUklneHdTOXBEZz09Cg=="
     }
   },
-  "pub_date": "2026-11-13T12:45:01.8460982Z",
-  "version": "1.3.48",
-  "notes": "Windows 1.0.11：更换客户端默认 Logo 和 Windows 图标。"
+  "pub_date": "2026-11-17T03:46:05.4674668Z",
+  "notes": "Windows 1.0.12：恢复左侧导航顶部的 F.W 文字。",
+  "version": "1.3.49"
 }
