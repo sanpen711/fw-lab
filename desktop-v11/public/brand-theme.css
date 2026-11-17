@@ -44,6 +44,8 @@ html body .sidebar{
   box-shadow:none!important;
 }
 html body .brand{padding:0 14px!important;color:#152b25!important;}
+html body .brand strong{color:#152b25!important;font:900 24px/1 Georgia,serif!important;letter-spacing:-.08em!important;}
+html body .brand span{display:none!important;}
 html body .compose-button{display:none!important;}
 html body .nav-list{gap:2px!important;margin-top:18px!important;}
 html body .nav-item{min-height:43px!important;gap:8px!important;padding:0 12px!important;border-radius:12px!important;color:#263a34!important;}
